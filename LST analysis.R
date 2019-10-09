@@ -1,17 +1,12 @@
 # TCI EJ analysis
 
-library(tidyverse)
-library(tmap)
-
-# read in hdf MODIS data on LST
-modis1 <- nc_open("LST/MOD11B3.A2019152.h12v04.006.2019184065854.hdf")
-
 # install.packages('rgdal', type='source'). DOES NOT WORK
 # had to install GDAL/OGR from https://trac.osgeo.org/osgeo4w/
+library(tmap)
+library(tidyverse)
 library(rgdal)
 library(gdalUtils)
 library(raster)
-library(tmap)
 # read in HDF (Hierarchical Data Format) scientific data sets (SDSs)
 sdsJune2019h12 <- get_subdatasets("LST/MOD11B3.A2019152.h12v04.006.2019184065854.hdf")
 sdsJune2019h13 <- get_subdatasets("LST/MOD11B3.A2019152.h13v04.006.2019184065855.hdf")
