@@ -1,4 +1,11 @@
-# TCI EJ analysis
+# TCI LST analysis
+# The objectives of this analysis are: create temperature and urban heat island surfaces for New England; validate with NOAA weather station data and MA impervious surface layer; aggregate by Census block group; compare against demographics and air pollution data from EPASCREEN
+# Need to match time period of LST to data for comparison:
+# EJSCREEN air and cancer hazards and diesel particulate are 2014 annual
+# EJSCREEN PM2.5 is annual average based on 2013 monitoring and modeling estimates
+# EJSCREEN Ozone is May–September (summer/ ozone season) average of daily-maximum 8-hour-average ozone concentrations, in parts per billion (ppb) based on 2013 monitoring and modeling estimates
+# NATA Cancer Risk and Respirtatory Hazard Risk data based on tract-level estimates using 2014 NEI
+# Separately we will use 2018 summer data to identify heat islands and relationships between demographics and temps
 
 # install.packages('rgdal', type='source'). DOES NOT WORK
 # had to install GDAL/OGR from https://trac.osgeo.org/osgeo4w/
