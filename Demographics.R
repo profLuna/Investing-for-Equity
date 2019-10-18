@@ -16,7 +16,7 @@ v17 <- load_variables(2017, "acs5", cache = TRUE)
 # create vector of states to download
 ne_states <- c("CT","MA","ME","NH","RI","VT")
 
-# use purrr::reduce function in combination with sf::rbind to acquire desired states from tidycensus. 
+# use purrr::reduce function in combination with sf::rbind to download block groups for list of states and then bind them to one sf. 
 ne_pop_sf <- reduce(
   map(ne_states, function(x) {
     get_acs(geography = "block group", 
