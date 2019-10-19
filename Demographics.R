@@ -106,3 +106,9 @@ neACS17blkgrp_langIsol <- map_df(ne_states, function(x) {
             eli_limited = C16002_004E + C16002_007E + C16002_010E + C16002_013E,
             pct_eli_limited = eli_limited/eli_households*100)
 
+# join English language isolation to block groups
+ne_pop_sf <- ne_pop_sf %>% 
+  left_join(neACS17blkgrp_langIsol, by = c("GEOID","GEOID"))
+# tmap_mode("view")
+# tm_shape(ne_pop_sf) + tm_polygons("pct_eli_limited")
+# tmap_mode("plot")
