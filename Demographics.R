@@ -3,6 +3,7 @@
 library(tidycensus)
 library(tidyverse)
 library(tmap)
+library(sf)
 options(tigris_use_cache = TRUE)
 
 census_api_key("f2776fbc29cf847505de9308a82c8d65290d16b3")
@@ -26,6 +27,11 @@ ne_pop_sf <- reduce(
     }),
   rbind
 )
+
+# Extract the state names to a new column
+# provide 1 or multiple + whole words \\b, not [ ] in a string that ends in a comma ^, until the end of the string $. (so basically, provide all whole words after comma) 
+ne_pop_sf <- ne_pop_sf %>% 
+  mutate(STATE = str_extract(NAME, '\\b[^,]+$'))
 
 # map it out
 tm_shape(ne_pop_sf) + tm_polygons(col = "totalpopE")
