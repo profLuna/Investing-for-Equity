@@ -94,6 +94,15 @@ maACS17_blkgrp_medhhinc <- get_acs(geography = "block group",
             pctmedhhinc_lt50 = medhhinc_lt50/households*100, # 65% of median is $48,208. Closest range is 45 - 49,9
             pctmedhhinc_lt75 = medhhinc_lt75/households*100) # statewide median of $74,167. Closest range is 60 - 74,9
 
-
-
+# download language isolation variables by block group
+neACS17blkgrp_langIsol <- map_df(ne_states, function(x) {
+  get_acs(geography = "block group", table = "C16002",
+          state = x, output = "wide")
+  }) %>% 
+  transmute(GEOID = GEOID,
+            NAME = NAME,
+            STATE = str_extract(NAME, '\\b[^,]+$'),
+            eli_households = C16002_001E,
+            eli_limited = C16002_004E + C16002_007E + C16002_010E + C16002_013E,
+            pct_eli_limited = eli_limited/eli_households*100)
 
