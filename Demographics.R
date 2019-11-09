@@ -39,7 +39,7 @@ ne_pop_sf <- ne_pop_sf %>%
 tm_shape(ne_pop_sf) + tm_polygons(col = "STATE")
 
 
-# Do the same for towns across New England, although note that tidycensus does not support that geography so we need to import shapefiles separately with tigris and then join
+# Do the same for towns across New England, although note that tidycensus does not support that geography yet so we need to import shapefiles separately with tigris and then join
 # use purrr::map_df to download df and bind vector of states
 ne_towns_df <- map_df(ne_states, function(x) {
     get_acs(geography = "county subdivision", 
@@ -100,8 +100,8 @@ neACS17blkgrp_langIsol <- map_df(ne_states, function(x) {
           state = x, output = "wide")
   }) %>% 
   transmute(GEOID = GEOID,
-            NAME = NAME,
-            STATE = str_extract(NAME, '\\b[^,]+$'),
+            # NAME = NAME,
+            # STATE = str_extract(NAME, '\\b[^,]+$'),
             eli_households = C16002_001E,
             eli_limited = C16002_004E + C16002_007E + C16002_010E + C16002_013E,
             pct_eli_limited = eli_limited/eli_households*100)
