@@ -100,18 +100,73 @@ maACS17_blkgrp_medhhinc <- get_acs(geography = "block group",
             ) # statewide median of $74,167. Closest range is 60 - 74,9
 
 # download language isolation variables by block group
-neACS17blkgrp_langIsol <- map_df(ne_states, function(x) {
-  get_acs(geography = "block group", table = "C16002",
-          state = x, output = "wide")
-  }) %>% 
-  transmute(GEOID = GEOID,
-            # NAME = NAME,
-            # STATE = str_extract(NAME, '\\b[^,]+$'),
-            eli_households = C16002_001E,
-            eli_limited = C16002_004E + C16002_007E + C16002_010E + C16002_013E,
-            pct_eli_limited = ifelse(
-              eli_households == 0,0,eli_limited/eli_households*100)
-            )
+# lang_vars <- paste0("C16002_0",c("01","04","07","10","13"))
+# neACS17blkgrp_langIsol <- map_df(ne_states, function(x) {
+#   get_acs(geography = "block group", variables = c("C16002"),
+#           state = x, output = "wide")
+#   }) %>% 
+#   transmute(GEOID = GEOID,
+#             # NAME = NAME,
+#             # STATE = str_extract(NAME, '\\b[^,]+$'),
+#             eli_households = C16002_001E,
+#             eli_limited = C16002_004E + C16002_007E + C16002_010E + C16002_013E,
+#             pct_eli_limited = ifelse(
+#               eli_households == 0,0,eli_limited/eli_households*100)
+#             )
+
+
+# Download C16002. Household Language by Household Limited English Speaking Status
+eng_limited <- map_df(ne_states, function(x) {
+  get_acs(geography = "block group", variables = c("C16002_001","C16002_004",
+                                                   "C16002_007","C16002_010",
+                                                   "C16002_013"),
+          state = x)})
+# Isolate limited English speaking households and compute derived estimates and MOEs
+eng_limited_est <- eng_limited %>% 
+  filter(variable != "C16002_001") %>% 
+  group_by(GEOID) %>% 
+  summarize(eng_liE = sum(estimate),
+            eng_liM = moe_sum(moe,estimate))
+# Join with total households and calculate derived proportions and MOEs, along with upper and lower confidence interval values from MOE
+eng_limited_pct <- eng_limited %>% 
+  filter(variable == "C16002_001") %>% 
+  group_by(GEOID) %>% 
+  left_join(., eng_limited_est, by = c("GEOID","GEOID")) %>% 
+  mutate(eng_li_pE = ifelse(estimate==0,0,eng_liE/estimate),
+         eng_li_pM = moe_prop(eng_liE,estimate,eng_liM,moe),
+         eng_li_pctE = eng_li_pE*100,
+         eng_li_pctM = eng_li_pM*100,
+         eng_li_pctE_UC = eng_li_pctE + eng_li_pctM,
+         eng_li_pctE_LC = ifelse(
+           eng_li_pctE < eng_li_pctM, 0, eng_li_pctE - eng_li_pctM))
+
+
+
+
+# Download English language isolation variables and compute derived estimates as well as derived MOEs
+# eng_limited <- map_df(ne_states, function(x) {
+#   get_acs(geography = "block group", variables = c("C16002_001","C16002_004",
+#                                                    "C16002_007","C16002_010",
+#                                                    "C16002_013"),
+#           state = x, output = "wide")}) %>% 
+#   transmute(GEOID = GEOID,
+#             lang_hhE = C16002_001E,
+#             lang_hhM = C16002_001M,
+#          lang_isolE = 
+#            C16002_004E + C16002_007E + C16002_010E + C16002_013E,
+#          lang_isolM = 
+#           sqrt(C16002_004M^2+C16002_007M^2+C16002_010M^2+C16002_013M^2),
+#          lang_isolE_LC = ifelse(
+#            lang_isolE < lang_isolM, 0, lang_isolE - lang_isolM),
+#          langisolE_UC = lang_isolE + lang_isolM,
+#          pct_lang_isolE = ifelse(lang_hhE==0,0,lang_isolE/lang_hhE)*100,
+#          pct_lang_isolM = 
+#            1/lang_hhE*sqrt(
+#              lang_isolM^2-((pct_lang_isolE/100)^2*lang_hhM^2))*100,
+#          pct_lang_isolE_UC = pct_lang_isolE + pct_lang_isolM,
+#          pct_lang_isolE_LC = ifelse(
+#            pct_lang_isolE < pct_lang_isolM,0,pct_lang_isolE - pct_lang_isolM))
+
 
 # join English language isolation to block groups
 ne_pop_sf <- ne_pop_sf %>% 
