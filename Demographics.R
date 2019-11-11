@@ -113,9 +113,64 @@ maACS17_blkgrp_medhhinc <- get_acs(geography = "block group",
 #             pct_eli_limited = ifelse(
 #               eli_households == 0,0,eli_limited/eli_households*100)
 #             )
+# Download B03002 HISPANIC OR LATINO ORIGIN BY RACE in two sets. 
+# Start with total pop and white pop in wide format and compute upper and lower confidence values. 
+B03002_totwhite <- map_df(ne_states, function(x) {
+  get_acs(geography = "block group", variables = c(
+    totalpop = "B03002_001",
+    nhwhitepop = "B03002_003"),
+    state = x, output = "wide")}) %>% 
+  transmute(GEOID = GEOID,
+            totalpopE = totalpopE,
+            totalpopM = totalpopM,
+            totalpopE_UC = totalpopE + totalpopM,
+            totalpopE_LC = ifelse(
+              totalpopE < totalpopM, 0, totalpopE - totalpopM),
+            nhwhitepopE = nhwhitepopE,
+            nhwhitepopM = nhwhitepopM,
+            nhwhitepopE_UC = nhwhitepopE + nhwhitepopM,
+            nhwhitepopE_LC = ifelse(
+              nhwhitepopE < nhwhitepopM, 0, nhwhitepopE - nhwhitepopM)
+            )
+# Next acquire estimates for Hispanic and nonWhite groups in long format
+B03002_nonwhite <- map_df(ne_states, function(x) {
+  get_acs(geography = "block group", variables = c(
+    nhblackpop = "B03002_004",
+    nhamerindpop = "B03002_005",
+    nhasianpop = "B03002_006",
+    nhnativhpop = "B03002_007",
+    nhotherpop = "B03002_008",
+    nh2morepop = "B03002_009",
+    hisppop = "B03002_012"),
+          state = x)})
+# Compute derived sum of minority and MOE, as well UC and LC values
+nonwhite_est <- B03002_nonwhite %>% 
+  group_by(GEOID) %>% 
+  summarize(minorityE = sum(estimate),
+            minorityM = moe_sum(moe,estimate)) %>% 
+  mutate(minorityE_UC = minorityE + minorityM,
+         minorityE_LC = ifelse(
+           minorityE < minorityM, 0, minorityE - minorityM))
+# Join with total and white pops and compute derived proportions
+minority_pct <- B03002_totwhite %>% 
+  left_join(., nonwhite_est, by = "GEOID") %>% 
+  mutate(minority_pE = ifelse(
+    totalpopE == 0, 0, minorityE/totalpopE),
+    minority_pM = moe_prop(num = minorityE, 
+                           denom = totalpopE, 
+                           moe_num = minorityM, 
+                           moe_denom = totalpopM),
+    minority_pctE = minority_pE*100,
+    minority_pctM = minority_pM*100,
+    minority_pctE_UC = minority_pctE + minority_pctM,
+    minority_pctE_LC = ifelse(
+      minority_pctE < minority_pctM, 0, minority_pctE - minority_pctM)) %>% 
+  select(-minority_pE,-minority_pM)
 
 
-# Download C16002. Household Language by Household Limited English Speaking Status
+
+
+# Download C16002. Household Language by Household Limited English Speaking Status. Note that this table is a collapsed version of table B16002. EPA and MA use the latter, but there is no significant difference since we are not interested in disaggregating categories.
 eng_limited <- map_df(ne_states, function(x) {
   get_acs(geography = "block group", variables = c("C16002_001","C16002_004",
                                                    "C16002_007","C16002_010",
@@ -127,18 +182,24 @@ eng_limited_est <- eng_limited %>%
   group_by(GEOID) %>% 
   summarize(eng_liE = sum(estimate),
             eng_liM = moe_sum(moe,estimate))
-# Join with total households and calculate derived proportions and MOEs, along with upper and lower confidence interval values from MOE
+# Join with total households and calculate derived proportions and MOEs, along with upper and lower confidence interval values from MOE. Rename columns and remove proportion variables. 
 eng_limited_pct <- eng_limited %>% 
   filter(variable == "C16002_001") %>% 
   group_by(GEOID) %>% 
   left_join(., eng_limited_est, by = c("GEOID","GEOID")) %>% 
-  mutate(eng_li_pE = ifelse(estimate==0,0,eng_liE/estimate),
-         eng_li_pM = moe_prop(eng_liE,estimate,eng_liM,moe),
-         eng_li_pctE = eng_li_pE*100,
-         eng_li_pctM = eng_li_pM*100,
-         eng_li_pctE_UC = eng_li_pctE + eng_li_pctM,
-         eng_li_pctE_LC = ifelse(
-           eng_li_pctE < eng_li_pctM, 0, eng_li_pctE - eng_li_pctM))
+  transmute(NAME = NAME,
+            eng_hhE = estimate,
+            eng_hhM = moe,
+            eng_hh_UC = estimate + moe,
+            eng_hh_LC = ifelse(estimate < moe, 0, estimate - moe),
+            eng_li_pE = ifelse(estimate==0,0,eng_liE/estimate),
+            eng_li_pM = moe_prop(eng_liE,estimate,eng_liM,moe),
+            eng_li_pctE = eng_li_pE*100,
+            eng_li_pctM = eng_li_pM*100,
+            eng_li_pctE_UC = eng_li_pctE + eng_li_pctM,
+            eng_li_pctE_LC = ifelse(
+              eng_li_pctE < eng_li_pctM, 0, eng_li_pctE - eng_li_pctM)) %>% 
+  select(-eng_li_pE,-eng_li_pM)
 
 
 
