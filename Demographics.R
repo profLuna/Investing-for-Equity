@@ -99,20 +99,47 @@ maACS17_blkgrp_medhhinc <- get_acs(geography = "block group",
               )
             ) # statewide median of $74,167. Closest range is 60 - 74,9
 
-# download language isolation variables by block group
-# lang_vars <- paste0("C16002_0",c("01","04","07","10","13"))
-# neACS17blkgrp_langIsol <- map_df(ne_states, function(x) {
-#   get_acs(geography = "block group", variables = c("C16002"),
-#           state = x, output = "wide")
-#   }) %>% 
-#   transmute(GEOID = GEOID,
-#             # NAME = NAME,
-#             # STATE = str_extract(NAME, '\\b[^,]+$'),
-#             eli_households = C16002_001E,
-#             eli_limited = C16002_004E + C16002_007E + C16002_010E + C16002_013E,
-#             pct_eli_limited = ifelse(
-#               eli_households == 0,0,eli_limited/eli_households*100)
-#             )
+
+
+# Download ratio of income to poverty level in the past 12 months
+C17002 <- map_df(ne_states, function(x) {
+  get_acs(geography = "block group", table = "C17002", state = x)
+})
+# Isolate universe pop for whom poverty status is known
+povknown <- C17002 %>% 
+  filter(variable == "C17002_001") %>% 
+  transmute(GEOID = GEOID,
+            povknownE = estimate,
+            povknownM = moe,
+            povknownE_UC = povknownE + povknownM,
+            povknownE_LC = ifelse(
+              povknownE < povknownM, 0, povknownE - povknownM))
+  
+# Isolate population less than 2x poverty level and compute derived sum esimate along with MOE and UC and LC
+num2pov <- C17002 %>% 
+  filter(!variable %in% c("C17002_001", "C17002_008")) %>% 
+  group_by(GEOID) %>% 
+  summarize(num2povE = sum(estimate),
+            num2povM = moe_sum(moe, estimate)) %>% 
+  mutate(num2povE_UC = num2povE + num2povM,
+         num2povE_LC = ifelse(
+           num2povE < num2povM, 0, num2povE - num2povM))
+# Join tables and compute derived ratios and MOEs
+povRatio <- povknown %>% 
+  left_join(., num2pov, by = "GEOID") %>% 
+  mutate(p2povE = ifelse(
+    povknownE == 0, 0, num2povE/povknownE),
+    p2povM = moe_ratio(num2povE,povknownE,num2povM,povknownM),
+    pct2povE = p2povE * 100,
+    pct2povM = p2povM * 100,
+    pct2povE_UC = pct2povE + pct2povM,
+    pct2povE_LC = ifelse(
+      pct2povE < pct2povM, 0, pct2povE - pct2povM)) %>% 
+  select(-starts_with("p2p"))
+
+
+
+
 # Download B03002 HISPANIC OR LATINO ORIGIN BY RACE in two sets. 
 # Start with total pop and white pop in wide format and compute upper and lower confidence values. 
 B03002_totwhite <- map_df(ne_states, function(x) {
