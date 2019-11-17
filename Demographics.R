@@ -248,7 +248,7 @@ age25up <- B15002 %>%
             age25upE_UC = age25upE + age25upM,
             age25upE_LC = ifelse(
               age25upE < age25upM, 0, age25upE - age25upM))
-# Isolate populations with less than HS diploma and compute derived estimate of sum and MOE, along with UC and LC
+# Isolate populations with less than HS diploma
 # create vector of patterns for male and female variables less than HS
 lths_strings <- rep(c(3:10,20:27)) %>% 
   formatC(width = 3, format = "d", flag = "0") # add leading 0s
@@ -275,6 +275,66 @@ lths <- age25up %>%
   select(-starts_with("r_"))
 
 
+
+### AGE UNDER 5 AND 65+
+# Individuals under age 5: The number or percent of people in a block group under the age of 5.
+# Individuals over age 64: The number or percent of people in a block group over the age of 64.
+# Download Table B01001 TOTAL POPULATION COUNTS AND AGES
+B01001 <- map_df(ne_states, function(x) {
+  get_acs(geography = "block group", table = "B01001", state = x)
+})
+# Isolate universe of population for all sex and ages
+allAges <- B01001 %>% 
+  filter(variable == "B01001_001") %>% 
+  transmute(GEOID = GEOID,
+            allAgesE = estimate,
+            allAgesM = moe,
+            allAgesE_UC = allAgesE + allAgesM,
+            allAgesE_LC = ifelse(
+              allAgesE < allAgesM, 0, allAgesE - allAgesM))
+# Isolate under 5 pop, compute derived sum estimates and MOEs
+under5 <- B01001 %>% 
+  filter(variable %in% c("B01001_003", "B01001_027")) %>% 
+  group_by(GEOID) %>% 
+  summarize(under5E = sum(estimate),
+            under5M = moe_sum(moe,estimate)) %>% 
+  mutate(under5E_UC = under5E + under5M,
+         under5E_LC = ifelse(
+           under5E < under5M, 0, under5E - under5M))
+# Isolate 65+ pop
+# create vector of patterns for male and female variables 65+
+ovr65_strings <- rep(c(20:25,44:49)) %>% 
+  formatC(width = 3, format = "d", flag = "0") # add leading 0s
+# filter cases by patterns, compute derived sum estimates and MOEs
+over65 <- B01001 %>% 
+  filter(str_detect(variable,paste(ovr65_strings,collapse = "|"))) %>% 
+  group_by(GEOID) %>% 
+  summarize(over65E = sum(estimate),
+            over65M = moe_sum(moe,estimate)) %>% 
+  mutate(over65E_UC = over65E + over65M,
+         over65E_LC = ifelse(
+           over65E < over65M, 0, over65E - over65M))
+# Join the tables and compute derived proportions with MOEs
+age5_65 <- allAges %>% 
+  left_join(., under5, by = "GEOID") %>% 
+  mutate(r_under5E = ifelse(
+    allAgesE == 0, 0, under5E/allAgesE),
+    r_under5M = moe_ratio(under5E,allAgesE,under5M,allAgesM),
+    pct_under5E = r_under5E * 100,
+    pct_under5M = r_under5M * 100,
+    pct_under5E_UC = pct_under5E + pct_under5M,
+    pct_under5E_LC = ifelse(
+      pct_under5E < pct_under5M, 0, pct_under5E - pct_under5M)) %>% 
+  left_join(., over65, by = "GEOID") %>% 
+  mutate(r_over65E = ifelse(
+    allAgesE == 0, 0, over65E/allAgesE),
+    r_over65M = moe_ratio(over65E,allAgesE,over65M,allAgesM),
+    pct_over65E = r_over65E * 100,
+    pct_over65M = r_over65M * 100,
+    pct_over65E_UC = pct_over65E + pct_over65M,
+    pct_over65E_LC = ifelse(
+      pct_over65E < pct_over65M, 0, pct_over65E - pct_over65M)) %>% 
+  select(-starts_with("r_"))
 
 
 
