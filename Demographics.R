@@ -73,6 +73,9 @@ ne_towns_sf <- ne_towns_sf %>%
 tm_shape(ne_towns_sf) + tm_polygons("STATE")
 
 
+###### DEMOGRAPHIC DATA FRAMES ##############
+
+## HOUSEHOLDS BY INCOME
 # download table of counts of household income categories, sum up households in categories below statewide median of $74,167
 maACS17_blkgrp_medhhinc <- get_acs(geography = "block group", 
                                    table = "B19001",
@@ -100,8 +103,9 @@ maACS17_blkgrp_medhhinc <- get_acs(geography = "block group",
             ) # statewide median of $74,167. Closest range is 60 - 74,9
 
 
-
-# Download ratio of income to poverty level in the past 12 months
+## RATIO OF INCOME TO POVERTY LEVEL
+# Download ratio of income to poverty level in the past 12 months to calculate the number or percent of a block group’s population in households where the household income is less than or equal to twice the federal “poverty level.” More precisely, percent low-income is calculated as a percentage of those for whom the poverty ratio was known, as reported by the Census Bureau, which may be less than the full population in some block groups. More information on the federally-defined poverty threshold is available at http://www.census.gov/hhes/www/poverty/methods/definitions.html. Note also that poverty status is not determined for people living in institutional group quarters (i.e. prisons, college dormitories, military barracks, nursing homes), so these populations are not included in the poverty estimates (https://www.census.gov/topics/income-poverty/poverty/guidance/poverty-measures.html).
+# First, download table of ratio of income to poverty level
 C17002 <- map_df(ne_states, function(x) {
   get_acs(geography = "block group", table = "C17002", state = x)
 })
@@ -114,7 +118,6 @@ povknown <- C17002 %>%
             povknownE_UC = povknownE + povknownM,
             povknownE_LC = ifelse(
               povknownE < povknownM, 0, povknownE - povknownM))
-  
 # Isolate population less than 2x poverty level and compute derived sum esimate along with MOE and UC and LC
 num2pov <- C17002 %>% 
   filter(!variable %in% c("C17002_001", "C17002_008")) %>% 
@@ -124,22 +127,22 @@ num2pov <- C17002 %>%
   mutate(num2povE_UC = num2povE + num2povM,
          num2povE_LC = ifelse(
            num2povE < num2povM, 0, num2povE - num2povM))
-# Join tables and compute derived ratios and MOEs
+# Join tables and compute derived ratios and MOEs and then pcts with UC and LC
 povRatio <- povknown %>% 
   left_join(., num2pov, by = "GEOID") %>% 
-  mutate(p2povE = ifelse(
+  mutate(r2povE = ifelse(
     povknownE == 0, 0, num2povE/povknownE),
-    p2povM = moe_ratio(num2povE,povknownE,num2povM,povknownM),
-    pct2povE = p2povE * 100,
-    pct2povM = p2povM * 100,
+    r2povM = moe_ratio(num2povE,povknownE,num2povM,povknownM),
+    pct2povE = r2povE * 100,
+    pct2povM = r2povM * 100,
     pct2povE_UC = pct2povE + pct2povM,
     pct2povE_LC = ifelse(
       pct2povE < pct2povM, 0, pct2povE - pct2povM)) %>% 
-  select(-starts_with("p2p"))
+  select(-starts_with("r2p"))
 
 
 
-
+### RACE AND ETHNICITY
 # Download B03002 HISPANIC OR LATINO ORIGIN BY RACE in two sets. 
 # Start with total pop and white pop in wide format and compute upper and lower confidence values. 
 B03002_totwhite <- map_df(ne_states, function(x) {
@@ -196,7 +199,7 @@ minority_pct <- B03002_totwhite %>%
 
 
 
-
+### ENGLISH LANGUAGE ISOLATION
 # Download C16002. Household Language by Household Limited English Speaking Status. Note that this table is a collapsed version of table B16002. EPA and MA use the latter, but there is no significant difference since we are not interested in disaggregating categories.
 eng_limited <- map_df(ne_states, function(x) {
   get_acs(geography = "block group", variables = c("C16002_001","C16002_004",
@@ -230,33 +233,52 @@ eng_limited_pct <- eng_limited %>%
 
 
 
+### EDUCATIONAL ATTAINMENT FOR THOSE AGE 25+
+# Less than high school education: The number or percent of people age 25 or older in a block group whose education is short of a high school diploma.
+# Download Table B15002 SEX BY EDUCATIONAL ATTAINMENT FOR THE POPULATION 25 YEARS AND OVER
+B15002 <- map_df(ne_states, function(x) {
+  get_acs(geography = "block group", table = "B15002", state = x)
+})
+# Isolate universe of population 25+
+age25up <- B15002 %>% 
+  filter(variable == "B15002_001") %>% 
+  transmute(GEOID = GEOID,
+            age25upE = estimate,
+            age25upM = moe,
+            age25upE_UC = age25upE + age25upM,
+            age25upE_LC = ifelse(
+              age25upE < age25upM, 0, age25upE - age25upM))
+# Isolate populations with less than HS diploma and compute derived estimate of sum and MOE, along with UC and LC
+# create vector of patterns for male and female variables less than HS
+lths_strings <- rep(c(3:10,20:27)) %>% 
+  formatC(width = 3, format = "d", flag = "0") # add leading 0s
+# filter cases by patterns, compute derived sum estimates and MOEs
+lths_num <- B15002 %>% 
+  filter(str_detect(variable,paste(lths_strings,collapse = "|"))) %>% 
+  group_by(GEOID) %>% 
+  summarize(lthsE = sum(estimate),
+            lthsM = moe_sum(moe,estimate)) %>% 
+  mutate(lthsE_UC = lthsE + lthsM,
+         lthsE_LC = ifelse(
+           lthsE < lthsM, 0, lthsE - lthsM))
+# Join tables and compute derived proportion and MOE
+lths <- age25up %>% 
+  left_join(.,lths_num, by = "GEOID") %>% 
+  mutate(r_lthsE = ifelse(
+    age25upE == 0, 0, lthsE/age25upE),
+    r_lthsM = moe_ratio(lthsE,age25upE,lthsM,age25upM),
+    pct_lthsE = r_lthsE * 100,
+    pct_lthsM = r_lthsM * 100,
+    pct_lthsE_UC = pct_lthsE + pct_lthsM,
+    pct_lthsE_LC = ifelse(
+      pct_lthsE < pct_lthsM, 0, pct_lthsE - pct_lthsM)) %>% 
+  select(-starts_with("r_"))
 
-# Download English language isolation variables and compute derived estimates as well as derived MOEs
-# eng_limited <- map_df(ne_states, function(x) {
-#   get_acs(geography = "block group", variables = c("C16002_001","C16002_004",
-#                                                    "C16002_007","C16002_010",
-#                                                    "C16002_013"),
-#           state = x, output = "wide")}) %>% 
-#   transmute(GEOID = GEOID,
-#             lang_hhE = C16002_001E,
-#             lang_hhM = C16002_001M,
-#          lang_isolE = 
-#            C16002_004E + C16002_007E + C16002_010E + C16002_013E,
-#          lang_isolM = 
-#           sqrt(C16002_004M^2+C16002_007M^2+C16002_010M^2+C16002_013M^2),
-#          lang_isolE_LC = ifelse(
-#            lang_isolE < lang_isolM, 0, lang_isolE - lang_isolM),
-#          langisolE_UC = lang_isolE + lang_isolM,
-#          pct_lang_isolE = ifelse(lang_hhE==0,0,lang_isolE/lang_hhE)*100,
-#          pct_lang_isolM = 
-#            1/lang_hhE*sqrt(
-#              lang_isolM^2-((pct_lang_isolE/100)^2*lang_hhM^2))*100,
-#          pct_lang_isolE_UC = pct_lang_isolE + pct_lang_isolM,
-#          pct_lang_isolE_LC = ifelse(
-#            pct_lang_isolE < pct_lang_isolM,0,pct_lang_isolE - pct_lang_isolM))
 
 
-# join English language isolation to block groups
+
+
+# join demographic df to block groups
 ne_pop_sf <- ne_pop_sf %>% 
   left_join(neACS17blkgrp_langIsol, by = c("GEOID","GEOID"))
 # tmap_mode("view")
