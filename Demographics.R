@@ -74,7 +74,7 @@ tm_shape(ne_towns_sf) + tm_polygons("STATE")
 ###### DEMOGRAPHIC DATA FRAMES ##############
 
 ### HOUSEHOLDS BY INCOME
-# download table of counts of household income categories, sum up households in categories below statewide median of $74,167
+# download table of counts of household income categories, sum up households in categories below 65% of MA statewide median of $74,167
 B19001 <- map_df(ne_states, function(x) {
   get_acs(geography = "block group", table = "B19001", state = x)})
 
@@ -87,7 +87,7 @@ medhhinclt50 <- B19001 %>%
   filter(str_detect(variable,paste(med_strings,collapse = "|"))) %>% 
   group_by(GEOID) %>% 
   summarize(medhhinclt50E = sum(estimate),
-            medhhinclt50M = moe_sum(moe)) %>% 
+            medhhinclt50M = moe_sum(moe, estimate)) %>% 
   mutate(medhhinclt50_UC = medhhinclt50E + medhhinclt50M,
          medhhinclt50_LC = ifelse(
            medhhinclt50E < medhhinclt50M, 0, medhhinclt50E - medhhinclt50M))
