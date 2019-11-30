@@ -77,7 +77,12 @@ tm_shape(ne_towns_sf) + tm_polygons("STATE")
 # download table of counts of household income categories, sum up households in categories below 65% of MA statewide median of $74,167
 B19001 <- map_df(ne_states, function(x) {
   get_acs(geography = "block group", table = "B19001", state = x)})
-
+# Isolate estimate of total households
+medhhinc_total <- B19001 %>% 
+  filter(variable == "B19001_001") %>% 
+  transmute(GEOID = GEOID,
+            householdsE = estimate,
+            householdsM = moe)
 # Isolate household counts less than 65% of statewide median of $74,167, which is $48,208. Closest range is 45 - 49,9.
 # create vector of patterns for medhhinc levels below 50k
 med_strings <- rep(c(2:10)) %>% 
@@ -91,7 +96,23 @@ medhhinclt50 <- B19001 %>%
   mutate(medhhinclt50_UC = medhhinclt50E + medhhinclt50M,
          medhhinclt50_LC = ifelse(
            medhhinclt50E < medhhinclt50M, 0, medhhinclt50E - medhhinclt50M))
-
+# Join total households and compute derived proportions
+medhhinclt50 <- medhhinclt50 %>% 
+  left_join(., medhhinc_total, by = "GEOID") %>% 
+  mutate(r2medhhincE = ifelse(householdsE <= 0, 0, medhhinclt50E/householdsE),
+    r2medhhincM = moe_prop(medhhinclt50E,householdsE,medhhinclt50M,householdsM),
+    pct_medhhinclt50E = r2medhhincE*100,
+    pct_medhhinclt50M = r2medhhincM*100,
+    pct_medhhinclt50E_UC = pct_medhhinclt50E + pct_medhhinclt50M,
+    pct_medhhinclt50E_LC = ifelse(
+      pct_medhhinclt50E < pct_medhhinclt50M, 0, 
+      pct_medhhinclt50E - pct_medhhinclt50M)) %>% 
+  select(-starts_with("r2m"))
+# add variables to identify existing and proposed EJ criteria
+medhhinclt50 <- medhhinclt50 %>% 
+  mutate(MA_INCOME = if_else(pct_medhhinclt50E >= 25, "I", NULL),
+         MA_INCOME_UC = if_else(pct_medhhinclt50E_UC >= 25, "I", NULL),
+         MA_INCOME_LC = if_else(pct_medhhinclt50E_LC >= 25, "I", NULL))
 
 ### RATIO OF INCOME TO POVERTY LEVEL
 # Download ratio of income to poverty level in the past 12 months to calculate the number or percent of a block group’s population in households where the household income is less than or equal to twice the federal “poverty level.” More precisely, percent low-income is calculated as a percentage of those for whom the poverty ratio was known, as reported by the Census Bureau, which may be less than the full population in some block groups. More information on the federally-defined poverty threshold is available at http://www.census.gov/hhes/www/poverty/methods/definitions.html. Note also that poverty status is not determined for people living in institutional group quarters (i.e. prisons, college dormitories, military barracks, nursing homes), so these populations are not included in the poverty estimates (https://www.census.gov/topics/income-poverty/poverty/guidance/poverty-measures.html).
