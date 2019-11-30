@@ -108,7 +108,7 @@ medhhinclt50 <- medhhinclt50 %>%
       pct_medhhinclt50E < pct_medhhinclt50M, 0, 
       pct_medhhinclt50E - pct_medhhinclt50M)) %>% 
   select(-starts_with("r2m"))
-# add variables to identify existing and proposed EJ criteria
+# add variables to identify EJ criteria thresholds
 medhhinclt50 <- medhhinclt50 %>% 
   mutate(MA_INCOME = if_else(pct_medhhinclt50E >= 25, "I", NULL),
          MA_INCOME_UC = if_else(pct_medhhinclt50E_UC >= 25, "I", NULL),
@@ -150,6 +150,14 @@ povRatio <- povknown %>%
     pct2povE_LC = ifelse(
       pct2povE < pct2povM, 0, pct2povE - pct2povM)) %>% 
   select(-starts_with("r2p"))
+# add variables to identify EJ criteria thresholds
+povRatio <- povRatio %>% 
+  mutate(pctile = percent_rank(pct2povE),
+         pctile_UC = percent_rank(pct2povE_UC),
+         pctile_LC = percent_rank(pct2povE_LC),
+         RI_INCOME = if_else(pctile >= 0.85, "I", NULL),
+         RI_INCOME_UC = if_else(pctile_UC >= 0.85, "I", NULL),
+         RI_INCOME_LC = if_else(pctile_LC >= 0.85, "I", NULL))
 
 
 
@@ -207,7 +215,11 @@ minority_pct <- B03002_totwhite %>%
     minority_pctE_LC = ifelse(
       minority_pctE < minority_pctM, 0, minority_pctE - minority_pctM)) %>% 
   select(-minority_pE,-minority_pM)
-
+# add variables to identify EJ criteria thresholds
+minority_pct <- minority_pct %>% 
+  mutate(MA_MINORITY = if_else(minority_pctE >= 25, "M", NULL),
+         MA_MINORITY_UC = if_else(minority_pctE_UC >= 25, "M", NULL),
+         MA_MINORITY_LC = if_else(minority_pctE_LC >= 25, "M", NULL))
 
 
 ### ENGLISH LANGUAGE ISOLATION
@@ -241,7 +253,11 @@ eng_limited_pct <- eng_limited %>%
             eng_li_pctE_LC = ifelse(
               eng_li_pctE < eng_li_pctM, 0, eng_li_pctE - eng_li_pctM)) %>% 
   select(-eng_li_pE,-eng_li_pM)
-
+# add variables to identify EJ criteria thresholds
+eng_limited_pct <- eng_limited_pct %>% 
+  mutate(MA_ENGLISH = if_else(eng_li_pctE >= 25, "E", NULL),
+         MA_ENGLISH_UC = if_else(eng_li_pctE_UC >= 25, "E", NULL),
+         MA_ENGLISH_LC = if_else(eng_li_pctE_LC >= 25, "E", NULL))
 
 
 ### EDUCATIONAL ATTAINMENT FOR THOSE AGE 25+
