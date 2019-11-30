@@ -23,7 +23,6 @@ ne_pop_sf <- reduce(
   map(ne_states, function(x) {
     get_acs(geography = "block group", 
             variables = c(totalpop = "B03002_001", 
-                          whitepop = "B03002_003",
                           medhhinc = "B19013_001"),
             state = x, output = "wide", geometry = TRUE)
     }),
@@ -44,7 +43,6 @@ tm_shape(ne_pop_sf) + tm_polygons(col = "STATE")
 ne_towns_df <- map_df(ne_states, function(x) {
     get_acs(geography = "county subdivision", 
             variables = c(totalpop = "B03002_001", 
-                          whitepop = "B03002_003",
                           medhhinc = "B19013_001"),
             state = x, output = "wide")
   })
@@ -75,35 +73,27 @@ tm_shape(ne_towns_sf) + tm_polygons("STATE")
 
 ###### DEMOGRAPHIC DATA FRAMES ##############
 
-## HOUSEHOLDS BY INCOME
+### HOUSEHOLDS BY INCOME
 # download table of counts of household income categories, sum up households in categories below statewide median of $74,167
-maACS17_blkgrp_medhhinc <- get_acs(geography = "block group", 
-                                   table = "B19001",
-                                   state = "MA", output = "wide") %>% 
-  transmute(GEOID = GEOID,
-            households = B19001_001E,
-            medhhinc_lt50 = B19001_002E+
-              B19001_003E+
-              B19001_004E+
-              B19001_005E+
-              B19001_006E+
-              B19001_007E+
-              B19001_008E+
-              B19001_009E+
-              B19001_010E,
-            medhhinc_lt75 = medhhinc_lt50+
-              B19001_011E+
-              B19001_012E,
-            pctmedhhinc_lt50 = ifelse(
-              households==0,0,medhhinc_lt50/households*100
-              ), # 65% of median is $48,208. Closest range is 45 - 49,9
-            pctmedhhinc_lt75 = ifelse(
-              households==0,0,medhhinc_lt75/households*100
-              )
-            ) # statewide median of $74,167. Closest range is 60 - 74,9
+B19001 <- map_df(ne_states, function(x) {
+  get_acs(geography = "block group", table = "B19001", state = x)})
+
+# Isolate household counts less than 65% of statewide median of $74,167, which is $48,208. Closest range is 45 - 49,9.
+# create vector of patterns for medhhinc levels below 50k
+med_strings <- rep(c(2:10)) %>% 
+  formatC(width = 3, format = "d", flag = "0") # add leading 0s
+# filter cases by patterns, compute derived sum estimates and MOEs
+medhhinclt50 <- B19001 %>% 
+  filter(str_detect(variable,paste(med_strings,collapse = "|"))) %>% 
+  group_by(GEOID) %>% 
+  summarize(medhhinclt50E = sum(estimate),
+            medhhinclt50M = moe_sum(moe)) %>% 
+  mutate(medhhinclt50_UC = medhhinclt50E + medhhinclt50M,
+         medhhinclt50_LC = ifelse(
+           medhhinclt50E < medhhinclt50M, 0, medhhinclt50E - medhhinclt50M))
 
 
-## RATIO OF INCOME TO POVERTY LEVEL
+### RATIO OF INCOME TO POVERTY LEVEL
 # Download ratio of income to poverty level in the past 12 months to calculate the number or percent of a block group’s population in households where the household income is less than or equal to twice the federal “poverty level.” More precisely, percent low-income is calculated as a percentage of those for whom the poverty ratio was known, as reported by the Census Bureau, which may be less than the full population in some block groups. More information on the federally-defined poverty threshold is available at http://www.census.gov/hhes/www/poverty/methods/definitions.html. Note also that poverty status is not determined for people living in institutional group quarters (i.e. prisons, college dormitories, military barracks, nursing homes), so these populations are not included in the poverty estimates (https://www.census.gov/topics/income-poverty/poverty/guidance/poverty-measures.html).
 # First, download table of ratio of income to poverty level
 C17002 <- map_df(ne_states, function(x) {
