@@ -157,7 +157,10 @@ povRatio <- povRatio %>%
          pctile_LC = percent_rank(pct2povE_LC),
          RI_INCOME = if_else(pctile >= 0.85, "I", NULL),
          RI_INCOME_UC = if_else(pctile_UC >= 0.85, "I", NULL),
-         RI_INCOME_LC = if_else(pctile_LC >= 0.85, "I", NULL))
+         RI_INCOME_LC = if_else(pctile_LC >= 0.85, "I", NULL),
+         CT_INCOME = if_else(pct2povE >= 30, "I", NULL),
+         CT_INCOME_UC = if_else(pct2povE_UC >= 30, "I", NULL),
+         CT_INCOME_LC = if_else(pct2povE_LC >= 30, "I", NULL))
 
 
 
