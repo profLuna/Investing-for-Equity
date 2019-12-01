@@ -325,8 +325,9 @@ lths <- age25up %>%
 
 
 
-### AGE UNDER 5 AND 65+
+### AGE UNDER 5, UNDER 16, AND 65+
 # Individuals under age 5: The number or percent of people in a block group under the age of 5.
+# Individuals under age 16: The number or percent of people in a block group under the age of 16. NOTE THAT CENSUS DATA RANGE IS 15 - 17. 
 # Individuals over age 64: The number or percent of people in a block group over the age of 64.
 # Download Table B01001 TOTAL POPULATION COUNTS AND AGES
 B01001 <- map_df(ne_states, function(x) {
@@ -350,6 +351,17 @@ under5 <- B01001 %>%
   mutate(under5E_UC = under5E + under5M,
          under5E_LC = ifelse(
            under5E < under5M, 0, under5E - under5M))
+# Isolate under 18 pop, compute derived sum estimates and MOEs
+under18 <- B01001 %>% 
+  filter(variable %in% 
+           c("B01001_003", "B01001_004", "B01001_005", "B01001_006",
+             "B01001_027", "B01001_028", "B01001_029", "B01001_030")) %>% 
+  group_by(GEOID) %>% 
+  summarize(under18E = sum(estimate),
+            under18M = moe_sum(moe,estimate)) %>% 
+  mutate(under18E_UC = under18E + under18M,
+         under18E_LC = ifelse(
+           under18E < under18M, 0, under18E - under18M))
 # Isolate 65+ pop
 # create vector of patterns for male and female variables 65+
 ovr65_strings <- rep(c(20:25,44:49)) %>% 
@@ -364,7 +376,7 @@ over65 <- B01001 %>%
          over65E_LC = ifelse(
            over65E < over65M, 0, over65E - over65M))
 # Join the tables and compute derived proportions with MOEs
-age5_65 <- allAges %>% 
+age5_16_65 <- allAges %>% 
   left_join(., under5, by = "GEOID") %>% 
   mutate(r_under5E = ifelse(
     allAgesE == 0, 0, under5E/allAgesE),
@@ -374,6 +386,15 @@ age5_65 <- allAges %>%
     pct_under5E_UC = pct_under5E + pct_under5M,
     pct_under5E_LC = ifelse(
       pct_under5E < pct_under5M, 0, pct_under5E - pct_under5M)) %>% 
+  left_join(.,under18, by = "GEOID") %>% 
+  mutate(r_under18E = ifelse(
+    allAgesE == 0, 0, under18E/allAgesE),
+    r_under18M = moe_ratio(under18E,allAgesE,under18M,allAgesM),
+    pct_under18E = r_under18E * 100,
+    pct_under18M = r_under18M * 100,
+    pct_under18E_UC = pct_under18E + pct_under18M,
+    pct_under18E_LC = ifelse(
+      pct_under18E < pct_under18M, 0, pct_under18E - pct_under18M)) %>% 
   left_join(., over65, by = "GEOID") %>% 
   mutate(r_over65E = ifelse(
     allAgesE == 0, 0, over65E/allAgesE),
