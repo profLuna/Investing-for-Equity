@@ -45,13 +45,11 @@ ne_towns_df <- map_df(ne_states, function(x) {
             variables = c(totalpop = "B03002_001", 
                           medhhinc = "B19013_001"),
             state = x, output = "wide")
-  })
-# Add state name variable
-ne_towns_df <- ne_towns_df %>% 
-  mutate(STATE = str_extract(NAME, '\\b[^,]+$'),
-         medhhincE_UC = medhhincE + medhhincM,
+  }) %>% 
+  mutate(medhhincE_UC = medhhincE + medhhincM,
          medhhincE_LC = ifelse(
-           medhhincE < medhhincM, 0, medhhincE - medhhincM))
+           medhhincE < medhhincM, 0, medhhincE - medhhincM),
+         STATE = str_extract(NAME, '\\b[^,]+$'))
 # Calculate statewide average median household income
 ne_towns_df %>% 
   group_by(STATE) %>% 
