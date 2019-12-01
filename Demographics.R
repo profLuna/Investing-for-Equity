@@ -46,6 +46,21 @@ ne_towns_df <- map_df(ne_states, function(x) {
                           medhhinc = "B19013_001"),
             state = x, output = "wide")
   })
+# Add state name variable
+ne_towns_df <- ne_towns_df %>% 
+  mutate(STATE = str_extract(NAME, '\\b[^,]+$'),
+         medhhincE_UC = medhhincE + medhhincM,
+         medhhincE_LC = ifelse(
+           medhhincE < medhhincM, 0, medhhincE - medhhincM))
+# Calculate statewide average median household income
+ne_towns_df %>% 
+  group_by(STATE) %>% 
+  summarize(avg_medhhinc = mean(medhhincE, na.rm = TRUE))
+# add variables to identify EJ criteria thresholds
+ne_towns_df <- ne_towns_df %>% 
+  mutate(VT_INCOME = if_else(medhhincE < 58231, "I", NULL),
+         VT_INCOME_UC = if_else(medhhincE_UC < 58231, "I", NULL),
+         VT_INCOME_LC = if_else(medhhincE_LC < 58231, "I", NULL))
 
 # acquire the polygons for county subdivisions for ne_towns using tigris::rbind_tigris
 ne_towns_sp <- rbind_tigris(
