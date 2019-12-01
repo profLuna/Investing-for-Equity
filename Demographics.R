@@ -165,12 +165,12 @@ povRatio <- povknown %>%
   select(-starts_with("r2p"))
 # add variables to identify EJ criteria thresholds
 povRatio <- povRatio %>% 
-  mutate(pctile = percent_rank(pct2povE),
-         pctile_UC = percent_rank(pct2povE_UC),
-         pctile_LC = percent_rank(pct2povE_LC),
-         RI_INCOME = if_else(pctile >= 0.85, "I", NULL),
-         RI_INCOME_UC = if_else(pctile_UC >= 0.85, "I", NULL),
-         RI_INCOME_LC = if_else(pctile_LC >= 0.85, "I", NULL),
+  mutate(pov_pctile = percent_rank(pct2povE),
+         pov_pctile_UC = percent_rank(pct2povE_UC),
+         pov_pctile_LC = percent_rank(pct2povE_LC),
+         RI_INCOME = if_else(pov_pctile >= 0.85, "I", NULL),
+         RI_INCOME_UC = if_else(pov_pctile_UC >= 0.85, "I", NULL),
+         RI_INCOME_LC = if_else(pov_pctile_LC >= 0.85, "I", NULL),
          CT_INCOME = if_else(pct2povE >= 30, "I", NULL),
          CT_INCOME_UC = if_else(pct2povE_UC >= 30, "I", NULL),
          CT_INCOME_LC = if_else(pct2povE_LC >= 30, "I", NULL))
