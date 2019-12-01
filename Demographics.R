@@ -233,9 +233,15 @@ minority_pct <- B03002_totwhite %>%
   select(-minority_pE,-minority_pM)
 # add variables to identify EJ criteria thresholds
 minority_pct <- minority_pct %>% 
-  mutate(MA_MINORITY = if_else(minority_pctE >= 25, "M", NULL),
+  mutate(minority_pctile = percent_rank(minority_pctE),
+         minority_pctile_UC = percent_rank(minority_pctE_UC),
+         minority_pctile_LC = percent_rank(minority_pctE_LC),
+         MA_MINORITY = if_else(minority_pctE >= 25, "M", NULL),
          MA_MINORITY_UC = if_else(minority_pctE_UC >= 25, "M", NULL),
-         MA_MINORITY_LC = if_else(minority_pctE_LC >= 25, "M", NULL))
+         MA_MINORITY_LC = if_else(minority_pctE_LC >= 25, "M", NULL),
+         RI_MINORITY = if_else(minority_pctile >= 0.85, "M", NULL),
+         RI_MINORITY_UC = if_else(minority_pctile_UC >= 0.85, "M", NULL),
+         RI_MINORITY_LC = if_else(minority_pctile_LC >= 0.85, "M", NULL))
 
 
 ### ENGLISH LANGUAGE ISOLATION
