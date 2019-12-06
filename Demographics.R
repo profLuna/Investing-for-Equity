@@ -407,6 +407,58 @@ age5_16_65 <- allAges %>%
   select(-starts_with("r_"))
 
 
+### DISABLED
+# NOTE THAT THIS DATA IS ONLY AVAILABLE AT TRACT LEVEL, NOT BLKGRP
+# Number and percent of individuals 18+ with a disability
+# Download Table B18101 SEX BY AGE BY DISABILITY STATUS
+B18101 <- map_df(ne_states, function(x) {
+  get_acs(geography = "tract", table = "B18101", state = x)
+})
+# Isolate disabled and non-disabled population 18+
+# create vector of patterns for male and female variables 18+
+ovr18_strings <- rep(c(9:20,28:39)) %>% 
+  formatC(width = 3, format = "d", flag = "0") # add leading 0s
+# filter cases by patterns, compute derived sum estimates and MOEs
+over18 <- B18101 %>% 
+  filter(str_detect(variable,paste(ovr18_strings,collapse = "|"))) %>% 
+  group_by(GEOID) %>% 
+  summarize(Over18E = sum(estimate),
+            Over18M = moe_sum(moe,estimate)) %>% 
+  mutate(Over18E_UC = Over18E + Over18M,
+         Over18E_LC = ifelse(
+           Over18E < Over18M, 0, 
+           Over18E - Over18M))
+
+# compute derived sum and moe for those over 18 with a disability only
+# create vector of patterns for male and female variables 18+ with disability
+disabledOvr18_strings <- sort(c(seq(from = 10, to = 19, by = 3), 
+                              seq(from = 29, to = 38, by = 3))) %>% 
+  formatC(width = 3, format = "d", flag = "0") # add leading 0s
+# filter cases by patterns, compute derived sum estimates and MOEs
+disabledOver18 <- B18101 %>%
+  filter(str_detect(variable,paste(disabledOvr18_strings,collapse = "|"))) %>% 
+  group_by(GEOID) %>% 
+  summarize(disabledOver18E = sum(estimate),
+            disabledOver18M = moe_sum(moe,estimate)) %>% 
+  mutate(disabledOver18E_UC = disabledOver18E + disabledOver18M,
+         disabledOver18E_LC = ifelse(
+           disabledOver18E < disabledOver18M, 0, 
+           disabledOver18E - disabledOver18M))
+# Join the tables and compute derived proportions with MOEs
+disabilityOver18 <- over18 %>% 
+  left_join(., disabledOver18, by = "GEOID") %>% 
+  mutate(r_disabilityOver18E = ifelse(
+    Over18E == 0, 0, disabledOver18E/Over18E),
+    r_disabilityOver18M = moe_ratio(
+      disabledOver18E,Over18E,disabledOver18M,Over18M),
+    pct_disabilityOver18E = r_disabilityOver18E * 100,
+    pct_disabilityOver18M = r_disabilityOver18M * 100,
+    pct_disabilityOver18E_UC = pct_disabilityOver18E + pct_disabilityOver18M,
+    pct_disabilityOver18E_LC = ifelse(
+      pct_disabilityOver18E < pct_disabilityOver18M, 0, 
+      pct_disabilityOver18E - pct_disabilityOver18M))%>% 
+  select(-starts_with("r_"))
+
 
 # join demographic df to block groups
 ne_pop_sf <- ne_pop_sf %>% 
