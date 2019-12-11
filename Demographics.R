@@ -19,7 +19,7 @@ v17 <- load_variables(2017, "acs5", cache = TRUE)
 ne_states <- c("CT","MA","ME","NH","RI","VT")
 
 # use purrr::reduce function in combination with sf::rbind to download block groups for list of states and then bind them to one sf. 
-ne_pop_sf <- reduce(
+ne_blkgrp_sf <- reduce(
   map(ne_states, function(x) {
     get_acs(geography = "block group", 
             variables = c(totalpop = "B03002_001", 
@@ -31,11 +31,31 @@ ne_pop_sf <- reduce(
 
 # Extract the state names to a new column
 # provide 1 or multiple + whole words \\b, not [ ] in a string that ends in a comma ^, until the end of the string $. (so basically, provide all whole words after comma) 
-ne_pop_sf <- ne_pop_sf %>% 
+ne_blkgrp_sf <- ne_blkgrp_sf %>% 
   mutate(STATE = str_extract(NAME, '\\b[^,]+$'))
 
 # map it out
-tm_shape(ne_pop_sf) + tm_polygons(col = "STATE")
+tm_shape(ne_blkgrp_sf) + tm_polygons(col = "STATE")
+
+
+# use purrr::reduce function in combination with sf::rbind to download tracts for list of states and then bind them to one sf. 
+ne_tracts_sf <- reduce(
+  map(ne_states, function(x) {
+    get_acs(geography = "tract", 
+            variables = c(totalpop = "B03002_001", 
+                          medhhinc = "B19013_001"),
+            state = x, output = "wide", geometry = TRUE)
+  }),
+  rbind
+)
+
+# Extract the state names to a new column
+# provide 1 or multiple + whole words \\b, not [ ] in a string that ends in a comma ^, until the end of the string $. (so basically, provide all whole words after comma) 
+ne_tracts_sf <- ne_tracts_sf %>% 
+  mutate(STATE = str_extract(NAME, '\\b[^,]+$'))
+
+# map it out
+tm_shape(ne_tracts_sf) + tm_polygons(col = "STATE")
 
 
 # Do the same for towns across New England, although note that tidycensus does not support that geography yet so we need to import shapefiles separately with tigris and then join
@@ -468,7 +488,7 @@ B08201 <- map_df(ne_states, function(x) {
   get_acs(geography = "tract", variables = c(totalHH = "B08201_001",
                                              HHnoCar = "B08201_002"),
           state = x, output = "wide")
-}) %>% # compute derived ratios and moe
+}) %>% # compute upper and lower confidences, and derived ratios and moe
   mutate(HHnoCarE_UC = HHnoCarE + HHnoCarM,
          HHnoCarE_LC = ifelse(
            HHnoCarE < HHnoCarM, 0, HHnoCarE - HHnoCarM),
