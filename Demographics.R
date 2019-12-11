@@ -407,7 +407,7 @@ age5_16_65 <- allAges %>%
   select(-starts_with("r_"))
 
 
-### DISABLED
+### DISABILITY
 # NOTE THAT THIS DATA IS ONLY AVAILABLE AT TRACT LEVEL, NOT BLKGRP
 # Number and percent of individuals 18+ with a disability
 # Download Table B18101 SEX BY AGE BY DISABILITY STATUS
@@ -458,6 +458,31 @@ disabilityOver18 <- over18 %>%
       pct_disabilityOver18E < pct_disabilityOver18M, 0, 
       pct_disabilityOver18E - pct_disabilityOver18M))%>% 
   select(-starts_with("r_"))
+
+
+### HOUSEHOLDS WITHOUT ACCESS TO CAR
+# NOTE THAT THIS DATA IS ONLY AVAILABLE AT TRACT LEVEL, NOT BLKGRP
+# Number and percent of households without access to a car
+# Download Variables from Table B08201 HOUSEHOLD SIZE BY VEHICLES AVAILABLE
+B08201 <- map_df(ne_states, function(x) {
+  get_acs(geography = "tract", variables = c(totalHH = "B08201_001",
+                                             HHnoCar = "B08201_002"),
+          state = x, output = "wide")
+}) %>% # compute derived ratios and moe
+  mutate(HHnoCarE_UC = HHnoCarE + HHnoCarM,
+         HHnoCarE_LC = ifelse(
+           HHnoCarE < HHnoCarM, 0, HHnoCarE - HHnoCarM),
+         r_HHnoCarE = ifelse(
+    totalHHE == 0, 0, HHnoCarE/totalHHE),
+    r_HHnoCarM = moe_prop(HHnoCarE,totalHHE,HHnoCarM,totalHHM),
+    pct_HHnoCarE = r_HHnoCarE * 100,
+    pct_HHnoCarM = r_HHnoCarM * 100,
+    pct_HHnoCarE_UC = pct_HHnoCarE + pct_HHnoCarM,
+    pct_HHnoCarE_LC = ifelse(
+      pct_HHnoCarE < pct_HHnoCarM, 0, pct_HHnoCarE - pct_HHnoCarM)) %>% 
+  select(-starts_with("r_"))
+ 
+
 
 
 # join demographic df to block groups
