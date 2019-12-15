@@ -15,6 +15,8 @@ v17 <- load_variables(2017, "acs5", cache = TRUE)
 # tidycensus df with stat codes
 # unique(fips_codes$state)
 
+### CENSUS POLYGONS
+
 # create vector of New England states
 ne_states <- c("CT","MA","ME","NH","RI","VT")
 
@@ -30,7 +32,7 @@ ne_blkgrp_sf <- reduce(
 )
 
 # Extract the state names to a new column
-# provide 1 or multiple + whole words \\b, not [ ] in a string that ends in a comma ^, until the end of the string $. (so basically, provide all whole words after comma) 
+# provide 1 or multiple + whole words \\b, not [ ] in a string that ends in a comma ^, until the end of the string $. (so basically, provide all whole words after last comma) 
 ne_blkgrp_sf <- ne_blkgrp_sf %>% 
   mutate(STATE = str_extract(NAME, '\\b[^,]+$'))
 
@@ -92,7 +94,7 @@ ne_towns_sp <- rbind_tigris(
 
 # join the demographics to the polygons
 ne_towns_sp <- geo_join(spatial_data = ne_towns_sp,
-                        data_frame = ne_towns,
+                        data_frame = ne_towns_df,
                         by_sp = "GEOID", by_df = "GEOID")
 # tm_shape(ne_towns_sp) + tm_polygons("totalpopE")
 # convert to sf for easier handling
@@ -294,7 +296,7 @@ eng_limited_pct <- eng_limited %>%
             eng_li_pctE_UC = eng_li_pctE + eng_li_pctM,
             eng_li_pctE_LC = ifelse(
               eng_li_pctE < eng_li_pctM, 0, eng_li_pctE - eng_li_pctM)) %>% 
-  select(-eng_li_pE,-eng_li_pM)
+  select(-eng_li_pE,-eng_li_pM,-NAME)
 # add variables to identify EJ criteria thresholds
 eng_limited_pct <- eng_limited_pct %>% 
   mutate(MA_ENGLISH = if_else(eng_li_pctE >= 25, "E", NULL),
@@ -500,14 +502,21 @@ B08201 <- map_df(ne_states, function(x) {
     pct_HHnoCarE_UC = pct_HHnoCarE + pct_HHnoCarM,
     pct_HHnoCarE_LC = ifelse(
       pct_HHnoCarE < pct_HHnoCarM, 0, pct_HHnoCarE - pct_HHnoCarM)) %>% 
-  select(-starts_with("r_"))
+  select(-starts_with("r_"),-NAME)
  
 
 
 
 # join demographic df to block groups
-ne_pop_sf <- ne_pop_sf %>% 
-  left_join(neACS17blkgrp_langIsol, by = c("GEOID","GEOID"))
-# tmap_mode("view")
-# tm_shape(ne_pop_sf) + tm_polygons("pct_eli_limited")
-# tmap_mode("plot")
+ne_blkgrp_sf_DEMOG <- ne_blkgrp_sf %>% 
+  left_join(., medhhinclt50, by = "GEOID") %>% 
+  left_join(., povRatio, by = "GEOID") %>% 
+  left_join(., minority_pct, by = "GEOID") %>% 
+  left_join(., eng_limited_pct, by = "GEOID") %>% 
+  left_join(., lths, by = "GEOID") %>% 
+  left_join(., age5_16_65, by = "GEOID")
+
+# join demographic df to tracts
+ne_tracts_sf_DEMOG <- ne_tracts_sf %>% 
+  left_join(., disabilityOver18, by = "GEOID") %>% 
+  left_join(., B08201, by = "GEOID")
