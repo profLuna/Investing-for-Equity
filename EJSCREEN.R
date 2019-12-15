@@ -1,4 +1,4 @@
-# Transportation related emissions and burdens 
+# Transportation related emissions and burdens from EPA's EJSCREEN and DART's on-road CO2 emissions
 library(tidyverse)
 library(sf)
 library(tmap)
@@ -12,9 +12,13 @@ library(sp)
 # Download EJSCREEN Data from EPA. See https://www.epa.gov/ejscreen/download-ejscreen-data for details.
 download.file(
   url = "ftp://newftp.epa.gov/EJSCREEN/2019/EJSCREEN_2019_USPR.csv.zip", 
-  destfile = "EJSCREEN_2019_USPR.csv.zip")
+  destfile = "DATA/EJSCREEN/EJSCREEN_2019_USPR.csv.zip")
+download.file(
+  url = "ftp://newftp.epa.gov/EJSCREEN/2015/EJSCREEN_20150505.csv.zip", 
+  destfile = "DATA/EJSCREEN/EJSCREEN_20150505.csv.zip")
 # Unzip the file
-unzip("EJSCREEN_2019_USPR.csv.zip", exdir = ".")
+unzip("DATA/EJSCREEN/EJSCREEN_2019_USPR.csv.zip", exdir = "DATA/EJSCREEN")
+unzip("DATA/EJSCREEN/EJSCREEN_20150505.csv.zip", exdir = "DATA/EJSCREEN")
 
 # Read in EJSCREEN Data
 EJSCREEN <- read_csv("EJSCREEN_2019_USPR.csv")
@@ -176,7 +180,7 @@ df %>%
 
 
 
-# Impact of choosing different projections
+# Impact of choosing different projections for mapping
 # NAD83 / Conus Albers
 ne_blkgrp_sf_5070 <- st_transform(ne_blkgrp_sf, crs = 5070)
 tm_shape(ne_blkgrp_sf_5070) + tm_borders()
