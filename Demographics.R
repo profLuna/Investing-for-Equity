@@ -506,7 +506,6 @@ B08201 <- map_df(ne_states, function(x) {
  
 
 
-
 # join demographic df to block groups
 ne_blkgrp_sf_DEMOG <- ne_blkgrp_sf %>% 
   left_join(., medhhinclt50, by = "GEOID") %>% 
@@ -520,3 +519,6 @@ ne_blkgrp_sf_DEMOG <- ne_blkgrp_sf %>%
 ne_tracts_sf_DEMOG <- ne_tracts_sf %>% 
   left_join(., disabilityOver18, by = "GEOID") %>% 
   left_join(., B08201, by = "GEOID")
+
+# save original and joined spatial files with demographics
+save(ne_blkgrp_sf,ne_blkgrp_sf_DEMOG,ne_tracts_sf,ne_tracts_sf_DEMOG,ne_towns_sf, file = "DATA/ne_layers.rds")
