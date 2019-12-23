@@ -9,6 +9,8 @@ library(rgdal)
 library(RColorBrewer)
 library(sp)
 
+load("DATA/ne_layers.rds")
+
 # Download EJSCREEN Data from EPA. See https://www.epa.gov/ejscreen/download-ejscreen-data for details.
 download.file(
   url = "ftp://newftp.epa.gov/EJSCREEN/2019/EJSCREEN_2019_USPR.csv.zip", 
@@ -20,13 +22,101 @@ download.file(
 unzip("DATA/EJSCREEN/EJSCREEN_2019_USPR.csv.zip", exdir = "DATA/EJSCREEN")
 unzip("DATA/EJSCREEN/EJSCREEN_20150505.csv.zip", exdir = "DATA/EJSCREEN")
 
-# Read in EJSCREEN Data
-EJSCREEN <- read_csv("EJSCREEN_2019_USPR.csv")
-glimpse(EJSCREEN)
-names(EJSCREEN)
-head(EJSCREEN$ID)
+# Read in EJSCREEN Data, isolate variables, fix types, append date to names
+EJSCREEN19 <- read_csv("DATA/EJSCREEN/EJSCREEN_2019_USPR.csv") %>% 
+  filter(ST_ABBREV %in% ne_states) %>% 
+  dplyr::select(ID,DSLPM,CANCER,RESP,PTRAF,OZONE,PM25) %>% 
+  mutate_at(c("DSLPM","CANCER","RESP","PTRAF","OZONE","PM25"), as.numeric) %>% 
+  rename_all(paste0, "_19")
+  
+EJSCREEN15 <- read_csv("DATA/EJSCREEN/EJSCREEN_20150505.csv") %>% 
+  filter(ST %in% ne_states) %>% 
+  dplyr::select(c(1:19,28:30,32,37:39)) %>% 
+  mutate_at(c("dpm", "cancer", "resp"), as.numeric) %>% 
+  rename_all(paste0, "_15")
+
+# Join data frames and compute percent changes
+EJSCREEN_15_19 <- left_join(EJSCREEN15,EJSCREEN19, 
+                            by = c("FIPS_15" = "ID_19")) %>% 
+  mutate(OZONE_pctChange = (OZONE_19 - o3_15)/o3_15 * 100,
+         PM25_pctChange = (PM25_19 - pm_15)/pm_15 * 100,
+         PTRAF_pctChange = (PTRAF_19 - traffic.score_15)/traffic.score_15 * 100)
+
+
+# Compute CO2 by block group with percent change
+# Read in DARTE Annual On-road CO2 Emissions on a 1-km Grid. See https://daac.ornl.gov/cgi-bin/dsviewer.pl?ds_id=1735 
+# view relevant tif tags embedded within a geotiff before openning it
+# GDALinfo("traffic/onroad_2017.tif")
+# load the data
+CO2_2017 <- raster("DATA/DARTE/onroad_2017.tif")
+CO2_1990 <- raster("DATA/DARTE/onroad_1990.tif")
+
+# Crop to New England
+# Create copy of ne_blkgrp_sf with same CRS
+ne_blkgrp_sf_lcc <- st_transform(ne_blkgrp_sf, proj4string(CO2_2017))
+
+# Crop raster to New England
+CO2_2017ne <- crop(CO2_2017, ne_blkgrp_sf_lcc)
+CO2_1990ne <- crop(CO2_1990, ne_blkgrp_sf_lcc)
+
+# Convert from kilograms/km2 to metric tons/km2
+CO2_2017ne_tons <- CO2_2017ne/1000
+CO2_1990ne_tons <- CO2_1990ne/1000
+
+# To extract raster values, need to first address empty geometries in polygon layer
+# check for empty geometries
+any(is.na(st_dimension(ne_blkgrp_sf_lcc)))
+# identiy empty geometries
+empty_geo <- st_is_empty(ne_blkgrp_sf_lcc)
+# filter out empty geometries
+ne_blkgrp_sf_lcc <- ne_blkgrp_sf_lcc[!empty_geo,]
+
+# Extract mean CO2 values within each block group to an spdf
+meanCO2_17 <- extract(CO2_2017ne_tons, as_Spatial(ne_blkgrp_sf_lcc), 
+                   fun=mean, sp=TRUE, na.rm=TRUE, small=TRUE)
+
+meanCO2_90 <- extract(CO2_1990ne_tons, as_Spatial(ne_blkgrp_sf_lcc), 
+                      fun=mean, sp=TRUE, na.rm=TRUE, small=TRUE)
+
+# Map it
+tm_shape(meanCO2) + tm_fill("onroad_2017", style = "quantile")
+tm_shape(meanCO2_90) + tm_fill("onroad_1990", style = "quantile")
+
+# Join CO2 values to EJSCREEN block groups
+EJSCREEN_15_19 <- meanCO2_90 %>% 
+  as.data.frame() %>% 
+  dplyr::select(GEOID, onroad_1990) %>% 
+  left_join(EJSCREEN_15_19, ., by = c("FIPS_15" = "GEOID"))
+
+EJSCREEN_15_19 <- meanCO2_17 %>% 
+  as.data.frame() %>% 
+  dplyr::select(GEOID, onroad_2017) %>% 
+  left_join(EJSCREEN_15_19, ., by = c("FIPS_15" = "GEOID"))
+
+# Compute percent CO2 change 1990 to 2017
+EJSCREEN_15_19 <- EJSCREEN_15_19 %>% 
+  mutate(CO2_pctChange90_17 = (onroad_2017 - onroad_1990)/onroad_1990*100)
+
+
+# Join EJSCREEN data to block groups with demographics
+ne_blkgrp_sf_DemoTransp <- left_join(ne_blkgrp_sf_DEMOG,EJSCREEN_15_19, 
+                                by = c("GEOID" = "FIPS_15"))
+
+# SUMMARY STATISTICS AND MAPS OF DEMOGRAPHICS/EJ INDICES BY REGION AND STATE
+
+# SUMMARY STATISTICS AND MAPS OF POLLUTION MEASURES BY REGION AND STATE (MIGHT WANT TO SHOW PERCENTILES HERE; OR STYLE = QUANTILE)
+
+# SCATTER PLOTS AND CORRELATION MATRICES OF DEMO VS POLLUTION FOR NEW ENGLAND AND STATES (CORRECT FOR NON-NORMAL DISTRIBUTIONS; OR USE SPEARMAN'S RANK)
+
+# POP WEIGHTED AVGS FOR POLLUTION FOR NEW ENGLAND AND STATES, INCLUDING EJ INDICES
+
+# T-TEST OF DIFFERENCES FOR EJ INDICES; BOXPLOTS WITH NOTCHES
+
+# HOT SPOT MAP OF POLLUTION AND PCT CHANGE
+
+
 # Isolate select air pollution related variables and join to sf block groups
-EJSCREEN.air_sf <- EJSCREEN %>% 
+EJSCREEN19.air_sf <- EJSCREEN %>% 
   dplyr::select(ID,DSLPM,CANCER,RESP,PTRAF,OZONE,PM25) %>% 
   left_join(ne_blkgrp_sf, ., by = c("GEOID" = "ID"))
 rm(EJSCREEN) # clean up after yourself
