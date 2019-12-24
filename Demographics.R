@@ -37,7 +37,7 @@ ne_blkgrp_sf <- ne_blkgrp_sf %>%
   mutate(STATE = str_extract(NAME, '\\b[^,]+$'))
 
 # map it out
-tm_shape(ne_blkgrp_sf) + tm_polygons(col = "STATE")
+# tm_shape(ne_blkgrp_sf) + tm_polygons(col = "STATE")
 
 
 # use purrr::reduce function in combination with sf::rbind to download tracts for list of states and then bind them to one sf. 
@@ -57,25 +57,25 @@ ne_tracts_sf <- ne_tracts_sf %>%
   mutate(STATE = str_extract(NAME, '\\b[^,]+$'))
 
 # map it out
-tm_shape(ne_tracts_sf) + tm_polygons(col = "STATE")
+# tm_shape(ne_tracts_sf) + tm_polygons(col = "STATE")
 
 
 # Do the same for towns across New England, although note that tidycensus does not support that geography yet so we need to import shapefiles separately with tigris and then join
 # use purrr::map_df to download df and bind vector of states
 ne_towns_df <- map_df(ne_states, function(x) {
     get_acs(geography = "county subdivision", 
-            variables = c(totalpop = "B03002_001", 
-                          medhhinc = "B19013_001"),
+            variables = c(medhhinc = "B19013_001"),
             state = x, output = "wide")
   }) %>% 
   mutate(medhhincE_UC = medhhincE + medhhincM,
          medhhincE_LC = ifelse(
            medhhincE < medhhincM, 0, medhhincE - medhhincM),
          STATE = str_extract(NAME, '\\b[^,]+$'))
+
 # Calculate statewide average median household income
-ne_towns_df %>% 
-  group_by(STATE) %>% 
-  summarize(avg_medhhinc = mean(medhhincE, na.rm = TRUE))
+# ne_towns_df %>% 
+#   group_by(STATE) %>% 
+#   summarize(avg_medhhinc = mean(medhhincE, na.rm = TRUE))
 # add variables to identify EJ criteria thresholds
 ne_towns_df <- ne_towns_df %>% 
   mutate(VT_INCOME = if_else(medhhincE < 58231, "I", NULL),
@@ -98,12 +98,12 @@ ne_towns_sp <- geo_join(spatial_data = ne_towns_sp,
                         by_sp = "GEOID", by_df = "GEOID")
 # tm_shape(ne_towns_sp) + tm_polygons("totalpopE")
 # convert to sf for easier handling
-ne_towns_sf <- st_as_sf(ne_towns_sp)
-rm(ne_towns_sp)
-# add column with state names
-ne_towns_sf <- ne_towns_sf %>% 
-  mutate(STATE = str_extract(NAME.1, '\\b[^,]+$'))
-tm_shape(ne_towns_sf) + tm_polygons("STATE")
+ne_towns_sf <- st_as_sf(ne_towns_sp) %>% 
+  select(-ends_with(".1"))
+# clean up
+rm(ne_towns_sp,ne_towns_df)
+# map it
+# tm_shape(ne_towns_sf) + tm_polygons("STATE")
 
 
 ###### DEMOGRAPHIC DATA FRAMES ##############
@@ -118,7 +118,7 @@ medhhinc_total <- B19001 %>%
   transmute(GEOID = GEOID,
             householdsE = estimate,
             householdsM = moe)
-# Isolate household counts less than 65% of statewide median of $74,167, which is $48,208. Closest range is 45 - 49,9.
+# Isolate household counts less than 65% of MA statewide median of $74,167, which is $48,208. Closest range is 45 - 49,9.
 # create vector of patterns for medhhinc levels below 50k
 med_strings <- rep(c(2:10)) %>% 
   formatC(width = 3, format = "d", flag = "0") # add leading 0s
@@ -132,7 +132,7 @@ medhhinclt50 <- B19001 %>%
          medhhinclt50_LC = ifelse(
            medhhinclt50E < medhhinclt50M, 0, medhhinclt50E - medhhinclt50M))
 # Join total households and compute derived proportions
-medhhinclt50 <- medhhinclt50 %>% 
+medhhinclt50_pct <- medhhinclt50 %>% 
   left_join(., medhhinc_total, by = "GEOID") %>% 
   mutate(r2medhhincE = ifelse(householdsE <= 0, 0, medhhinclt50E/householdsE),
     r2medhhincM = moe_prop(medhhinclt50E,householdsE,medhhinclt50M,householdsM),
@@ -144,10 +144,13 @@ medhhinclt50 <- medhhinclt50 %>%
       pct_medhhinclt50E - pct_medhhinclt50M)) %>% 
   select(-starts_with("r2m"))
 # add variables to identify EJ criteria thresholds
-medhhinclt50 <- medhhinclt50 %>% 
+medhhinclt50_pct <- medhhinclt50_pct %>% 
   mutate(MA_INCOME = if_else(pct_medhhinclt50E >= 25, "I", NULL),
          MA_INCOME_UC = if_else(pct_medhhinclt50E_UC >= 25, "I", NULL),
          MA_INCOME_LC = if_else(pct_medhhinclt50E_LC >= 25, "I", NULL))
+# clean up
+rm(B19001,med_strings,medhhinc_total,medhhinclt50)
+
 
 ### RATIO OF INCOME TO POVERTY LEVEL
 # Download ratio of income to poverty level in the past 12 months to calculate the number or percent of a block group’s population in households where the household income is less than or equal to twice the federal “poverty level.” More precisely, percent low-income is calculated as a percentage of those for whom the poverty ratio was known, as reported by the Census Bureau, which may be less than the full population in some block groups. More information on the federally-defined poverty threshold is available at http://www.census.gov/hhes/www/poverty/methods/definitions.html. Note also that poverty status is not determined for people living in institutional group quarters (i.e. prisons, college dormitories, military barracks, nursing homes), so these populations are not included in the poverty estimates (https://www.census.gov/topics/income-poverty/poverty/guidance/poverty-measures.html).
@@ -174,7 +177,7 @@ num2pov <- C17002 %>%
          num2povE_LC = ifelse(
            num2povE < num2povM, 0, num2povE - num2povM))
 # Join tables and compute derived ratios and MOEs and then pcts with UC and LC
-povRatio <- povknown %>% 
+poverty_pct <- povknown %>% 
   left_join(., num2pov, by = "GEOID") %>% 
   mutate(r2povE = ifelse(
     povknownE == 0, 0, num2povE/povknownE),
@@ -186,7 +189,7 @@ povRatio <- povknown %>%
       pct2povE < pct2povM, 0, pct2povE - pct2povM)) %>% 
   select(-starts_with("r2p"))
 # add variables to identify EJ criteria thresholds
-povRatio <- povRatio %>% 
+poverty_pct <- poverty_pct %>% 
   mutate(pov_pctile = percent_rank(pct2povE),
          pov_pctile_UC = percent_rank(pct2povE_UC),
          pov_pctile_LC = percent_rank(pct2povE_LC),
@@ -196,7 +199,8 @@ povRatio <- povRatio %>%
          CT_INCOME = if_else(pct2povE >= 30, "I", NULL),
          CT_INCOME_UC = if_else(pct2povE_UC >= 30, "I", NULL),
          CT_INCOME_LC = if_else(pct2povE_LC >= 30, "I", NULL))
-
+# clean up
+rm(C17002,num2pov,povknown)
 
 
 ### RACE AND ETHNICITY
@@ -253,6 +257,8 @@ minority_pct <- B03002_totwhite %>%
     minority_pctE_LC = ifelse(
       minority_pctE < minority_pctM, 0, minority_pctE - minority_pctM)) %>% 
   select(-minority_pE,-minority_pM)
+# clean up
+rm(nonwhite_est)
 # add variables to identify EJ criteria thresholds
 minority_pct <- minority_pct %>% 
   mutate(minority_pctile = percent_rank(minority_pctE),
@@ -264,7 +270,24 @@ minority_pct <- minority_pct %>%
          RI_MINORITY = if_else(minority_pctile >= 0.85, "M", NULL),
          RI_MINORITY_UC = if_else(minority_pctile_UC >= 0.85, "M", NULL),
          RI_MINORITY_LC = if_else(minority_pctile_LC >= 0.85, "M", NULL))
-
+# join non-white group estimates
+# first download nonwhite estimates in wide format for easier joining
+B03002_nonwhite_wide <- map_df(ne_states, function(x) {
+  get_acs(geography = "block group", variables = c(
+    nhblackpop = "B03002_004",
+    nhamerindpop = "B03002_005",
+    nhasianpop = "B03002_006",
+    nhnativhpop = "B03002_007",
+    nhotherpop = "B03002_008",
+    nh2morepop = "B03002_009",
+    hisppop = "B03002_012"),
+    state = x, output = "wide")})
+# join to minority_pct
+minority_pct <- B03002_nonwhite_wide %>% 
+  select(-NAME) %>% 
+  left_join(minority_pct, ., by = "GEOID")
+# clean up
+rm(list = ls(pattern = "B03002"))
 
 ### ENGLISH LANGUAGE ISOLATION
 # Download C16002. Household Language by Household Limited English Speaking Status. Note that this table is a collapsed version of table B16002. EPA and MA use the latter, but there is no significant difference since we are not interested in disaggregating categories.
@@ -277,32 +300,35 @@ eng_limited <- map_df(ne_states, function(x) {
 eng_limited_est <- eng_limited %>% 
   filter(variable != "C16002_001") %>% 
   group_by(GEOID) %>% 
-  summarize(eng_liE = sum(estimate),
-            eng_liM = moe_sum(moe,estimate))
+  summarize(eng_limitE = sum(estimate),
+            eng_limitM = moe_sum(moe,estimate))
 # Join with total households and calculate derived proportions and MOEs, along with upper and lower confidence interval values from MOE. Rename columns and remove proportion variables. 
 eng_limited_pct <- eng_limited %>% 
   filter(variable == "C16002_001") %>% 
   group_by(GEOID) %>% 
-  left_join(., eng_limited_est, by = c("GEOID","GEOID")) %>% 
-  transmute(NAME = NAME,
-            eng_hhE = estimate,
+  left_join(., eng_limited_est, by = "GEOID") %>% 
+  transmute(eng_hhE = estimate,
             eng_hhM = moe,
             eng_hh_UC = estimate + moe,
             eng_hh_LC = ifelse(estimate < moe, 0, estimate - moe),
-            eng_li_pE = ifelse(estimate==0,0,eng_liE/estimate),
-            eng_li_pM = moe_prop(eng_liE,estimate,eng_liM,moe),
-            eng_li_pctE = eng_li_pE*100,
-            eng_li_pctM = eng_li_pM*100,
-            eng_li_pctE_UC = eng_li_pctE + eng_li_pctM,
-            eng_li_pctE_LC = ifelse(
-              eng_li_pctE < eng_li_pctM, 0, eng_li_pctE - eng_li_pctM)) %>% 
-  select(-eng_li_pE,-eng_li_pM,-NAME)
+            eng_limitE = eng_limitE,
+            eng_limitM = eng_limitM,
+            eng_li_pE = ifelse(estimate==0,0,eng_limitE/estimate),
+            eng_li_pM = moe_prop(eng_limitE,estimate,eng_limitM,moe),
+            eng_limit_pctE = eng_li_pE*100,
+            eng_limit_pctM = eng_li_pM*100,
+            eng_limit_pctE_UC = eng_limit_pctE + eng_limit_pctM,
+            eng_limit_pctE_LC = ifelse(
+              eng_limit_pctE < eng_limit_pctM, 0, 
+              eng_limit_pctE - eng_limit_pctM)) %>% 
+  select(-eng_li_pE,-eng_li_pM)
 # add variables to identify EJ criteria thresholds
 eng_limited_pct <- eng_limited_pct %>% 
-  mutate(MA_ENGLISH = if_else(eng_li_pctE >= 25, "E", NULL),
-         MA_ENGLISH_UC = if_else(eng_li_pctE_UC >= 25, "E", NULL),
-         MA_ENGLISH_LC = if_else(eng_li_pctE_LC >= 25, "E", NULL))
-
+  mutate(MA_ENGLISH = if_else(eng_limit_pctE >= 25, "E", NULL),
+         MA_ENGLISH_UC = if_else(eng_limit_pctE_UC >= 25, "E", NULL),
+         MA_ENGLISH_LC = if_else(eng_limit_pctE_LC >= 25, "E", NULL))
+# clean up
+rm(eng_limited,eng_limited_est)
 
 ### EDUCATIONAL ATTAINMENT FOR THOSE AGE 25+
 # Less than high school education: The number or percent of people age 25 or older in a block group whose education is short of a high school diploma.
@@ -333,7 +359,7 @@ lths_num <- B15002 %>%
          lthsE_LC = ifelse(
            lthsE < lthsM, 0, lthsE - lthsM))
 # Join tables and compute derived proportion and MOE
-lths <- age25up %>% 
+lths_pct <- age25up %>% 
   left_join(.,lths_num, by = "GEOID") %>% 
   mutate(r_lthsE = ifelse(
     age25upE == 0, 0, lthsE/age25upE),
@@ -344,7 +370,8 @@ lths <- age25up %>%
     pct_lthsE_LC = ifelse(
       pct_lthsE < pct_lthsM, 0, pct_lthsE - pct_lthsM)) %>% 
   select(-starts_with("r_"))
-
+# clean up
+rm(age25up,B15002,lths_num,lths_strings)
 
 
 ### AGE UNDER 5, UNDER 16, AND 65+
@@ -398,7 +425,7 @@ over65 <- B01001 %>%
          over65E_LC = ifelse(
            over65E < over65M, 0, over65E - over65M))
 # Join the tables and compute derived proportions with MOEs
-age5_16_65 <- allAges %>% 
+age5_16_65_pct <- allAges %>% 
   left_join(., under5, by = "GEOID") %>% 
   mutate(r_under5E = ifelse(
     allAgesE == 0, 0, under5E/allAgesE),
@@ -427,6 +454,8 @@ age5_16_65 <- allAges %>%
     pct_over65E_LC = ifelse(
       pct_over65E < pct_over65M, 0, pct_over65E - pct_over65M)) %>% 
   select(-starts_with("r_"))
+# clean up
+rm(allAges,B01001,over65,under18,under5,ovr65_strings)
 
 
 ### DISABILITY
@@ -450,7 +479,6 @@ over18 <- B18101 %>%
          Over18E_LC = ifelse(
            Over18E < Over18M, 0, 
            Over18E - Over18M))
-
 # compute derived sum and moe for those over 18 with a disability only
 # create vector of patterns for male and female variables 18+ with disability
 disabledOvr18_strings <- sort(c(seq(from = 10, to = 19, by = 3), 
@@ -467,7 +495,7 @@ disabledOver18 <- B18101 %>%
            disabledOver18E < disabledOver18M, 0, 
            disabledOver18E - disabledOver18M))
 # Join the tables and compute derived proportions with MOEs
-disabilityOver18 <- over18 %>% 
+disabilityOver18_pct <- over18 %>% 
   left_join(., disabledOver18, by = "GEOID") %>% 
   mutate(r_disabilityOver18E = ifelse(
     Over18E == 0, 0, disabledOver18E/Over18E),
@@ -480,13 +508,15 @@ disabilityOver18 <- over18 %>%
       pct_disabilityOver18E < pct_disabilityOver18M, 0, 
       pct_disabilityOver18E - pct_disabilityOver18M))%>% 
   select(-starts_with("r_"))
+# clean up
+rm(B18101,disabledOver18,disabledOvr18_strings,over18,ovr18_strings)
 
 
 ### HOUSEHOLDS WITHOUT ACCESS TO CAR
 # NOTE THAT THIS DATA IS ONLY AVAILABLE AT TRACT LEVEL, NOT BLKGRP
 # Number and percent of households without access to a car
 # Download Variables from Table B08201 HOUSEHOLD SIZE BY VEHICLES AVAILABLE
-B08201 <- map_df(ne_states, function(x) {
+noCarHH_pct <- map_df(ne_states, function(x) {
   get_acs(geography = "tract", variables = c(totalHH = "B08201_001",
                                              HHnoCar = "B08201_002"),
           state = x, output = "wide")
@@ -503,22 +533,27 @@ B08201 <- map_df(ne_states, function(x) {
     pct_HHnoCarE_LC = ifelse(
       pct_HHnoCarE < pct_HHnoCarM, 0, pct_HHnoCarE - pct_HHnoCarM)) %>% 
   select(-starts_with("r_"),-NAME)
- 
 
+
+######### JOIN DATA FRAMES TO POLYGONS #############
 
 # join demographic df to block groups
 ne_blkgrp_sf_DEMOG <- ne_blkgrp_sf %>% 
-  left_join(., medhhinclt50, by = "GEOID") %>% 
-  left_join(., povRatio, by = "GEOID") %>% 
+  select(-starts_with("total")) %>% 
   left_join(., minority_pct, by = "GEOID") %>% 
+  left_join(., age5_16_65_pct, by = "GEOID") %>% 
   left_join(., eng_limited_pct, by = "GEOID") %>% 
-  left_join(., lths, by = "GEOID") %>% 
-  left_join(., age5_16_65, by = "GEOID")
+  left_join(., poverty_pct, by = "GEOID") %>% 
+  left_join(., lths_pct, by = "GEOID") %>% 
+  left_join(., medhhinclt50_pct, by = "GEOID")
 
 # join demographic df to tracts
 ne_tracts_sf_DEMOG <- ne_tracts_sf %>% 
-  left_join(., disabilityOver18, by = "GEOID") %>% 
-  left_join(., B08201, by = "GEOID")
+  left_join(., disabilityOver18_pct, by = "GEOID") %>% 
+  left_join(., noCarHH_pct, by = "GEOID")
+
+# clean up
+rm(list = ls(pattern = "_pct"))
 
 # save original and joined spatial files with demographics
 save(ne_blkgrp_sf,
@@ -526,4 +561,5 @@ save(ne_blkgrp_sf,
      ne_tracts_sf,
      ne_tracts_sf_DEMOG,
      ne_towns_sf, 
+     ne_states,
      file = "DATA/ne_layers.rds")
