@@ -41,6 +41,8 @@ EJSCREEN_15_19 <- left_join(EJSCREEN15,EJSCREEN19,
   mutate(OZONE_pctChange = (OZONE_19 - o3_15)/o3_15 * 100,
          PM25_pctChange = (PM25_19 - pm_15)/pm_15 * 100,
          PTRAF_pctChange = (PTRAF_19 - traffic.score_15)/traffic.score_15 * 100)
+# clean up
+rm(EJSCREEN15,EJSCREEN19)
 
 
 # Compute CO2 by block group with percent change
@@ -55,13 +57,13 @@ CO2_1990 <- raster("DATA/DARTE/onroad_1990.tif")
 # Create copy of ne_blkgrp_sf with same CRS
 ne_blkgrp_sf_lcc <- st_transform(ne_blkgrp_sf, proj4string(CO2_2017))
 
-# Crop raster to New England
-CO2_2017ne <- crop(CO2_2017, ne_blkgrp_sf_lcc)
-CO2_1990ne <- crop(CO2_1990, ne_blkgrp_sf_lcc)
-
-# Convert from kilograms/km2 to metric tons/km2
-CO2_2017ne_tons <- CO2_2017ne/1000
-CO2_1990ne_tons <- CO2_1990ne/1000
+# Crop raster to New England and convert kilograms/km2 to metric tons/km2
+CO2_2017ne_tons <- crop(CO2_2017, ne_blkgrp_sf_lcc) %>% 
+  `/`(1000)
+CO2_1990ne_tons <- crop(CO2_1990, ne_blkgrp_sf_lcc) %>% 
+  `/`(1000)
+# clean up
+rm(CO2_1990,CO2_2017)
 
 # To extract raster values, need to first address empty geometries in polygon layer
 # check for empty geometries
@@ -70,6 +72,8 @@ any(is.na(st_dimension(ne_blkgrp_sf_lcc)))
 empty_geo <- st_is_empty(ne_blkgrp_sf_lcc)
 # filter out empty geometries
 ne_blkgrp_sf_lcc <- ne_blkgrp_sf_lcc[!empty_geo,]
+# clean up
+rm(empty_geo)
 
 # Extract mean CO2 values within each block group to an spdf
 meanCO2_17 <- extract(CO2_2017ne_tons, as_Spatial(ne_blkgrp_sf_lcc), 
@@ -79,8 +83,8 @@ meanCO2_90 <- extract(CO2_1990ne_tons, as_Spatial(ne_blkgrp_sf_lcc),
                       fun=mean, sp=TRUE, na.rm=TRUE, small=TRUE)
 
 # Map it
-tm_shape(meanCO2) + tm_fill("onroad_2017", style = "quantile")
-tm_shape(meanCO2_90) + tm_fill("onroad_1990", style = "quantile")
+# tm_shape(meanCO2_17) + tm_fill("onroad_2017", style = "quantile")
+# tm_shape(meanCO2_90) + tm_fill("onroad_1990", style = "quantile")
 
 # Join CO2 values to EJSCREEN block groups
 EJSCREEN_15_19 <- meanCO2_90 %>% 
@@ -97,18 +101,77 @@ EJSCREEN_15_19 <- meanCO2_17 %>%
 EJSCREEN_15_19 <- EJSCREEN_15_19 %>% 
   mutate(CO2_pctChange90_17 = (onroad_2017 - onroad_1990)/onroad_1990*100)
 
+# clean up
+rm(meanCO2_90,meanCO2_17)
+
 
 # Join EJSCREEN data to block groups with demographics
-ne_blkgrp_sf_DemoTransp <- left_join(ne_blkgrp_sf_DEMOG,EJSCREEN_15_19, 
+ne_blkgrp_sf_DemoEJ <- left_join(ne_blkgrp_sf_DEMOG,EJSCREEN_15_19, 
                                 by = c("GEOID" = "FIPS_15"))
 
+# save original and joined spatial files with demographics
+save(ne_blkgrp_sf,
+     ne_blkgrp_sf_DEMOG,
+     ne_tracts_sf,
+     ne_tracts_sf_DEMOG,
+     ne_towns_sf, 
+     ne_states,
+     ne_blkgrp_sf_DemoEJ,
+     file = "DATA/ne_layers.rds")
+
+
 # SUMMARY STATISTICS AND MAPS OF DEMOGRAPHICS/EJ INDICES BY REGION AND STATE
+
 
 # SUMMARY STATISTICS AND MAPS OF POLLUTION MEASURES BY REGION AND STATE (MIGHT WANT TO SHOW PERCENTILES HERE; OR STYLE = QUANTILE)
 
 # SCATTER PLOTS AND CORRELATION MATRICES OF DEMO VS POLLUTION FOR NEW ENGLAND AND STATES (CORRECT FOR NON-NORMAL DISTRIBUTIONS; OR USE SPEARMAN'S RANK)
 
 # POP WEIGHTED AVGS FOR POLLUTION FOR NEW ENGLAND AND STATES, INCLUDING EJ INDICES
+# Weighted avg of PM2.5 for New England
+ne_blkgrp_sf_DemoTransp %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(totalpopE.x, 
+                povknownE,
+                num2povE, 
+                nhwhitepopE, 
+                minorityE, 
+                eng_hhE, 
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over65E, 
+                PM25_19) %>% 
+  gather(key = Group, value = Pop, totalpopE.x:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_19, w = Pop, na.rm = TRUE),
+            PM25Mean = mean(PM25_19, na.rm = TRUE)) %>% 
+  spread(key = Group, value = PM25wMean) %>% 
+  transmute(Minority = (minorityE/PM25Mean - 1)*100,
+         Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+         Poverty = (num2povE/PM25Mean - 1)*100,
+         `No HS` = (lthsE/PM25Mean - 1)*100,
+         `Under 5` = (under5E/PM25Mean - 1)*100,
+         `Over 65` = (over65E/PM25Mean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", title = expression(paste("Population-Weighted ", PM[2.5], " Exposure (relative to New England average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+
+
+
+
+  
 
 # T-TEST OF DIFFERENCES FOR EJ INDICES; BOXPLOTS WITH NOTCHES
 
