@@ -358,6 +358,19 @@ lths_num <- B15002 %>%
   mutate(lthsE_UC = lthsE + lthsM,
          lthsE_LC = ifelse(
            lthsE < lthsM, 0, lthsE - lthsM))
+# Isolate populations with college degree or higher
+# create vector of patterns for male and female variables with college+
+col_strings <- rep(c(15:18,32:35)) %>% 
+  formatC(width = 3, format = "d", flag = "0") # add leading 0s
+# filter cases by patterns, compute derived sum estimates and MOEs
+col_num <- B15002 %>% 
+  filter(str_detect(variable,paste(col_strings,collapse = "|"))) %>% 
+  group_by(GEOID) %>% 
+  summarize(collegeE = sum(estimate),
+            collegeM = moe_sum(moe,estimate)) %>% 
+  mutate(collegeE_UC = collegeE + collegeM,
+         collegeE_LC = ifelse(
+           collegeE < collegeM, 0, collegeE - collegeM))
 # Join tables and compute derived proportion and MOE
 lths_pct <- age25up %>% 
   left_join(.,lths_num, by = "GEOID") %>% 
@@ -369,9 +382,18 @@ lths_pct <- age25up %>%
     pct_lthsE_UC = pct_lthsE + pct_lthsM,
     pct_lthsE_LC = ifelse(
       pct_lthsE < pct_lthsM, 0, pct_lthsE - pct_lthsM)) %>% 
+  left_join(.,col_num, by = "GEOID") %>% 
+  mutate(r_collegeE = ifelse(
+    age25upE == 0, 0, collegeE/age25upE),
+    r_collegeM = moe_ratio(collegeE,age25upE,collegeM,age25upM),
+    pct_collegeE = r_collegeE * 100,
+    pct_collegeM = r_collegeM * 100,
+    pct_collegeE_UC = pct_collegeE + pct_collegeM,
+    pct_collegeE_LC = ifelse(
+      pct_collegeE < pct_collegeM, 0, pct_collegeE - pct_collegeM)) %>% 
   select(-starts_with("r_"))
 # clean up
-rm(age25up,B15002,lths_num,lths_strings)
+rm(age25up,B15002,lths_num,lths_strings,col_num,col_strings)
 
 
 ### AGE UNDER 5, UNDER 16, AND 65+
