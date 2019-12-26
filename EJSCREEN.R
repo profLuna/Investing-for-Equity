@@ -108,6 +108,20 @@ rm(meanCO2_90,meanCO2_17,CO2_1990ne_tons,CO2_2017ne_tons)
 # Join EJSCREEN data to block groups with demographics
 ne_blkgrp_sf_DemoEJ <- left_join(ne_blkgrp_sf_DEMOG,EJSCREEN_15_19, 
                                 by = c("GEOID" = "FIPS_15"))
+
+# Join EJSCREEN data to towns
+ne_towns_sf_EJ <- ne_blkgrp_sf_DemoEJ %>% 
+  st_transform(., st_crs(ne_towns_sf)) %>% 
+  st_join(., ne_towns_sf, largest = TRUE) %>% 
+  dplyr::select(GEOID.y, DSLPM_19:onroad_2017) %>% 
+  mutate(AvgBlkAREA = as.numeric(st_area(.))) %>% # convert from 'units' to numeric 
+  group_by(GEOID.y) %>%  
+  summarize_if(is.numeric, 
+               list(~ weighted.mean(., w=AvgBlkAREA, na.rm = TRUE))) %>% 
+  as.data.frame() %>% 
+  left_join(ne_towns_sf, ., by = c("GEOID" = "GEOID.y"))
+
+
 # clean up
 rm(EJSCREEN_15_19)
 
@@ -117,6 +131,7 @@ save(ne_blkgrp_sf,
      ne_tracts_sf,
      ne_tracts_sf_DEMOG,
      ne_towns_sf, 
+     ne_towns_sf_EJ,
      ne_states,
      ne_blkgrp_sf_DemoEJ,
      file = "DATA/ne_layers.rds")
