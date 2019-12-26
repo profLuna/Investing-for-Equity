@@ -419,6 +419,91 @@ ne_blkgrp_sf_DemoEJ %>%
   scale_x_discrete(labels = c("Low Income", "Not Low Income"))
   
 
+# Pop Weighted avg of PM2.5 for all Groups in Massachusetts relative to MA average
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Massachusetts") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over65E, 
+                PM25_19) %>% 
+  gather(key = Group, value = Pop, totalpopE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_19, w = Pop, na.rm = TRUE),
+            PM25Mean = mean(PM25_19, na.rm = TRUE)) %>% 
+  spread(key = Group, value = PM25wMean) %>% 
+  transmute(Minority = (minorityE/PM25Mean - 1)*100,
+            #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+            `Lang Isol` = (eng_limitE/PM25Mean - 1)*100,
+            Poverty = (num2povE/PM25Mean - 1)*100,
+            `No HS` = (lthsE/PM25Mean - 1)*100,
+            `Under 5` = (under5E/PM25Mean - 1)*100,
+            `Over 65` = (over65E/PM25Mean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", title = expression(paste("Population-Weighted ", PM[2.5], " Exposure (relative to MA average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+
+# # Pop Weighted avg of PM2.5 for Massachusetts EJ criteria in Massachusetts relative to MA average
+# library(plyr)
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Massachusetts") %>%
+  dplyr::select(totalpopE,
+                MA_INCOME, 
+                MA_MINORITY, 
+                MA_ENGLISH, 
+                PM25_19) %>% 
+  gather(key = Group, value = Criterion, MA_INCOME:MA_ENGLISH) %>% 
+  filter(Criterion != "NA") %>% 
+  plyr::ddply("Group", summarize, 
+        PM25wMean = weighted.mean(x = PM25_19, w = totalpopE, na.rm = TRUE)) %>%
+  add_column(., !!! # append df with unequal length for global mean
+               ne_blkgrp_sf_DemoEJ %>% 
+               as.data.frame() %>% 
+               filter(STATE == "Massachusetts") %>% 
+               summarize(avgPM25 = mean(PM25_19, na.rm = TRUE))) %>% 
+  mutate(pctDiff = (PM25wMean/avgPM25-1)*100) %>% 
+  ggplot(aes(x = reorder(Group, -pctDiff), 
+             y = pctDiff, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", 
+       title = expression(paste("Population-Weighted ", PM[2.5], " Exposure (relative to MA average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = pctDiff + 0.2 * sign(pctDiff), 
+                label = paste0(round(pctDiff,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0) +
+  scale_x_discrete(labels = c("Minority", "English Language Isolation",
+                              "Income"))
+
 # T-TEST OF DIFFERENCES FOR EJ INDICES; BOXPLOTS WITH NOTCHES
 
 # HOT SPOT MAP OF POLLUTION AND PCT CHANGE
