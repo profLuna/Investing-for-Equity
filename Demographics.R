@@ -64,10 +64,14 @@ ne_tracts_sf <- ne_tracts_sf %>%
 # use purrr::map_df to download df and bind vector of states
 ne_towns_df <- map_df(ne_states, function(x) {
     get_acs(geography = "county subdivision", 
-            variables = c(medhhinc = "B19013_001"),
+            variables = c(totalpop = "B03002_001",
+                          medhhinc = "B19013_001"),
             state = x, output = "wide")
   }) %>% 
-  mutate(medhhincE_UC = medhhincE + medhhincM,
+  mutate(totalpopE_UC = totalpopE + totalpopM,
+         totalpopE_LC = ifelse(
+           totalpopE < totalpopM, 0, totalpopE - totalpopM),
+         medhhincE_UC = medhhincE + medhhincM,
          medhhincE_LC = ifelse(
            medhhincE < medhhincM, 0, medhhincE - medhhincM),
          STATE = str_extract(NAME, '\\b[^,]+$'))
@@ -99,7 +103,7 @@ ne_towns_sp <- geo_join(spatial_data = ne_towns_sp,
 # tm_shape(ne_towns_sp) + tm_polygons("totalpopE")
 # convert to sf for easier handling
 ne_towns_sf <- st_as_sf(ne_towns_sp) %>% 
-  select(-ends_with(".1"))
+  dplyr::select(-ends_with(".1"))
 # clean up
 rm(ne_towns_sp,ne_towns_df)
 # map it
