@@ -195,6 +195,57 @@ ne_blkgrp_sf_DemoEJ %>%
   geom_hline(yintercept = 0)
 
 
+# Pop Weighted avg of PM2.5 EXPOSURE CHANGE 2011 - 2016 for all Groups in New England relative to NE average. NOTE THAT ALL BLOCK GROUPS SHOWED NEGATIVE CHANGE (i.e. DECLINE), MEANING PM10 WENT DOWN. SINCE NUMERATOR AND DENOMINATORS ARE NEGATIVE, PERCENT CHANGE MEANS DECREASE RELATIVE TO AVERAGE. NEGATIVE VALUES INDICATE SLOWER DECLINE THAN AVERAGE; POSITIVE NUMBERS MEAN FASTER DECLINE THAN AVERAGE. 
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over65E, 
+                PM25_pctChange) %>% 
+  gather(key = Group, value = Pop, totalpopE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_pctChange, 
+                                      w = Pop, na.rm = TRUE),
+            PM25Mean = mean(PM25_pctChange, na.rm = TRUE)) %>% 
+  spread(key = Group, value = PM25wMean) %>% 
+  transmute(Minority = (minorityE/PM25Mean - 1)*100,
+            #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+            `Lang Isol` = (eng_limitE/PM25Mean - 1)*100,
+            Poverty = (num2povE/PM25Mean - 1)*100,
+            `No HS` = (lthsE/PM25Mean - 1)*100,
+            `Under 5` = (under5E/PM25Mean - 1)*100,
+            `Over 65` = (over65E/PM25Mean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure CHANGE 2011 - 2016"), " (relative to New England average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+
+
 # Pop Weighted avg of PM2.5 for ALL GROUPS in New England relative to CONTRAST GROUPS
 ne_blkgrp_sf_DemoEJ %>% 
   as.data.frame() %>% 
@@ -350,6 +401,57 @@ ne_blkgrp_sf_DemoEJ %>%
   geom_hline(yintercept = 0)
 
 
+# Pop Weighted avg of PM2.5 EXPOSURE CHANGE 2011 - 2016 by RACE in New England relative to White average
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over65E, 
+                PM25_pctChange) %>% 
+  gather(key = Group, value = Pop, totalpopE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_pctChange, 
+                                      w = Pop, na.rm = TRUE),
+            PM25Mean = mean(PM25_pctChange, na.rm = TRUE)) %>% 
+  spread(key = Group, value = PM25wMean) %>% 
+  transmute(Black = (nhblackpopE/nhwhitepopE - 1)*100,
+            Asian = (nhasianpopE/nhwhitepopE - 1)*100,
+            AmerInd = (nhamerindpopE/nhwhitepopE - 1)*100,
+            `Native PI/HI` = (nhnativhpopE/nhwhitepopE - 1)*100,
+            Other = (nhotherpopE/nhwhitepopE - 1)*100,
+            Multiracial = (nhnativhpopE/nhwhitepopE - 1)*100,
+            Hispanic = (hisppopE/nhwhitepopE - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure CHANGE 2011 - 2016 by Race"), " for New England (relative to non-Hispanic White average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = Pct + 0.3 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+
+
 # Pop Weighted avg of PM2.5 for all Groups in Connecticut relative to CT average
 ne_blkgrp_sf_DemoEJ %>% 
   as.data.frame() %>% 
@@ -391,6 +493,57 @@ ne_blkgrp_sf_DemoEJ %>%
   geom_bar(stat = "identity", position = "identity") +
   theme_minimal() +
   labs(x = "", y = "", title = expression(paste("Population-Weighted ", PM[2.5], " Exposure (relative to CT average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+
+
+# Pop Weighted avg of PM2.5 CHANGE 2011 - 2016 for all Groups in Connecticut relative to CT average
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Connecticut") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over65E, 
+                PM25_pctChange) %>% 
+  gather(key = Group, value = Pop, totalpopE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_pctChange, 
+                                      w = Pop, na.rm = TRUE),
+            PM25Mean = mean(PM25_pctChange, na.rm = TRUE)) %>% 
+  spread(key = Group, value = PM25wMean) %>% 
+  transmute(Minority = (minorityE/PM25Mean - 1)*100,
+            #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+            `Lang Isol` = (eng_limitE/PM25Mean - 1)*100,
+            Poverty = (num2povE/PM25Mean - 1)*100,
+            `No HS` = (lthsE/PM25Mean - 1)*100,
+            `Under 5` = (under5E/PM25Mean - 1)*100,
+            `Over 65` = (over65E/PM25Mean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure CHANGE 2011 - 2016"), " (relative to CT average)"))) + 
   theme(legend.position = 'none') +
   geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
                 label = paste0(round(Pct,2),"%")), 
@@ -450,6 +603,57 @@ ne_blkgrp_sf_DemoEJ %>%
   geom_hline(yintercept = 0)
 
 
+# Pop Weighted avg of PM2.5 CHANGE 2011 - 2016 by RACE in CT relative to White average
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Connecticut") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over65E, 
+                PM25_pctChange) %>% 
+  gather(key = Group, value = Pop, totalpopE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_pctChange, 
+                                      w = Pop, na.rm = TRUE),
+            PM25Mean = mean(PM25_pctChange, na.rm = TRUE)) %>% 
+  spread(key = Group, value = PM25wMean) %>% 
+  transmute(Black = (nhblackpopE/nhwhitepopE - 1)*100,
+            Asian = (nhasianpopE/nhwhitepopE - 1)*100,
+            AmerInd = (nhamerindpopE/nhwhitepopE - 1)*100,
+            `Native PI/HI` = (nhnativhpopE/nhwhitepopE - 1)*100,
+            Other = (nhotherpopE/nhwhitepopE - 1)*100,
+            Multiracial = (nhnativhpopE/nhwhitepopE - 1)*100,
+            Hispanic = (hisppopE/nhwhitepopE - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure CHANGE 2011 - 2016 by Race"), " for Connecticut (relative to non-Hispanic White average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = Pct + 0.3 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+
+
 # # Pop Weighted avg of PM2.5 for CT_INCOME in Connecticut relative to CT average
 ne_blkgrp_sf_DemoEJ %>% 
   as.data.frame() %>% 
@@ -475,6 +679,41 @@ ne_blkgrp_sf_DemoEJ %>%
   theme_minimal() +
   labs(x = "", y = "", 
        title = expression(paste("Population-Weighted ", PM[2.5], " Exposure (relative to CT average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = CT_INCOME, y = pctDiff + 0.2 * sign(pctDiff), 
+                label = paste0(round(pctDiff,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0) +
+  scale_x_discrete(labels = c("Low Income", "Not Low Income"))
+
+
+# # Pop Weighted avg of PM2.5 CHANGE 2011 - 2016 for CT_INCOME in Connecticut relative to CT average
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Connecticut") %>%
+  dplyr::select(totalpopE,
+                CT_INCOME, 
+                CT_INCOME_UC, 
+                CT_INCOME_LC, 
+                PM25_pctChange) %>% 
+  group_by(CT_INCOME) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_pctChange, 
+                                      w = totalpopE, na.rm = TRUE)) %>% 
+  add_column(., !!! # append df with unequal length for global mean
+               ne_blkgrp_sf_DemoEJ %>% 
+               as.data.frame() %>% 
+               filter(STATE == "Connecticut") %>% 
+               summarize(avgPM25 = mean(PM25_pctChange, na.rm = TRUE))
+  ) %>% 
+  mutate(pctDiff = (PM25wMean/avgPM25-1)*100) %>% 
+  ggplot(aes(x = reorder(CT_INCOME, -pctDiff), 
+             y = pctDiff, fill = CT_INCOME)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", 
+       title = expression(paste("Population-Weighted ", PM[2.5], " Exposure CHANGE 2011 - 2016 (relative to CT average)"))) + 
   theme(legend.position = 'none') +
   geom_text(aes(x = CT_INCOME, y = pctDiff + 0.2 * sign(pctDiff), 
                 label = paste0(round(pctDiff,2),"%")), 
@@ -535,6 +774,57 @@ ne_blkgrp_sf_DemoEJ %>%
   geom_hline(yintercept = 0)
 
 
+# Pop Weighted avg of PM2.5 CHANGE 2011 - 2016 for all Groups in Massachusetts relative to MA average
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Massachusetts") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over65E, 
+                PM25_pctChange) %>% 
+  gather(key = Group, value = Pop, totalpopE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_pctChange, 
+                                      w = Pop, na.rm = TRUE),
+            PM25Mean = mean(PM25_pctChange, na.rm = TRUE)) %>% 
+  spread(key = Group, value = PM25wMean) %>% 
+  transmute(Minority = (minorityE/PM25Mean - 1)*100,
+            #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+            `Lang Isol` = (eng_limitE/PM25Mean - 1)*100,
+            Poverty = (num2povE/PM25Mean - 1)*100,
+            `No HS` = (lthsE/PM25Mean - 1)*100,
+            `Under 5` = (under5E/PM25Mean - 1)*100,
+            `Over 65` = (over65E/PM25Mean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure CHANGE 2011 - 2016"), " (relative to MA average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+
+
 # Pop Weighted avg of PM2.5 by RACE in MA relative to White average
 ne_blkgrp_sf_DemoEJ %>% 
   as.data.frame() %>% 
@@ -585,6 +875,57 @@ ne_blkgrp_sf_DemoEJ %>%
   geom_hline(yintercept = 0)
 
 
+# Pop Weighted avg of PM2.5 CHANGE 2011 - 2016 by RACE in MA relative to White average
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Massachusetts") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over65E, 
+                PM25_pctChange) %>% 
+  gather(key = Group, value = Pop, totalpopE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_pctChange, 
+                                      w = Pop, na.rm = TRUE),
+            PM25Mean = mean(PM25_pctChange, na.rm = TRUE)) %>% 
+  spread(key = Group, value = PM25wMean) %>% 
+  transmute(Black = (nhblackpopE/nhwhitepopE - 1)*100,
+            Asian = (nhasianpopE/nhwhitepopE - 1)*100,
+            AmerInd = (nhamerindpopE/nhwhitepopE - 1)*100,
+            `Native PI/HI` = (nhnativhpopE/nhwhitepopE - 1)*100,
+            Other = (nhotherpopE/nhwhitepopE - 1)*100,
+            Multiracial = (nhnativhpopE/nhwhitepopE - 1)*100,
+            Hispanic = (hisppopE/nhwhitepopE - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure CHANGE 2011 - 2016 by Race"), " for Massachusetts (relative to non-Hispanic White average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = Pct + 0.3 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+
+
 # # Pop Weighted avg of PM2.5 for Massachusetts EJ criteria in Massachusetts relative to MA average
 # library(plyr)
 ne_blkgrp_sf_DemoEJ %>% 
@@ -611,6 +952,44 @@ ne_blkgrp_sf_DemoEJ %>%
   theme_minimal() +
   labs(x = "", y = "", 
        title = expression(paste("Population-Weighted ", PM[2.5], " Exposure for EJ Groups (relative to MA average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = pctDiff + 0.2 * sign(pctDiff), 
+                label = paste0(round(pctDiff,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0) +
+  scale_x_discrete(labels = c("Minority", "English Language Isolation",
+                              "Income"))
+
+
+# # Pop Weighted avg of PM2.5 CHANGE 2011 - 2016 for Massachusetts EJ criteria in Massachusetts relative to MA average
+# library(plyr)
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Massachusetts") %>%
+  dplyr::select(totalpopE,
+                MA_INCOME, 
+                MA_MINORITY, 
+                MA_ENGLISH, 
+                PM25_pctChange) %>% 
+  gather(key = Group, value = Criterion, MA_INCOME:MA_ENGLISH) %>% 
+  filter(Criterion != "NA") %>% 
+  plyr::ddply("Group", summarize, 
+              PM25wMean = weighted.mean(x = PM25_pctChange, 
+                                        w = totalpopE, na.rm = TRUE)) %>%
+  add_column(., !!! # append df with unequal length for global mean
+               ne_blkgrp_sf_DemoEJ %>% 
+               as.data.frame() %>% 
+               filter(STATE == "Massachusetts") %>% 
+               summarize(avgPM25 = mean(PM25_pctChange, na.rm = TRUE))) %>% 
+  mutate(pctDiff = (PM25wMean/avgPM25-1)*100) %>% 
+  ggplot(aes(x = reorder(Group, -pctDiff), 
+             y = pctDiff, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", 
+       title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure CHANGE 2011 - 2016 for EJ Groups"), "(relative to MA average)"))) + 
   theme(legend.position = 'none') +
   geom_text(aes(x = Group, y = pctDiff + 0.2 * sign(pctDiff), 
                 label = paste0(round(pctDiff,2),"%")), 
@@ -672,6 +1051,57 @@ ne_blkgrp_sf_DemoEJ %>%
   geom_hline(yintercept = 0)
 
 
+# Pop Weighted avg of PM2.5 CHANGE 2011 - 2016 for all Groups in Maine relative to ME average
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Maine") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over65E, 
+                PM25_pctChange) %>% 
+  gather(key = Group, value = Pop, totalpopE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_pctChange, 
+                                      w = Pop, na.rm = TRUE),
+            PM25Mean = mean(PM25_pctChange, na.rm = TRUE)) %>% 
+  spread(key = Group, value = PM25wMean) %>% 
+  transmute(Minority = (minorityE/PM25Mean - 1)*100,
+            #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+            `Lang Isol` = (eng_limitE/PM25Mean - 1)*100,
+            Poverty = (num2povE/PM25Mean - 1)*100,
+            `No HS` = (lthsE/PM25Mean - 1)*100,
+            `Under 5` = (under5E/PM25Mean - 1)*100,
+            `Over 65` = (over65E/PM25Mean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure CHANGE 2011 - 2016"), " (relative to ME average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+
+
 # Pop Weighted avg of PM2.5 by RACE in ME relative to White average
 ne_blkgrp_sf_DemoEJ %>% 
   as.data.frame() %>% 
@@ -713,6 +1143,57 @@ ne_blkgrp_sf_DemoEJ %>%
   geom_bar(stat = "identity", position = "identity") +
   theme_minimal() +
   labs(x = "", y = "", title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure by Race for Maine"), "(relative to non-Hispanic White average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = Pct + 0.3 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+
+
+# Pop Weighted avg of PM2.5 CHANGE by RACE in ME relative to White average
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Maine") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over65E, 
+                PM25_pctChange) %>% 
+  gather(key = Group, value = Pop, totalpopE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_pctChange, 
+                                      w = Pop, na.rm = TRUE),
+            PM25Mean = mean(PM25_pctChange, na.rm = TRUE)) %>% 
+  spread(key = Group, value = PM25wMean) %>% 
+  transmute(Black = (nhblackpopE/nhwhitepopE - 1)*100,
+            Asian = (nhasianpopE/nhwhitepopE - 1)*100,
+            AmerInd = (nhamerindpopE/nhwhitepopE - 1)*100,
+            `Native PI/HI` = (nhnativhpopE/nhwhitepopE - 1)*100,
+            Other = (nhotherpopE/nhwhitepopE - 1)*100,
+            Multiracial = (nhnativhpopE/nhwhitepopE - 1)*100,
+            Hispanic = (hisppopE/nhwhitepopE - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure CHANGE 2011 - 2016 by Race"), " for Maine (relative to non-Hispanic White average)"))) + 
   theme(legend.position = 'none') +
   geom_text(aes(x = Group, y = Pct + 0.3 * sign(Pct), 
                 label = paste0(round(Pct,2),"%")), 
@@ -772,6 +1253,57 @@ ne_blkgrp_sf_DemoEJ %>%
   geom_hline(yintercept = 0)
 
 
+# Pop Weighted avg of PM2.5 CHANGE for all Groups in New Hampshire relative to NH average
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "New Hampshire") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over65E, 
+                PM25_pctChange) %>% 
+  gather(key = Group, value = Pop, totalpopE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_pctChange, 
+                                      w = Pop, na.rm = TRUE),
+            PM25Mean = mean(PM25_pctChange, na.rm = TRUE)) %>% 
+  spread(key = Group, value = PM25wMean) %>% 
+  transmute(Minority = (minorityE/PM25Mean - 1)*100,
+            #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+            `Lang Isol` = (eng_limitE/PM25Mean - 1)*100,
+            Poverty = (num2povE/PM25Mean - 1)*100,
+            `No HS` = (lthsE/PM25Mean - 1)*100,
+            `Under 5` = (under5E/PM25Mean - 1)*100,
+            `Over 65` = (over65E/PM25Mean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure CHANGE 2011 - 2016"), " (relative to NH average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+
+
 # Pop Weighted avg of PM2.5 by RACE in NH relative to White average
 ne_blkgrp_sf_DemoEJ %>% 
   as.data.frame() %>% 
@@ -813,6 +1345,57 @@ ne_blkgrp_sf_DemoEJ %>%
   geom_bar(stat = "identity", position = "identity") +
   theme_minimal() +
   labs(x = "", y = "", title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure by Race for New Hampshire"), "(relative to non-Hispanic White average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = Pct + 0.3 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+
+
+# Pop Weighted avg of PM2.5 CHANGE 2011 - 2016 by RACE in NH relative to White average
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "New Hampshire") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over65E, 
+                PM25_pctChange) %>% 
+  gather(key = Group, value = Pop, totalpopE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_pctChange, 
+                                      w = Pop, na.rm = TRUE),
+            PM25Mean = mean(PM25_pctChange, na.rm = TRUE)) %>% 
+  spread(key = Group, value = PM25wMean) %>% 
+  transmute(Black = (nhblackpopE/nhwhitepopE - 1)*100,
+            Asian = (nhasianpopE/nhwhitepopE - 1)*100,
+            AmerInd = (nhamerindpopE/nhwhitepopE - 1)*100,
+            `Native PI/HI` = (nhnativhpopE/nhwhitepopE - 1)*100,
+            Other = (nhotherpopE/nhwhitepopE - 1)*100,
+            Multiracial = (nhnativhpopE/nhwhitepopE - 1)*100,
+            Hispanic = (hisppopE/nhwhitepopE - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure CHANGE 2011 - 2016 by Race"), " for New Hampshire (relative to non-Hispanic White average)"))) + 
   theme(legend.position = 'none') +
   geom_text(aes(x = Group, y = Pct + 0.3 * sign(Pct), 
                 label = paste0(round(Pct,2),"%")), 
@@ -872,6 +1455,57 @@ ne_blkgrp_sf_DemoEJ %>%
   geom_hline(yintercept = 0)
 
 
+# Pop Weighted avg of PM2.5 CHANGE 2011 - 2016 for all Groups in Rhode Island relative to RI average
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Rhode Island") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over65E, 
+                PM25_pctChange) %>% 
+  gather(key = Group, value = Pop, totalpopE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_pctChange, 
+                                      w = Pop, na.rm = TRUE),
+            PM25Mean = mean(PM25_pctChange, na.rm = TRUE)) %>% 
+  spread(key = Group, value = PM25wMean) %>% 
+  transmute(Minority = (minorityE/PM25Mean - 1)*100,
+            #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+            `Lang Isol` = (eng_limitE/PM25Mean - 1)*100,
+            Poverty = (num2povE/PM25Mean - 1)*100,
+            `No HS` = (lthsE/PM25Mean - 1)*100,
+            `Under 5` = (under5E/PM25Mean - 1)*100,
+            `Over 65` = (over65E/PM25Mean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure CHANGE 2011 - 2016"), " (relative to RI average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+
+
 # Pop Weighted avg of PM2.5 by RACE in RI relative to White average
 ne_blkgrp_sf_DemoEJ %>% 
   as.data.frame() %>% 
@@ -922,6 +1556,57 @@ ne_blkgrp_sf_DemoEJ %>%
   geom_hline(yintercept = 0)
 
 
+# Pop Weighted avg of PM2.5 CHANGE 2011 - 2016 by RACE in RI relative to White average
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Rhode Island") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over65E, 
+                PM25_pctChange) %>% 
+  gather(key = Group, value = Pop, totalpopE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_pctChange, 
+                                      w = Pop, na.rm = TRUE),
+            PM25Mean = mean(PM25_pctChange, na.rm = TRUE)) %>% 
+  spread(key = Group, value = PM25wMean) %>% 
+  transmute(Black = (nhblackpopE/nhwhitepopE - 1)*100,
+            Asian = (nhasianpopE/nhwhitepopE - 1)*100,
+            AmerInd = (nhamerindpopE/nhwhitepopE - 1)*100,
+            `Native PI/HI` = (nhnativhpopE/nhwhitepopE - 1)*100,
+            Other = (nhotherpopE/nhwhitepopE - 1)*100,
+            Multiracial = (nhnativhpopE/nhwhitepopE - 1)*100,
+            Hispanic = (hisppopE/nhwhitepopE - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure CHANGE 2011 - 2016 by Race"), " for Rhode Island (relative to non-Hispanic White average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = Pct + 0.3 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+
+
 # # Pop Weighted avg of PM2.5 for Rhode Island EJ criteria in Rhode Island relative to RI average
 # library(plyr)
 ne_blkgrp_sf_DemoEJ %>% 
@@ -947,6 +1632,42 @@ ne_blkgrp_sf_DemoEJ %>%
   theme_minimal() +
   labs(x = "", y = "", 
        title = expression(paste("Population-Weighted ", PM[2.5], " Exposure for EJ Groups (relative to RI average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = pctDiff + 0.2 * sign(pctDiff), 
+                label = paste0(round(pctDiff,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0) +
+  scale_x_discrete(labels = c("Minority", "Income"))
+
+
+# # Pop Weighted avg of PM2.5 CHANGE 2011 - 2016 for Rhode Island EJ criteria in Rhode Island relative to RI average
+# library(plyr)
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Rhode Island") %>%
+  dplyr::select(totalpopE,
+                RI_INCOME, 
+                RI_MINORITY, 
+                PM25_pctChange) %>% 
+  gather(key = Group, value = Criterion, RI_INCOME:RI_MINORITY) %>% 
+  filter(Criterion != "NA") %>% 
+  plyr::ddply("Group", summarize, 
+              PM25wMean = weighted.mean(x = PM25_pctChange, 
+                                        w = totalpopE, na.rm = TRUE)) %>%
+  add_column(., !!! # append df with unequal length for global mean
+               ne_blkgrp_sf_DemoEJ %>% 
+               as.data.frame() %>% 
+               filter(STATE == "Rhode Island") %>% 
+               summarize(avgPM25 = mean(PM25_pctChange, na.rm = TRUE))) %>% 
+  mutate(pctDiff = (PM25wMean/avgPM25-1)*100) %>% 
+  ggplot(aes(x = reorder(Group, -pctDiff), 
+             y = pctDiff, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", 
+       title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure CHANGE 2011 - 2016 for EJ Groups"), " (relative to RI average)"))) + 
   theme(legend.position = 'none') +
   geom_text(aes(x = Group, y = pctDiff + 0.2 * sign(pctDiff), 
                 label = paste0(round(pctDiff,2),"%")), 
@@ -1007,6 +1728,57 @@ ne_blkgrp_sf_DemoEJ %>%
   geom_hline(yintercept = 0)
 
 
+# Pop Weighted avg of PM2.5 CHANGE 2011 - 2016 for all Groups in Vermont relative to VT average
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Vermont") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over65E, 
+                PM25_pctChange) %>% 
+  gather(key = Group, value = Pop, totalpopE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_pctChange, 
+                                      w = Pop, na.rm = TRUE),
+            PM25Mean = mean(PM25_pctChange, na.rm = TRUE)) %>% 
+  spread(key = Group, value = PM25wMean) %>% 
+  transmute(Minority = (minorityE/PM25Mean - 1)*100,
+            #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+            `Lang Isol` = (eng_limitE/PM25Mean - 1)*100,
+            Poverty = (num2povE/PM25Mean - 1)*100,
+            `No HS` = (lthsE/PM25Mean - 1)*100,
+            `Under 5` = (under5E/PM25Mean - 1)*100,
+            `Over 65` = (over65E/PM25Mean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure CHANGE 2011 - 2016"), " (relative to VT average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+
+
 # Pop Weighted avg of PM2.5 by RACE in RI relative to White average
 ne_blkgrp_sf_DemoEJ %>% 
   as.data.frame() %>% 
@@ -1057,6 +1829,57 @@ ne_blkgrp_sf_DemoEJ %>%
   geom_hline(yintercept = 0)
 
 
+# Pop Weighted avg of PM2.5 CHANGE 2011 - 2016 by RACE in RI relative to White average
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Vermont") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over65E, 
+                PM25_pctChange) %>% 
+  gather(key = Group, value = Pop, totalpopE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_pctChange, 
+                                      w = Pop, na.rm = TRUE),
+            PM25Mean = mean(PM25_pctChange, na.rm = TRUE)) %>% 
+  spread(key = Group, value = PM25wMean) %>% 
+  transmute(Black = (nhblackpopE/nhwhitepopE - 1)*100,
+            Asian = (nhasianpopE/nhwhitepopE - 1)*100,
+            AmerInd = (nhamerindpopE/nhwhitepopE - 1)*100,
+            `Native PI/HI` = (nhnativhpopE/nhwhitepopE - 1)*100,
+            Other = (nhotherpopE/nhwhitepopE - 1)*100,
+            Multiracial = (nhnativhpopE/nhwhitepopE - 1)*100,
+            Hispanic = (hisppopE/nhwhitepopE - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure CHANGE 2011 - 2016 by Race"), " for Vermont (relative to non-Hispanic White average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = Pct + 0.3 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+
+
 # # Pop Weighted avg of PM2.5 for VT_INCOME in Connecticut relative to VT average at TOWN level
 ne_towns_sf_EJ %>% 
   as.data.frame() %>% 
@@ -1082,6 +1905,41 @@ ne_towns_sf_EJ %>%
   theme_minimal() +
   labs(x = "", y = "", 
        title = expression(paste("Population-Weighted ", PM[2.5], " Exposure (relative to VT average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = VT_INCOME, y = pctDiff + 0.2 * sign(pctDiff), 
+                label = paste0(round(pctDiff,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0) +
+  scale_x_discrete(labels = c("Low Income", "Not Low Income"))
+
+
+# # Pop Weighted avg of PM2.5 CHANGE 2011 - 2016 for VT_INCOME in Connecticut relative to VT average at TOWN level
+ne_towns_sf_EJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Vermont") %>%
+  dplyr::select(totalpopE,
+                VT_INCOME, 
+                VT_INCOME_UC, 
+                VT_INCOME_LC, 
+                PM25_pctChange) %>% 
+  group_by(VT_INCOME) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_pctChange, 
+                                      w = totalpopE, na.rm = TRUE)) %>% 
+  add_column(., !!! # append df with unequal length for global mean
+               ne_towns_sf_EJ %>% 
+               as.data.frame() %>% 
+               filter(STATE == "Vermont") %>% 
+               summarize(avgPM25 = mean(PM25_pctChange, na.rm = TRUE))
+  ) %>% 
+  mutate(pctDiff = (PM25wMean/avgPM25-1)*100) %>% 
+  ggplot(aes(x = reorder(VT_INCOME, -pctDiff), 
+             y = pctDiff, fill = VT_INCOME)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", 
+       title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure CHANGE 2011 - 2016"), "(relative to VT average)"))) + 
   theme(legend.position = 'none') +
   geom_text(aes(x = VT_INCOME, y = pctDiff + 0.2 * sign(pctDiff), 
                 label = paste0(round(pctDiff,2),"%")), 
