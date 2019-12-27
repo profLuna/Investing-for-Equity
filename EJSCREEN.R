@@ -246,6 +246,178 @@ ne_blkgrp_sf_DemoEJ %>%
   geom_hline(yintercept = 0)
 
 
+# Slope graph of change in pop-weighted PM2.5 exposure beteween 2011 and 2016
+library(CGPfunctions)
+# Create df of 2019 values
+PM19wAvgs <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE,
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE,
+                allAgesE, 
+                under5E,
+                over65E,
+                PM25_19) %>% 
+  gather(key = Group, value = Pop, totalpopE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_19, 
+                                      w = Pop, na.rm = TRUE),
+            PM25Mean = mean(PM25_19, na.rm = TRUE)) %>% 
+  spread(key = Group, value = PM25wMean) %>% 
+  transmute(Minority = (minorityE/PM25Mean - 1)*100,
+            #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+            `Lang Isol` = (eng_limitE/PM25Mean - 1)*100,
+            Poverty = (num2povE/PM25Mean - 1)*100,
+            `No HS` = (lthsE/PM25Mean - 1)*100,
+            `Under 5` = (under5E/PM25Mean - 1)*100,
+            `Over 65` = (over65E/PM25Mean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  mutate(Year = 2016)
+# Create df of 2015 values
+PM15wAvgs <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(pop_15,
+                mins_15,
+                lowinc_15,
+                lingiso_15,
+                lths_15,
+                under5_15,
+                over64_15,
+                pm_15) %>% 
+  gather(key = Group, value = Pop, pop_15:over64_15) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = pm_15, 
+                                      w = Pop, na.rm = TRUE),
+            PM25Mean = mean(pm_15, na.rm = TRUE)) %>% 
+  spread(key = Group, value = PM25wMean) %>% 
+  transmute(Minority = (mins_15/PM25Mean - 1)*100,
+            #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+            `Lang Isol` = (lingiso_15/PM25Mean - 1)*100,
+            Poverty = (lowinc_15/PM25Mean - 1)*100,
+            `No HS` = (lths_15/PM25Mean - 1)*100,
+            `Under 5` = (under5_15/PM25Mean - 1)*100,
+            `Over 65` = (over64_15/PM25Mean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  mutate(Year = 2011)
+# Create regional average benchmark
+pmRegionalAvg <- data.frame(
+  Group = c("REGIONAL AVG", "REGIONAL AVG"),
+  Pct = c(0,0),
+  Year = c(2011,2016)
+)
+#rbind tables
+PM11_16wAvg <- bind_rows(PM15wAvgs,PM19wAvgs,pmRegionalAvg) %>% 
+  mutate(Year = as.factor(Year),
+         Pct = round(Pct,2))
+# make slope graph
+newggslopegraph(dataframe = PM11_16wAvg, 
+                Times = Year, 
+                Measurement = Pct, 
+                Grouping = Group,
+                Title = "Population-Weighted PM2.5 Exposure",
+                SubTitle = "Relative to New England Average",
+                Caption = "Values represent percentage of regional average PM2.5 levels. Positive values \nindicate exposure for those groups are higher than the regional average; negative \nvalues indicate exposure for those groups are less than the regional average.",
+                LineColor = c("REGIONAL AVG" = "#000000",
+                              "Lang Isol" = "#E69F00",
+                              "Minority" = "#56B4E9",
+                              "No HS" = "#009E73",
+                              "Poverty" = "#F0E442",
+                              "Under 5" = "#0072B2",
+                              "Over 65" = "#D55E00"))
+
+
+# Create df of 2019 actual values
+PM19wAvgs_actual <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(minorityE,
+                num2povE,
+                eng_limitE,
+                lthsE,
+                under5E,
+                over65E,
+                PM25_19) %>% 
+  gather(key = Group, value = Pop, minorityE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_19, 
+                                      w = Pop, na.rm = TRUE)) %>% 
+  mutate(Group = case_when(
+    Group == "minorityE" ~ "Minority",
+    Group == "eng_limitE" ~ "Lang Isol",
+    Group == "num2povE" ~ "Poverty",
+    Group == "lthsE" ~ "No HS",
+    Group == "under5E" ~ "Under 5",
+    Group == "over65E" ~ "Over 65")) %>% 
+  mutate(Year = 2016)
+# Create df of 2015 values
+PM15wAvgs_actual <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(mins_15,
+                lowinc_15,
+                lingiso_15,
+                lths_15,
+                under5_15,
+                over64_15,
+                pm_15) %>% 
+  gather(key = Group, value = Pop, mins_15:over64_15) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = pm_15, 
+                                      w = Pop, na.rm = TRUE)) %>%  
+  mutate(Group = case_when(
+    Group == "mins_15" ~ "Minority",
+    Group == "lingiso_15" ~ "Lang Isol",
+    Group == "lowinc_15" ~ "Poverty",
+    Group == "lths_15" ~ "No HS",
+    Group == "under5_15" ~ "Under 5",
+    Group == "over64_15" ~ "Over 65")) %>% 
+  mutate(Year = 2011)
+# Create regional average benchmark
+pm15NEavg <- mean(ne_blkgrp_sf_DemoEJ$pm_15, na.rm = TRUE)
+pm19NEavg <- mean(ne_blkgrp_sf_DemoEJ$PM25_19, na.rm = TRUE)
+pmRegionalAvg_actual <- data.frame(
+  Group = c("REGIONAL AVG", "REGIONAL AVG"),
+  PM25wMean = c(pm15NEavg,pm19NEavg),
+  Year = c(2011,2016)
+)
+#rbind tables
+PM11_16wAvg_actual <- bind_rows(PM15wAvgs_actual,
+                                PM19wAvgs_actual,
+                                pmRegionalAvg_actual) %>% 
+  mutate(Year = as.factor(Year),
+         PM25wMean = round(PM25wMean,1))
+# make slope graph
+newggslopegraph(dataframe = PM11_16wAvg_actual, 
+                Times = Year, 
+                Measurement = PM25wMean, 
+                Grouping = Group,
+                Title = "Population-Weighted PM2.5 Exposure",
+                SubTitle = "in micrograms per cubic meter",
+                Caption = NULL,
+                LineColor = c("REGIONAL AVG" = "#000000",
+                              "Lang Isol" = "#E69F00",
+                              "Minority" = "#56B4E9",
+                              "No HS" = "#009E73",
+                              "Poverty" = "#F0E442",
+                              "Under 5" = "#0072B2",
+                              "Over 65" = "#D55E00"))
+
+
 # Pop Weighted avg of PM2.5 for ALL GROUPS in New England relative to CONTRAST GROUPS
 ne_blkgrp_sf_DemoEJ %>% 
   as.data.frame() %>% 
@@ -553,6 +725,90 @@ ne_blkgrp_sf_DemoEJ %>%
   geom_hline(yintercept = 0)
 
 
+# Slope graph of change in pop-weighted PM2.5 exposure beteween 2011 and 2016
+# Create df of 2019 actual values
+PM19wAvgs_actualCT <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Connecticut") %>%
+  dplyr::select(minorityE,
+                num2povE,
+                eng_limitE,
+                lthsE,
+                under5E,
+                over65E,
+                PM25_19) %>% 
+  gather(key = Group, value = Pop, minorityE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_19, 
+                                      w = Pop, na.rm = TRUE)) %>% 
+  mutate(Group = case_when(
+    Group == "minorityE" ~ "Minority",
+    Group == "eng_limitE" ~ "Lang Isol",
+    Group == "num2povE" ~ "Poverty",
+    Group == "lthsE" ~ "No HS",
+    Group == "under5E" ~ "Under 5",
+    Group == "over65E" ~ "Over 65")) %>% 
+  mutate(Year = 2016)
+# Create df of 2015 values
+PM15wAvgs_actualCT <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Connecticut") %>%
+  dplyr::select(mins_15,
+                lowinc_15,
+                lingiso_15,
+                lths_15,
+                under5_15,
+                over64_15,
+                pm_15) %>% 
+  gather(key = Group, value = Pop, mins_15:over64_15) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = pm_15, 
+                                      w = Pop, na.rm = TRUE)) %>%  
+  mutate(Group = case_when(
+    Group == "mins_15" ~ "Minority",
+    Group == "lingiso_15" ~ "Lang Isol",
+    Group == "lowinc_15" ~ "Poverty",
+    Group == "lths_15" ~ "No HS",
+    Group == "under5_15" ~ "Under 5",
+    Group == "over64_15" ~ "Over 65")) %>% 
+  mutate(Year = 2011)
+# Create regional average benchmark
+pm15NEavgCT <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Connecticut") %>% 
+  summarize(mean(pm_15, na.rm = TRUE))
+pm19NEavgCT <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Connecticut") %>% 
+  summarize(mean(PM25_19, na.rm = TRUE))
+pmRegionalAvg_actualCT <- data.frame(
+  Group = c("REGIONAL AVG", "REGIONAL AVG"),
+  PM25wMean = c(pm15NEavgCT[1,1],pm19NEavgCT[1,1]),
+  Year = c(2011,2016)
+)
+#rbind tables
+PM11_16wAvg_actualCT <- bind_rows(PM15wAvgs_actualCT,
+                                PM19wAvgs_actualCT,
+                                pmRegionalAvg_actual) %>% 
+  mutate(Year = as.factor(Year),
+         PM25wMean = round(PM25wMean,1))
+# make slope graph
+newggslopegraph(dataframe = PM11_16wAvg_actualCT, 
+                Times = Year, 
+                Measurement = PM25wMean, 
+                Grouping = Group,
+                Title = "Population-Weighted PM2.5 Exposure for CT",
+                SubTitle = "in micrograms per cubic meter",
+                Caption = NULL,
+                LineColor = c("REGIONAL AVG" = "#000000",
+                              "Lang Isol" = "#E69F00",
+                              "Minority" = "#56B4E9",
+                              "No HS" = "#009E73",
+                              "Poverty" = "#F0E442",
+                              "Under 5" = "#0072B2",
+                              "Over 65" = "#D55E00"))
+
+
 # Pop Weighted avg of PM2.5 by RACE in CT relative to White average
 ne_blkgrp_sf_DemoEJ %>% 
   as.data.frame() %>% 
@@ -823,6 +1079,90 @@ ne_blkgrp_sf_DemoEJ %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0)
+
+
+# Slope graph of change in pop-weighted PM2.5 exposure beteween 2011 and 2016
+# Create df of 2019 actual values
+PM19wAvgs_actualMA <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Massachusetts") %>%
+  dplyr::select(minorityE,
+                num2povE,
+                eng_limitE,
+                lthsE,
+                under5E,
+                over65E,
+                PM25_19) %>% 
+  gather(key = Group, value = Pop, minorityE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_19, 
+                                      w = Pop, na.rm = TRUE)) %>% 
+  mutate(Group = case_when(
+    Group == "minorityE" ~ "Minority",
+    Group == "eng_limitE" ~ "Lang Isol",
+    Group == "num2povE" ~ "Poverty",
+    Group == "lthsE" ~ "No HS",
+    Group == "under5E" ~ "Under 5",
+    Group == "over65E" ~ "Over 65")) %>% 
+  mutate(Year = 2016)
+# Create df of 2015 values
+PM15wAvgs_actualMA <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Massachusetts") %>%
+  dplyr::select(mins_15,
+                lowinc_15,
+                lingiso_15,
+                lths_15,
+                under5_15,
+                over64_15,
+                pm_15) %>% 
+  gather(key = Group, value = Pop, mins_15:over64_15) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = pm_15, 
+                                      w = Pop, na.rm = TRUE)) %>%  
+  mutate(Group = case_when(
+    Group == "mins_15" ~ "Minority",
+    Group == "lingiso_15" ~ "Lang Isol",
+    Group == "lowinc_15" ~ "Poverty",
+    Group == "lths_15" ~ "No HS",
+    Group == "under5_15" ~ "Under 5",
+    Group == "over64_15" ~ "Over 65")) %>% 
+  mutate(Year = 2011)
+# Create regional average benchmark
+pm15NEavgMA <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Massachusetts") %>% 
+  summarize(mean(pm_15, na.rm = TRUE))
+pm19NEavgMA <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Massachusetts") %>% 
+  summarize(mean(PM25_19, na.rm = TRUE))
+pmRegionalAvg_actualMA <- data.frame(
+  Group = c("REGIONAL AVG", "REGIONAL AVG"),
+  PM25wMean = c(pm15NEavgMA[1,1],pm19NEavgMA[1,1]),
+  Year = c(2011,2016)
+)
+#rbind tables
+PM11_16wAvg_actualMA <- bind_rows(PM15wAvgs_actualMA,
+                                  PM19wAvgs_actualMA,
+                                  pmRegionalAvg_actual) %>% 
+  mutate(Year = as.factor(Year),
+         PM25wMean = round(PM25wMean,1))
+# make slope graph
+newggslopegraph(dataframe = PM11_16wAvg_actualMA, 
+                Times = Year, 
+                Measurement = PM25wMean, 
+                Grouping = Group,
+                Title = "Population-Weighted PM2.5 Exposure for MA",
+                SubTitle = "in micrograms per cubic meter",
+                Caption = NULL,
+                LineColor = c("REGIONAL AVG" = "#000000",
+                              "Lang Isol" = "#E69F00",
+                              "Minority" = "#56B4E9",
+                              "No HS" = "#009E73",
+                              "Poverty" = "#F0E442",
+                              "Under 5" = "#0072B2",
+                              "Over 65" = "#D55E00"))
 
 
 # Pop Weighted avg of PM2.5 by RACE in MA relative to White average
@@ -1102,6 +1442,90 @@ ne_blkgrp_sf_DemoEJ %>%
   geom_hline(yintercept = 0)
 
 
+# Slope graph of change in pop-weighted PM2.5 exposure beteween 2011 and 2016
+# Create df of 2019 actual values
+PM19wAvgs_actualME <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Maine") %>%
+  dplyr::select(minorityE,
+                num2povE,
+                eng_limitE,
+                lthsE,
+                under5E,
+                over65E,
+                PM25_19) %>% 
+  gather(key = Group, value = Pop, minorityE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_19, 
+                                      w = Pop, na.rm = TRUE)) %>% 
+  mutate(Group = case_when(
+    Group == "minorityE" ~ "Minority",
+    Group == "eng_limitE" ~ "Lang Isol",
+    Group == "num2povE" ~ "Poverty",
+    Group == "lthsE" ~ "No HS",
+    Group == "under5E" ~ "Under 5",
+    Group == "over65E" ~ "Over 65")) %>% 
+  mutate(Year = 2016)
+# Create df of 2015 values
+PM15wAvgs_actualME <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Maine") %>%
+  dplyr::select(mins_15,
+                lowinc_15,
+                lingiso_15,
+                lths_15,
+                under5_15,
+                over64_15,
+                pm_15) %>% 
+  gather(key = Group, value = Pop, mins_15:over64_15) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = pm_15, 
+                                      w = Pop, na.rm = TRUE)) %>%  
+  mutate(Group = case_when(
+    Group == "mins_15" ~ "Minority",
+    Group == "lingiso_15" ~ "Lang Isol",
+    Group == "lowinc_15" ~ "Poverty",
+    Group == "lths_15" ~ "No HS",
+    Group == "under5_15" ~ "Under 5",
+    Group == "over64_15" ~ "Over 65")) %>% 
+  mutate(Year = 2011)
+# Create regional average benchmark
+pm15NEavgME <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Maine") %>% 
+  summarize(mean(pm_15, na.rm = TRUE))
+pm19NEavgME <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Maine") %>% 
+  summarize(mean(PM25_19, na.rm = TRUE))
+pmRegionalAvg_actualME <- data.frame(
+  Group = c("REGIONAL AVG", "REGIONAL AVG"),
+  PM25wMean = c(pm15NEavgME[1,1],pm19NEavgME[1,1]),
+  Year = c(2011,2016)
+)
+#rbind tables
+PM11_16wAvg_actualME <- bind_rows(PM15wAvgs_actualME,
+                                  PM19wAvgs_actualME,
+                                  pmRegionalAvg_actual) %>% 
+  mutate(Year = as.factor(Year),
+         PM25wMean = round(PM25wMean,1))
+# make slope graph
+newggslopegraph(dataframe = PM11_16wAvg_actualME, 
+                Times = Year, 
+                Measurement = PM25wMean, 
+                Grouping = Group,
+                Title = "Population-Weighted PM2.5 Exposure for ME",
+                SubTitle = "in micrograms per cubic meter",
+                Caption = NULL,
+                LineColor = c("REGIONAL AVG" = "#000000",
+                              "Lang Isol" = "#E69F00",
+                              "Minority" = "#56B4E9",
+                              "No HS" = "#009E73",
+                              "Poverty" = "#F0E442",
+                              "Under 5" = "#0072B2",
+                              "Over 65" = "#D55E00"))
+
+
 # Pop Weighted avg of PM2.5 by RACE in ME relative to White average
 ne_blkgrp_sf_DemoEJ %>% 
   as.data.frame() %>% 
@@ -1304,6 +1728,90 @@ ne_blkgrp_sf_DemoEJ %>%
   geom_hline(yintercept = 0)
 
 
+# Slope graph of change in pop-weighted PM2.5 exposure beteween 2011 and 2016
+# Create df of 2019 actual values
+PM19wAvgs_actualNH <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "New Hampshire") %>%
+  dplyr::select(minorityE,
+                num2povE,
+                eng_limitE,
+                lthsE,
+                under5E,
+                over65E,
+                PM25_19) %>% 
+  gather(key = Group, value = Pop, minorityE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_19, 
+                                      w = Pop, na.rm = TRUE)) %>% 
+  mutate(Group = case_when(
+    Group == "minorityE" ~ "Minority",
+    Group == "eng_limitE" ~ "Lang Isol",
+    Group == "num2povE" ~ "Poverty",
+    Group == "lthsE" ~ "No HS",
+    Group == "under5E" ~ "Under 5",
+    Group == "over65E" ~ "Over 65")) %>% 
+  mutate(Year = 2016)
+# Create df of 2015 values
+PM15wAvgs_actualNH <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "New Hampshire") %>%
+  dplyr::select(mins_15,
+                lowinc_15,
+                lingiso_15,
+                lths_15,
+                under5_15,
+                over64_15,
+                pm_15) %>% 
+  gather(key = Group, value = Pop, mins_15:over64_15) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = pm_15, 
+                                      w = Pop, na.rm = TRUE)) %>%  
+  mutate(Group = case_when(
+    Group == "mins_15" ~ "Minority",
+    Group == "lingiso_15" ~ "Lang Isol",
+    Group == "lowinc_15" ~ "Poverty",
+    Group == "lths_15" ~ "No HS",
+    Group == "under5_15" ~ "Under 5",
+    Group == "over64_15" ~ "Over 65")) %>% 
+  mutate(Year = 2011)
+# Create regional average benchmark
+pm15NEavgNH <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "New Hampshire") %>% 
+  summarize(mean(pm_15, na.rm = TRUE))
+pm19NEavgNH <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "New Hampshire") %>% 
+  summarize(mean(PM25_19, na.rm = TRUE))
+pmRegionalAvg_actualNH <- data.frame(
+  Group = c("REGIONAL AVG", "REGIONAL AVG"),
+  PM25wMean = c(pm15NEavgNH[1,1],pm19NEavgNH[1,1]),
+  Year = c(2011,2016)
+)
+#rbind tables
+PM11_16wAvg_actualNH <- bind_rows(PM15wAvgs_actualNH,
+                                  PM19wAvgs_actualNH,
+                                  pmRegionalAvg_actual) %>% 
+  mutate(Year = as.factor(Year),
+         PM25wMean = round(PM25wMean,1))
+# make slope graph
+newggslopegraph(dataframe = PM11_16wAvg_actualNH, 
+                Times = Year, 
+                Measurement = PM25wMean, 
+                Grouping = Group,
+                Title = "Population-Weighted PM2.5 Exposure for NH",
+                SubTitle = "in micrograms per cubic meter",
+                Caption = NULL,
+                LineColor = c("REGIONAL AVG" = "#000000",
+                              "Lang Isol" = "#E69F00",
+                              "Minority" = "#56B4E9",
+                              "No HS" = "#009E73",
+                              "Poverty" = "#F0E442",
+                              "Under 5" = "#0072B2",
+                              "Over 65" = "#D55E00"))
+
+
 # Pop Weighted avg of PM2.5 by RACE in NH relative to White average
 ne_blkgrp_sf_DemoEJ %>% 
   as.data.frame() %>% 
@@ -1504,6 +2012,90 @@ ne_blkgrp_sf_DemoEJ %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0)
+
+
+# Slope graph of change in pop-weighted PM2.5 exposure beteween 2011 and 2016
+# Create df of 2019 actual values
+PM19wAvgs_actualRI <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Rhode Island") %>%
+  dplyr::select(minorityE,
+                num2povE,
+                eng_limitE,
+                lthsE,
+                under5E,
+                over65E,
+                PM25_19) %>% 
+  gather(key = Group, value = Pop, minorityE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_19, 
+                                      w = Pop, na.rm = TRUE)) %>% 
+  mutate(Group = case_when(
+    Group == "minorityE" ~ "Minority",
+    Group == "eng_limitE" ~ "Lang Isol",
+    Group == "num2povE" ~ "Poverty",
+    Group == "lthsE" ~ "No HS",
+    Group == "under5E" ~ "Under 5",
+    Group == "over65E" ~ "Over 65")) %>% 
+  mutate(Year = 2016)
+# Create df of 2015 values
+PM15wAvgs_actualRI <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Rhode Island") %>%
+  dplyr::select(mins_15,
+                lowinc_15,
+                lingiso_15,
+                lths_15,
+                under5_15,
+                over64_15,
+                pm_15) %>% 
+  gather(key = Group, value = Pop, mins_15:over64_15) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = pm_15, 
+                                      w = Pop, na.rm = TRUE)) %>%  
+  mutate(Group = case_when(
+    Group == "mins_15" ~ "Minority",
+    Group == "lingiso_15" ~ "Lang Isol",
+    Group == "lowinc_15" ~ "Poverty",
+    Group == "lths_15" ~ "No HS",
+    Group == "under5_15" ~ "Under 5",
+    Group == "over64_15" ~ "Over 65")) %>% 
+  mutate(Year = 2011)
+# Create regional average benchmark
+pm15NEavgRI <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Rhode Island") %>% 
+  summarize(mean(pm_15, na.rm = TRUE))
+pm19NEavgRI <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Rhode Island") %>% 
+  summarize(mean(PM25_19, na.rm = TRUE))
+pmRegionalAvg_actualRI <- data.frame(
+  Group = c("REGIONAL AVG", "REGIONAL AVG"),
+  PM25wMean = c(pm15NEavgRI[1,1],pm19NEavgRI[1,1]),
+  Year = c(2011,2016)
+)
+#rbind tables
+PM11_16wAvg_actualRI <- bind_rows(PM15wAvgs_actualRI,
+                                  PM19wAvgs_actualRI,
+                                  pmRegionalAvg_actual) %>% 
+  mutate(Year = as.factor(Year),
+         PM25wMean = round(PM25wMean,1))
+# make slope graph
+newggslopegraph(dataframe = PM11_16wAvg_actualRI, 
+                Times = Year, 
+                Measurement = PM25wMean, 
+                Grouping = Group,
+                Title = "Population-Weighted PM2.5 Exposure for RI",
+                SubTitle = "in micrograms per cubic meter",
+                Caption = NULL,
+                LineColor = c("REGIONAL AVG" = "#000000",
+                              "Lang Isol" = "#E69F00",
+                              "Minority" = "#56B4E9",
+                              "No HS" = "#009E73",
+                              "Poverty" = "#F0E442",
+                              "Under 5" = "#0072B2",
+                              "Over 65" = "#D55E00"))
 
 
 # Pop Weighted avg of PM2.5 by RACE in RI relative to White average
@@ -1777,6 +2369,90 @@ ne_blkgrp_sf_DemoEJ %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0)
+
+
+# Slope graph of change in pop-weighted PM2.5 exposure beteween 2011 and 2016
+# Create df of 2019 actual values
+PM19wAvgs_actualVT <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Vermont") %>%
+  dplyr::select(minorityE,
+                num2povE,
+                eng_limitE,
+                lthsE,
+                under5E,
+                over65E,
+                PM25_19) %>% 
+  gather(key = Group, value = Pop, minorityE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_19, 
+                                      w = Pop, na.rm = TRUE)) %>% 
+  mutate(Group = case_when(
+    Group == "minorityE" ~ "Minority",
+    Group == "eng_limitE" ~ "Lang Isol",
+    Group == "num2povE" ~ "Poverty",
+    Group == "lthsE" ~ "No HS",
+    Group == "under5E" ~ "Under 5",
+    Group == "over65E" ~ "Over 65")) %>% 
+  mutate(Year = 2016)
+# Create df of 2015 values
+PM15wAvgs_actualVT <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Vermont") %>%
+  dplyr::select(mins_15,
+                lowinc_15,
+                lingiso_15,
+                lths_15,
+                under5_15,
+                over64_15,
+                pm_15) %>% 
+  gather(key = Group, value = Pop, mins_15:over64_15) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = pm_15, 
+                                      w = Pop, na.rm = TRUE)) %>%  
+  mutate(Group = case_when(
+    Group == "mins_15" ~ "Minority",
+    Group == "lingiso_15" ~ "Lang Isol",
+    Group == "lowinc_15" ~ "Poverty",
+    Group == "lths_15" ~ "No HS",
+    Group == "under5_15" ~ "Under 5",
+    Group == "over64_15" ~ "Over 65")) %>% 
+  mutate(Year = 2011)
+# Create regional average benchmark
+pm15NEavgVT <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Vermont") %>% 
+  summarize(mean(pm_15, na.rm = TRUE))
+pm19NEavgVT <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  filter(STATE == "Vermont") %>% 
+  summarize(mean(PM25_19, na.rm = TRUE))
+pmRegionalAvg_actualVT <- data.frame(
+  Group = c("REGIONAL AVG", "REGIONAL AVG"),
+  PM25wMean = c(pm15NEavgVT[1,1],pm19NEavgVT[1,1]),
+  Year = c(2011,2016)
+)
+#rbind tables
+PM11_16wAvg_actualVT <- bind_rows(PM15wAvgs_actualVT,
+                                  PM19wAvgs_actualVT,
+                                  pmRegionalAvg_actual) %>% 
+  mutate(Year = as.factor(Year),
+         PM25wMean = round(PM25wMean,1))
+# make slope graph
+newggslopegraph(dataframe = PM11_16wAvg_actualVT, 
+                Times = Year, 
+                Measurement = PM25wMean, 
+                Grouping = Group,
+                Title = "Population-Weighted PM2.5 Exposure for VT",
+                SubTitle = "in micrograms per cubic meter",
+                Caption = NULL,
+                LineColor = c("REGIONAL AVG" = "#000000",
+                              "Lang Isol" = "#E69F00",
+                              "Minority" = "#56B4E9",
+                              "No HS" = "#009E73",
+                              "Poverty" = "#F0E442",
+                              "Under 5" = "#0072B2",
+                              "Over 65" = "#D55E00"))
 
 
 # Pop Weighted avg of PM2.5 by RACE in RI relative to White average
