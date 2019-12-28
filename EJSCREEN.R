@@ -138,9 +138,85 @@ save(ne_blkgrp_sf,
 
 
 # SUMMARY STATISTICS AND MAPS OF DEMOGRAPHICS/EJ INDICES BY REGION AND STATE
+# Map of populations of concern for New England
+# create a directory to save shapefiles
+dir.create("DATA/shapefiles")
+# download the zipped shapefile from MassGIS into shapefiles directory
+download.file(url = "http://download.massgis.digital.mass.gov/shapefiles/ne/newengland.zip",
+              destfile = "DATA/shapefiles/newengland.zip")
+
+# unzip the downloaded shapefile into the shapefiles directory
+unzip(zipfile = "DATA/shapefiles/newengland.zip", exdir = "./DATA/shapefiles")
+
+# read in shapefile using sf::st_read
+ne_states_sf <- st_read(dsn = "DATA/shapefiles", layer = "NEWENGLAND_POLY")
+
+# Add state abbreviations to state layer for labeling
+state.names <- sort(as.character(unique(ne_states_sf$NAME)))
+state.names <- data.frame(
+  state.abbrev = c("CT","ME","MA","NH","RI","VT"),
+  state.names
+)
+ne_states_sf <- left_join(ne_states_sf, state.names, 
+                          by = c("NAME" = "state.names"))
+
+# Create point layer of major cities for context
+ne_towns_sf_pts <- ne_towns_sf %>% 
+  filter((NAMELSAD == "Boston city" & STATE == "Massachusetts") | 
+           (NAMELSAD == "Portland city" & STATE == "Maine") |
+           (NAMELSAD == "Hartford town" & STATE == "Connecticut") |
+           (NAMELSAD == "Providence city" & STATE == "Rhode Island") |
+           (NAMELSAD == "Portsmouth city" & STATE == "New Hampshire") |
+           (NAMELSAD == "Montpelier city" & STATE == "Vermont")) %>% 
+  st_centroid(of_largest_polygon = TRUE)
+
+# NEW ENGLAND
+# Minorities
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  summarize(Minorities = sum(minorityE),
+            PctMinorities = paste0(
+              round(sum(minorityE)/sum(totalpopE)*100,1),
+              "%"))
+# Map data
+# version 1
+tmap_mode("plot")
+tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+  tm_fill("minority_pctE", style = "pretty", title = "Percent",
+          legend.hist = TRUE, 
+          legend.is.portrait = FALSE) +
+  tm_shape(ne_states_sf) + tm_borders(alpha = 0.4) +
+  tm_compass(type = "arrow", position = c("left", "top"), text.size = 0.5) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.2,0.005)) +
+  tm_layout(title = "Minorities in New England\nby Census Block Group\n2013-2017", main.title.size = 0.8,
+            legend.position = c(.6, .005),
+            legend.height = 0.7,
+            legend.title.size = 0.7,
+            legend.hist.size = 0.5,
+            legend.text.size = 0.5,
+            legend.width = 0.8) 
+
+# version 2
+tmap_mode("plot")
+tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+  tm_fill("minority_pctE", style = "pretty", title = "Percent",
+          legend.hist = TRUE, 
+          legend.is.portrait = FALSE) +
+  tm_shape(ne_states_sf) + tm_borders(alpha = 0.4) + 
+  tm_text("state.abbrev", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Minorities in New England\nby Census Block Group\n2013-2017", frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.7,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9) 
 
 
 # SUMMARY STATISTICS AND MAPS OF POLLUTION MEASURES BY REGION AND STATE (MIGHT WANT TO SHOW PERCENTILES HERE; OR STYLE = QUANTILE)
+
 
 # SCATTER PLOTS AND CORRELATION MATRICES OF DEMO VS POLLUTION FOR NEW ENGLAND AND STATES (CORRECT FOR NON-NORMAL DISTRIBUTIONS; OR USE SPEARMAN'S RANK)
 
@@ -2453,7 +2529,8 @@ newggslopegraph(dataframe = PM11_16wAvg_actualVT,
                               "Poverty" = "#F0E442",
                               "Under 5" = "#0072B2",
                               "Over 65" = "#D55E00"))
-
+# clean up
+rm(list = ls(pattern = "pmRegion|PM15|pm15|PM19|pm19|PM11"))
 
 # Pop Weighted avg of PM2.5 by RACE in RI relative to White average
 ne_blkgrp_sf_DemoEJ %>% 
