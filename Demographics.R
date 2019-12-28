@@ -94,7 +94,7 @@ ne_towns_sp <- rbind_tigris(
     }
   )
 )
-# plot(ne_towns_sp)
+
 
 # join the demographics to the polygons
 ne_towns_sp <- geo_join(spatial_data = ne_towns_sp,
