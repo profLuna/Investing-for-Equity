@@ -132,7 +132,9 @@ save(ne_blkgrp_sf,
      ne_tracts_sf_DEMOG,
      ne_towns_sf, 
      ne_towns_sf_EJ,
+     ne_towns_sf_pts,
      ne_states,
+     ne_states_sf_cb,
      ne_blkgrp_sf_DemoEJ,
      file = "DATA/ne_layers.rds")
 
@@ -140,25 +142,32 @@ save(ne_blkgrp_sf,
 # SUMMARY STATISTICS AND MAPS OF DEMOGRAPHICS/EJ INDICES BY REGION AND STATE
 # Map of populations of concern for New England
 # create a directory to save shapefiles
-dir.create("DATA/shapefiles")
-# download the zipped shapefile from MassGIS into shapefiles directory
-download.file(url = "http://download.massgis.digital.mass.gov/shapefiles/ne/newengland.zip",
-              destfile = "DATA/shapefiles/newengland.zip")
+# dir.create("DATA/shapefiles")
+# # download the zipped shapefile from MassGIS into shapefiles directory
+# download.file(url = "http://download.massgis.digital.mass.gov/shapefiles/ne/newengland.zip",
+#               destfile = "DATA/shapefiles/newengland.zip")
+# 
+# # unzip the downloaded shapefile into the shapefiles directory
+# unzip(zipfile = "DATA/shapefiles/newengland.zip", exdir = "./DATA/shapefiles")
+# 
+# # read in shapefile using sf::st_read
+# ne_states_sf <- st_read(dsn = "DATA/shapefiles", layer = "NEWENGLAND_POLY")
+# 
+# # Add state abbreviations to state layer for labeling
+# state.names <- sort(as.character(unique(ne_states_sf$NAME)))
+# state.names <- data.frame(
+#   state.abbrev = c("CT","ME","MA","NH","RI","VT"),
+#   state.names
+# )
+# ne_states_sf <- left_join(ne_states_sf, state.names, 
+#                           by = c("NAME" = "state.names"))
 
-# unzip the downloaded shapefile into the shapefiles directory
-unzip(zipfile = "DATA/shapefiles/newengland.zip", exdir = "./DATA/shapefiles")
-
-# read in shapefile using sf::st_read
-ne_states_sf <- st_read(dsn = "DATA/shapefiles", layer = "NEWENGLAND_POLY")
-
-# Add state abbreviations to state layer for labeling
-state.names <- sort(as.character(unique(ne_states_sf$NAME)))
-state.names <- data.frame(
-  state.abbrev = c("CT","ME","MA","NH","RI","VT"),
-  state.names
-)
-ne_states_sf <- left_join(ne_states_sf, state.names, 
-                          by = c("NAME" = "state.names"))
+# Download cartographic boundary file of states from tigris
+library(tigris)
+ne_states_sf_cb <- states(cb = TRUE) %>% 
+  st_as_sf() %>% 
+  filter(STUSPS %in% ne_states)
+# tm_shape(ne_states_sp) + tm_borders()
 
 # Create point layer of major cities for context
 ne_towns_sf_pts <- ne_towns_sf %>% 
@@ -180,32 +189,34 @@ ne_blkgrp_sf_DemoEJ %>%
               "%"))
 # Map data
 # version 1
-tmap_mode("plot")
-tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
-  tm_fill("minority_pctE", style = "pretty", title = "Percent",
-          legend.hist = TRUE, 
-          legend.is.portrait = FALSE) +
-  tm_shape(ne_states_sf) + tm_borders(alpha = 0.4) +
-  tm_compass(type = "arrow", position = c("left", "top"), text.size = 0.5) +
-  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
-               position = c(0.2,0.005)) +
-  tm_layout(title = "Minorities in New England\nby Census Block Group\n2013-2017", main.title.size = 0.8,
-            legend.position = c(.6, .005),
-            legend.height = 0.7,
-            legend.title.size = 0.7,
-            legend.hist.size = 0.5,
-            legend.text.size = 0.5,
-            legend.width = 0.8) 
+# tmap_mode("plot")
+# tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+#   tm_fill("minority_pctE", style = "pretty", title = "Percent",
+#           legend.hist = TRUE, 
+#           legend.is.portrait = FALSE) +
+#   tm_shape(ne_states_sf) + tm_borders(alpha = 0.4) +
+#   tm_compass(type = "arrow", position = c("left", "top"), text.size = 0.5) +
+#   tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+#                position = c(0.2,0.005)) +
+#   tm_layout(title = "Minorities in New England\nby Census Block Group\n2013-2017", main.title.size = 0.8,
+#             legend.position = c(.6, .005),
+#             legend.height = 0.7,
+#             legend.title.size = 0.7,
+#             legend.hist.size = 0.5,
+#             legend.text.size = 0.5,
+#             legend.width = 0.8) 
 
+# Map of minorities
 # version 2
 tmap_mode("plot")
 tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
   tm_fill("minority_pctE", style = "pretty", title = "Percent",
           legend.hist = TRUE, 
           legend.is.portrait = FALSE) +
-  tm_shape(ne_states_sf) + tm_borders(alpha = 0.4) + 
-  tm_text("state.abbrev", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
   tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
   tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
                position = c(0.6,0.005)) +
   tm_layout(title = "Minorities in New England\nby Census Block Group\n2013-2017", frame = FALSE, main.title.size = 0.8,
@@ -214,8 +225,219 @@ tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") +
             legend.outside.position = c("right", "top"),
             legend.hist.width = 0.9) 
 
+# Facet map of Minority by state
+tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+  tm_fill("minority_pctE", style = "pretty", title = "Percent") +
+  tm_facets(by = "STATE") +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Minorities by Census \nBlock Group 2013-2017", frame = FALSE, main.title.size = 0.8,
+            legend.title.size = 0.7,
+            legend.hist.width = 0.9) 
+
+
+# Low Income
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  summarize(LowIncome = sum(num2povE),
+            PctLowIncome = paste0(
+              round(sum(num2povE)/sum(totalpopE)*100,1),
+              "%"))
+
+tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+  tm_fill("pct2povE", style = "pretty", title = "Percent",
+          legend.hist = TRUE, 
+          legend.is.portrait = FALSE) +
+  tm_shape(ne_states_sf) + tm_borders(alpha = 0.4) + 
+  tm_text("state.abbrev", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Low Income People in New \nEngland by Census Block Group\n2013-2017", frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.7,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9) 
+
+# Facet map of Low Income by state
+tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+  tm_fill("pct2povE", style = "pretty", title = "Percent") +
+  tm_facets(by = "STATE") +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Low Income People by \nCensus Block Group\n2013-2017", frame = FALSE, main.title.size = 0.8,
+            legend.title.size = 0.7,
+            legend.hist.width = 0.9) 
+
+
+# Less than HS Education
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  summarize(NoHSDip = sum(lthsE),
+            PctNoHSDip = paste0(
+              round(sum(lthsE)/sum(age25upE)*100,1),
+              "%"))
+
+tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+  tm_fill("pct_lthsE", style = "pretty", title = "Percent",
+          legend.hist = TRUE, 
+          legend.is.portrait = FALSE) +
+  tm_shape(ne_states_sf) + tm_borders(alpha = 0.4) + 
+  tm_text("state.abbrev", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Adults with Less than a High \nSchool Education in New \nEngland by Census Block Group\n2013-2017", frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.7,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9) 
+
+# Facet map of Less than HS Education by state
+tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+  tm_fill("pct_lthsE", style = "pretty", title = "Percent") +
+  tm_facets(by = "STATE") +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Adults with Less than a \nHigh School Education \nby Census Block Group\n2013-2017", frame = FALSE, main.title.size = 0.8,
+            legend.title.size = 0.7,
+            legend.hist.width = 0.9) 
+
+
+# Linguistically Isolated
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  summarize(NoEnglish = sum(eng_limitE),
+            PctNoEnglish = paste0(
+              round(sum(eng_limitE)/sum(eng_hhE)*100,1),
+              "%"))
+
+tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+  tm_fill("eng_limit_pctE", style = "pretty", title = "Percent",
+          legend.hist = TRUE, 
+          legend.is.portrait = FALSE) +
+  tm_shape(ne_states_sf) + tm_borders(alpha = 0.4) + 
+  tm_text("state.abbrev", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Linguistically Isolated Households \nin New England by Census \nBlock Group 2013-2017", frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.7,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9) 
+
+# Facet map of Linguistically Isolated by state
+tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+  tm_fill("eng_limit_pctE", style = "pretty", title = "Percent") +
+  tm_facets(by = "STATE") +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Linguistically Isolated Households \nby Census Block Group \n2013-2017", frame = FALSE, main.title.size = 0.8,
+            legend.title.size = 0.7,
+            legend.hist.width = 0.9) 
+
+
+# Over Age 64
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  summarize(Over64 = sum(over65E),
+            PctOver64 = paste0(
+              round(sum(over65E)/sum(totalpopE)*100,1),
+              "%"))
+
+tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+  tm_fill("pct_over65E", style = "pretty", title = "Percent",
+          legend.hist = TRUE, 
+          legend.is.portrait = FALSE) +
+  tm_shape(ne_states_sf) + tm_borders(alpha = 0.4) + 
+  tm_text("state.abbrev", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "People Over Age 64 \nin New England by Census \nBlock Group 2013-2017", frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.7,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9) 
+
+# Facet map of Over 64 by state
+tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+  tm_fill("pct_over65E", style = "pretty", title = "Percent") +
+  tm_facets(by = "STATE") +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "People Over Age 64\nby Census Block Group\n2013-2017", frame = FALSE, main.title.size = 0.8,
+            legend.title.size = 0.7,
+            legend.hist.width = 0.9)
+
+
+# Under Age 5
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  summarize(Under5 = sum(under5E),
+            PctUnder5 = paste0(
+              round(sum(under5E)/sum(totalpopE)*100,1),
+              "%"))
+
+tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+  tm_fill("pct_under5E", style = "pretty", title = "Percent",
+          legend.hist = TRUE, 
+          legend.is.portrait = FALSE) +
+  tm_shape(ne_states_sf) + tm_borders(alpha = 0.4) + 
+  tm_text("state.abbrev", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Children Under Age 5 \nin New England by Census \nBlock Group 2013-2017", frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.7,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9) 
+
+# Facet map of Under 5 by state
+tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+  tm_fill("pct_under5E", style = "pretty", title = "Percent") +
+  tm_facets(by = "STATE") +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Children Under Age 5\nby Census Block Group\n2013-2017", frame = FALSE, main.title.size = 0.8,
+            legend.title.size = 0.7,
+            legend.hist.width = 0.9)
+
 
 # SUMMARY STATISTICS AND MAPS OF POLLUTION MEASURES BY REGION AND STATE (MIGHT WANT TO SHOW PERCENTILES HERE; OR STYLE = QUANTILE)
+# PM2.5 in New England
+
 
 
 # SCATTER PLOTS AND CORRELATION MATRICES OF DEMO VS POLLUTION FOR NEW ENGLAND AND STATES (CORRECT FOR NON-NORMAL DISTRIBUTIONS; OR USE SPEARMAN'S RANK)
