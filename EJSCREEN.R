@@ -8,6 +8,7 @@ library(raster)
 library(rgdal)
 library(RColorBrewer)
 library(sp)
+library(CGPfunctions) # for slope graphs
 
 load("DATA/ne_layers.rds")
 
@@ -169,7 +170,7 @@ ne_states_sf_cb <- states(cb = TRUE) %>%
   filter(STUSPS %in% ne_states)
 # tm_shape(ne_states_sp) + tm_borders()
 
-# Create point layer of major cities for context
+# Create point layer of state capitols for context
 ne_towns_sf_pts <- ne_towns_sf %>% 
   filter((NAMELSAD == "Boston city" & STATE == "Massachusetts") | 
            (NAMELSAD == "Portland city" & STATE == "Maine") |
@@ -437,7 +438,60 @@ tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") +
 
 # SUMMARY STATISTICS AND MAPS OF POLLUTION MEASURES BY REGION AND STATE (MIGHT WANT TO SHOW PERCENTILES HERE; OR STYLE = QUANTILE)
 # PM2.5 in New England
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  dplyr::select(pm_15, PM25_19) %>% 
+  summary()
+# Histogram of PM2.5 for New England
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = PM25_19)) + geom_histogram() +
+  theme_minimal() +
+  ggtitle(expression(atop(paste("Histogram of ", PM[2.5], " Concentrations by"), "Census Block Group across New England, 2016"))) +
+  xlab(expression(paste(PM[2.5]," (", mu, "g/", m^3, ")", sep = ""))) +
+  ylab("Number of Block Groups")
+# Map of PM2.5 across New England
+tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+  tm_fill("PM25_19", style = "quantile", 
+          title = expression(paste
+                             (PM[2.5]," (", mu, "g/", m^3, ")", sep = "")),
+          legend.hist = TRUE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=2)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf) + tm_borders(alpha = 0.4) + 
+  tm_text("state.abbrev", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Annual PM2.5 \nConcentrations\n2016", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
 
+
+# boxplot of PM2.5 by state for 2016
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = STATE, y = PM25_19, fill = STATE)) + 
+  geom_boxplot(notch = TRUE) + 
+  ggtitle(expression(paste(PM[2.5], " Annual Concentration by New England state, 2016", sep = ""))) +
+  theme_minimal() +
+  theme(legend.position = "none") + xlab(NULL) + 
+  ylab(expression(paste(PM[2.5]," (", mu, "g/", m^3, ")", sep = "")))
+# boxplot of PM2.5 by state for 2011
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = STATE, y = pm_15, fill = STATE)) + 
+  geom_boxplot(notch = TRUE) + 
+  ggtitle(expression(paste(PM[2.5], " Annual Concentration by New England state, 2011", sep = ""))) +
+  theme_minimal() +
+  theme(legend.position = "none") + xlab(NULL) + 
+  ylab(expression(paste(PM[2.5]," (", mu, "g/", m^3, ")", sep = "")))
 
 
 # SCATTER PLOTS AND CORRELATION MATRICES OF DEMO VS POLLUTION FOR NEW ENGLAND AND STATES (CORRECT FOR NON-NORMAL DISTRIBUTIONS; OR USE SPEARMAN'S RANK)
@@ -545,7 +599,6 @@ ne_blkgrp_sf_DemoEJ %>%
 
 
 # Slope graph of change in pop-weighted PM2.5 exposure beteween 2011 and 2016
-library(CGPfunctions)
 # Create df of 2019 values
 PM19wAvgs <- ne_blkgrp_sf_DemoEJ %>% 
   as.data.frame() %>% 
