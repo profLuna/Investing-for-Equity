@@ -442,6 +442,7 @@ ne_blkgrp_sf_DemoEJ %>%
   as.data.frame() %>% 
   dplyr::select(pm_15, PM25_19) %>% 
   summary()
+
 # Histogram of PM2.5 for New England
 ne_blkgrp_sf_DemoEJ %>% 
   as.data.frame() %>% 
@@ -450,6 +451,7 @@ ne_blkgrp_sf_DemoEJ %>%
   ggtitle(expression(atop(paste("Histogram of ", PM[2.5], " Concentrations by"), "Census Block Group across New England, 2016"))) +
   xlab(expression(paste(PM[2.5]," (", mu, "g/", m^3, ")", sep = ""))) +
   ylab("Number of Block Groups")
+
 # Map of PM2.5 across New England
 tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
   tm_fill("PM25_19", style = "quantile", 
@@ -473,6 +475,7 @@ tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") +
             legend.outside.position = c("right", "top"),
             legend.hist.width = 0.9)
 
+# 
 
 # boxplot of PM2.5 by state for 2016
 ne_blkgrp_sf_DemoEJ %>% 
@@ -492,6 +495,66 @@ ne_blkgrp_sf_DemoEJ %>%
   theme_minimal() +
   theme(legend.position = "none") + xlab(NULL) + 
   ylab(expression(paste(PM[2.5]," (", mu, "g/", m^3, ")", sep = "")))
+
+# Slope graph of PM2.5 by state and region between 2011 and 2016
+# Create df of 2019 actual values
+PM19wSTAvgs_actual <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  group_by(STATE) %>% 
+  summarize(PM25Mean = mean(PM25_19, na.rm = TRUE),
+            PM25wMean = weighted.mean(x = PM25_19,
+                                      w = totalpopE, na.rm = TRUE)) %>% 
+  mutate(Year = 2016)
+# Create df of 2015 values
+PM15wSTAvgs_actual <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  group_by(STATE) %>% 
+  summarize(PM25Mean = mean(pm_15, na.rm = TRUE),
+            PM25wMean = weighted.mean(x = pm_15,
+                                      w = pop_15, na.rm = TRUE)) %>% 
+  mutate(Year = 2011)
+# Create regional average benchmark
+pm15NEavg <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  summarize(PM25Mean = mean(pm_15, na.rm = TRUE),
+            PM25wMean = weighted.mean(x = pm_15,
+                                      w = pop_15, na.rm = TRUE)) %>% 
+  transmute(STATE = "NEW ENGLAND", 
+            PM25Mean = PM25Mean, 
+            PM25wMean = PM25wMean,
+            Year = 2011)
+pm19NEavg <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  summarize(PM25Mean = mean(PM25_19, na.rm = TRUE),
+            PM25wMean = weighted.mean(x = PM25_19,
+                                      w = totalpopE, na.rm = TRUE)) %>% 
+  transmute(STATE = "NEW ENGLAND", 
+            PM25Mean = PM25Mean, 
+            PM25wMean = PM25wMean,
+            Year = 2016)
+#rbind tables
+PM11_16wSTAvg_actual <- bind_rows(PM15wSTAvgs_actual,
+                                PM19wSTAvgs_actual,
+                                pm15NEavg,pm19NEavg) %>% 
+  mutate(Year = as.factor(Year),
+         PM25Mean = round(PM25wMean,2),
+         PM25wMean = round(PM25wMean,2))
+# make slope graph
+newggslopegraph(dataframe = PM11_16wSTAvg_actual, 
+                Times = Year, 
+                Measurement = PM25Mean, 
+                Grouping = STATE,
+                Title = "Annual Average PM2.5",
+                SubTitle = expression(paste
+                                      (PM[2.5]," (", mu, "g/", m^3, ")", sep = "")),
+                Caption = NULL,
+                LineColor = c("NEW ENGLAND" = "#000000",
+                              "Connecticut" = "#E69F00",
+                              "Massachusetts" = "#56B4E9",
+                              "Rhode Island" = "#009E73",
+                              "New Hampshire" = "#F0E442",
+                              "Vermont" = "#0072B2",
+                              "Maine" = "#D55E00"))
 
 
 # SCATTER PLOTS AND CORRELATION MATRICES OF DEMO VS POLLUTION FOR NEW ENGLAND AND STATES (CORRECT FOR NON-NORMAL DISTRIBUTIONS; OR USE SPEARMAN'S RANK)
