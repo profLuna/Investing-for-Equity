@@ -475,7 +475,47 @@ tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") +
             legend.outside.position = c("right", "top"),
             legend.hist.width = 0.9)
 
-# 
+# Hotspot map of PM2.5 across New England. Getis-Ord Gi Statistic looks at neighbors within a defined proximity to identify where either high or low values cluster spatially. Statistically significant hot-spots are recognised as areas of high values where other areas within a neighborhood range also share high values too.
+library(spdep)
+# Get rid of empty geometries and NAs, and convert to spdf
+empty_geo <- st_is_empty(ne_blkgrp_sf_DemoEJ)
+ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf_DemoEJ[!empty_geo,] %>% 
+  dplyr::select(GEOID,PM25_19) %>% 
+  # st_transform(., crs = 2163) %>% # convert to US National Atlas Equal Area
+  na.omit() %>% 
+  as_Spatial()
+# Calculate the Queen's case neighbors
+neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
+# Calculate neighbors by distance
+# creates centroid and joins neighbors within 0 and 150000 units
+# neighborsDist <- dnearneigh(coordinates(ne_blkgrp_sp_DemoEJ),d1 = 0, d2 = 15000, longlat = TRUE)
+# creates listw
+# nb_lw <- nb2listw(nb, style = 'B')
+# Compute neighbor weights
+spdep::set.ZeroPolicyOption(TRUE)
+listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
+# compute Getis-Ord Gi statistic
+local_g <- localG(ne_blkgrp_sp_DemoEJ$PM25_19, listw)
+local_g <- cbind(ne_blkgrp_sp_DemoEJ, as.matrix(local_g))
+names(local_g)[3] <- "gstat"
+# map the results
+tm_shape(local_g, unit = "mi",) + 
+  tm_fill("gstat",
+          palette = "-RdBu", 
+          style = "pretty",
+          title = expression(paste("Getis-Ord ", G[i]^"*")),
+          showNA = FALSE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Hot Spot Map of \nPM2.5 for\nNew England", frame = FALSE, main.title.size = 0.6,
+            legend.position = c(.8,.2),
+            legend.title.size = 0.7)
+
+
 
 # boxplot of PM2.5 by state for 2016
 ne_blkgrp_sf_DemoEJ %>% 
@@ -544,7 +584,7 @@ newggslopegraph(dataframe = PM11_16wSTAvg_actual,
                 Times = Year, 
                 Measurement = PM25Mean, 
                 Grouping = STATE,
-                Title = "Annual Average PM2.5",
+                Title = "Annual Average PM2.5 Concentrations",
                 SubTitle = expression(paste
                                       (PM[2.5]," (", mu, "g/", m^3, ")", sep = "")),
                 Caption = NULL,
@@ -554,10 +594,116 @@ newggslopegraph(dataframe = PM11_16wSTAvg_actual,
                               "Rhode Island" = "#009E73",
                               "New Hampshire" = "#F0E442",
                               "Vermont" = "#0072B2",
-                              "Maine" = "#D55E00"))
+                              "Maine" = "#D55E00"),
+                LineThickness = 0.7)
 
 
 # SCATTER PLOTS AND CORRELATION MATRICES OF DEMO VS POLLUTION FOR NEW ENGLAND AND STATES (CORRECT FOR NON-NORMAL DISTRIBUTIONS; OR USE SPEARMAN'S RANK)
+# Create a correlation matrix of PM25 and populations of concern
+corrPM25 <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  dplyr::transmute(PM25 = PM25_19, 
+                Minority = minority_pctE, 
+                `Low Income` = pct2povE, 
+                `Lang Isol` = eng_limit_pctE, 
+                `No HS Dip` = pct_lthsE, 
+                `Under 5` = pct_under5E, 
+                `Over 64` = pct_over65E) %>% 
+  drop_na() %>% 
+  cor(method = "spearman")
+corrPM25
+library(ggcorrplot)
+ggcorrplot(corrPM25, hc.order = TRUE, type = "lower", lab = TRUE, 
+           title = "PM2.5 Correlation Matrix for New England, 2016", 
+           legend.title = "Spearman's \nCorrelation\nCoefficient")
+
+# Look at relationship of minority to PM25
+# New England
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  drop_na(minority_pctE, PM25_19) %>%  
+  ggplot(aes(x = minority_pctE, y = PM25_19)) + geom_point() +
+  # geom_smooth(method = "glm", formula = y~x, method.args = list(family = gaussian(link = 'log'))) +
+  facet_wrap("STATE")
+# By state
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  drop_na(minority_pctE, PM25_19) %>%  
+  ggplot(aes(x = minority_pctE, y = PM25_19)) + geom_point() +
+  facet_wrap("STATE")
+
+# Look at relationship of low income to PM25
+# New England
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  drop_na(pct2povE, PM25_19) %>%  
+  ggplot(aes(x = pct2povE, y = PM25_19)) + geom_point()
+# By state
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  drop_na(pct2povE, PM25_19) %>%  
+  ggplot(aes(x = pct2povE, y = PM25_19)) + geom_point() +
+  facet_wrap("STATE")
+
+# Look at relationship of language isolation to PM25
+# New England
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  drop_na(eng_limit_pctE, PM25_19) %>%  
+  ggplot(aes(x = eng_limit_pctE, y = PM25_19)) + geom_point(alpha = 0.3)
+# By state
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  drop_na(eng_limit_pctE, PM25_19) %>%  
+  ggplot(aes(x = eng_limit_pctE, y = PM25_19)) + geom_point(alpha = 0.3) +
+  facet_wrap("STATE")
+
+# Look at relationship of less than HS education to PM25
+# New England
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  drop_na(pct_lthsE, PM25_19) %>%  
+  ggplot(aes(x = pct_lthsE, y = PM25_19)) + geom_point(alpha = 0.3) +
+  theme_minimal()
+# By state
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  drop_na(pct_lthsE, PM25_19) %>%  
+  ggplot(aes(x = pct_lthsE, y = PM25_19)) + geom_point(alpha = 0.3) +
+  facet_wrap("STATE") +
+  theme_minimal()
+
+# Look at relationship of under 5 to PM25
+# New England
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  drop_na(pct_under5E, PM25_19) %>%  
+  ggplot(aes(x = pct_under5E, y = PM25_19)) + geom_point(alpha = 0.3) +
+  theme_minimal()
+# By state
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  drop_na(pct_under5E, PM25_19) %>%  
+  ggplot(aes(x = pct_under5E, y = PM25_19)) + geom_point(alpha = 0.3) +
+  facet_wrap("STATE") +
+  theme_minimal()
+
+# Look at relationship of over 64 to PM25
+# New England
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  drop_na(pct_over65E, PM25_19) %>%  
+  ggplot(aes(x = pct_over65E, y = PM25_19)) + geom_point(alpha = 0.3) +
+  theme_minimal()
+# By state
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  drop_na(pct_over65E, PM25_19) %>%  
+  ggplot(aes(x = pct_over65E, y = PM25_19)) + geom_point(alpha = 0.3) +
+  facet_wrap("STATE") +
+  theme_minimal()
+
+
 
 # POP WEIGHTED AVGS FOR POLLUTION FOR NEW ENGLAND AND STATES, INCLUDING EJ INDICES
 # Pop Weighted avg of PM2.5 for all Groups in New England relative to NE average
