@@ -1,0 +1,654 @@
+---
+title: "Transportation Emissions in New England"
+author: "Marcos Luna and Neenah Estrella-Luna"
+date: "12/31/2019"
+output: 
+  bookdown::word_document2:
+  fig_caption: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Analysis of transportation-related emissions in New England
+
+This is an analysis of transportation-related emissions and related externalities in New England.
+
+## Analysis of PM~2.5~ in New England
+
+This is an analysis of PM~2.5~ across New England and its relationship to populations of concern. The analysis is based on data from the EPA's EJSCREEN. EJSCREEN data provides PM~2.5~ annual concentrations at the Census Block Group level for the years 2011 tp 2016 (as of December 2019). 
+
+PM~2.5~ levels vary significantly across New England, with highest concentrations in southwest Connecticut, from Stamford to Hartford, and also from Providence, Rhode Island, to the Boston metro region (see Figure \@ref(fig:mapPM25NE) below). 
+
+```{r mapPM25NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2016 annual PM~2.5~ concentrations across New England at Census Block Group level."}
+library(tidyverse)
+library(sf)
+library(tmap)
+library(tmaptools)
+library(maptools)
+# library(raster)
+library(rgdal)
+library(RColorBrewer)
+library(sp)
+library(CGPfunctions) # for slope graphs
+library(ggcorrplot)
+# ne_blkgrp_sf_DemoEJ %>% 
+#   as.data.frame() %>% 
+#   transmute(`PM2.5 2011` = pm_15, `PM2.5 2016` = PM25_19) %>% 
+#   summary()
+
+# Load data
+load("DATA/ne_layers.rds")
+
+# Map of PM2.5 across New England
+tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+  tm_fill("PM25_19", style = "quantile", 
+          title = expression(paste
+                             (PM[2.5]," (", mu, "g/", m^3, ")", sep = "")),
+          legend.hist = TRUE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=2)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Annual PM2.5 \nConcentrations\n2016", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+```
+
+These PM~2.5~ levels vary significantly by state (see Figure \@ref(fig:boxplotPM25NE) below). Connecticut stands out with the highest median PM~2.5~ concentrations among the New England states, while Vermont has the lowest overall concentrations. The differences in concentrations between the states are all statistically significant.  
+
+```{r boxplotPM25NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 2016 annual PM~2.5~ concentrations by state at Census Block Group level."}
+# boxplot of PM2.5 by state for 2016
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = STATE, y = PM25_19, fill = STATE)) + 
+  geom_boxplot(notch = TRUE) + 
+  ggtitle(expression(atop(paste(PM[2.5], " Annual Concentration by New England state,"), "2016"))) +
+  theme_minimal() +
+  theme(legend.position = "none", axis.text=element_text(size=8)) + 
+  xlab(NULL) + 
+  ylab(expression(paste(PM[2.5]," (", mu, "g/", m^3, ")", sep = ""))) +
+  coord_flip()
+# # boxplot of PM2.5 by state for 2011
+# ne_blkgrp_sf_DemoEJ %>% 
+#   as.data.frame() %>% 
+#   ggplot(aes(x = STATE, y = pm_15, fill = STATE)) + 
+#   geom_boxplot(notch = TRUE) + 
+#   ggtitle(expression(paste(PM[2.5], " Annual Concentration by New England state, 2011", sep = ""))) +
+#   theme_minimal() +
+#   theme(legend.position = "none") + xlab(NULL) + 
+#   ylab(expression(paste(PM[2.5]," (", mu, "g/", m^3, ")", sep = "")))
+```
+
+
+Since 2011, PM~2.5~ levels have declined across the region, on average by `r {round(mean(ne_blkgrp_sf_DemoEJ$PM25_pctChange, na.rm = TRUE),1)}`%. Unsurprisingly, this decline has not been uniform (see Figure \@ref(fig:mapPM25NEchange) below). The greatest declines, up to 43%, have been in the northern half of Vermont and the region between Boston and Portsmouth. 
+
+```{r mapPM25NEchange, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of percent change in annual PM~2.5~ concentrations across New England between 2011 and 2016 at Census Block Group level."}
+# Map of PM2.5 change across New England
+tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+  tm_fill("PM25_pctChange", palette = "Greens",
+          style = "quantile", 
+          title = "% Change",
+          legend.hist = TRUE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=1)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Change in annual PM2.5 \nConcentrations \n2011-2016", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+```
+
+Averaged across the states, the differences in these declines are also apparent. Figure \@ref(fig:slopegraphPM25NE) below compares the average annual PM~2.5~ concentrations by state and for the region between 2011 and 2016. The region and the states all showed significant declines since 2011, although note that concentrations in Connecticut have remained consistently well above the rest of the region. 
+
+```{r slopegraphPM25NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Slope graph of annual PM~2.5~ concentrations for 2011 and 2016 for New England and states."}
+# Slope graph of PM2.5 by state and region between 2011 and 2016
+# Create df of 2019 actual values
+PM19wSTAvgs_actual <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  group_by(STATE) %>% 
+  summarize(PM25Mean = mean(PM25_19, na.rm = TRUE),
+            PM25wMean = weighted.mean(x = PM25_19,
+                                      w = totalpopE, na.rm = TRUE)) %>% 
+  mutate(Year = 2016)
+# Create df of 2015 values
+PM15wSTAvgs_actual <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  group_by(STATE) %>% 
+  summarize(PM25Mean = mean(pm_15, na.rm = TRUE),
+            PM25wMean = weighted.mean(x = pm_15,
+                                      w = pop_15, na.rm = TRUE)) %>% 
+  mutate(Year = 2011)
+# Create regional average benchmark
+pm15NEavg <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  summarize(PM25Mean = mean(pm_15, na.rm = TRUE),
+            PM25wMean = weighted.mean(x = pm_15,
+                                      w = pop_15, na.rm = TRUE)) %>% 
+  transmute(STATE = "NEW ENGLAND", 
+            PM25Mean = PM25Mean, 
+            PM25wMean = PM25wMean,
+            Year = 2011)
+pm19NEavg <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  summarize(PM25Mean = mean(PM25_19, na.rm = TRUE),
+            PM25wMean = weighted.mean(x = PM25_19,
+                                      w = totalpopE, na.rm = TRUE)) %>% 
+  transmute(STATE = "NEW ENGLAND", 
+            PM25Mean = PM25Mean, 
+            PM25wMean = PM25wMean,
+            Year = 2016)
+#rbind tables
+PM11_16wSTAvg_actual <- bind_rows(PM15wSTAvgs_actual,
+                                PM19wSTAvgs_actual,
+                                pm15NEavg,pm19NEavg) %>% 
+  mutate(Year = as.factor(Year),
+         PM25Mean = round(PM25wMean,2),
+         PM25wMean = round(PM25wMean,2))
+# make slope graph
+newggslopegraph(dataframe = PM11_16wSTAvg_actual, 
+                Times = Year, 
+                Measurement = PM25Mean, 
+                Grouping = STATE,
+                Title = expression(paste("Annual Average ", PM[2.5], " Concentrations")),
+                SubTitle = expression(paste
+                                      (PM[2.5]," (", mu, "g/", m^3, ")", sep = "")),
+                Caption = NULL,
+                LineColor = c("NEW ENGLAND" = "#000000",
+                              "Connecticut" = "#E69F00",
+                              "Massachusetts" = "#56B4E9",
+                              "Rhode Island" = "#009E73",
+                              "New Hampshire" = "#F0E442",
+                              "Vermont" = "#0072B2",
+                              "Maine" = "#D55E00"),
+                LineThickness = 1,
+                YTextSize = 3.5,
+                DataTextSize = 3,
+                WiderLabels = TRUE)
+```
+
+
+### PM~2.5~ in New England and Populations of Concern
+
+In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvgNE) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the region. For example, minorities in New England are exposed to PM~2.5~ concentrations that are more than 5% above concentrations for the region as a whole. Similarly, linguistically isolated households are exposed to concentrations 4.9% above the regional average. By contrast, persons over age 64 are, on average, exposed to concentrations of PM~2.5~ at or below the regional average. 
+
+```{r barplotPM25PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average exposures to PM~2.5~ for populations of concern in New England relative to the regional average."}
+# Pop Weighted avg of PM2.5 for all Groups in New England relative to NE average
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over65E, 
+                PM25_19) %>% 
+  gather(key = Group, value = Pop, totalpopE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_19, w = Pop, na.rm = TRUE),
+            PM25Mean = mean(PM25_19, na.rm = TRUE)) %>% 
+  spread(key = Group, value = PM25wMean) %>% 
+  transmute(Minority = (minorityE/PM25Mean - 1)*100,
+         #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+         `Lang Isol` = (eng_limitE/PM25Mean - 1)*100,
+         Poverty = (num2povE/PM25Mean - 1)*100,
+         `No HS` = (lthsE/PM25Mean - 1)*100,
+         `Under 5` = (under5E/PM25Mean - 1)*100,
+         `Over 65` = (over65E/PM25Mean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure"), "(relative to New England average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+```
+
+Like the region as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that except for persons over age 64 and low income persons, all other populations of concern continue to experience exposures greater than the regional average, with minorities leading on this measure. 
+
+```{r slopegraphPM25PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Slope graph of annual PM~2.5~ concentrations by population of concern for 2011 and 2016."}
+# Pop Weighted avg of PM2.5 EXPOSURE CHANGE 2011 - 2016 for all Groups in New England relative to NE average. 
+# Create df of 2019 actual values
+PM19wAvgs_actual <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(minorityE,
+                num2povE,
+                eng_limitE,
+                lthsE,
+                under5E,
+                over65E,
+                PM25_19) %>% 
+  gather(key = Group, value = Pop, minorityE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_19, 
+                                      w = Pop, na.rm = TRUE)) %>% 
+  mutate(Group = case_when(
+    Group == "minorityE" ~ "Minority",
+    Group == "eng_limitE" ~ "Lang Isol",
+    Group == "num2povE" ~ "Low Income",
+    Group == "lthsE" ~ "No HS Dip",
+    Group == "under5E" ~ "Under 5",
+    Group == "over65E" ~ "Over 64")) %>% 
+  mutate(Year = 2016)
+# Create df of 2015 values
+PM15wAvgs_actual <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(mins_15,
+                lowinc_15,
+                lingiso_15,
+                lths_15,
+                under5_15,
+                over64_15,
+                pm_15) %>% 
+  gather(key = Group, value = Pop, mins_15:over64_15) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = pm_15, 
+                                      w = Pop, na.rm = TRUE)) %>%  
+  mutate(Group = case_when(
+    Group == "mins_15" ~ "Minority",
+    Group == "lingiso_15" ~ "Lang Isol",
+    Group == "lowinc_15" ~ "Low Income",
+    Group == "lths_15" ~ "No HS Dip",
+    Group == "under5_15" ~ "Under 5",
+    Group == "over64_15" ~ "Over 64")) %>% 
+  mutate(Year = 2011)
+# Create regional average benchmark
+pm15NEavg <- mean(ne_blkgrp_sf_DemoEJ$pm_15, na.rm = TRUE)
+pm19NEavg <- mean(ne_blkgrp_sf_DemoEJ$PM25_19, na.rm = TRUE)
+pmRegionalAvg_actual <- data.frame(
+  Group = c("REGIONAL AVG", "REGIONAL AVG"),
+  PM25wMean = c(pm15NEavg,pm19NEavg),
+  Year = c(2011,2016)
+)
+#rbind tables
+PM11_16wAvg_actual <- bind_rows(PM15wAvgs_actual,
+                                PM19wAvgs_actual,
+                                pmRegionalAvg_actual) %>% 
+  mutate(Year = as.factor(Year),
+         PM25wMean = round(PM25wMean,1))
+# make slope graph
+newggslopegraph(dataframe = PM11_16wAvg_actual, 
+                Times = Year, 
+                Measurement = PM25wMean, 
+                Grouping = Group,
+                Title = "Population-Weighted PM2.5 Exposure",
+                SubTitle = expression(paste
+                                      (PM[2.5]," (", mu, "g/", m^3, ")", sep = "")),
+                Caption = NULL,
+                LineColor = c("REGIONAL AVG" = "#000000",
+                              "Lang Isol" = "#E69F00",
+                              "Minority" = "#56B4E9",
+                              "No HS" = "#009E73",
+                              "Poverty" = "#F0E442",
+                              "Under 5" = "#0072B2",
+                              "Over 64" = "#D55E00"),
+                YTextSize = 3.5,
+                DataTextSize = 3,
+                WiderLabels = TRUE)
+```
+
+Indeed, there is a moderate but statistically significant positive relationship between the proportion of minority residents or language-isolated households and the concentration of PM~2.5~ (see Figure \@ref(fig:cormatrixPM25PopAvg) below.).
+
+```{r cormatrixPM25PopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of annual PM~2.5~ concentrations and the proportions of populations of concern by Census Block Group."}
+# Create a correlation matrix of PM25 and populations of concern
+corrPM25 <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  dplyr::transmute(PM25 = PM25_19, 
+                Minority = minority_pctE, 
+                `Low Income` = pct2povE, 
+                `Lang Isol` = eng_limit_pctE, 
+                `No HS Dip` = pct_lthsE, 
+                `Under 5` = pct_under5E, 
+                `Over 64` = pct_over65E) %>% 
+  drop_na() %>% 
+  cor(method = "spearman")
+# corrPM25
+ggcorrplot(corrPM25, hc.order = TRUE, type = "lower", lab = TRUE, 
+           title = "PM2.5 Correlation Matrix for New England", 
+           legend.title = "Spearman's \nCorrelation\nCoefficient")
+```
+
+
+## Analysis of Ozone (O~3~) in New England
+
+Ozone (O~3~) levels vary significantly across New England, with highest concentrations in southwest Connecticut, and declining toward the north and east (see Figure \@ref(fig:mapO3NE) below). 
+
+```{r mapO3NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2016 Ozone (O~3~) summer seasonal average of daily maximum 8-hour concentration in air in parts per billion across New England at Census Block Group level."}
+
+# Map of O3 across New England
+tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+  tm_fill("OZONE_19", style = "quantile", 
+          title = expression(paste
+                             (O[3]," (ppb)", sep = "")),
+          legend.hist = TRUE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=1)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Summer Ozone \nConcentrations\n2016", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+```
+
+These Ozone (O~3~) levels vary significantly by state (see Figure \@ref(fig:boxplotO3NE) below). Connecticut stands out with the highest median summer seasonal average Ozone (O~3~) concentrations among the New England states, while Maine has the lowest overall concentrations. The differences in median concentrations between the states are all statistically significant.  
+
+```{r boxplotO3NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 2016 Ozone (O~3~) summer seasonal average of daily maximum 8-hour concentrations in air in parts per billion by state at Census Block Group level."}
+# boxplot of PM2.5 by state for 2016
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = STATE, y = OZONE_19, fill = STATE)) + 
+  geom_boxplot(notch = TRUE) + 
+  ggtitle(expression(atop(paste("Ozone (", O[3], ") Summer Concentration"), "by New England state, 2016"))) +
+  theme_minimal() +
+  theme(legend.position = "none", axis.text=element_text(size=8)) + 
+  xlab(NULL) + 
+  ylab(expression(paste(O[3]," (ppb)", sep = ""))) +
+  coord_flip()
+```
+
+Since 2011, Ozone (O~3~) levels have increased slightly across the region, on average by `r {round(mean(ne_blkgrp_sf_DemoEJ$OZONE_pctChange, na.rm = TRUE),1)}`%. These have changes not been uniform (see Figure \@ref(fig:mapO3NEchange) below). The greatest declines, up to 10.5%, have been in the northern half of Maine and Vermont, northeastern Vermont, southwestern Massachusetts, and southern Rhode Island. By contrast, increases in summer ozone concentrations of up to 8.1% appear in southwestern Connecticut, from Stamford to Hartford and north into western Massachusetts around Springfield. Significant increases also occur along the western border of Vermont, especially in the Champlain Valley. Minor increaes appear also in the greater Boston metro region, and southern and central Maine west and north of Portland.
+
+```{r mapO3NEchange, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of percent change in summer seasonal Ozone (O~3~) concentrations across New England between 2011 and 2016 at Census Block Group level."}
+# Map of O3 change across New England
+tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+  tm_fill("OZONE_pctChange", palette = "-RdYlGn",
+          style = "quantile", 
+          title = "% Change",
+          legend.hist = TRUE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=1)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Change in summer Ozone \nConcentrations \n2011-2016", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+```
+
+Averaged across the states, the differences in these changes are also apparent. Figure \@ref(fig:slopegraphO3NE) below compares the average summer Ozone (O~3~) concentrations by state and for the region between 2011 and 2016. New England as a whole showed a slightly less than a 1% increase in summer average Ozone concentrations, while Connecticut showed an increase of nearly 5%. Massachusetts increased as well, but by only 0.5%. All other states showed an average decline in Ozone, with Rhode Island leading (-2.6%). Although note that Rhode Island's concentrations still remain significantly above the regional average. 
+
+```{r slopegraphO3NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Slope graph of summer average Ozone (O~3~) concentrations for 2011 and 2016 for New England and states."}
+# Slope graph of O3 by state and region between 2011 and 2016
+# Create df of 2019 actual values
+O319wSTAvgs_actual <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  group_by(STATE) %>% 
+  summarize(O3Mean = mean(OZONE_19, na.rm = TRUE),
+            O3wMean = weighted.mean(x = OZONE_19,
+                                      w = totalpopE, na.rm = TRUE)) %>% 
+  mutate(Year = 2016)
+# Create df of 2015 values
+O315wSTAvgs_actual <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  group_by(STATE) %>% 
+  summarize(O3Mean = mean(o3_15, na.rm = TRUE),
+            O3wMean = weighted.mean(x = o3_15,
+                                      w = pop_15, na.rm = TRUE)) %>% 
+  mutate(Year = 2011)
+# Create regional average benchmark
+O315NEavg <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  summarize(O3Mean = mean(o3_15, na.rm = TRUE),
+            O3wMean = weighted.mean(x = o3_15,
+                                      w = pop_15, na.rm = TRUE)) %>% 
+  transmute(STATE = "NEW ENGLAND", 
+            O3Mean = O3Mean, 
+            O3wMean = O3wMean,
+            Year = 2011)
+O319NEavg <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  summarize(O3Mean = mean(OZONE_19, na.rm = TRUE),
+            O3wMean = weighted.mean(x = OZONE_19,
+                                      w = totalpopE, na.rm = TRUE)) %>% 
+  transmute(STATE = "NEW ENGLAND", 
+            O3Mean = O3Mean, 
+            O3wMean = O3wMean,
+            Year = 2016)
+#rbind tables
+O311_16wSTAvg_actual <- bind_rows(O315wSTAvgs_actual,
+                                O319wSTAvgs_actual,
+                                O315NEavg,
+                                O319NEavg) %>% 
+  mutate(Year = as.factor(Year),
+         O3Mean = round(O3wMean,2),
+         O3wMean = round(O3wMean,2))
+# make slope graph
+newggslopegraph(dataframe = O311_16wSTAvg_actual, 
+                Times = Year, 
+                Measurement = O3Mean, 
+                Grouping = STATE,
+                Title = expression(paste("Summer Average Ozone (", O[3], ") Concentrations")),
+                SubTitle = expression(paste
+                                      (O[3]," (ppb)", sep = "")),
+                Caption = NULL,
+                LineColor = c("NEW ENGLAND" = "#000000",
+                              "Connecticut" = "#E69F00",
+                              "Massachusetts" = "#56B4E9",
+                              "Rhode Island" = "#009E73",
+                              "New Hampshire" = "#F0E442",
+                              "Vermont" = "#0072B2",
+                              "Maine" = "#D55E00"),
+                LineThickness = 1,
+                YTextSize = 3.5,
+                DataTextSize = 3,
+                WiderLabels = TRUE)
+```
+
+
+### Ozone (O~3~) in New England and Populations of Concern
+
+In addition to variations in the general geography of Ozone (O~3~) concentrations, exposure to this pollutant also varies demographically. Figure \@ref(fig:barplotO3PopAvgNE) below shows population-weighted exposures for populations of concern relative to average Ozone concentrations for the region. For example, minorities in New England are exposed to summer Ozone concentrations that are more than 3% above concentrations for the region as a whole. Similarly, linguistically isolated households are exposed to concentrations 2.6% above the regional average. By contrast, low income persons are, on average, exposed to concentrations of Ozone at or below the regional average. 
+
+```{r barplotO3PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average exposures to Ozone (O~3~) for populations of concern in New England relative to the regional average."}
+# Pop Weighted avg of O3 for all Groups in New England relative to NE average
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over65E, 
+                OZONE_19) %>% 
+  gather(key = Group, value = Pop, totalpopE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(O3wMean = weighted.mean(x = OZONE_19, w = Pop, na.rm = TRUE),
+            O3Mean = mean(OZONE_19, na.rm = TRUE)) %>% 
+  spread(key = Group, value = O3wMean) %>% 
+  transmute(Minority = (minorityE/O3Mean - 1)*100,
+         #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+         `Lang Isol` = (eng_limitE/O3Mean - 1)*100,
+         `Low Income` = (num2povE/O3Mean - 1)*100,
+         `No HS` = (lthsE/O3Mean - 1)*100,
+         `Under 5` = (under5E/O3Mean - 1)*100,
+         `Over 64` = (over65E/O3Mean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted Ozone (", O[3], ") Exposure"), "(relative to New England average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+```
+
+Like the region as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvgNE). All populations of concern have experienced an increased in population-weighted exposure to Ozone, with minorities and persons in language-isolated households experiencing the greatest increase in exposure. 
+
+```{r slopegraphO3PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Slope graph of summer Ozone (O~3~) concentrations by population of concern for 2011 and 2016."}
+# Pop Weighted avg of O3 EXPOSURE CHANGE 2011 - 2016 for all Groups in New England relative to NE average. 
+# Create df of 2019 actual values
+O319wAvgs_actual <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(minorityE,
+                num2povE,
+                eng_limitE,
+                lthsE,
+                under5E,
+                over65E,
+                OZONE_19) %>% 
+  gather(key = Group, value = Pop, minorityE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(O3wMean = weighted.mean(x = OZONE_19, 
+                                      w = Pop, na.rm = TRUE)) %>% 
+  mutate(Group = case_when(
+    Group == "minorityE" ~ "Minority",
+    Group == "eng_limitE" ~ "Lang Isol",
+    Group == "num2povE" ~ "Low Income",
+    Group == "lthsE" ~ "No HS Dip",
+    Group == "under5E" ~ "Under 5",
+    Group == "over65E" ~ "Over 64")) %>% 
+  mutate(Year = 2016)
+# Create df of 2015 values
+O315wAvgs_actual <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(mins_15,
+                lowinc_15,
+                lingiso_15,
+                lths_15,
+                under5_15,
+                over64_15,
+                o3_15) %>% 
+  gather(key = Group, value = Pop, mins_15:over64_15) %>% 
+  group_by(Group) %>% 
+  summarize(O3wMean = weighted.mean(x = o3_15, 
+                                      w = Pop, na.rm = TRUE)) %>%  
+  mutate(Group = case_when(
+    Group == "mins_15" ~ "Minority",
+    Group == "lingiso_15" ~ "Lang Isol",
+    Group == "lowinc_15" ~ "Low Income",
+    Group == "lths_15" ~ "No HS Dip",
+    Group == "under5_15" ~ "Under 5",
+    Group == "over64_15" ~ "Over 64")) %>% 
+  mutate(Year = 2011)
+# Create regional average benchmark
+O315NEavg <- mean(ne_blkgrp_sf_DemoEJ$o3_15, na.rm = TRUE)
+O319NEavg <- mean(ne_blkgrp_sf_DemoEJ$OZONE_19, na.rm = TRUE)
+O3RegionalAvg_actual <- data.frame(
+  Group = c("REGIONAL AVG", "REGIONAL AVG"),
+  O3wMean = c(O315NEavg,O319NEavg),
+  Year = c(2011,2016)
+)
+#rbind tables
+O311_16wAvg_actual <- bind_rows(O315wAvgs_actual,
+                                O319wAvgs_actual,
+                                O3RegionalAvg_actual) %>% 
+  mutate(Year = as.factor(Year),
+         O3wMean = round(O3wMean,1))
+# make slope graph
+newggslopegraph(dataframe = O311_16wAvg_actual, 
+                Times = Year, 
+                Measurement = O3wMean, 
+                Grouping = Group,
+                Title = "Population-Weighted Ozone Exposure",
+                SubTitle = expression(paste
+                                      (O[3]," (ppb)", sep = "")),
+                Caption = NULL,
+                LineColor = c("REGIONAL AVG" = "#000000",
+                              "Lang Isol" = "#E69F00",
+                              "Minority" = "#56B4E9",
+                              "No HS Dip" = "#009E73",
+                              "Low Income" = "#F0E442",
+                              "Under 5" = "#0072B2",
+                              "Over 64" = "#D55E00"),
+                YTextSize = 3.5,
+                DataTextSize = 3,
+                WiderLabels = TRUE)
+```
+
+Indeed, there is a moderate but statistically significant positive relationship between the proportion of minority residents and the concentration of Ozone (see Figure \@ref(fig:cormatrixO3PopAvg) below.).
+
+```{r cormatrixO3PopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of summer Ozone concentrations and the proportions of populations of concern by Census Block Group."}
+# Create a correlation matrix of PM25 and populations of concern
+corrO3 <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  dplyr::transmute(Ozone = OZONE_19, 
+                Minority = minority_pctE, 
+                `Low Income` = pct2povE, 
+                `Lang Isol` = eng_limit_pctE, 
+                `No HS Dip` = pct_lthsE, 
+                `Under 5` = pct_under5E, 
+                `Over 64` = pct_over65E) %>% 
+  drop_na() %>% 
+  cor(method = "spearman")
+# corrPM25
+ggcorrplot(corrO3, hc.order = TRUE, type = "lower", lab = TRUE, 
+           title = "Ozone Correlation Matrix for New England", 
+           legend.title = "Spearman's \nCorrelation\nCoefficient")
+```
