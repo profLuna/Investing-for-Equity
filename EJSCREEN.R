@@ -504,7 +504,7 @@ tm_shape(local_g, unit = "mi",) +
           palette = "-RdBu", 
           style = "pretty",
           title = expression(paste("Getis-Ord ", G[i]^"*")),
-          showNA = FALSE) +
+          showNA = FALSE, alpha = 0.3) +
   tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
   tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
   tm_shape(ne_towns_sf_pts) + tm_dots() +
