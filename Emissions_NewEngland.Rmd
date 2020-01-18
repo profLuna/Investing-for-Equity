@@ -19,7 +19,7 @@ This is an analysis of transportation-related emissions and related externalitie
 
 This is an analysis of PM~2.5~ across New England and its relationship to populations of concern. The analysis is based on data from the EPA's EJSCREEN. EJSCREEN data provides PM~2.5~ annual concentrations at the Census Block Group level for the years 2011 tp 2016 (as of December 2019). 
 
-PM~2.5~ levels vary significantly across New England, with highest concentrations in southwest Connecticut, from Stamford to Hartford, and also from Providence, Rhode Island, to the Boston metro region (see Figure \@ref(fig:mapPM25NE) below). 
+PM~2.5~ levels vary significantly across New England, with highest concentrations in southwest Connecticut, from Stamford to Hartford, and also from Providence, Rhode Island, to the Boston metro region, and from Portland, Maine along the I-95 corridor to Bangor (see Figure \@ref(fig:mapPM25NE) below). 
 
 ```{r mapPM25NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2016 annual PM~2.5~ concentrations across New England at Census Block Group level."}
 library(tidyverse)
@@ -33,6 +33,7 @@ library(RColorBrewer)
 library(sp)
 library(CGPfunctions) # for slope graphs
 library(ggcorrplot)
+library(spdep)
 # ne_blkgrp_sf_DemoEJ %>% 
 #   as.data.frame() %>% 
 #   transmute(`PM2.5 2011` = pm_15, `PM2.5 2016` = PM25_19) %>% 
@@ -64,6 +65,47 @@ tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") +
             legend.outside.position = c("right", "top"),
             legend.hist.width = 0.9)
 ```
+
+PM~2.5~ concentrations exhibit spatial clustering of both hot spots (i.e. geographic clusters of high values) and cold spots (i.e. geographic clusters of lower values). The map below (Figure \@ref(fig:hotspotPM25NE)) shows statistically significant PM~2.5~ hot spots.
+
+```{r hotspotPM25NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2016 annual PM~2.5~ concentrations at Census Block Group level."}
+# Get rid of empty geometries and NAs, and convert to spdf
+empty_geo <- st_is_empty(ne_blkgrp_sf_DemoEJ)
+ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf_DemoEJ[!empty_geo,] %>% 
+  dplyr::select(GEOID,PM25_19) %>% 
+  # st_transform(., crs = 2163) %>% # convert to US National Atlas Equal Area
+  na.omit() %>% 
+  as_Spatial()
+# Calculate Queen's case neighbors
+neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
+# Compute neighbor weights
+spdep::set.ZeroPolicyOption(TRUE)
+listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
+# compute Getis-Ord Gi statistic
+local_g <- localG(ne_blkgrp_sp_DemoEJ$PM25_19, listw)
+local_g <- cbind(ne_blkgrp_sp_DemoEJ, as.matrix(local_g))
+names(local_g)[3] <- "gstat"
+# map the results
+tm_shape(local_g, unit = "mi",) + 
+  tm_fill("gstat",
+          palette = "-RdBu", 
+          style = "pretty",
+          title = expression(paste("Getis-Ord ", G[i]^"*")),
+          showNA = FALSE,
+          midpoint = NA,
+          labels = c("Significant Clusters","of Low Values","Significant Clusters","of High Values")) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Hot Spot Map of \nPM2.5 for\nNew England", frame = FALSE, main.title.size = 0.6,
+            legend.position = c(.8,.2),
+            legend.title.size = 0.7)
+```
+
+There is a statistically significant hot spot of PM~2.5~ around Stamford, Connecticut. Warm clusters encompass southwestern  Connecticut to Hartford, from Providence, Rhode Island ot Boston, and Augusta to Bangor, Maine along the I-95 corridor. 
 
 These PM~2.5~ levels vary significantly by state (see Figure \@ref(fig:boxplotPM25NE) below). Connecticut stands out with the highest median PM~2.5~ concentrations among the New England states, while Vermont has the lowest overall concentrations. The differences in concentrations between the states are all statistically significant.  
 
@@ -379,6 +421,47 @@ tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") +
             legend.hist.width = 0.9)
 ```
 
+Ozone (O~3~) concentrations exhibit spatial clustering of both hot spots (i.e. geographic clusters of high values) and cold spots (i.e. geographic clusters of lower values). The map below (Figure \@ref(fig:hotspotO3NE))shows statistically significant Ozone (O~3~) hot spots.
+
+```{r hotspotO3NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2016 Ozone concentrations at Census Block Group level."}
+# Get rid of empty geometries and NAs, and convert to spdf
+empty_geo <- st_is_empty(ne_blkgrp_sf_DemoEJ)
+ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf_DemoEJ[!empty_geo,] %>% 
+  dplyr::select(GEOID,OZONE_19) %>% 
+  # st_transform(., crs = 2163) %>% # convert to US National Atlas Equal Area
+  na.omit() %>% 
+  as_Spatial()
+# Calculate Queen's case neighbors
+neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
+# Compute neighbor weights
+spdep::set.ZeroPolicyOption(TRUE)
+listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
+# compute Getis-Ord Gi statistic
+local_g <- localG(ne_blkgrp_sp_DemoEJ$OZONE_19, listw)
+local_g <- cbind(ne_blkgrp_sp_DemoEJ, as.matrix(local_g))
+names(local_g)[3] <- "gstat"
+# map the results
+tm_shape(local_g, unit = "mi",) + 
+  tm_fill("gstat",
+          palette = "-RdBu", 
+          style = "pretty",
+          title = expression(paste("Getis-Ord ", G[i]^"*")),
+          showNA = FALSE,
+          midpoint = NA,
+          labels = c("Significant Clusters","of Low Values", "No Significant Clustering", "Significant Clusters","of High Values")) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Hot Spot Map of \nOzone for\nNew England", frame = FALSE, main.title.size = 0.6,
+            legend.position = c(.8,.2),
+            legend.title.size = 0.7)
+```
+
+There are statistically significant hot spots of Ozone (O~3~) primarily around Stamford, Connecticut. A warm cluster encompasses of all Connecticut, Rhode Island, and the southwestern half of Massachusetts. 
+
 These Ozone (O~3~) levels vary significantly by state (see Figure \@ref(fig:boxplotO3NE) below). Connecticut stands out with the highest median summer seasonal average Ozone (O~3~) concentrations among the New England states, while Maine has the lowest overall concentrations. The differences in median concentrations between the states are all statistically significant.  
 
 ```{r boxplotO3NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 2016 Ozone (O~3~) summer seasonal average of daily maximum 8-hour concentrations in air in parts per billion by state at Census Block Group level."}
@@ -547,7 +630,7 @@ ne_blkgrp_sf_DemoEJ %>%
   geom_hline(yintercept = 0)
 ```
 
-Like the region as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvgNE). All populations of concern have experienced an increased in population-weighted exposure to Ozone, with minorities and persons in language-isolated households experiencing the greatest increase in exposure. 
+Like the region as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvgNE). All populations of concern have experienced an increase in population-weighted exposure to Ozone, with minorities and persons in language-isolated households experiencing the greatest increase in exposure. 
 
 ```{r slopegraphO3PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Slope graph of summer Ozone (O~3~) concentrations by population of concern for 2011 and 2016."}
 # Pop Weighted avg of O3 EXPOSURE CHANGE 2011 - 2016 for all Groups in New England relative to NE average. 
@@ -650,5 +733,378 @@ corrO3 <- ne_blkgrp_sf_DemoEJ %>%
 # corrPM25
 ggcorrplot(corrO3, hc.order = TRUE, type = "lower", lab = TRUE, 
            title = "Ozone Correlation Matrix for New England", 
+           legend.title = "Spearman's \nCorrelation\nCoefficient")
+```
+
+
+
+## Analysis of Carbon Dioxide (CO~2~) in New England
+
+CO~2~ emissions closely follow major roadways arcoss the region (see Figure \@ref(fig:mapCO2NE) below). 
+
+```{r mapCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2017 Carbon Dioxide (CO~2~) annual on-road emissions in metric tons per square kilometer (mtons/km^2^) across New England at Census Block Group level."}
+
+# Map of CO2 across New England
+tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+  tm_fill("onroad_2017", style = "quantile", 
+          title = expression(paste
+                             (CO[2]," (mtons/", km^2, ")", sep = "")),
+          legend.hist = TRUE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=0)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "CO2 Emissions\n2017", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+```
+
+Because of the linear pattern of emissions, CO~2~ emissions exhibit little to no spatial clustering (see Figure \@ref(fig:hotspotCO2NE) below).
+
+```{r hotspotCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2017 CO2 emissions at Census Block Group level."}
+# Get rid of empty geometries and NAs, and convert to spdf
+empty_geo <- st_is_empty(ne_blkgrp_sf_DemoEJ)
+ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf_DemoEJ[!empty_geo,] %>% 
+  dplyr::select(GEOID,onroad_2017) %>% 
+  # st_transform(., crs = 2163) %>% # convert to US National Atlas Equal Area
+  na.omit() %>% 
+  as_Spatial()
+# Calculate Queen's case neighbors
+neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
+# Compute neighbor weights
+spdep::set.ZeroPolicyOption(TRUE)
+listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
+# compute Getis-Ord Gi statistic
+local_g <- localG(ne_blkgrp_sp_DemoEJ$onroad_2017, listw)
+local_g <- cbind(ne_blkgrp_sp_DemoEJ, as.matrix(local_g))
+names(local_g)[3] <- "gstat"
+# map the results
+tm_shape(local_g, unit = "mi",) + 
+  tm_fill("gstat",
+          palette = "-RdBu", 
+          style = "pretty",
+          title = expression(paste("Getis-Ord ", G[i]^"*")),
+          showNA = FALSE,
+          midpoint = NA,
+          labels = c("Significant Clusters","of Low Values", "No Significant Clustering", "Significant Clusters","of High Values")) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Hot Spot Map of \nCO2 for\nNew England", frame = FALSE, main.title.size = 0.6,
+            legend.position = c(.8,.2),
+            legend.title.size = 0.7)
+```
+
+CO~2~ emissions vary by state (see Table \@ref(tab:statsCO2NE) and Figure \@ref(fig:boxplotCO2NE) below). Massachusetts shows highest absolute emissions.  
+
+```{r statsCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 CO~2~ emissions (mtons/km^2^) at Census Block Group level."}
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  group_by(STATE) %>% 
+  summarize(Mean = round(mean(onroad_2017, na.rm = TRUE),0),
+            Median = round(median(onroad_2017, na.rm = TRUE),0),
+            Min = round(min(onroad_2017, na.rm = TRUE),0),
+            Max = round(max(onroad_2017, na.rm = TRUE),0)) %>% 
+  kableExtra::kable(format.args = list(big.mark = ','), 
+                    caption = "Annual 2017 CO~2~ emissions (mtons/km^2^)",
+                    padding = 5)
+```
+
+
+```{r boxplotCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 7 Carbon Dioxoide (CO~2~) on-road emissions in metric tons per square kilometer (mtons/km^2^) by state at Census Block Group level."}
+# boxplot of CO2 by state for 2017
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = STATE, y = onroad_2017, fill = STATE)) + 
+  geom_boxplot(notch = TRUE) + 
+  ggtitle(expression(atop(paste("Carbon Dioxide (", CO[2], ") Emissions"), "by New England state, 2017"))) +
+  theme_minimal() +
+  theme(legend.position = "none", axis.text=element_text(size=8)) + 
+  xlab(NULL) + 
+  ylab(expression(paste(CO[2]," (mtons/", km^2, ")", sep = ""))) +
+  coord_flip()
+```
+
+Since 1990, CO~2~ emissions increased significantly across the region, on average by `r {round(mean(ne_blkgrp_sf_DemoEJ$CO2_pctChange90_17, na.rm = TRUE),1)}`%. These changes have not been uniform (see Figure \@ref(fig:mapCO2NEchange) below). Except for Maine, the greatest declines, up to 97%, have been in outer suburban and rural areas. By contrast, increases in CO~2~ emissions of up to 648% appear across most urban cores. Boston is the notable exception where increases have been relatively modest. Dramtic increases characterize areas around Worcester, Massachusetts and the South Shore of Massachusetts and the Cape, as well as around Portland, Maine, and from Stamford to Hartford, Connecticut. Significant increases also occur west and north of Montpelier, Vermont.
+
+```{r mapCO2NEchange, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of percent change in annual CO~2~ emissions across New England between 1990 and 2017 at Census Block Group level."}
+# Map of CO2 change across New England
+tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") + 
+  tm_fill("CO2_pctChange90_17", palette = "-RdYlGn",
+          style = "quantile", 
+          title = "% Change",
+          legend.hist = TRUE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=1)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Change in annual CO2 \nEmissions \n1990-2017", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+```
+
+Averaged across the states, the differences in these changes are also apparent. Table \@ref(tab:changeCO2NE) and Figure \@ref(fig:slopegraphCO2NE) below compare the average annual CO~2~ emissions by state and for the region between 1990 and 2017. New England as a whole showed an almost 30% increase in annual CO~2~ emissions. All states showed average increases, with New Hampshire leading with more than 90% increase. Rhode Island showed the smallest increase since 1990 (4.6%), although note that Rhode Island's average annual emissions still remain significantly above the regional average. 
+
+```{r changeCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual Average 2017 CO~2~ emissions (mtons/km^2^) and Percent Change by state at Census Block Group level."}
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  group_by(STATE) %>% 
+  summarize(`1990 Mean` = mean(onroad_1990, na.rm = TRUE),
+            `2017 Mean` = mean(onroad_2017, na.rm = TRUE),
+            `Pct Change` = paste0(round((`2017 Mean` - `1990 Mean`)/`1990 Mean`*100,1),"%")) %>% 
+  kableExtra::kable(format.args = list(big.mark = ','),
+                    caption = "Annual Average On-road CO~2~ Emissions",
+                    digits = 0, align = "r")
+```
+
+
+```{r slopegraphCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Slope graph of summer average Ozone (O~3~) concentrations for 2011 and 2016 for New England and states."}
+# Slope graph of CO2 by state and region between 1990 and 2017
+# Create df of 2017 actual values
+CO217wSTAvgs_actual <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  group_by(STATE) %>% 
+  summarize(CO2Mean = mean(onroad_2017, na.rm = TRUE),
+            CO2wMean = weighted.mean(x = onroad_2017,
+                                      w = totalpopE, na.rm = TRUE)) %>% 
+  mutate(Year = 2017)
+# Create df of 1990 values
+CO290wSTAvgs_actual <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  group_by(STATE) %>% 
+  summarize(CO2Mean = mean(onroad_1990, na.rm = TRUE),
+            CO2wMean = weighted.mean(x = onroad_1990,
+                                      w = pop_15, na.rm = TRUE)) %>% 
+  mutate(Year = 1990)
+# Create regional average benchmark
+CO290NEavg <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  summarize(CO2Mean = mean(onroad_1990, na.rm = TRUE),
+            CO2wMean = weighted.mean(x = onroad_1990,
+                                      w = pop_15, na.rm = TRUE)) %>% 
+  transmute(STATE = "NEW ENGLAND", 
+            CO2Mean = CO2Mean, 
+            CO2wMean = CO2wMean,
+            Year = 1990)
+CO217NEavg <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  summarize(CO2Mean = mean(onroad_2017, na.rm = TRUE),
+            CO2wMean = weighted.mean(x = onroad_2017,
+                                      w = totalpopE, na.rm = TRUE)) %>% 
+  transmute(STATE = "NEW ENGLAND", 
+            CO2Mean = CO2Mean, 
+            CO2wMean = CO2wMean,
+            Year = 2017)
+#rbind tables
+CO290_17wSTAvg_actual <- bind_rows(CO290wSTAvgs_actual,
+                                CO217wSTAvgs_actual,
+                                CO290NEavg,
+                                CO217NEavg) %>% 
+  mutate(Year = as.factor(Year),
+         CO2Mean = round(CO2wMean,0),
+         CO2wMean = round(CO2wMean,0))
+# make slope graph
+newggslopegraph(dataframe = CO290_17wSTAvg_actual, 
+                Times = Year, 
+                Measurement = CO2Mean, 
+                Grouping = STATE,
+                Title = expression(paste("Average Annual On-road ", 
+                                         CO[2], " Emissions")),
+                SubTitle = expression(paste
+                                      (CO[2]," (mtons/", km^2, ")",  sep = "")),
+                Caption = NULL,
+                LineColor = c("NEW ENGLAND" = "#000000",
+                              "Connecticut" = "#E69F00",
+                              "Massachusetts" = "#56B4E9",
+                              "Rhode Island" = "#009E73",
+                              "New Hampshire" = "#F0E442",
+                              "Vermont" = "#0072B2",
+                              "Maine" = "#D55E00"),
+                LineThickness = 1,
+                YTextSize = 3.5,
+                DataTextSize = 3,
+                WiderLabels = TRUE)
+```
+
+
+### Carbon Dioxide (CO~2~) in New England and Populations of Concern
+
+In addition to variations in the general geography of CO~2~ emissions, exposure to these emissions also varies demographically. Figure \@ref(fig:barplotO3PopAvgNE) below shows population-weighted exposures for populations of concern relative to average CO~2~ emissions for the region. For example, linguistically isolated households in New England are exposed to  CO~2~ emissions that are more than 91% above emissions for the region as a whole. Similarly, minorities are exposed to emissions 49% above the regional average. By contrast, persons over age 64 are, on average, exposed to emissions of CO~2~ at 17% below the regional average. 
+
+```{r barplotCO2PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average exposures to Carbon Dioxide emissions (CO~2~) for populations of concern in New England relative to the regional average."}
+# Pop Weighted avg of CO2 for all Groups in New England relative to NE average
+ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over65E, 
+                onroad_2017) %>% 
+  gather(key = Group, value = Pop, totalpopE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(CO2wMean = weighted.mean(x = onroad_2017, w = Pop, na.rm = TRUE),
+            CO2Mean = mean(onroad_2017, na.rm = TRUE)) %>% 
+  spread(key = Group, value = CO2wMean) %>% 
+  transmute(Minority = (minorityE/CO2Mean - 1)*100,
+         #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+         `Lang Isol` = (eng_limitE/CO2Mean - 1)*100,
+         `Low Income` = (num2povE/CO2Mean - 1)*100,
+         `No HS` = (lthsE/CO2Mean - 1)*100,
+         `Under 5` = (under5E/CO2Mean - 1)*100,
+         `Over 64` = (over65E/CO2Mean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted (", CO[2], ") Exposure"), "(relative to New England average)"))) + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,1),"%")), 
+            hjust = 0.5, size = 3, nudge_y = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+```
+
+Like the region as a whole, these populations have also experienced changes in exposure since 1990. The comparison between exposure for these groups since 1990 is displayed below in Figure \@ref(fig:slopegraphCO2PopAvgNE). All populations of concern have experienced an increase in population-weighted exposure to CO~2~, with persons in language-isolated households and minorities  experiencing the greatest increase in exposure. 
+
+```{r slopegraphCO2PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Slope graph of carbon dioxide (CO~2~) emissions by population of concern for 1990 and 2017."}
+# Pop Weighted avg of CO2 EXPOSURE CHANGE 1990 - 2017 for all Groups in New England relative to NE average. 
+# Create df of 2019 actual values
+CO217wAvgs_actual <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(minorityE,
+                num2povE,
+                eng_limitE,
+                lthsE,
+                under5E,
+                over65E,
+                onroad_2017) %>% 
+  gather(key = Group, value = Pop, minorityE:over65E) %>% 
+  group_by(Group) %>% 
+  summarize(CO2wMean = weighted.mean(x = onroad_2017, 
+                                      w = Pop, na.rm = TRUE)) %>% 
+  mutate(Group = case_when(
+    Group == "minorityE" ~ "Minority",
+    Group == "eng_limitE" ~ "Lang Isol",
+    Group == "num2povE" ~ "Low Income",
+    Group == "lthsE" ~ "No HS Dip",
+    Group == "under5E" ~ "Under 5",
+    Group == "over65E" ~ "Over 64")) %>% 
+  mutate(Year = 2017)
+# Create df of 1990 values
+CO290wAvgs_actual <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(mins_15,
+                lowinc_15,
+                lingiso_15,
+                lths_15,
+                under5_15,
+                over64_15,
+                onroad_1990) %>% 
+  gather(key = Group, value = Pop, mins_15:over64_15) %>% 
+  group_by(Group) %>% 
+  summarize(CO2wMean = weighted.mean(x = onroad_1990, 
+                                      w = Pop, na.rm = TRUE)) %>%  
+  mutate(Group = case_when(
+    Group == "mins_15" ~ "Minority",
+    Group == "lingiso_15" ~ "Lang Isol",
+    Group == "lowinc_15" ~ "Low Income",
+    Group == "lths_15" ~ "No HS Dip",
+    Group == "under5_15" ~ "Under 5",
+    Group == "over64_15" ~ "Over 64")) %>% 
+  mutate(Year = 1990)
+# Create regional average benchmark
+CO290NEavg <- mean(ne_blkgrp_sf_DemoEJ$onroad_1990, na.rm = TRUE)
+CO217NEavg <- mean(ne_blkgrp_sf_DemoEJ$onroad_2017, na.rm = TRUE)
+CO2RegionalAvg_actual <- data.frame(
+  Group = c("REGIONAL AVG", "REGIONAL AVG"),
+  CO2wMean = c(CO290NEavg,CO217NEavg),
+  Year = c(1990,2017)
+)
+#rbind tables
+CO290_17wAvg_actual <- bind_rows(CO290wAvgs_actual,
+                                CO217wAvgs_actual,
+                                CO2RegionalAvg_actual) %>% 
+  mutate(Year = as.factor(Year),
+         CO2wMean = round(CO2wMean,1))
+# make slope graph
+newggslopegraph(dataframe = CO290_17wAvg_actual, 
+                Times = Year, 
+                Measurement = CO2wMean, 
+                Grouping = Group,
+                Title = "Population-Weighted CO2 Exposure",
+                SubTitle = expression(paste
+                                      (CO[2]," (mtons/", km^2, ")", sep = "")),
+                Caption = NULL,
+                LineColor = c("REGIONAL AVG" = "#000000",
+                              "Lang Isol" = "#E69F00",
+                              "Minority" = "#56B4E9",
+                              "No HS Dip" = "#009E73",
+                              "Low Income" = "#F0E442",
+                              "Under 5" = "#0072B2",
+                              "Over 64" = "#D55E00"),
+                YTextSize = 3.5,
+                DataTextSize = 3,
+                WiderLabels = TRUE)
+```
+
+Language isolated households and minorities are much more exposed to CO~2~ emissions and there is a moderately positive and statistically significant correlation between the proportions those groups and emissions of CO~2~ (see Figure \@ref(fig:cormatrixCO2PopAvg) below.).
+
+```{r cormatrixCO2PopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of annual average carbon dioxide emissions and the proportions of populations of concern by Census Block Group."}
+# Create a correlation matrix of PM25 and populations of concern
+corrCO2 <- ne_blkgrp_sf_DemoEJ %>% 
+  as.data.frame() %>% 
+  dplyr::transmute(CO2 = onroad_2017, 
+                Minority = minority_pctE, 
+                `Low Income` = pct2povE, 
+                `Lang Isol` = eng_limit_pctE, 
+                `No HS Dip` = pct_lthsE, 
+                `Under 5` = pct_under5E, 
+                `Over 64` = pct_over65E) %>% 
+  drop_na() %>% 
+  cor(method = "spearman")
+# corrPM25
+ggcorrplot(corrCO2, hc.order = TRUE, type = "lower", lab = TRUE, 
+           title = "CO2 Correlation Matrix for New England", 
            legend.title = "Spearman's \nCorrelation\nCoefficient")
 ```
