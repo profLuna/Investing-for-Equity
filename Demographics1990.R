@@ -6,6 +6,7 @@ library(tmap)
 library(sf)
 library(tigris)
 options(tigris_use_cache = TRUE, tigris_class = "sf")
+library(raster)
 
 census_api_key("f2776fbc29cf847505de9308a82c8d65290d16b3")
 
@@ -100,3 +101,53 @@ ne_blkgrps_sf90 <- ne_blkgrps_sf90 %>%
     STATEFP == "44" ~ "RI",
     STATEFP == "50" ~ "VT"))
 
+# Compute CO2 by block group
+# Read in DARTE Annual On-road CO2 Emissions on a 1-km Grid. See https://daac.ornl.gov/cgi-bin/dsviewer.pl?ds_id=1735 
+# view relevant tif tags embedded within a geotiff before openning it
+# GDALinfo("traffic/onroad_2017.tif")
+# load the data
+CO2_1990 <- raster("DATA/DARTE/onroad_1990.tif")
+
+# Crop to New England
+# Create copy of ne_blkgrp_sf with same CRS
+ne_blkgrps_sf90_lcc <- st_transform(ne_blkgrps_sf90, proj4string(CO2_1990))
+
+# Crop raster to New England and convert kilograms/km2 to metric tons/km2
+CO2_1990ne_tons <- crop(CO2_1990, ne_blkgrps_sf90_lcc) %>% 
+  `/`(1000)
+# clean up
+rm(CO2_1990)
+
+# To extract raster values, need to first address empty geometries in polygon layer
+# check for empty geometries
+any(is.na(st_dimension(ne_blkgrps_sf90_lcc)))
+# identiy empty geometries
+# empty_geo <- st_is_empty(ne_blkgrp_sf_lcc)
+# # filter out empty geometries
+# ne_blkgrp_sf_lcc <- ne_blkgrp_sf_lcc[!empty_geo,]
+# # clean up
+# rm(empty_geo)
+
+# Extract mean CO2 values within each block group to an spdf
+meanCO2_90 <- extract(CO2_1990ne_tons, as_Spatial(ne_blkgrps_sf90_lcc), 
+                      fun=mean, sp=TRUE, na.rm=TRUE, small=TRUE)
+
+# Convert to sf
+ne_blkgrps_sf90_CO2 <- st_as_sf(meanCO2_90)
+
+# clean up
+rm(CO2_1990ne_tons, meanCO2_90, meanCO2_90sf, ne_blkgrp_90, ne_blkgrps_sf90, ne_blkgrps_sf90_lcc)
+
+# save with other files
+save(ne_blkgrp_sf,
+     ne_blkgrp_sf_DEMOG,
+     ne_tracts_sf,
+     ne_tracts_sf_DEMOG,
+     ne_towns_sf, 
+     ne_towns_sf_EJ,
+     ne_towns_sf_pts,
+     ne_states,
+     ne_states_sf_cb,
+     ne_blkgrp_sf_DemoEJ,
+     ne_blkgrps_sf90_CO2,
+     file = "DATA/ne_layers.rds")
