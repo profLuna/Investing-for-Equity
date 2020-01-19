@@ -58,6 +58,48 @@ ne_blkgrp_90 <- reduce(
   rbind
 )
 
+
+# use purrr::reduce function in combination with sf::rbind to download states for list of states and then bind them to one sf. 
+ne_state_90 <- reduce(
+  map(ne_states, function(x) {
+    get_decennial(geography = "state",
+                  sumfile = "sf3",
+                  year = 1990,
+                  variables = c(totalpop = "P0010001", 
+                                households = "P0050001",
+                                hispanic = "P0100001",
+                                nhwhite = "P0120001",
+                                nhblack = "P0120002",
+                                nhamerind = "P0120003",
+                                nhasian = "P0120004",
+                                nhother = "P0120005",
+                                age_u1 = "P0130001",
+                                age1_2 = "P0130002",
+                                age3_4 = "P0130003",
+                                age65_69 = "P0130027",
+                                age70_74 = "P0130028",
+                                age75_79 = "P0130029",
+                                age80_84 = "P0130030",
+                                age85 = "P0130031",
+                                spanLangIsolHH = "P0290002",
+                                asianLangIsolHH = "P0290004",
+                                othrLangIsolHH = "P0290006",
+                                edLt9th = "P0570001",
+                                ed9_12 = "P0570002",
+                                incTopovUndr.5 = "P1210001",
+                                incTopov.5_.74 = "P1210002",
+                                incTopov.75_.99 = "P1210003",
+                                incTopov1_1.24 = "P1210004",
+                                incTopov1.25_1.49 = "P1210005",
+                                incTopov1.5_1.74 = "P1210006",
+                                incTopov1.75_1.84 = "P1210007",
+                                incTopov1.85_1.99 = "P1210008"),
+                  state = x, output = "wide")
+  }),
+  rbind
+)
+
+
 # Compute estimates for populations of interest
 ne_blkgrp_90 <- ne_blkgrp_90 %>% 
   mutate(minority = hispanic + 
@@ -80,9 +122,12 @@ ne_blkgrps_sf90 <- rbind_tigris(
 )
 
 # join df to sf
-ne_blkgrps_sf90 <- ne_blkgrps_sf90 %>% 
-  dplyr::select(-NAME) %>% 
-  left_join(., ne_blkgrp_90, by = "GEOID")
+ne_blkgrps_sf90b <- ne_blkgrps_sf90 %>% 
+  dplyr::select(-NAME) %>%
+  left_join(., ne_blkgrp_90, by = c("GEOID" = "GEOID"))
+
+sum(is.na(ne_blkgrps_sf90b$totalpop))
+rm(ne_blkgrps_sf90b)
 
 # Add in state names and abbreviations based on STATEFP
 ne_blkgrps_sf90 <- ne_blkgrps_sf90 %>% 
