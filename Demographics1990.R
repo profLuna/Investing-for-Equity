@@ -194,5 +194,5 @@ save(ne_blkgrp_sf,
      ne_states,
      ne_states_sf_cb,
      ne_blkgrp_sf_DemoEJ,
-     ne_blkgrps_sf90_CO2,
+     ne_state_90,
      file = "DATA/ne_layers.rds")
