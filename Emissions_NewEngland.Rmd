@@ -768,7 +768,7 @@ tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") +
             legend.hist.width = 0.9)
 ```
 
-Because of the linear pattern of emissions, CO~2~ emissions exhibit little to no spatial clustering (see Figure \@ref(fig:hotspotCO2NE) below).
+Because of the linear pattern of emissions along major traffic corridors, CO~2~ emissions exhibit little to no spatial clustering across the region (see Figure \@ref(fig:hotspotCO2NE) below).
 
 ```{r hotspotCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2017 CO2 emissions at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
@@ -864,15 +864,34 @@ tm_shape(ne_blkgrp_sf_DemoEJ, unit = "mi") +
             legend.hist.width = 0.9)
 ```
 
-Averaged across the states, the differences in these changes are also apparent. Table \@ref(tab:changeCO2NE) and Figure \@ref(fig:slopegraphCO2NE) below compare the average annual CO~2~ emissions by state and for the region between 1990 and 2017. New England as a whole showed an almost 30% increase in annual CO~2~ emissions. All states showed average increases, with New Hampshire leading with more than 90% increase. Rhode Island showed the smallest increase since 1990 (4.6%), although note that Rhode Island's average annual emissions still remain significantly above the regional average. 
+Averaged across the states, the differences in these changes are also apparent. Table \@ref(tab:changeCO2NE) and Figure \@ref(fig:slopegraphCO2NE) below compare the average annual CO~2~ emissions by state and for the region between 1990 and 2017. New England as a whole showed an almost 30% increase in average annual CO~2~ emissions. All states showed average increases, with New Hampshire leading with more than 90% increase. Rhode Island showed the smallest increase since 1990 (4.6%), although note that Rhode Island's average annual emissions still remain significantly above the regional average. 
 
 ```{r changeCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual Average 2017 CO~2~ emissions (mtons/km^2^) and Percent Change by state at Census Block Group level."}
 ne_blkgrp_sf_DemoEJ %>% 
   as.data.frame() %>% 
   group_by(STATE) %>% 
-  summarize(`1990 Mean` = mean(onroad_1990, na.rm = TRUE),
-            `2017 Mean` = mean(onroad_2017, na.rm = TRUE),
-            `Pct Change` = paste0(round((`2017 Mean` - `1990 Mean`)/`1990 Mean`*100,1),"%")) %>% 
+  summarize(`1990 Avg (mtons/km^2)` = mean(onroad_1990, na.rm = TRUE),
+            `2017 Avg (mtons/km^2)` = mean(onroad_2017, na.rm = TRUE),
+            `2017 Per Capita (kg/person)` = (`2017 Avg (mtons/km^2)`*1000)/sum(totalpopE),
+            `Avg Pct Change` = 
+              paste0(
+                round(
+                  (`2017 Avg (mtons/km^2)` - `1990 Avg (mtons/km^2)`)/`1990 Avg (mtons/km^2)`*100,0),"%")) %>% 
+  left_join(., ne_state_90, by = c("STATE" = "NAME")) %>% 
+  mutate(`1990 Per Capita (kg/person)` = (`1990 Avg (mtons/km^2)`*1000)/sum(totalpop),
+         `Per Capita Pct Change` = 
+           paste0(
+           round(
+             (`2017 Per Capita (kg/person)` - `1990 Per Capita (kg/person)`)/`1990 Per Capita (kg/person)`*100,0),"%")) %>% 
+  transmute(STATE = STATE, 
+            `1990 Avg (mtons/km^2^)` = `1990 Avg (mtons/km^2)`, 
+            `2017 Avg (mtons/km^2^)` = `2017 Avg (mtons/km^2)`,
+            `Avg Pct Change` = `Avg Pct Change`,
+            `1990 Per Capita (kg/person)` = 
+              as.character(round(`1990 Per Capita (kg/person)`,2)),
+            `2017 Per Capita (kg/person)` = 
+              as.character(round(`2017 Per Capita (kg/person)`,2)),
+            `Per Capita Pct Change` = `Per Capita Pct Change`) %>% 
   kableExtra::kable(format.args = list(big.mark = ','),
                     caption = "Annual Average On-road CO~2~ Emissions",
                     digits = 0, align = "r")
@@ -947,6 +966,7 @@ newggslopegraph(dataframe = CO290_17wSTAvg_actual,
                 WiderLabels = TRUE)
 ```
 
+The growth in average CO~2~ emissions exceeds population growth as is evident in the per capita emissions (see Table \@ref(tab:changeCO2NE)). 
 
 ### Carbon Dioxide (CO~2~) in New England and Populations of Concern
 
@@ -993,7 +1013,7 @@ ne_blkgrp_sf_DemoEJ %>%
   ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
   geom_bar(stat = "identity", position = "identity") +
   theme_minimal(base_family = "TT Times New Roman") +
-  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted (", CO[2], ") Exposure"), "(relative to New England average)"))) + 
+  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted ", CO[2], " Exposure"), "(relative to New England average)"))) + 
   theme(legend.position = 'none',
         text = element_text(family = "TT Times New Roman")) +
   geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
@@ -1008,7 +1028,7 @@ Like the region as a whole, these populations have also experienced changes in e
 
 ```{r slopegraphCO2PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Slope graph of carbon dioxide (CO~2~) emissions by population of concern for 1990 and 2017."}
 # Pop Weighted avg of CO2 EXPOSURE CHANGE 1990 - 2017 for all Groups in New England relative to NE average. 
-# Create df of 2019 actual values
+# Create df of 2017 actual values
 CO217wAvgs_actual <- ne_blkgrp_sf_DemoEJ %>% 
   as.data.frame() %>% 
   # filter(STATE == "Massachusetts") %>%
