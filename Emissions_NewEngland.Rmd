@@ -992,9 +992,10 @@ ne_blkgrp_sf_DemoEJ %>%
   gather(key = Group, value = Pct) %>% 
   ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
   geom_bar(stat = "identity", position = "identity") +
-  theme_minimal() +
+  theme_minimal(base_family = "TT Times New Roman") +
   labs(x = "", y = "", title = expression(atop(paste("Population-Weighted (", CO[2], ") Exposure"), "(relative to New England average)"))) + 
-  theme(legend.position = 'none') +
+  theme(legend.position = 'none',
+        text = element_text(family = "TT Times New Roman")) +
   geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
                 label = paste0(round(Pct,1),"%")), 
             hjust = 0.5, size = 3, nudge_y = 3,
@@ -1106,5 +1107,8 @@ corrCO2 <- ne_blkgrp_sf_DemoEJ %>%
 # corrPM25
 ggcorrplot(corrCO2, hc.order = TRUE, type = "lower", lab = TRUE, 
            title = "CO2 Correlation Matrix for New England", 
-           legend.title = "Spearman's \nCorrelation\nCoefficient")
+           legend.title = "Spearman's \nCorrelation\nCoefficient",
+           ggtheme = ggplot2::theme_minimal(base_family = "TT Times New Roman"))
 ```
+
+
