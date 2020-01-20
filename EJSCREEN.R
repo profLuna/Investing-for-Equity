@@ -4,7 +4,7 @@ library(sf)
 library(tmap)
 library(tmaptools)
 library(maptools)
-library(raster)
+# library(raster)
 library(rgdal)
 library(RColorBrewer)
 library(sp)
@@ -46,75 +46,71 @@ EJSCREEN_15_19 <- left_join(EJSCREEN15,EJSCREEN19,
 rm(EJSCREEN15,EJSCREEN19)
 
 
+
+# Import CO2 by block group from DARTE geodatabase. See https://daac.ornl.gov/cgi-bin/dsviewer.pl?ds_id=1735 
+onroadCO2 <- st_read(dsn = "DATA/DARTE/DARTE_v2.gdb/DARTE_v2.gdb", 
+                     layer = "DARTE_v2_blockgroup_kgco2_1980_2017") %>% 
+  mutate(GEOID = as.character(GEOID))
+
+
 # Compute CO2 by block group with percent change
 # Read in DARTE Annual On-road CO2 Emissions on a 1-km Grid. See https://daac.ornl.gov/cgi-bin/dsviewer.pl?ds_id=1735 
 # view relevant tif tags embedded within a geotiff before openning it
 # GDALinfo("traffic/onroad_2017.tif")
 # load the data
-CO2_2017 <- raster("DATA/DARTE/onroad_2017.tif")
-CO2_1990 <- raster("DATA/DARTE/onroad_1990.tif")
-
-# Crop to New England
-# Create copy of ne_blkgrp_sf with same CRS
-ne_blkgrp_sf_lcc <- st_transform(ne_blkgrp_sf, proj4string(CO2_2017))
-
-# Crop raster to New England and convert kilograms/km2 to metric tons/km2
-CO2_2017ne_tons <- crop(CO2_2017, ne_blkgrp_sf_lcc) %>% 
-  `/`(1000)
-CO2_1990ne_tons <- crop(CO2_1990, ne_blkgrp_sf_lcc) %>% 
-  `/`(1000)
-# clean up
-rm(CO2_1990,CO2_2017)
-
-# To extract raster values, need to first address empty geometries in polygon layer
-# check for empty geometries
-any(is.na(st_dimension(ne_blkgrp_sf_lcc)))
-# identiy empty geometries
-empty_geo <- st_is_empty(ne_blkgrp_sf_lcc)
-# filter out empty geometries
-ne_blkgrp_sf_lcc <- ne_blkgrp_sf_lcc[!empty_geo,]
-# clean up
-rm(empty_geo)
-
-# Extract mean CO2 values within each block group to an spdf
-meanCO2_17 <- extract(CO2_2017ne_tons, as_Spatial(ne_blkgrp_sf_lcc), 
-                   fun=mean, sp=TRUE, na.rm=TRUE, small=TRUE)
-
-meanCO2_90 <- extract(CO2_1990ne_tons, as_Spatial(ne_blkgrp_sf_lcc), 
-                      fun=mean, sp=TRUE, na.rm=TRUE, small=TRUE)
+# CO2_2017 <- raster("DATA/DARTE/onroad_2017.tif")
+# CO2_1990 <- raster("DATA/DARTE/onroad_1990.tif")
+# 
+# # Crop to New England
+# # Create copy of ne_blkgrp_sf with same CRS
+# ne_blkgrp_sf_lcc <- st_transform(ne_blkgrp_sf, proj4string(CO2_2017))
+# 
+# # Crop raster to New England and convert kilograms/km2 to metric tons/km2
+# CO2_2017ne_tons <- crop(CO2_2017, ne_blkgrp_sf_lcc) %>% 
+#   `/`(1000)
+# CO2_1990ne_tons <- crop(CO2_1990, ne_blkgrp_sf_lcc) %>% 
+#   `/`(1000)
+# # clean up
+# rm(CO2_1990,CO2_2017)
+# 
+# # To extract raster values, need to first address empty geometries in polygon layer
+# # check for empty geometries
+# any(is.na(st_dimension(ne_blkgrp_sf_lcc)))
+# # identiy empty geometries
+# empty_geo <- st_is_empty(ne_blkgrp_sf_lcc)
+# # filter out empty geometries
+# ne_blkgrp_sf_lcc <- ne_blkgrp_sf_lcc[!empty_geo,]
+# # clean up
+# rm(empty_geo)
+# 
+# # Extract mean CO2 values within each block group to an spdf
+# meanCO2_17 <- extract(CO2_2017ne_tons, as_Spatial(ne_blkgrp_sf_lcc), 
+#                    fun=mean, sp=TRUE, na.rm=TRUE, small=TRUE)
+# 
+# meanCO2_90 <- extract(CO2_1990ne_tons, as_Spatial(ne_blkgrp_sf_lcc), 
+#                       fun=mean, sp=TRUE, na.rm=TRUE, small=TRUE)
 
 # Map it
 # tm_shape(meanCO2_17) + tm_fill("onroad_2017", style = "quantile")
 # tm_shape(meanCO2_90) + tm_fill("onroad_1990", style = "quantile")
 
 # Join CO2 values to EJSCREEN block groups
-EJSCREEN_15_19 <- meanCO2_90 %>% 
-  as.data.frame() %>% 
-  dplyr::select(GEOID, onroad_1990) %>% 
+EJSCREEN_15_19 <- onroadCO2 %>%
+  as.data.frame() %>%
   left_join(EJSCREEN_15_19, ., by = c("FIPS_15" = "GEOID"))
-
-EJSCREEN_15_19 <- meanCO2_17 %>% 
-  as.data.frame() %>% 
-  dplyr::select(GEOID, onroad_2017) %>% 
-  left_join(EJSCREEN_15_19, ., by = c("FIPS_15" = "GEOID"))
-
-# Compute percent CO2 change 1990 to 2017
-EJSCREEN_15_19 <- EJSCREEN_15_19 %>% 
-  mutate(CO2_pctChange90_17 = (onroad_2017 - onroad_1990)/onroad_1990*100)
 
 # clean up
-rm(meanCO2_90,meanCO2_17,CO2_1990ne_tons,CO2_2017ne_tons)
-
+rm(onroadCO2)
 
 # Join EJSCREEN data to block groups with demographics
-ne_blkgrp_sf_DemoEJ <- left_join(ne_blkgrp_sf_DEMOG,EJSCREEN_15_19, 
+ne_blkgrp_sf <- left_join(ne_blkgrp_sf,EJSCREEN_15_19, 
                                 by = c("GEOID" = "FIPS_15"))
 
 # Join EJSCREEN data to towns
-ne_towns_sf_EJ <- ne_blkgrp_sf_DemoEJ %>% 
+ne_towns_sf <- ne_blkgrp_sf %>% 
   st_transform(., st_crs(ne_towns_sf)) %>% 
   st_join(., ne_towns_sf, largest = TRUE) %>% 
-  dplyr::select(GEOID.y, DSLPM_19:onroad_2017) %>% 
+  dplyr::select(GEOID.y, DSLPM_19:kgco2_2017) %>% 
   mutate(AvgBlkAREA = as.numeric(st_area(.))) %>% # convert from 'units' to numeric 
   group_by(GEOID.y) %>%  
   summarize_if(is.numeric, 
@@ -128,11 +124,8 @@ rm(EJSCREEN_15_19)
 
 # save original and joined spatial files with demographics
 save(ne_blkgrp_sf,
-     ne_blkgrp_sf_DEMOG,
      ne_tracts_sf,
-     ne_tracts_sf_DEMOG,
-     ne_towns_sf, 
-     ne_towns_sf_EJ,
+     ne_towns_sf,
      ne_towns_sf_pts,
      ne_states,
      ne_states_sf_cb,
@@ -172,12 +165,12 @@ ne_states_sf_cb <- states(cb = TRUE) %>%
 
 # Create point layer of state capitols for context
 ne_towns_sf_pts <- ne_towns_sf %>% 
-  filter((NAMELSAD == "Boston city" & STATE == "Massachusetts") | 
-           (NAMELSAD == "Portland city" & STATE == "Maine") |
-           (NAMELSAD == "Hartford town" & STATE == "Connecticut") |
-           (NAMELSAD == "Providence city" & STATE == "Rhode Island") |
-           (NAMELSAD == "Portsmouth city" & STATE == "New Hampshire") |
-           (NAMELSAD == "Montpelier city" & STATE == "Vermont")) %>% 
+  filter((NAME == "Boston city" & STATE == "Massachusetts") | 
+           (NAME == "Portland city" & STATE == "Maine") |
+           (NAME == "Hartford town" & STATE == "Connecticut") |
+           (NAME == "Providence city" & STATE == "Rhode Island") |
+           (NAME == "Portsmouth city" & STATE == "New Hampshire") |
+           (NAME == "Montpelier city" & STATE == "Vermont")) %>% 
   st_centroid(of_largest_polygon = TRUE)
 
 # NEW ENGLAND
