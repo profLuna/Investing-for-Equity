@@ -122,14 +122,39 @@ ne_towns_sf <- ne_blkgrp_sf %>%
 # clean up
 rm(EJSCREEN_15_19)
 
+
+# Assemble state boundaries and select cities for mapping
+# Download cartographic boundary file of states from tigris
+library(tigris)
+ne_states_sf_cb <- states(cb = TRUE) %>% 
+  st_as_sf() %>% 
+  filter(STUSPS %in% ne_states)
+# tm_shape(ne_states_sp) + tm_borders()
+
+# Create point layer of state capitols for context
+library(tigris)
+options(tigris_class = "sf")
+ne_towns_sf_pts <- ne_towns_sf <- rbind_tigris(
+  lapply(
+    ne_states, function(x){
+      county_subdivisions(state = x, cb = FALSE)})) %>% 
+  filter((NAMELSAD == "Boston city" & STATEFP == "25") | 
+           (NAMELSAD == "Portland city" & STATEFP == "23") |
+           (NAMELSAD == "Hartford town" & STATEFP == "09") |
+           (NAMELSAD == "Providence city" & STATEFP == "44") |
+           (NAMELSAD == "Portsmouth city" & STATEFP == "33") |
+           (NAMELSAD == "Montpelier city" & STATEFP == "50")) %>% 
+  st_centroid(of_largest_polygon = TRUE)
+
+
 # save original and joined spatial files with demographics
 save(ne_blkgrp_sf,
+     ne_blkgrp_sf90,
      ne_tracts_sf,
      ne_towns_sf,
      ne_towns_sf_pts,
      ne_states,
      ne_states_sf_cb,
-     ne_blkgrp_sf_DemoEJ,
      file = "DATA/ne_layers.rds")
 
 
@@ -156,22 +181,7 @@ save(ne_blkgrp_sf,
 # ne_states_sf <- left_join(ne_states_sf, state.names, 
 #                           by = c("NAME" = "state.names"))
 
-# Download cartographic boundary file of states from tigris
-library(tigris)
-ne_states_sf_cb <- states(cb = TRUE) %>% 
-  st_as_sf() %>% 
-  filter(STUSPS %in% ne_states)
-# tm_shape(ne_states_sp) + tm_borders()
 
-# Create point layer of state capitols for context
-ne_towns_sf_pts <- ne_towns_sf %>% 
-  filter((NAME == "Boston city" & STATE == "Massachusetts") | 
-           (NAME == "Portland city" & STATE == "Maine") |
-           (NAME == "Hartford town" & STATE == "Connecticut") |
-           (NAME == "Providence city" & STATE == "Rhode Island") |
-           (NAME == "Portsmouth city" & STATE == "New Hampshire") |
-           (NAME == "Montpelier city" & STATE == "Vermont")) %>% 
-  st_centroid(of_largest_polygon = TRUE)
 
 # NEW ENGLAND
 # Minorities
