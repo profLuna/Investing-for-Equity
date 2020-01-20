@@ -396,9 +396,9 @@ lths_pct <- age25up %>%
 rm(age25up,B15002,lths_num,lths_strings,col_num,col_strings)
 
 
-### AGE UNDER 5, UNDER 16, AND 65+
+### AGE UNDER 5, UNDER 18, AND 64+
 # Individuals under age 5: The number or percent of people in a block group under the age of 5.
-# Individuals under age 16: The number or percent of people in a block group under the age of 16. NOTE THAT CENSUS DATA RANGE IS 15 - 17. 
+# Individuals under age 18: The number or percent of people in a block group under the age of 18. NOTE THAT CENSUS DATA RANGE IS 15 - 17. 
 # Individuals over age 64: The number or percent of people in a block group over the age of 64.
 # Download Table B01001 TOTAL POPULATION COUNTS AND AGES
 B01001 <- map_df(ne_states, function(x) {
@@ -433,21 +433,21 @@ under18 <- B01001 %>%
   mutate(under18E_UC = under18E + under18M,
          under18E_LC = ifelse(
            under18E < under18M, 0, under18E - under18M))
-# Isolate 65+ pop
+# Isolate over 64 pop
 # create vector of patterns for male and female variables 65+
-ovr65_strings <- rep(c(20:25,44:49)) %>% 
+ovr64_strings <- rep(c(20:25,44:49)) %>% 
   formatC(width = 3, format = "d", flag = "0") # add leading 0s
 # filter cases by patterns, compute derived sum estimates and MOEs
-over65 <- B01001 %>% 
-  filter(str_detect(variable,paste(ovr65_strings,collapse = "|"))) %>% 
+over64 <- B01001 %>% 
+  filter(str_detect(variable,paste(ovr64_strings,collapse = "|"))) %>% 
   group_by(GEOID) %>% 
-  summarize(over65E = sum(estimate),
-            over65M = moe_sum(moe,estimate)) %>% 
-  mutate(over65E_UC = over65E + over65M,
-         over65E_LC = ifelse(
-           over65E < over65M, 0, over65E - over65M))
+  summarize(over64E = sum(estimate),
+            over64M = moe_sum(moe,estimate)) %>% 
+  mutate(over64E_UC = over64E + over64M,
+         over64E_LC = ifelse(
+           over64E < over64M, 0, over64E - over64M))
 # Join the tables and compute derived proportions with MOEs
-age5_16_65_pct <- allAges %>% 
+age5_18_64_pct <- allAges %>% 
   left_join(., under5, by = "GEOID") %>% 
   mutate(r_under5E = ifelse(
     allAgesE == 0, 0, under5E/allAgesE),
@@ -466,18 +466,18 @@ age5_16_65_pct <- allAges %>%
     pct_under18E_UC = pct_under18E + pct_under18M,
     pct_under18E_LC = ifelse(
       pct_under18E < pct_under18M, 0, pct_under18E - pct_under18M)) %>% 
-  left_join(., over65, by = "GEOID") %>% 
-  mutate(r_over65E = ifelse(
-    allAgesE == 0, 0, over65E/allAgesE),
-    r_over65M = moe_ratio(over65E,allAgesE,over65M,allAgesM),
-    pct_over65E = r_over65E * 100,
-    pct_over65M = r_over65M * 100,
-    pct_over65E_UC = pct_over65E + pct_over65M,
-    pct_over65E_LC = ifelse(
-      pct_over65E < pct_over65M, 0, pct_over65E - pct_over65M)) %>% 
+  left_join(., over64, by = "GEOID") %>% 
+  mutate(r_over64E = ifelse(
+    allAgesE == 0, 0, over64E/allAgesE),
+    r_over64M = moe_ratio(over64E,allAgesE,over64M,allAgesM),
+    pct_over64E = r_over64E * 100,
+    pct_over64M = r_over64M * 100,
+    pct_over64E_UC = pct_over64E + pct_over64M,
+    pct_over64E_LC = ifelse(
+      pct_over64E < pct_over64M, 0, pct_over64E - pct_over64M)) %>% 
   select(-starts_with("r_"))
 # clean up
-rm(allAges,B01001,over65,under18,under5,ovr65_strings)
+rm(allAges,B01001,over64,under18,under5,ovr64_strings)
 
 
 ### DISABILITY
@@ -560,17 +560,17 @@ noCarHH_pct <- map_df(ne_states, function(x) {
 ######### JOIN DATA FRAMES TO POLYGONS #############
 
 # join demographic df to block groups
-ne_blkgrp_sf_DEMOG <- ne_blkgrp_sf %>% 
+ne_blkgrp_sf <- ne_blkgrp_sf %>% 
   select(-starts_with("total")) %>% 
   left_join(., minority_pct, by = "GEOID") %>% 
-  left_join(., age5_16_65_pct, by = "GEOID") %>% 
+  left_join(., age5_18_64_pct, by = "GEOID") %>% 
   left_join(., eng_limited_pct, by = "GEOID") %>% 
   left_join(., poverty_pct, by = "GEOID") %>% 
   left_join(., lths_pct, by = "GEOID") %>% 
   left_join(., medhhinclt50_pct, by = "GEOID")
 
 # join demographic df to tracts
-ne_tracts_sf_DEMOG <- ne_tracts_sf %>% 
+ne_tracts_sf <- ne_tracts_sf %>% 
   left_join(., disabilityOver18_pct, by = "GEOID") %>% 
   left_join(., noCarHH_pct, by = "GEOID")
 
@@ -579,9 +579,7 @@ rm(list = ls(pattern = "_pct"))
 
 # save original and joined spatial files with demographics
 save(ne_blkgrp_sf,
-     ne_blkgrp_sf_DEMOG,
      ne_tracts_sf,
-     ne_tracts_sf_DEMOG,
      ne_towns_sf, 
      ne_states,
      file = "DATA/ne_layers.rds")
