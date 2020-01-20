@@ -5,7 +5,7 @@ library(tidyverse)
 library(tmap)
 library(sf)
 library(tigris)
-options(tigris_use_cache = TRUE)
+options(tigris_use_cache = TRUE, tigris_class = "sf")
 
 census_api_key("f2776fbc29cf847505de9308a82c8d65290d16b3")
 
@@ -36,10 +36,6 @@ ne_blkgrp_sf <- reduce(
 ne_blkgrp_sf <- ne_blkgrp_sf %>% 
   mutate(STATE = str_extract(NAME, '\\b[^,]+$'))
 
-# map it out
-# tm_shape(ne_blkgrp_sf) + tm_polygons(col = "STATE")
-
-
 # use purrr::reduce function in combination with sf::rbind to download tracts for list of states and then bind them to one sf. 
 ne_tracts_sf <- reduce(
   map(ne_states, function(x) {
@@ -55,10 +51,6 @@ ne_tracts_sf <- reduce(
 # provide 1 or multiple + whole words \\b, not [ ] in a string that ends in a comma ^, until the end of the string $. (so basically, provide all whole words after comma) 
 ne_tracts_sf <- ne_tracts_sf %>% 
   mutate(STATE = str_extract(NAME, '\\b[^,]+$'))
-
-# map it out
-# tm_shape(ne_tracts_sf) + tm_polygons(col = "STATE")
-
 
 # Do the same for towns across New England, although note that tidycensus does not support that geography yet so we need to import shapefiles separately with tigris and then join
 # use purrr::map_df to download df and bind vector of states
@@ -77,43 +69,47 @@ ne_towns_df <- map_df(ne_states, function(x) {
          STATE = str_extract(NAME, '\\b[^,]+$'))
 
 # Calculate statewide average median household income
-# ne_towns_df %>% 
-#   group_by(STATE) %>% 
-#   summarize(avg_medhhinc = mean(medhhincE, na.rm = TRUE))
+ne_states_df <- map_df(ne_states, function(x) {
+  get_acs(geography = "state", 
+          variables = c(totalpop = "B03002_001",
+                        medhhinc = "B19013_001"),
+          state = x, output = "wide")
+})
+
+# Isolate VT statewide median household income
+VT_MED_HHINC <- ne_states_df %>% 
+  filter(NAME == "Vermont") %>% 
+  dplyr::select(medhhincE) %>% 
+  pull()
+
 # add variables to identify EJ criteria thresholds
 ne_towns_df <- ne_towns_df %>% 
-  mutate(VT_INCOME = if_else(medhhincE < 58231, "I", NULL),
-         VT_INCOME_UC = if_else(medhhincE_UC < 58231, "I", NULL),
-         VT_INCOME_LC = if_else(medhhincE_LC < 58231, "I", NULL))
+  mutate(VT_INCOME = if_else(medhhincE < VT_MED_HHINC, "I", NULL),
+         VT_INCOME_UC = if_else(medhhincE_UC < VT_MED_HHINC, "I", NULL),
+         VT_INCOME_LC = if_else(medhhincE_LC < VT_MED_HHINC, "I", NULL))
 
 # acquire the polygons for county subdivisions for ne_towns using tigris::rbind_tigris
-ne_towns_sp <- rbind_tigris(
+ne_towns_sf <- rbind_tigris(
   lapply(
     ne_states, function(x){
-      county_subdivisions(state = x, cb = FALSE)
+      county_subdivisions(state = x, cb = TRUE)
     }
   )
 )
 
-
 # join the demographics to the polygons
-ne_towns_sp <- geo_join(spatial_data = ne_towns_sp,
-                        data_frame = ne_towns_df,
-                        by_sp = "GEOID", by_df = "GEOID")
-# tm_shape(ne_towns_sp) + tm_polygons("totalpopE")
-# convert to sf for easier handling
-ne_towns_sf <- st_as_sf(ne_towns_sp) %>% 
-  dplyr::select(-ends_with(".1"))
+ne_towns_sf <- ne_towns_sf %>% 
+  select(-NAME) %>% 
+  left_join(., ne_towns_df, by = "GEOID")
+
 # clean up
-rm(ne_towns_sp,ne_towns_df)
-# map it
-# tm_shape(ne_towns_sf) + tm_polygons("STATE")
+rm(ne_towns_df, VT_MED_HHINC)
 
 
 ###### DEMOGRAPHIC DATA FRAMES ##############
 
 ### HOUSEHOLDS BY INCOME
-# download table of counts of household income categories, sum up households in categories below 65% of MA statewide median of $74,167
+# download table of counts of household income categories, sum up households in categories below 65% of MA statewide median
 B19001 <- map_df(ne_states, function(x) {
   get_acs(geography = "block group", table = "B19001", state = x)})
 # Isolate estimate of total households
