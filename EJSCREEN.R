@@ -134,6 +134,7 @@ ne_states_sf_cb <- states(cb = TRUE) %>%
 # Create point layer of state capitols for context
 library(tigris)
 options(tigris_class = "sf")
+# Note cb=FALSE is necessary for extracting centroids from town polygons. Otherwise, if cb=TRUE, cannot extract centroids from multipolygon features.
 ne_towns_sf_pts <- ne_towns_sf <- rbind_tigris(
   lapply(
     ne_states, function(x){
