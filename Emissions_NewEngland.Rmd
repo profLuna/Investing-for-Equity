@@ -924,57 +924,46 @@ ne_blkgrp_sf %>%
 ```{r slopegraphCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Slope graph of total CO~2~ emissions for 1990 and 2017 for New England and states."}
 # Slope graph of CO2 by state and region between 1990 and 2017
 # Create df of 2017 actual values
-CO217wSTAvgs_actual <- ne_blkgrp_sf %>% 
+CO217ST_actual <- ne_blkgrp_sf %>% 
   as.data.frame() %>% 
   group_by(STATE) %>% 
-  summarize(CO2Mean = mean(onroad_2017, na.rm = TRUE),
-            CO2wMean = weighted.mean(x = onroad_2017,
-                                      w = totalpopE, na.rm = TRUE)) %>% 
+  summarize(CO2total = sum(kgco2_2017, na.rm = TRUE)/1000) %>% 
   mutate(Year = 2017)
 # Create df of 1990 values
-CO290wSTAvgs_actual <- ne_blkgrp_sf %>% 
+CO290ST_actual <- ne_blkgrp_sf %>% 
   as.data.frame() %>% 
   group_by(STATE) %>% 
-  summarize(CO2Mean = mean(onroad_1990, na.rm = TRUE),
-            CO2wMean = weighted.mean(x = onroad_1990,
-                                      w = pop_15, na.rm = TRUE)) %>% 
+  summarize(CO2total = sum(kgco2_1990, na.rm = TRUE)/1000) %>% 
   mutate(Year = 1990)
 # Create regional average benchmark
-CO290NEavg <- ne_blkgrp_sf %>% 
+CO290NE <- ne_blkgrp_sf %>% 
   as.data.frame() %>% 
-  summarize(CO2Mean = mean(onroad_1990, na.rm = TRUE),
-            CO2wMean = weighted.mean(x = onroad_1990,
-                                      w = pop_15, na.rm = TRUE)) %>% 
+  summarize(CO2total = sum(kgco2_1990, na.rm = TRUE)/1000) %>% 
   transmute(STATE = "NEW ENGLAND", 
-            CO2Mean = CO2Mean, 
-            CO2wMean = CO2wMean,
+            CO2total = CO2total,
             Year = 1990)
-CO217NEavg <- ne_blkgrp_sf %>% 
+CO217NE <- ne_blkgrp_sf %>% 
   as.data.frame() %>% 
-  summarize(CO2Mean = mean(onroad_2017, na.rm = TRUE),
-            CO2wMean = weighted.mean(x = onroad_2017,
-                                      w = totalpopE, na.rm = TRUE)) %>% 
+  summarize(CO2total = sum(kgco2_2017, na.rm = TRUE)/1000) %>% 
   transmute(STATE = "NEW ENGLAND", 
-            CO2Mean = CO2Mean, 
-            CO2wMean = CO2wMean,
+            CO2total = CO2total,
             Year = 2017)
 #rbind tables
-CO290_17wSTAvg_actual <- bind_rows(CO290wSTAvgs_actual,
-                                CO217wSTAvgs_actual,
-                                CO290NEavg,
-                                CO217NEavg) %>% 
+CO290_17ST_actual <- bind_rows(CO290ST_actual,
+                                CO217ST_actual,
+                                CO290NE,
+                                CO217NE) %>% 
   mutate(Year = as.factor(Year),
-         CO2Mean = round(CO2wMean,0),
-         CO2wMean = round(CO2wMean,0))
+         CO2total = round(CO2total,0))
 # make slope graph
-newggslopegraph(dataframe = CO290_17wSTAvg_actual, 
+newggslopegraph(dataframe = CO290_17ST_actual, 
                 Times = Year, 
-                Measurement = CO2Mean, 
+                Measurement = CO2total, 
                 Grouping = STATE,
-                Title = expression(paste("Average Annual On-road ", 
+                Title = expression(paste("Annual On-road ", 
                                          CO[2], " Emissions")),
                 SubTitle = expression(paste
-                                      (CO[2]," (mtons/", km^2, ")",  sep = "")),
+                                      (CO[2]," (mtons)",  sep = "")),
                 Caption = NULL,
                 LineColor = c("NEW ENGLAND" = "#000000",
                               "Connecticut" = "#E69F00",
@@ -1019,11 +1008,11 @@ ne_blkgrp_sf %>%
                 allAgesE, 
                 under5E, 
                 over64E, 
-                onroad_2017) %>% 
+                kgco2_2017) %>% 
   gather(key = Group, value = Pop, totalpopE:over64E) %>% 
   group_by(Group) %>% 
-  summarize(CO2wMean = weighted.mean(x = onroad_2017, w = Pop, na.rm = TRUE),
-            CO2Mean = mean(onroad_2017, na.rm = TRUE)) %>% 
+  summarize(CO2wMean = weighted.mean(x = kgco2_2017, w = Pop, na.rm = TRUE),
+            CO2Mean = mean(kgco2_2017, na.rm = TRUE)) %>% 
   spread(key = Group, value = CO2wMean) %>% 
   transmute(Minority = (minorityE/CO2Mean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
