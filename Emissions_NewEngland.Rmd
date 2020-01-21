@@ -982,7 +982,7 @@ The growth in CO~2~ emissions exceeds population growth across the region and in
 
 ### Carbon Dioxide (CO~2~) in New England and Populations of Concern
 
-In addition to variations in the general geography of CO~2~ emissions, exposure to these emissions also varies demographically. Figure \@ref(fig:barplotO3PopAvgNE) below shows population-weighted exposures for populations of concern relative to average CO~2~ emissions for the region. For example, linguistically isolated households in New England are exposed to  CO~2~ emissions that are more than 91% above emissions for the region as a whole. Similarly, minorities are exposed to emissions 49% above the regional average. By contrast, persons over age 64 are, on average, exposed to emissions of CO~2~ at 17% below the regional average. 
+In addition to variations in the general geography of CO~2~ emissions, exposure to these emissions also varies demographically. Figure \@ref(fig:barplotO3PopAvgNE) below shows population-weighted exposures for populations of concern relative to average CO~2~ emissions for the region. For example, people over age 64 in New England are exposed to  CO~2~ emissions that are more than 23% above emissions for the region as a whole. Similarly, children under 5 are exposed to emissions 13% above the regional average. By contrast, persons in linguistically isolated households are, on average, exposed to emissions of CO~2~ at almost 22% below the regional average. 
 
 ```{r barplotCO2PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average exposures to Carbon Dioxide emissions (CO~2~) for populations of concern in New England relative to the regional average."}
 # Pop Weighted avg of CO2 for all Groups in New England relative to NE average
@@ -1036,13 +1036,14 @@ ne_blkgrp_sf %>%
   geom_hline(yintercept = 0)
 ```
 
-Like the region as a whole, these populations have also experienced changes in exposure since 1990. The comparison between exposure for these groups since 1990 is displayed below in Figure \@ref(fig:slopegraphCO2PopAvgNE). All populations of concern have experienced an increase in population-weighted exposure to CO~2~, with persons in language-isolated households and minorities  experiencing the greatest increase in exposure. 
+Like the region as a whole, these populations have also experienced changes in exposure since 1990. The comparison between exposure for these groups since 1990 is displayed below in Figure \@ref(fig:slopegraphCO2PopAvgNE). All populations of concern have experienced an increase in population-weighted exposure to CO~2~, with persons in over age 64 and minorities  experiencing the greatest increase in exposure. 
 
 ```{r slopegraphCO2PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Slope graph of carbon dioxide (CO~2~) emissions by population of concern for 1990 and 2017."}
 # Pop Weighted avg of CO2 EXPOSURE CHANGE 1990 - 2017 for all Groups in New England relative to NE average. 
 # Create df of 2017 actual values
 CO217wAvgs_actual <- ne_blkgrp_sf %>% 
   as.data.frame() %>% 
+  mutate(mtco2_2017 = kgco2_2017/1000) %>% 
   # filter(STATE == "Massachusetts") %>%
   dplyr::select(minorityE,
                 num2povE,
@@ -1050,10 +1051,10 @@ CO217wAvgs_actual <- ne_blkgrp_sf %>%
                 lthsE,
                 under5E,
                 over64E,
-                onroad_2017) %>% 
+                mtco2_2017) %>% 
   gather(key = Group, value = Pop, minorityE:over64E) %>% 
   group_by(Group) %>% 
-  summarize(CO2wMean = weighted.mean(x = onroad_2017, 
+  summarize(CO2wMean = weighted.mean(x = mtco2_2017, 
                                       w = Pop, na.rm = TRUE)) %>% 
   mutate(Group = case_when(
     Group == "minorityE" ~ "Minority",
@@ -1064,31 +1065,33 @@ CO217wAvgs_actual <- ne_blkgrp_sf %>%
     Group == "over64E" ~ "Over 64")) %>% 
   mutate(Year = 2017)
 # Create df of 1990 values
-CO290wAvgs_actual <- ne_blkgrp_sf %>% 
+CO290wAvgs_actual <- ne_blkgrp_sf90 %>% 
   as.data.frame() %>% 
+  mutate(mtco2_1990 = kgco2_1990/1000) %>%
   # filter(STATE == "Massachusetts") %>%
-  dplyr::select(mins_15,
-                lowinc_15,
-                lingiso_15,
-                lths_15,
-                under5_15,
-                over64_15,
-                onroad_1990) %>% 
-  gather(key = Group, value = Pop, mins_15:over64_15) %>% 
+  dplyr::select(minority,
+                lowInc,
+                langIsolHH,
+                noHSdip,
+                under5,
+                over64,
+                mtco2_1990) %>% 
+  drop_na() %>% 
+  gather(key = Group, value = Pop, minority:over64) %>% 
   group_by(Group) %>% 
-  summarize(CO2wMean = weighted.mean(x = onroad_1990, 
+  summarize(CO2wMean = weighted.mean(x = mtco2_1990, 
                                       w = Pop, na.rm = TRUE)) %>%  
   mutate(Group = case_when(
-    Group == "mins_15" ~ "Minority",
-    Group == "lingiso_15" ~ "Lang Isol",
-    Group == "lowinc_15" ~ "Low Income",
-    Group == "lths_15" ~ "No HS Dip",
-    Group == "under5_15" ~ "Under 5",
-    Group == "over64_15" ~ "Over 64")) %>% 
+    Group == "minority" ~ "Minority",
+    Group == "langIsolHH" ~ "Lang Isol",
+    Group == "lowInc" ~ "Low Income",
+    Group == "noHSdip" ~ "No HS Dip",
+    Group == "under5" ~ "Under 5",
+    Group == "over64" ~ "Over 64")) %>% 
   mutate(Year = 1990)
 # Create regional average benchmark
-CO290NEavg <- mean(ne_blkgrp_sf$onroad_1990, na.rm = TRUE)
-CO217NEavg <- mean(ne_blkgrp_sf$onroad_2017, na.rm = TRUE)
+CO290NEavg <- mean(ne_blkgrp_sf$kgco2_1990, na.rm = TRUE)/1000
+CO217NEavg <- mean(ne_blkgrp_sf$kgco2_2017, na.rm = TRUE)/1000
 CO2RegionalAvg_actual <- data.frame(
   Group = c("REGIONAL AVG", "REGIONAL AVG"),
   CO2wMean = c(CO290NEavg,CO217NEavg),
@@ -1105,9 +1108,9 @@ newggslopegraph(dataframe = CO290_17wAvg_actual,
                 Times = Year, 
                 Measurement = CO2wMean, 
                 Grouping = Group,
-                Title = "Population-Weighted CO2 Exposure",
+                Title = "Annual Population-Weighted CO2 Exposure",
                 SubTitle = expression(paste
-                                      (CO[2]," (mtons/", km^2, ")", sep = "")),
+                                      (CO[2]," (mtons)", sep = "")),
                 Caption = NULL,
                 LineColor = c("REGIONAL AVG" = "#000000",
                               "Lang Isol" = "#E69F00",
@@ -1121,13 +1124,13 @@ newggslopegraph(dataframe = CO290_17wAvg_actual,
                 WiderLabels = TRUE)
 ```
 
-Language isolated households and minorities are much more exposed to CO~2~ emissions and there is a moderately positive and statistically significant correlation between the proportions those groups and emissions of CO~2~ (see Figure \@ref(fig:cormatrixCO2PopAvg) below.).
+Persons over age 64 and children under 5 are much more exposed to CO~2~ emissions. There is a moderately positive correlation between the proportions people over age 64 and emissions of CO~2~ (see Figure \@ref(fig:cormatrixCO2PopAvg) below.).
 
 ```{r cormatrixCO2PopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of annual average carbon dioxide emissions and the proportions of populations of concern by Census Block Group."}
 # Create a correlation matrix of PM25 and populations of concern
 corrCO2 <- ne_blkgrp_sf %>% 
   as.data.frame() %>% 
-  dplyr::transmute(CO2 = onroad_2017, 
+  dplyr::transmute(CO2 = kgco2_2017, 
                 Minority = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Lang Isol` = eng_limit_pctE, 
