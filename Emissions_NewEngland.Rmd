@@ -873,7 +873,7 @@ ne_blkgrp_sf %>%
             legend.hist.width = 0.9)
 ```
 
-Averaged across the states, the differences in these changes are also apparent. Table \@ref(tab:changeCO2NE) and Figure \@ref(fig:slopegraphCO2NE) below compare the average annual CO~2~ emissions by state and for the region between 1990 and 2017. New England as a whole showed an almost 30% increase in average annual CO~2~ emissions. All states showed average increases, with New Hampshire leading with more than 90% increase. Rhode Island showed the smallest increase since 1990 (4.6%), although note that Rhode Island's average annual emissions still remain significantly above the regional average. 
+Averaged across the states, the differences in these changes are also apparent, although less extreme than at the Census block group level. Table \@ref(tab:changeCO2NE) and Figure \@ref(fig:slopegraphCO2NE) below compares the  annual CO~2~ emissions by state and for the region between 1990 and 2017. New England as a whole showed an approximately 20% increase in annual CO~2~ emissions. All states showed total increases, with New Hampshire leading with a 34% increase, followed by Maine with a 26% increase. Rhode Island showed the smallest increase since 1990 (2%), although note that Rhode Island's average annual emissions still remain significantly above the regional average. 
 
 ```{r changeCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 CO~2~ emissions (mtons) and Percent Change by state at Census Block Group level."}
 # acquire table of 1990 state pop values
@@ -921,7 +921,7 @@ ne_blkgrp_sf %>%
 ```
 
 
-```{r slopegraphCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Slope graph of summer average Ozone (O~3~) concentrations for 2011 and 2016 for New England and states."}
+```{r slopegraphCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Slope graph of total CO~2~ emissions for 1990 and 2017 for New England and states."}
 # Slope graph of CO2 by state and region between 1990 and 2017
 # Create df of 2017 actual values
 CO217wSTAvgs_actual <- ne_blkgrp_sf %>% 
@@ -989,7 +989,7 @@ newggslopegraph(dataframe = CO290_17wSTAvg_actual,
                 WiderLabels = TRUE)
 ```
 
-The growth in CO~2~ emissions greatly exceeds population growth as is evident in the per capita emissions (see last three columns in Table \@ref(tab:changeCO2NE)). While New Hampshire leads in growth of total average emissions for the region, Vermont leads in per capita growth. Since 1990, Vermont's per capita CO~2~ emissions have increased more than 24 times. 
+The growth in CO~2~ emissions exceeds population growth across the region and in most states as is evident in the per capita emissions (see last three columns in Table \@ref(tab:changeCO2NE)). While New Hampshire leads in percentage growth of total emissions for the region, Maine leads in per capita growth. Only Vermont and Rhode Island showed declines in per capita emissions. 
 
 ### Carbon Dioxide (CO~2~) in New England and Populations of Concern
 
