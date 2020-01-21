@@ -876,7 +876,7 @@ ne_blkgrp_sf %>%
 Averaged across the states, the differences in these changes are also apparent. Table \@ref(tab:changeCO2NE) and Figure \@ref(fig:slopegraphCO2NE) below compare the average annual CO~2~ emissions by state and for the region between 1990 and 2017. New England as a whole showed an almost 30% increase in average annual CO~2~ emissions. All states showed average increases, with New Hampshire leading with more than 90% increase. Rhode Island showed the smallest increase since 1990 (4.6%), although note that Rhode Island's average annual emissions still remain significantly above the regional average. 
 
 ```{r changeCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 CO~2~ emissions (mtons) and Percent Change by state at Census Block Group level."}
-# acquire table of 1990 pop values
+# acquire table of 1990 state pop values
 library(tidycensus)
 census_api_key("f2776fbc29cf847505de9308a82c8d65290d16b3")
 ne_states_df90 <- map_df(ne_states, function(x) {
