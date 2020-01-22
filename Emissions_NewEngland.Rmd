@@ -1690,3 +1690,180 @@ ggcorrplot(corrACT, hc.order = TRUE, type = "lower", lab = TRUE,
 
 
 
+## Analysis of Traffic Proximity and Volume in New England
+
+Traffic Proximity and Volume is a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km). It was calculated from 2017 U.S. DOT traffic data and the data for this analysis was sourced from EPA’s EJSCREEN database. Exposure to high annual daily traffic volume is concentrated around major cities in New England and radiates outward along major traffic routes (see Figure \@ref(fig:mapTPVNE) below). 
+
+```{r mapTPVNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across New England at Census Block Group level."}
+
+# Map of TPV across New England
+ne_blkgrp_sf %>% 
+  tm_shape(., unit = "mi") + 
+  tm_fill("PTRAF_19", style = "quantile", 
+          title = "AADT/Distance(km)",
+          legend.hist = TRUE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=1)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Annual Traffic \nProximity and Volume \n2017", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+```
+
+There appear to be significant spatial clusters of traffic proximity and volume in Boston (see Figure \@ref(fig:hotspotTPVNE) below).
+
+```{r hotspotTPVNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2017 traffic proximity and volume at Census Block Group level."}
+# Get rid of empty geometries and NAs, and convert to spdf
+empty_geo <- st_is_empty(ne_blkgrp_sf)
+ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf[!empty_geo,] %>%
+  dplyr::select(GEOID,PTRAF_19) %>% 
+  # st_transform(., crs = 2163) %>% # convert to US National Atlas Equal Area
+  na.omit() %>% 
+  as_Spatial()
+# Calculate Queen's case neighbors
+neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
+# Compute neighbor weights
+spdep::set.ZeroPolicyOption(TRUE)
+listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
+# compute Getis-Ord Gi statistic
+local_g <- localG(ne_blkgrp_sp_DemoEJ$PTRAF_19, listw)
+local_g <- cbind(ne_blkgrp_sp_DemoEJ, as.matrix(local_g))
+names(local_g)[3] <- "gstat"
+# map the results
+tm_shape(local_g, unit = "mi",) + 
+  tm_fill("gstat",
+          palette = "-RdBu", 
+          style = "pretty",
+          title = expression(paste("Getis-Ord ", G[i]^"*")),
+          showNA = FALSE,
+          midpoint = NA,
+          labels = c("Significant Clusters","of Low Values", "","No Significant Clusters", "","Significant Clusters","of High Values")) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Hot Spot Map of \nTraffic Proximity \nand Volume \nfor New England", frame = FALSE, main.title.size = 0.6,
+            legend.position = c(.8,.2),
+            legend.title.size = 0.7)
+```
+
+Traffic Proximity and Volume exposure vary by state (see Table \@ref(tab:statsTPVNE) and Figure \@ref(fig:boxplotTPVNE) below). Massachusetts shows the highest Traffic Proximity and Volume exposure, followed distantly by Connecticut, and Rhode Island.  
+
+```{r statsTPVNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across New England at Census Block Group level."}
+ne_blkgrp_sf %>%
+  as.data.frame() %>% 
+  group_by(STATE) %>% 
+  summarize(Mean = round(mean(PTRAF_19, na.rm = TRUE),0),
+            Median = round(median(PTRAF_19, na.rm = TRUE),0),
+            Min = round(min(PTRAF_19, na.rm = TRUE),0),
+            Max = round(max(PTRAF_19, na.rm = TRUE),0)) %>% 
+  kableExtra::kable(format.args = list(big.mark = ','), 
+                    caption = "Annual traffic proximity and volume (AADT/Distance(km))",
+                    padding = 5)
+```
+
+
+```{r boxplotTPVNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across New England at Census Block Group level."}
+# boxplot of traffic proximity and volume by state for 2017
+ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = STATE, y = PTRAF_19, fill = STATE)) + 
+  geom_boxplot(notch = TRUE) + 
+  ggtitle("Traffic Proximity and Volume \nby Census block group \nby New England state, 2017") +
+  theme_minimal() +
+  theme(legend.position = "none", axis.text=element_text(size=8)) + 
+  xlab(NULL) + 
+  ylab("AADT/Distance(km)") +
+  coord_flip()
+```
+
+
+### Traffic Proximity and Volume Exposure in New England and Populations of Concern
+
+In addition to variations in the general geography of the Traffic Proximity and Volume exposure, this exposure also varies demographically. Figure \@ref(fig:barplotTPVPopAvgNE) below shows population-weighted exposures for populations of concern relative to average Traffic Proximity and Volume for the region. For example, linguistically isolated households in New England are exposed to Traffic Proximity and Volume at more than twice the level of the region as a whole (over 104%). Similarly, minorities are exposed to Traffic Proximity and Volume more than 57% above the regional average. By contrast, persons over age 64 are, on average, are exposed to Traffic Proximity and Volume of more than 22% below the regional average. 
+
+```{r barplotTPVPopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average Traffic Proximity and Volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across New England at Census Block Group level relative to the regional average."}
+# Pop Weighted avg of TPV for all Groups in New England relative to NE average
+ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over64E, 
+                PTRAF_19) %>% 
+  gather(key = Group, value = Pop, totalpopE:over64E) %>% 
+  group_by(Group) %>% 
+  summarize(DPMwMean = weighted.mean(x = PTRAF_19, w = Pop, na.rm = TRUE),
+            DPMMean = mean(PTRAF_19, na.rm = TRUE)) %>% 
+  spread(key = Group, value = DPMwMean) %>% 
+  transmute(Minority = (minorityE/DPMMean - 1)*100,
+         #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+         `Lang Isol` = (eng_limitE/DPMMean - 1)*100,
+         `Low Income` = (num2povE/DPMMean - 1)*100,
+         `No HS` = (lthsE/DPMMean - 1)*100,
+         `Under 5` = (under5E/DPMMean - 1)*100,
+         `Over 64` = (over64E/DPMMean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal(base_family = "TT Times New Roman") +
+  labs(x = "", y = "", title = "Population-Weighted Average Traffic Proximity and Volume \n(relative to New England average)") + 
+  theme(legend.position = 'none',
+        text = element_text(family = "TT Times New Roman")) +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,1),"%")), 
+            hjust = 0.5, size = 3, nudge_y = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+```
+
+Language isolated households and minorities experience higher exposure to traffic proximity and volume compared to the general population. There is a moderate positive correlation between the proportions of minorities and traffic proximity and volume, and a moderate positive correlation with language isolated households (see Figure \@ref(fig:cormatrixTPVPopAvg) below.).
+
+```{r cormatrixTPVPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group."}
+# Create a correlation matrix of cancer risk and populations of concern
+corrTPV <- ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  dplyr::transmute(`Traffic Exposure` = PTRAF_19, 
+                Minority = minority_pctE, 
+                `Low Income` = pct2povE, 
+                `Lang Isol` = eng_limit_pctE, 
+                `No HS Dip` = pct_lthsE, 
+                `Under 5` = pct_under5E, 
+                `Over 64` = pct_over64E) %>% 
+  drop_na() %>% 
+  cor(method = "spearman")
+# corrPM25
+ggcorrplot(corrTPV, hc.order = TRUE, type = "lower", lab = TRUE, 
+           title = "Traffic Proximity and Volume \nCorrelation Matrix for New England", 
+           legend.title = "Spearman's \nCorrelation\nCoefficient",
+           ggtheme = ggplot2::theme_minimal(base_family = "TT Times New Roman"))
+```
