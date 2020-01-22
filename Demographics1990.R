@@ -96,6 +96,6 @@ save(ne_blkgrp_sf,
      ne_towns_sf, 
      ne_towns_sf_pts,
      ne_states_sf_cb,
+     ne_states_df,
      ne_states,
-     ne_blkgrp_sf90,
      file = "DATA/ne_layers.rds")
