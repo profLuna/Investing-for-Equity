@@ -1149,11 +1149,11 @@ ggcorrplot(corrCO2, hc.order = TRUE, type = "lower", lab = TRUE,
 
 
 
-## Analysis of Diesel Particulate Matter ($\mu$g/m^3^) in New England
+## Analysis of Diesel Particulate Matter ($mu$g/m^3^) in New England
 
 Diesel Particulate Matter (PM) emissions are concentrated around major cities in New England and radiate outward along major traffic routes (see Figure \@ref(fig:mapDPMNE) below). 
 
-```{r mapDPMNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2014 annual average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter ($\mu$g/m^3^) across New England at Census Block Group level."}
+```{r mapDPMNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2014 annual average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter ($mu$g/m^3^) across New England at Census Block Group level."}
 
 # Map of DPM across New England
 ne_blkgrp_sf %>% 
@@ -1221,7 +1221,7 @@ tm_shape(local_g, unit = "mi",) +
 
 Diesel Particulate Matter concentrations vary by state (see Table \@ref(tab:statsDPMNE) and Figure \@ref(fig:boxplotDPMNE) below). Rhode Island shows the highest average ambient concentrations, although Massachusetts shows more extreme values.  
 
-```{r statsDPMNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2014 average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter ($\mu$g/m^3^) across New England at Census Block Group level."}
+```{r statsDPMNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2014 average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter ($mu$g/m^3^) across New England at Census Block Group level."}
 ne_blkgrp_sf %>%
   as.data.frame() %>% 
   group_by(STATE) %>% 
