@@ -858,7 +858,8 @@ ne_blkgrp_sf %>%
           colorNA = NULL,
           textNA = NULL,
           legend.format=list(list(digits=1)),
-          legend.is.portrait = TRUE) +
+          legend.is.portrait = TRUE,
+          midpoint = 0) +
   tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
   tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
   tm_shape(ne_towns_sf_pts) + tm_dots() +
@@ -1145,5 +1146,187 @@ ggcorrplot(corrCO2, hc.order = TRUE, type = "lower", lab = TRUE,
            legend.title = "Spearman's \nCorrelation\nCoefficient",
            ggtheme = ggplot2::theme_minimal(base_family = "TT Times New Roman"))
 ```
+
+
+
+## Analysis of Diesel Particulate Matter ($\mu$g/m^3^) in New England
+
+Diesel Particulate Matter (PM) emissions are concentrated around major cities in New England and radiate outward along major traffic routes (see Figure \@ref(fig:mapDPMNE) below). 
+
+```{r mapDPMNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2014 annual average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter ($\mu$g/m^3^) across New England at Census Block Group level."}
+
+# Map of DPM across New England
+ne_blkgrp_sf %>% 
+  tm_shape(., unit = "mi") + 
+  tm_fill("DSLPM_19", style = "quantile", 
+          title = expression(paste
+                             ("DPM"," (", mu, "g/", m^3, ")", sep = "")),
+          legend.hist = TRUE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=3)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Annual Average \nDiesel PM Emissions\n2014", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+```
+
+There appear to be no significant spatial clusters of high Diesel Paticulate Matter concentrations (see Figure \@ref(fig:hotspotDPMNE) below).
+
+```{r hotspotDPMNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2014 Diesel Particulate Matter emissions at Census Block Group level."}
+# Get rid of empty geometries and NAs, and convert to spdf
+empty_geo <- st_is_empty(ne_blkgrp_sf)
+ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf[!empty_geo,] %>%
+  dplyr::select(GEOID,DSLPM_19) %>% 
+  # st_transform(., crs = 2163) %>% # convert to US National Atlas Equal Area
+  na.omit() %>% 
+  as_Spatial()
+# Calculate Queen's case neighbors
+neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
+# Compute neighbor weights
+spdep::set.ZeroPolicyOption(TRUE)
+listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
+# compute Getis-Ord Gi statistic
+local_g <- localG(ne_blkgrp_sp_DemoEJ$DSLPM_19, listw)
+local_g <- cbind(ne_blkgrp_sp_DemoEJ, as.matrix(local_g))
+names(local_g)[3] <- "gstat"
+# map the results
+tm_shape(local_g, unit = "mi",) + 
+  tm_fill("gstat",
+          palette = "-RdBu", 
+          style = "pretty",
+          title = expression(paste("Getis-Ord ", G[i]^"*")),
+          showNA = FALSE,
+          midpoint = NA,
+          labels = c("Significant Clusters","of Low Values", "No Significant Clusters", "Significant Clusters","of High Values")) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Hot Spot Map of \nDPM for\nNew England", frame = FALSE, main.title.size = 0.6,
+            legend.position = c(.8,.2),
+            legend.title.size = 0.7)
+```
+
+Diesel Particulate Matter concentrations vary by state (see Table \@ref(tab:statsDPMNE) and Figure \@ref(fig:boxplotDPMNE) below). Rhode Island shows the highest average ambient concentrations, although Massachusetts shows more extreme values.  
+
+```{r statsDPMNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2014 average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter ($\mu$g/m^3^) across New England at Census Block Group level."}
+ne_blkgrp_sf %>%
+  as.data.frame() %>% 
+  group_by(STATE) %>% 
+  summarize(Mean = round(mean(DSLPM_19, na.rm = TRUE),3),
+            Median = round(median(DSLPM_19, na.rm = TRUE),3),
+            Min = round(min(DSLPM_19, na.rm = TRUE),3),
+            Max = round(max(DSLPM_19, na.rm = TRUE),3)) %>% 
+  kableExtra::kable(format.args = list(big.mark = ','), 
+                    caption = "Annual 2014 DPM concentrations by Census block group",
+                    padding = 5)
+```
+
+
+```{r boxplotDPMNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 7 Carbon Dioxoide (CO~2~) on-road emissions in metric tons per square kilometer (mtons/km^2^) by state at Census Block Group level."}
+# boxplot of CO2 by state for 2017
+ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = STATE, y = DSLPM_19, fill = STATE)) + 
+  geom_boxplot(notch = TRUE) + 
+  ggtitle("Diesel Particulate Matter (DPM) concentrations \nby Census block group by New England state, 2017") +
+  theme_minimal() +
+  theme(legend.position = "none", axis.text=element_text(size=8)) + 
+  xlab(NULL) + 
+  ylab(expression(paste("DPM"," (", mu, "g/", m^3, ")", sep = ""))) +
+  coord_flip()
+```
+
+
+### Diesel Particulate Matter in New England and Populations of Concern
+
+In addition to variations in the general geography of Diesel Particulate Matter concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvgNE) below shows population-weighted exposures for populations of concern relative to average Diesel Particulate Matter concentraions for the region. For example, linguistically isolated households in New England are exposed to  Diesel Particulate Matter concentrations that are more than 45% above concentrations for the region as a whole. Similarly, minorities are exposed to concentrations more than 30% above the regional average. By contrast, persons over age 64 are, on average, exposed to concentrations of Diesel Particulate Matter 9% below the regional average. 
+
+```{r barplotDPMPopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average exposures to annual average ambient concentrations of Diesel Particulate Matter across New England relative to the regional average."}
+# Pop Weighted avg of DPM for all Groups in New England relative to NE average
+ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over64E, 
+                DSLPM_19) %>% 
+  gather(key = Group, value = Pop, totalpopE:over64E) %>% 
+  group_by(Group) %>% 
+  summarize(DPMwMean = weighted.mean(x = DSLPM_19, w = Pop, na.rm = TRUE),
+            DPMMean = mean(DSLPM_19, na.rm = TRUE)) %>% 
+  spread(key = Group, value = DPMwMean) %>% 
+  transmute(Minority = (minorityE/DPMMean - 1)*100,
+         #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+         `Lang Isol` = (eng_limitE/DPMMean - 1)*100,
+         `Low Income` = (num2povE/DPMMean - 1)*100,
+         `No HS` = (lthsE/DPMMean - 1)*100,
+         `Under 5` = (under5E/DPMMean - 1)*100,
+         `Over 64` = (over64E/DPMMean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal(base_family = "TT Times New Roman") +
+  labs(x = "", y = "", title = "Population-Weighted Exposure to DPM \n(relative to New England average)") + 
+  theme(legend.position = 'none',
+        text = element_text(family = "TT Times New Roman")) +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,1),"%")), 
+            hjust = 0.5, size = 3, nudge_y = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+```
+
+Language isolated households and minorities are much more exposed to Diesel Particulate Matter concentrations than the general population. There is a strong positive correlation between the proportions of minorities and ambient concentrations of Diesel Particulate Matter, and a moderately strong positive correlation with language isolated households (see Figure \@ref(fig:cormatrixDPMPopAvg) below.).
+
+```{r cormatrixDPMPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of annual average Diesel Particulate Matter concentrations and the proportions of populations of concern by Census Block Group."}
+# Create a correlation matrix of PM25 and populations of concern
+corrDPM <- ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  dplyr::transmute(DPM = DSLPM_19, 
+                Minority = minority_pctE, 
+                `Low Income` = pct2povE, 
+                `Lang Isol` = eng_limit_pctE, 
+                `No HS Dip` = pct_lthsE, 
+                `Under 5` = pct_under5E, 
+                `Over 64` = pct_over64E) %>% 
+  drop_na() %>% 
+  cor(method = "spearman")
+# corrPM25
+ggcorrplot(corrDPM, hc.order = TRUE, type = "lower", lab = TRUE, 
+           title = "DPM Correlation Matrix for New England", 
+           legend.title = "Spearman's \nCorrelation\nCoefficient",
+           ggtheme = ggplot2::theme_minimal(base_family = "TT Times New Roman"))
+```
+
 
 
