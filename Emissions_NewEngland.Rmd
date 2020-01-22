@@ -1509,3 +1509,184 @@ ggcorrplot(corrACT, hc.order = TRUE, type = "lower", lab = TRUE,
 ```
 
 
+
+## Analysis of Respiratory Hazard Index in New England
+
+Higher Respiratory Hazard Indices are concentrated around major cities in New England and radiate outward along major traffic routes (see Figure \@ref(fig:mapRHINE) below). 
+
+```{r mapRHINE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2014 respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across New England at Census Block Group level."}
+
+# Map of RHI across New England
+ne_blkgrp_sf %>% 
+  tm_shape(., unit = "mi") + 
+  tm_fill("RESP_19", style = "quantile", 
+          title = "Ratio of exposure to \nhealth-based reference \nconcentration",
+          legend.hist = TRUE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=1)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Annual Respiratory Hazard \nIndex from Inhalation of \nAir Toxics\n2014", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+```
+
+There appear to be significant spatial clusters of high lifetime cancer risk from inhalation of air toxics in Boston (see Figure \@ref(fig:hotspotRHINE) below).
+
+```{r hotspotRHINE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2014 respiratory hazard index from inhalation of air toxics at Census Block Group level."}
+# Get rid of empty geometries and NAs, and convert to spdf
+empty_geo <- st_is_empty(ne_blkgrp_sf)
+ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf[!empty_geo,] %>%
+  dplyr::select(GEOID,RESP_19) %>% 
+  # st_transform(., crs = 2163) %>% # convert to US National Atlas Equal Area
+  na.omit() %>% 
+  as_Spatial()
+# Calculate Queen's case neighbors
+neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
+# Compute neighbor weights
+spdep::set.ZeroPolicyOption(TRUE)
+listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
+# compute Getis-Ord Gi statistic
+local_g <- localG(ne_blkgrp_sp_DemoEJ$RESP_19, listw)
+local_g <- cbind(ne_blkgrp_sp_DemoEJ, as.matrix(local_g))
+names(local_g)[3] <- "gstat"
+# map the results
+tm_shape(local_g, unit = "mi",) + 
+  tm_fill("gstat",
+          palette = "-RdBu", 
+          style = "pretty",
+          title = expression(paste("Getis-Ord ", G[i]^"*")),
+          showNA = FALSE,
+          midpoint = NA,
+          labels = c("Significant Clusters","of Low Values", "", "","Significant Clusters","of High Values")) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Hot Spot Map of \nRespiratory Hazard Index \nfor New England", frame = FALSE, main.title.size = 0.6,
+            legend.position = c(.8,.2),
+            legend.title.size = 0.7)
+```
+
+Lifetime cancer risk from inhalation of air toxics vary by state (see Table \@ref(tab:statsRHINE) and Figure \@ref(fig:boxplotRHINE) below). Massachusetts, Connecticut, and Rhode Island show the highest average lifetime respiratory hazard indices.  
+
+```{r statsRHINE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2014 respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across New England at Census Block Group level."}
+ne_blkgrp_sf %>%
+  as.data.frame() %>% 
+  group_by(STATE) %>% 
+  summarize(Mean = round(mean(RESP_19, na.rm = TRUE),2),
+            Median = round(median(RESP_19, na.rm = TRUE),2),
+            Min = round(min(RESP_19, na.rm = TRUE),2),
+            Max = round(max(RESP_19, na.rm = TRUE),2)) %>% 
+  kableExtra::kable(format.args = list(big.mark = ','), 
+                    caption = "Annual 2014 Respiratory Hazard Index from Inhalation of Air Toxics by Census block group (ratio of exposure concentration to health-based reference concentration)",
+                    padding = 5)
+```
+
+
+```{r boxplotRHINE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across New England by state at Census Block Group level."}
+# boxplot of lifetime cancer risk by state for 2014
+ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = STATE, y = RESP_19, fill = STATE)) + 
+  geom_boxplot(notch = TRUE) + 
+  ggtitle("Respiratory Hazard Index from Inhalation of \nAir Toxics by Census block group \nby New England state, 2017") +
+  theme_minimal() +
+  theme(legend.position = "none", axis.text=element_text(size=8)) + 
+  xlab(NULL) + 
+  ylab("ratio of exposure concentration to health-based reference concentration") +
+  coord_flip()
+```
+
+
+### Respiratory Hazard Index from Inhalation of Air Toxics in New England and Populations of Concern
+
+In addition to variations in the general geography of the Respitory Hazard Index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvgNE) below shows population-weighted exposures for populations of concern relative to average Respiratory Hazard Index from Inhalation of Air Toxics for the region. For example, linguistically isolated households in New England experience lifetime cancer risks from inhalation of air toxics that are 15% above the region as a whole. Similarly, minorities are experience lifetime hazard index values more than 11% above the regional average. By contrast, persons over age 64 are, on average, exposed to respiratory hazard indices over 2% below the regional average. 
+
+```{r barplotRHIPopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across New England at Census Block Group level relative to the regional average."}
+# Pop Weighted avg of RHI for all Groups in New England relative to NE average
+ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over64E, 
+                RESP_19) %>% 
+  gather(key = Group, value = Pop, totalpopE:over64E) %>% 
+  group_by(Group) %>% 
+  summarize(DPMwMean = weighted.mean(x = RESP_19, w = Pop, na.rm = TRUE),
+            DPMMean = mean(RESP_19, na.rm = TRUE)) %>% 
+  spread(key = Group, value = DPMwMean) %>% 
+  transmute(Minority = (minorityE/DPMMean - 1)*100,
+         #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+         `Lang Isol` = (eng_limitE/DPMMean - 1)*100,
+         `Low Income` = (num2povE/DPMMean - 1)*100,
+         `No HS` = (lthsE/DPMMean - 1)*100,
+         `Under 5` = (under5E/DPMMean - 1)*100,
+         `Over 64` = (over64E/DPMMean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal(base_family = "TT Times New Roman") +
+  labs(x = "", y = "", title = "Population-Weighted Average Respiratory Hazard Index \n(relative to New England average)") + 
+  theme(legend.position = 'none',
+        text = element_text(family = "TT Times New Roman")) +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,1),"%")), 
+            hjust = 0.5, size = 3, nudge_y = 0.5,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+```
+
+Language isolated households and minorities experience higher respiratory hazard indices from inhalation of air toxics compared to the general population. There is a moderate to strong positive correlation between the proportions of minorities and respiratory hazard index, and a moderately strong positive correlation with language isolated households (see Figure \@ref(fig:cormatrixRHIPopAvg) below.).
+
+```{r cormatrixRHIPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group."}
+# Create a correlation matrix of cancer risk and populations of concern
+corrACT <- ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  dplyr::transmute(`Resp Hazard Index` = RESP_19, 
+                Minority = minority_pctE, 
+                `Low Income` = pct2povE, 
+                `Lang Isol` = eng_limit_pctE, 
+                `No HS Dip` = pct_lthsE, 
+                `Under 5` = pct_under5E, 
+                `Over 64` = pct_over64E) %>% 
+  drop_na() %>% 
+  cor(method = "spearman")
+# corrPM25
+ggcorrplot(corrACT, hc.order = TRUE, type = "lower", lab = TRUE, 
+           title = "Respiratory Hazard Index \nCorrelation Matrix for New England", 
+           legend.title = "Spearman's \nCorrelation\nCoefficient",
+           ggtheme = ggplot2::theme_minimal(base_family = "TT Times New Roman"))
+```
+
+
+
