@@ -1,6 +1,6 @@
 ---
 title: "Transportation Emissions in CT"
-author: "Marcos Luna and Neenah Estrella"
+author: "Marcos Luna and Neenah Estrella-Luna"
 date: "1/24/2020"
 output: 
   bookdown::pdf_document2:
@@ -15,7 +15,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
+\pagebreak
 # Analysis of transportation-related emissions in Connecticut
 
 This is an analysis of transportation-related emissions and related externalities in Connecticut.
@@ -24,7 +24,7 @@ This is an analysis of transportation-related emissions and related externalitie
 
 This is an analysis of PM~2.5~ across Connecticut and its relationship to populations of concern. The analysis is based on data from the EPA's EJSCREEN. EJSCREEN data provides PM~2.5~ annual concentrations at the Census Block Group level for the years 2011 to 2016 (as of December 2019). 
 
-PM~2.5~ levels vary significantly across Connecticut, with highest concentrations in southwest Connecticut, from Stamford to Hartford, and also from Providence, Rhode Island, to the Boston metro region, and from Portland, Maine along the I-95 corridor to Bangor (see Figure \@ref(fig:mapPM25CT) below). 
+PM~2.5~ levels vary significantly across Connecticut, with highest concentrations in southwest Connecticut, with concentration declining from Stamford to Hartford (see Figure \@ref(fig:mapPM25CT) below). 
 
 ```{r data, echo=FALSE, message=FALSE, warning=FALSE}
 library(tidyverse)
@@ -79,7 +79,7 @@ ct_highways <- primary_roads() %>%
             MTFCC = unique(MTFCC))
 ```
 
-```{r mapPM25CT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2016 annual PM2.5 concentrations across Connecticut at Census Block Group level.", strip.white=TRUE}
+```{r mapPM25CT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2016 annual PM2.5 concentrations across Connecticut at Census Block Group level."}
 # Map of PM2.5 across Connecticut
 tm_shape(ct_blkgrp_sf, unit = "mi") + 
   tm_fill("PM25_19", style = "quantile", 
@@ -148,9 +148,9 @@ tm_shape(local_g, unit = "mi",) +
             legend.outside.position = c("right", "top"))
 ```
 
-There is a statistically significant hot spot of PM~2.5~ around Stamford, Connecticut. Warm clusters encompass southwestern  Connecticut to Hartford, from Providence, Rhode Island ot Boston, and Augusta to Bangor, Maine along the I-95 corridor. 
+There is a statistically significant hot spot of PM~2.5~ around Stamford to Danbury and Milford. Warm clusters extend to just south of New Britain. 
 
-These PM~2.5~ levels vary significantly by state (see Figure \@ref(fig:boxplotPM25CT) below). Connecticut stands out with the highest median PM~2.5~ concentrations among the Connecticut states, while Vermont has the lowest overall concentrations. The differences in concentrations between the states are all statistically significant.  
+These PM~2.5~ levels vary significantly across the state (see Figure \@ref(fig:boxplotPM25CT) below).   
 
 ```{r boxplotPM25CT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 2016 annual PM2.5 concentrations at Census Block Group level."}
 # boxplot of PM2.5 by state for 2016
@@ -176,7 +176,7 @@ ct_blkgrp_sf %>%
 ```
 
 
-Since 2011, PM~2.5~ levels have declined across the region, on average by `r {round(mean(ct_blkgrp_sf$PM25_pctChange, na.rm = TRUE),1)}`%. Unsurprisingly, this decline has not been uniform (see Figure \@ref(fig:mapPM25CTchange) below). The greatest declines, up to 43%, have been in the northern half of Vermont and the region between Boston and Portsmouth. 
+Since 2011, PM~2.5~ levels have declined across the state, on average by `r {round(mean(ct_blkgrp_sf$PM25_pctChange, na.rm = TRUE),1)}`%. Unsurprisingly, this decline has not been uniform (see Figure \@ref(fig:mapPM25CTchange) below). The greatest declines, up to 32%, have been in the eastern half of the state. 
 
 ```{r mapPM25CTchange, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of percent change in annual PM2.5 concentrations across Connecticut between 2011 and 2016 at Census Block Group level."}
 # Map of PM2.5 change across Connecticut
@@ -203,7 +203,7 @@ Since 2011, PM~2.5~ levels have declined across the region, on average by `r {ro
             legend.hist.width = 0.9)
 ```
 
-Averaged across the states, the differences in these declines are also apparent. Figure \@ref(fig:slopegraphPM25CT) below compares the average annual PM~2.5~ concentrations by state and for the region between 2011 and 2016. The region and the states all showed significant declines since 2011, although note that concentrations in Connecticut have remained consistently well above the rest of the region. 
+Figure \@ref(fig:slopegraphPM25CT) below compares the average annual PM~2.5~ concentrations for the state and the region between 2011 and 2016. The region and the state both showed significant declines since 2011, although note that concentrations in Connecticut have remained consistently well above the rest of the region. 
 
 ```{r slopegraphPM25CT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Slope graph of annual PM2.5 concentrations for 2011 and 2016 for Connecticut and states."}
 # Slope graph of PM2.5 by state and region between 2011 and 2016
@@ -274,7 +274,7 @@ newggslopegraph(dataframe = PM11_16wSTAvg_actual,
 
 ### PM~2.5~ in Connecticut and Populations of Concern
 
-In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvgCT) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the region. For example, minorities in Connecticut are exposed to PM~2.5~ concentrations that are more than 5% above concentrations for the region as a whole. Similarly, linguistically isolated households are exposed to concentrations 4.9% above the regional average. By contrast, persons over age 64 are, on average, exposed to concentrations of PM~2.5~ at or below the regional average. 
+In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvgCT) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the region. For example, language isolated households in Connecticut are exposed to PM~2.5~ concentrations that are 2.8% above concentrations for the region as a whole. Similarly, minorities are exposed to concentrations over 2% above the regional average. By contrast, persons over age 64 are, on average, exposed to concentrations of PM~2.5~ at or below the regional average. 
 
 ```{r barplotPM25PopAvgCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average exposures to PM2.5 for populations of concern in Connecticut relative to the state average."}
 # Pop Weighted avg of PM2.5 for all Groups in Connecticut relative to state average
@@ -331,7 +331,7 @@ ct_blkgrp_sf %>%
   geom_hline(yintercept = 0)
 ```
 
-Like the region as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that except for persons over age 64 and low income persons, all other populations of concern continue to experience exposures greater than the regional average, with minorities leading on this measure. 
+Like the region as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that all  populations of concern continue to experience exposures greater than the regional average, with language isolated households leading on this measure. 
 
 ```{r slopegraphPM25PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Slope graph of annual PM2.5 concentrations by population of concern for 2011 and 2016."}
 # Pop Weighted avg of PM2.5 EXPOSURE CHANGE 2011 - 2016 for all Groups in Connecticut relative to NE average. 
@@ -416,7 +416,7 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
                 WiderLabels = TRUE)
 ```
 
-Indeed, there is a moderate but statistically significant positive relationship between the proportion of minority residents or language-isolated households and the concentration of PM~2.5~ (see Figure \@ref(fig:cormatrixPM25PopAvg) below.).
+There is a weak positive relationship between the proportion of minority residents or language-isolated households and the concentration of PM~2.5~ (see Figure \@ref(fig:cormatrixPM25PopAvg) below.).
 
 ```{r cormatrixPM25PopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of annual PM2.5 concentrations and the proportions of populations of concern by Census Block Group."}
 # Create a correlation matrix of PM25 and populations of concern
@@ -440,7 +440,7 @@ ggcorrplot(corrPM25, hc.order = TRUE, type = "lower", lab = TRUE,
            legend.title = "Spearman's \nCorrelation\nCoefficient")
 ```
 
-------
+\pagebreak
 ## Analysis of Ozone (O~3~) in Connecticut
 
 Ozone (O~3~) levels vary significantly across Connecticut, with highest concentrations in southwest Connecticut, and declining toward the north and east (see Figure \@ref(fig:mapO3CT) below). 
@@ -512,9 +512,9 @@ tm_shape(local_g, unit = "mi",) +
             legend.outside.position = c("right", "top"))
 ```
 
-There are statistically significant hot spots of Ozone (O~3~) primarily around Stamford, Connecticut. A warm cluster encompasses of all Connecticut, Rhode Island, and the southwestern half of Massachusetts. 
+There are statistically significant hot spots of Ozone (O~3~) primarily between Stamford and Milford. A warm cluster extends as north as New Britain. 
 
-These Ozone (O~3~) levels vary significantly by state (see Figure \@ref(fig:boxplotO3CT) below). Connecticut stands out with the highest median summer seasonal average Ozone (O~3~) concentrations among the Connecticut states, while Maine has the lowest overall concentrations. The differences in median concentrations between the states are all statistically significant.  
+These Ozone (O~3~) levels vary significantly across the state (see Figure \@ref(fig:boxplotO3CT) below).   
 
 ```{r boxplotO3CT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 2016 Ozone summer seasonal average of daily maximum 8-hour concentrations in air in parts per billion by state at Census Block Group level."}
 # boxplot of PM2.5 by state for 2016
@@ -530,7 +530,7 @@ ct_blkgrp_sf %>%
   coord_flip()
 ```
 
-Since 2011, Ozone (O~3~) levels have increased slightly across the region, on average by `r {round(mean(ct_blkgrp_sf$OZONE_pctChange, na.rm = TRUE),1)}`%. These have changes not been uniform (see Figure \@ref(fig:mapO3CTchange) below). The greatest declines, up to 10.5%, have been in the northern half of Maine and Vermont, northeastern Vermont, southwestern Massachusetts, and southern Rhode Island. By contrast, increases in summer ozone concentrations of up to 8.1% appear in southwestern Connecticut, from Stamford to Hartford and north into western Massachusetts around Springfield. Significant increases also occur along the western border of Vermont, especially in the Champlain Valley. Minor increaes appear also in the greater Boston metro region, and southern and central Maine west and north of Portland.
+Since 2011, Ozone (O~3~) levels have increased slightly across the state, on average by `r {round(mean(ct_blkgrp_sf$OZONE_pctChange, na.rm = TRUE),1)}`%. These have changes not been uniform (see Figure \@ref(fig:mapO3CTchange) below). The greatest declines, up to 4%, have been along the eastern edge of the state. By contrast, increases in summer ozone concentrations of up to 10% appear in the extreme southwest and center of the state.
 
 ```{r mapO3CTchange, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of percent change in summer seasonal Ozone concentrations across Connecticut between 2011 and 2016 at Census Block Group level."}
 # Map of O3 change across Connecticut
@@ -558,7 +558,7 @@ tm_shape(ct_blkgrp_sf, unit = "mi") +
             legend.hist.width = 0.9)
 ```
 
-Averaged across the states, the differences in these changes are also apparent. Figure \@ref(fig:slopegraphO3CT) below compares the average summer Ozone (O~3~) concentrations by state and for the region between 2011 and 2016. Connecticut as a whole showed a slightly less than a 1% increase in summer average Ozone concentrations, while Connecticut showed an increase of nearly 5%. Massachusetts increased as well, but by only 0.5%. All other states showed an average decline in Ozone, with Rhode Island leading (-2.6%). Although note that Rhode Island's concentrations still remain significantly above the regional average. 
+Figure \@ref(fig:slopegraphO3CT) below compares the average summer Ozone (O~3~) concentrations for the state and for the region between 2011 and 2016. Connecticut's increase has been greater than the region. 
 
 ```{r slopegraphO3CT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Slope graph of summer average Ozone concentrations for 2011 and 2016 for Connecticut and states."}
 # Slope graph of O3 by state and region between 2011 and 2016
@@ -630,7 +630,7 @@ newggslopegraph(dataframe = O311_16wSTAvg_actual,
 
 ### Ozone (O~3~) in Connecticut and Populations of Concern
 
-In addition to variations in the general geography of Ozone (O~3~) concentrations, exposure to this pollutant also varies demographically. Figure \@ref(fig:barplotO3PopAvgCT) below shows population-weighted exposures for populations of concern relative to average Ozone concentrations for the region. For example, minorities in Connecticut are exposed to summer Ozone concentrations that are more than 3% above concentrations for the region as a whole. Similarly, linguistically isolated households are exposed to concentrations 2.6% above the regional average. By contrast, low income persons are, on average, exposed to concentrations of Ozone at or below the regional average. 
+In addition to variations in the general geography of Ozone (O~3~) concentrations, exposure to this pollutant also varies demographically. Figure \@ref(fig:barplotO3PopAvgCT) below shows population-weighted exposures for populations of concern relative to average Ozone concentrations for the region. For example, language isolated households in Connecticut are exposed to summer Ozone concentrations that are more than 0.76% above concentrations for the region as a whole. Similarly, minorities are exposed to concentrations 0.57% above the regional average. By contrast, persons over age 64 are, on average, exposed to concentrations of Ozone at or below the regional average. 
 
 ```{r barplotO3PopAvgCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average exposures to Ozone for populations of concern in Connecticut relative to the regional average."}
 # Pop Weighted avg of O3 for all Groups in Connecticut relative to NE average
@@ -687,7 +687,7 @@ ct_blkgrp_sf %>%
   geom_hline(yintercept = 0)
 ```
 
-Like the region as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvgCT). All populations of concern have experienced an increase in population-weighted exposure to Ozone, with minorities and persons in language-isolated households experiencing the greatest increase in exposure. 
+Like the region as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvgCT). All populations of concern have experienced an increase in population-weighted exposure to Ozone, with persons in language-isolated households and minorities experiencing the greatest increase in exposure. 
 
 ```{r slopegraphO3PopAvgCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Slope graph of summer Ozone concentrations by population of concern for 2011 and 2016."}
 # Pop Weighted avg of O3 EXPOSURE CHANGE 2011 - 2016 for all Groups in Connecticut relative to NE average. 
@@ -772,7 +772,7 @@ newggslopegraph(dataframe = O311_16wAvg_actual,
                 WiderLabels = TRUE)
 ```
 
-Indeed, there is a moderate but statistically significant positive relationship between the proportion of minority residents and the concentration of Ozone (see Figure \@ref(fig:cormatrixO3PopAvg) below.).
+There is no significant statistical relationship between populations of concern and the concentration of Ozone (see Figure \@ref(fig:cormatrixO3PopAvg) below.).
 
 ```{r cormatrixO3PopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of summer Ozone concentrations and the proportions of populations of concern by Census Block Group."}
 # Create a correlation matrix of PM25 and populations of concern
@@ -797,7 +797,7 @@ ggcorrplot(corrO3, hc.order = TRUE, type = "lower", lab = TRUE,
 ```
 
 
-------
+\pagebreak
 ## Analysis of Carbon Dioxide (CO~2~) in Connecticut
 
 CO~2~ emissions closely follow major roadways arcoss the region (see Figure \@ref(fig:mapCO2CT) below). 
@@ -818,6 +818,7 @@ ct_blkgrp_sf %>%
           legend.is.portrait = TRUE) +
   tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
   tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ct_highways) + tm_lines(col = "brown4", alpha = 0.7) +
   tm_shape(ct_towns_sf_pts) + tm_dots() +
   tm_text("NAME.x", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
@@ -830,7 +831,7 @@ ct_blkgrp_sf %>%
             legend.hist.width = 0.9)
 ```
 
-Significant hot spots, or clusters of high CO~2~ emissions, appear around major Connecticut cities, including Hartford, Providence, Portsmouth, Portland, and along the I-495 belt around Boston (see Figure \@ref(fig:hotspotCO2CT) below).
+Significant hot spots, or clusters of high CO~2~ emissions, appear around Hartbord, Danbury and Newtown, and along I-95 between New Haven and Fenwick (see Figure \@ref(fig:hotspotCO2CT) below).
 
 ```{r hotspotCO2CT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2017 CO2 emissions at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
@@ -873,7 +874,7 @@ tm_shape(local_g, unit = "mi",) +
             legend.outside.position = c("right", "top"))
 ```
 
-CO~2~ emissions vary by state (see Table \@ref(tab:statsCO2CT) and Figure \@ref(fig:boxplotCO2CT) below). Massachusetts shows highest absolute emissions.  
+CO~2~ emissions vary across the state with significant outliers (see Table \@ref(tab:statsCO2CT) and Figure \@ref(fig:boxplotCO2CT) below).   
 
 ```{r statsCO2CT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 CO2 emissions (mtons) at Census Block Group level and by state."}
 ct_blkgrp_sf %>% 
@@ -905,7 +906,7 @@ ct_blkgrp_sf %>%
   coord_flip()
 ```
 
-Since 1990, CO~2~ emissions increased significantly across the region, on average by `r {round((sum(ct_blkgrp_sf$kgco2_2017, na.rm = TRUE)-sum(ct_blkgrp_sf$kgco2_1990, na.rm = TRUE))/sum(ct_blkgrp_sf$kgco2_1990, na.rm = TRUE)*100,1)}`%. These changes have not been uniform (see Figure \@ref(fig:mapCO2CTchange) below). Except for Maine, the greatest declines, up to 97%, have been in outer suburban and rural areas. By contrast, increases in CO~2~ emissions of over 600% appear across most urban cores. Boston is the notable exception where increases have been relatively modest. Dramtic increases characterize areas around Worcester, Massachusetts and the South Shore of Massachusetts and the Cape, as well as around Portland, Maine, and from Stamford to Hartford, Connecticut. Significant increases also occur west and north of Montpelier, Vermont.
+Since 1990, CO~2~ emissions increased significantly across the state, on average by `r {round((sum(ct_blkgrp_sf$kgco2_2017, na.rm = TRUE)-sum(ct_blkgrp_sf$kgco2_1990, na.rm = TRUE))/sum(ct_blkgrp_sf$kgco2_1990, na.rm = TRUE)*100,1)}`%. These changes have not been uniform (see Figure \@ref(fig:mapCO2CTchange) below). The greatest declines have been in northwest Connecticut and in the eastern third of the state. By contrast, the south central and southern edges of the state have seen increased emissions.
 
 ```{r mapCO2CTchange, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of percent change in annual CO2 emissions across Connecticut between 1990 and 2017 at Census Block Group level."}
 # Map of CO2 change across Connecticut
@@ -936,7 +937,7 @@ ct_blkgrp_sf %>%
             legend.hist.width = 0.9)
 ```
 
-Averaged across the states, the differences in these changes are also apparent, although less extreme than at the Census block group level. Table \@ref(tab:changeCO2CT) and Figure \@ref(fig:linegraphCO2CT) below compares the  annual CO~2~ emissions by state and for the region between 1990 and 2017. Connecticut as a whole showed an approximately 20% increase in annual CO~2~ emissions. All states showed total increases, with New Hampshire leading with a 34% increase, followed by Maine with a 26% increase. Rhode Island showed the smallest increase since 1990 (2%), although note that Rhode Island's average annual emissions still remain significantly above the regional average. 
+Averaged across the states, the differences in these changes are also apparent, although less extreme than at the Census block group level. Table \@ref(tab:changeCO2CT) shows summary statistics of CO~2~ emissions across the state. Figure \@ref(fig:linegraphCO2CT) shows annual CO~2~ emissions between 1990 and 2017. 
 
 ```{r changeCO2CT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 CO2 emissions (mtons) and Percent Change by state at Census Block Group level."}
 # acquire table of 1990 state pop values
@@ -1054,13 +1055,13 @@ ct_blkgrp_sf %>%
   theme_minimal()
 ```
 
-The growth in CO~2~ emissions exceeds population growth across the region and in most states as is evident in the per capita emissions (see last three columns in Table \@ref(tab:changeCO2CT)). While New Hampshire leads in percentage growth of total emissions for the region, Maine leads in per capita growth. Only Vermont and Rhode Island showed declines in per capita emissions. 
+The growth in CO~2~ emissions since 1990 exceeds population growth in the state as is evident in the per capita emissions (see last three columns in Table \@ref(tab:changeCO2CT)).  
 
 ### Carbon Dioxide (CO~2~) in Connecticut and Populations of Concern
 
-In addition to variations in the general geography of CO~2~ emissions, exposure to these emissions also varies demographically. Figure \@ref(fig:barplotO3PopAvgCT) below shows population-weighted exposures for populations of concern relative to average CO~2~ emissions for the region. For example, people over age 64 in Connecticut are exposed to  CO~2~ emissions that are more than 23% above emissions for the region as a whole. Similarly, children under 5 are exposed to emissions 13% above the regional average. By contrast, persons in linguistically isolated households are, on average, exposed to emissions of CO~2~ at almost 22% below the regional average. 
+In addition to variations in the general geography of CO~2~ emissions, exposure to these emissions also varies demographically. Figure \@ref(fig:barplotO3PopAvgCT) below shows population-weighted exposures for populations of concern relative to average CO~2~ emissions for the state. For example, people over age 64 in Connecticut are exposed to  CO~2~ emissions that are more than 17% above emissions for the region as a whole. Similarly, children under 5 are exposed to emissions more than 10% above the state average. By contrast, low income persons (as defined by Connecticut) are, on average, exposed to emissions of CO~2~ almost 22% below the state average. 
 
-```{r barplotCO2PopAvgCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average exposures to Carbon Dioxide emissions for populations of concern in Connecticut relative to the regional average."}
+```{r barplotCO2PopAvgCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average exposures to Carbon Dioxide emissions for populations of concern in Connecticut relative to the state average."}
 # Pop Weighted avg of CO2 for all Groups in Connecticut relative to NE average
 ct_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -1115,7 +1116,7 @@ ct_blkgrp_sf %>%
   geom_hline(yintercept = 0)
 ```
 
-Like the region as a whole, these populations have also experienced changes in exposure since 1990. The comparison between exposure for these groups since 1990 is displayed below in Figure \@ref(fig:slopegraphCO2PopAvgCT). All populations of concern have experienced an increase in population-weighted exposure to CO~2~, with persons in over age 64 and minorities  experiencing the greatest increase in exposure. 
+Like the region as a whole, these populations have also experienced changes in exposure since 1990. The comparison between exposure for these groups since 1990 is displayed below in Figure \@ref(fig:slopegraphCO2PopAvgCT). All populations of concern have experienced an increase in population-weighted exposure to CO~2~, with persons in over age 64 and children under 5 experiencing the greatest increase in exposure. 
 
 ```{r slopegraphCO2PopAvgCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Slope graph of carbon dioxide emissions by population of concern for 1990 and 2017."}
 # Pop Weighted avg of CO2 EXPOSURE CHANGE 1990 - 2017 for all Groups in Connecticut relative to NE average. 
@@ -1203,7 +1204,7 @@ newggslopegraph(dataframe = CO290_17wAvg_actual,
                 WiderLabels = TRUE)
 ```
 
-Persons over age 64 and children under 5 are much more exposed to CO~2~ emissions. There is a moderately positive correlation between the proportions people over age 64 and emissions of CO~2~ (see Figure \@ref(fig:cormatrixCO2PopAvg) below.).
+Persons over age 64 and children under 5 are much more exposed to CO~2~ emissions. There is a weak positive correlation between the proportions people over age 64 and emissions of CO~2~ (see Figure \@ref(fig:cormatrixCO2PopAvg) below.).
 
 ```{r cormatrixCO2PopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of annual average carbon dioxide emissions and the proportions of populations of concern by Census Block Group."}
 # Create a correlation matrix of PM25 and populations of concern
@@ -1229,10 +1230,10 @@ ggcorrplot(corrCO2, hc.order = TRUE, type = "lower", lab = TRUE,
 ```
 
 
-------
+\pagebreak
 ## Analysis of Diesel Particulate Matter in Connecticut
 
-Diesel Particulate Matter (PM) emissions are concentrated around major cities in Connecticut and radiate outward along major traffic routes (see Figure \@ref(fig:mapDPMCT) below). 
+Diesel Particulate Matter (PM) emissions are concentrated along the highway traffic corridor from Stamford to Hartford along I-95 to I-91 (see Figure \@ref(fig:mapDPMCT) below). 
 
 ```{r mapDPMCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2014 annual average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter across Connecticut at Census Block Group level."}
 
@@ -1249,6 +1250,7 @@ ct_blkgrp_sf %>%
           legend.is.portrait = TRUE) +
   tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
   tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ct_highways) + tm_lines(col = "brown4", alpha = 0.7) +
   tm_shape(ct_towns_sf_pts) + tm_dots() +
   tm_text("NAME.x", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2,
           shadow = TRUE) +
@@ -1262,7 +1264,7 @@ ct_blkgrp_sf %>%
             legend.hist.width = 0.9)
 ```
 
-There appear to be no significant spatial clusters of high Diesel Paticulate Matter concentrations (see Figure \@ref(fig:hotspotDPMCT) below).
+There are significant spatial clusters of high Diesel Paticulate Matter concentrations in Stamford, Fairfield, New Haven, and Hartford (see Figure \@ref(fig:hotspotDPMCT) below).
 
 ```{r hotspotDPMCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2014 Diesel Particulate Matter emissions at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
@@ -1304,7 +1306,7 @@ tm_shape(local_g, unit = "mi",) +
             legend.outside.position = c("right", "top"))
 ```
 
-Diesel Particulate Matter concentrations vary by state (see Table \@ref(tab:statsDPMCT) and Figure \@ref(fig:boxplotDPMCT) below). Rhode Island shows the highest average ambient concentrations, although Massachusetts shows more extreme values.  
+Diesel Particulate Matter concentrations vary across the state (see Table \@ref(tab:statsDPMCT) and Figure \@ref(fig:boxplotDPMCT) below).  
 
 ```{r statsDPMCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2014 average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter across Connecticut at Census Block Group level."}
 ct_blkgrp_sf %>%
@@ -1336,7 +1338,7 @@ ct_blkgrp_sf %>%
 
 ### Diesel Particulate Matter in Connecticut and Populations of Concern
 
-In addition to variations in the general geography of Diesel Particulate Matter concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvgCT) below shows population-weighted exposures for populations of concern relative to average Diesel Particulate Matter concentraions for the region. For example, linguistically isolated households in Connecticut are exposed to  Diesel Particulate Matter concentrations that are more than 45% above concentrations for the region as a whole. Similarly, minorities are exposed to concentrations more than 30% above the regional average. By contrast, persons over age 64 are, on average, exposed to concentrations of Diesel Particulate Matter 9% below the regional average. 
+In addition to variations in the general geography of Diesel Particulate Matter concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvgCT) below shows population-weighted exposures for populations of concern relative to average Diesel Particulate Matter concentraions for the state. For example, linguistically isolated households in Connecticut are exposed to  Diesel Particulate Matter concentrations that are more than 20% above concentrations for the region as a whole. Similarly, low income persons (following Connecticut's defintino) are exposed to concentrations more than 16% above the regional average. By contrast, persons over age 64 are, on average, exposed to concentrations of Diesel Particulate Matter 5% below the regional average. 
 
 ```{r barplotDPMPopAvgCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average exposures to annual average ambient concentrations of Diesel Particulate Matter across Connecticut relative to the regional average."}
 # Pop Weighted avg of DPM for all Groups in Connecticut relative to NE average
@@ -1393,7 +1395,7 @@ ct_blkgrp_sf %>%
   geom_hline(yintercept = 0)
 ```
 
-Language isolated households and minorities are much more exposed to Diesel Particulate Matter concentrations than the general population. There is a strong positive correlation between the proportions of minorities and ambient concentrations of Diesel Particulate Matter, and a moderately strong positive correlation with language isolated households (see Figure \@ref(fig:cormatrixDPMPopAvg) below.).
+There is a moderate positive correlation between the proportions of language isolated households and minorities and ambient concentrations of Diesel Particulate Matter (see Figure \@ref(fig:cormatrixDPMPopAvg) below.).
 
 ```{r cormatrixDPMPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of annual average Diesel Particulate Matter concentrations and the proportions of populations of concern by Census Block Group."}
 # Create a correlation matrix of PM25 and populations of concern
@@ -1419,10 +1421,10 @@ ggcorrplot(corrDPM, hc.order = TRUE, type = "lower", lab = TRUE,
 ```
 
 
-------
+\pagebreak
 ## Analysis of Air Toxics Cancer Risk in Connecticut
 
-Air Toxics Cancer Risk are concentrated around major cities in Connecticut and radiate outward along major traffic routes (see Figure \@ref(fig:mapATCNE) below). 
+Air Toxics Cancer Risk are concentrated along the highway traffic corridor from Stamford to Hartford along I-95 to I-91 (see Figure \@ref(fig:mapATCNE) below). 
 
 ```{r mapATCNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2014 lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Connecticut at Census Block Group level."}
 
@@ -1438,8 +1440,10 @@ ct_blkgrp_sf %>%
           legend.is.portrait = TRUE) +
   tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
   tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ct_highways) + tm_lines(col = "brown4", alpha = 0.7) +
   tm_shape(ct_towns_sf_pts) + tm_dots() +
-  tm_text("NAME.x", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_text("NAME.x", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2,
+          shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
   tm_layout(title = "Annual Lifetime \nCancer Risk from \nInhalation of Air Toxics\n2014", 
@@ -1450,7 +1454,7 @@ ct_blkgrp_sf %>%
             legend.hist.width = 0.9)
 ```
 
-There appear to be significant spatial clusters of high lifetime cancer risk from inhalation of air toxics in Boston and small areas in southwestern Connecticut (see Figure \@ref(fig:hotspotATCCT) below).
+There appear to be significant spatial clusters of high lifetime cancer risk from inhalation of air toxics in north of Stamford, New Have, and in Hartford (see Figure \@ref(fig:hotspotATCCT) below).
 
 ```{r hotspotATCCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2014 lifetime cancer risk from inhalation of air toxics at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
@@ -1491,7 +1495,7 @@ tm_shape(local_g, unit = "mi",) +
             legend.outside.position = c("right", "top"))
 ```
 
-Lifetime cancer risk from inhalation of air toxics vary by state (see Table \@ref(tab:statsATCNE) and Figure \@ref(fig:boxplotATCNE) below). Massachusetts, Connecticut, and Rhode Island show the highest average lifetime cancer risks.  
+Lifetime cancer risk from inhalation of air toxics varies across the state (see Table \@ref(tab:statsATCNE) and Figure \@ref(fig:boxplotATCNE) below).  
 
 ```{r statsATCNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2014 lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Connecticut at Census Block Group level."}
 ct_blkgrp_sf %>%
@@ -1522,9 +1526,9 @@ ct_blkgrp_sf %>%
 
 ### Lifetime Cancer Risk from Inhalation of Air Toxics in Connecticut and Populations of Concern
 
-In addition to variations in the general geography of Diesel Particulate Matter concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotATCPopAvgCT) below shows population-weighted exposures for populations of concern relative to average Lifetime Cancer Risk from Inhalation of Air Toxics for the region. For example, linguistically isolated households in Connecticut experience lifetime cancer risks from inhalation of air toxics that are 11% above the region as a whole. Similarly, minorities are experience lifetime cancer risks of 9% above the regional average. By contrast, persons over age 64 are, on average, exposed to concentrations of Diesel Particulate Matter 2% below the regional average. 
+In addition to variations in the general geography of Lifetime Cancer Risk from Inhalation of Air Toxics, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvgCT) below shows population-weighted exposures for populations of concern relative to average Lifetime Cancer Risk from Inhalation of Air Toxics for the state. For example, linguistically isolated households in Connecticut experience lifetime cancer risks from inhalation of air toxics that are 4.6% above the region as a whole. Similarly, minorities are experience lifetime cancer risks of 4% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of Diesel Particulate Matter 1% below the state average. 
 
-```{r barplotATCPopAvgCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Connecticut at Census Block Group level relative to the regional average."}
+```{r barplotATCPopAvgCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Connecticut at Census Block Group level relative to the state average."}
 # Pop Weighted avg of DPM for all Groups in Connecticut relative to NE average
 ct_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -1579,7 +1583,7 @@ ct_blkgrp_sf %>%
   geom_hline(yintercept = 0)
 ```
 
-Language isolated households and minorities experience higher lifetime risk of cancer from inhalation of air toxics than the general population. There is a moderate to strong positive correlation between the proportions of minorities and cancer risk, and a moderately strong positive correlation with language isolated households (see Figure \@ref(fig:cormatrixATCPopAvg) below.).
+There is a moderately positive correlation between the proportions of minorities and cancer risk (see Figure \@ref(fig:cormatrixATCPopAvg) below.).
 
 ```{r cormatrixATCPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group."}
 # Create a correlation matrix of cancer risk and populations of concern
@@ -1605,10 +1609,10 @@ ggcorrplot(corrACT, hc.order = TRUE, type = "lower", lab = TRUE,
 ```
 
 
-------
+\pagebreak
 ## Analysis of Respiratory Hazard Index in Connecticut
 
-Higher Respiratory Hazard Indices are concentrated around major cities in Connecticut and radiate outward along major traffic routes (see Figure \@ref(fig:mapRHICT) below). 
+Higher Respiratory Hazard Indices are concentrated along the I-95 to I-91 highway traffic corridor from Stamford to Hartford (see Figure \@ref(fig:mapRHICT) below). 
 
 ```{r mapRHICT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2014 respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Connecticut at Census Block Group level."}
 
@@ -1624,8 +1628,10 @@ ct_blkgrp_sf %>%
           legend.is.portrait = TRUE) +
   tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
   tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ct_highways) + tm_lines(col = "brown4", alpha = 0.7) +
   tm_shape(ct_towns_sf_pts) + tm_dots() +
-  tm_text("NAME.x", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_text("NAME.x", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2,
+          shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
   tm_layout(title = "Annual Respiratory \nHazard Index from \nInhalation of Air Toxics\n2014", 
@@ -1636,7 +1642,7 @@ ct_blkgrp_sf %>%
             legend.hist.width = 0.9)
 ```
 
-There appear to be significant spatial clusters of high lifetime cancer risk from inhalation of air toxics in Boston (see Figure \@ref(fig:hotspotRHICT) below).
+There appear to be significant spatial clusters of high indices of respiratory hazard index from inhalation of air toxics along the I-95 to I-91 highway traffic corridor from Stamford to Hartford (see Figure \@ref(fig:hotspotRHICT) below).
 
 ```{r hotspotRHICT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2014 respiratory hazard index from inhalation of air toxics at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
@@ -1677,7 +1683,7 @@ tm_shape(local_g, unit = "mi",) +
             legend.outside.position = c("right", "top"))
 ```
 
-Lifetime cancer risk from inhalation of air toxics vary by state (see Table \@ref(tab:statsRHICT) and Figure \@ref(fig:boxplotRHICT) below). Massachusetts, Connecticut, and Rhode Island show the highest average lifetime respiratory hazard indices.  
+Respiratory hazard indices from inhalation of air toxics vary across the state (see Table \@ref(tab:statsRHICT) and Figure \@ref(fig:boxplotRHICT) below).   
 
 ```{r statsRHICT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2014 respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Connecticut at Census Block Group level."}
 ct_blkgrp_sf %>%
@@ -1709,7 +1715,7 @@ ct_blkgrp_sf %>%
 
 ### Respiratory Hazard Index from Inhalation of Air Toxics in Connecticut and Populations of Concern
 
-In addition to variations in the general geography of the Respitory Hazard Index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvgCT) below shows population-weighted exposures for populations of concern relative to average Respiratory Hazard Index from Inhalation of Air Toxics for the region. For example, linguistically isolated households in Connecticut experience lifetime cancer risks from inhalation of air toxics that are 15% above the region as a whole. Similarly, minorities are experience lifetime hazard index values more than 11% above the regional average. By contrast, persons over age 64 are, on average, exposed to respiratory hazard indices over 2% below the regional average. 
+In addition to variations in the general geography of the Respitory Hazard Index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvgCT) below shows population-weighted exposures for populations of concern relative to average Respiratory Hazard Index from Inhalation of Air Toxics for the state. For example, linguistically isolated households in Connecticut experience respiratory hazard indices from inhalation of air toxics that are 6.1% above the region as a whole. Similarly, minorities are experience lifetime hazard index values more than 5% above the regional average. By contrast, persons over age 64 are, on average, exposed to respiratory hazard indices over 1% below the regional average. 
 
 ```{r barplotRHIPopAvgCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Connecticut at Census Block Group level relative to the regional average."}
 # Pop Weighted avg of RHI for all Groups in Connecticut relative to NE average
@@ -1766,7 +1772,7 @@ ct_blkgrp_sf %>%
   geom_hline(yintercept = 0)
 ```
 
-Language isolated households and minorities experience higher respiratory hazard indices from inhalation of air toxics compared to the general population. There is a moderate to strong positive correlation between the proportions of minorities and respiratory hazard index, and a moderately strong positive correlation with language isolated households (see Figure \@ref(fig:cormatrixRHIPopAvg) below.).
+There is a moderate to strong positive correlation between the proportions of minorities and respiratory hazard index (see Figure \@ref(fig:cormatrixRHIPopAvg) below.).
 
 ```{r cormatrixRHIPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group."}
 # Create a correlation matrix of cancer risk and populations of concern
@@ -1792,10 +1798,10 @@ ggcorrplot(corrACT, hc.order = TRUE, type = "lower", lab = TRUE,
 ```
 
 
-------
+\pagebreak
 ## Analysis of Traffic Proximity and Volume in Connecticut
 
-Traffic Proximity and Volume is a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km). It was calculated from 2017 U.S. DOT traffic data and the data for this analysis was sourced from EPA’s EJSCREEN database. Exposure to high annual daily traffic volume is concentrated around major cities in Connecticut and radiates outward along major traffic routes (see Figure \@ref(fig:mapTPVCT) below). 
+Traffic Proximity and Volume is a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km). It was calculated from 2017 U.S. DOT traffic data and the data for this analysis was sourced from EPA’s EJSCREEN database. Exposure to high annual daily traffic volume is concentrated along the I-95 to I-91 highway traffic corridor from Stamford to Hartford (see Figure \@ref(fig:mapTPVCT) below). 
 
 ```{r mapTPVCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Connecticut at Census Block Group level."}
 
@@ -1811,6 +1817,7 @@ ct_blkgrp_sf %>%
           legend.is.portrait = TRUE) +
   tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
   tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ct_highways) + tm_lines(col = "brown4", alpha = 0.5) +
   tm_shape(ct_towns_sf_pts) + tm_dots() +
   tm_text("NAME.x", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2,
           shadow = TRUE) +
@@ -1824,7 +1831,7 @@ ct_blkgrp_sf %>%
             legend.hist.width = 0.9)
 ```
 
-There appear to be significant spatial clusters of traffic proximity and volume in Boston (see Figure \@ref(fig:hotspotTPVCT) below).
+There appear to be significant spatial clusters of traffic proximity and volume in Fairfield, New Haven, and Hartford (see Figure \@ref(fig:hotspotTPVCT) below).
 
 ```{r hotspotTPVCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2017 traffic proximity and volume at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
@@ -1866,7 +1873,7 @@ tm_shape(local_g, unit = "mi",) +
             legend.outside.position = c("right", "top"))
 ```
 
-Traffic Proximity and Volume exposure vary by state (see Table \@ref(tab:statsTPVCT) and Figure \@ref(fig:boxplotTPVCT) below). Massachusetts shows the highest Traffic Proximity and Volume exposure, followed distantly by Connecticut, and Rhode Island.  
+Traffic Proximity and Volume exposure vary across the state (see Table \@ref(tab:statsTPVCT) and Figure \@ref(fig:boxplotTPVCT) below).   
 
 ```{r statsTPVCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Connecticut at Census Block Group level."}
 ct_blkgrp_sf %>%
@@ -1898,7 +1905,7 @@ ct_blkgrp_sf %>%
 
 ### Traffic Proximity and Volume Exposure in Connecticut and Populations of Concern
 
-In addition to variations in the general geography of the Traffic Proximity and Volume exposure, this exposure also varies demographically. Figure \@ref(fig:barplotTPVPopAvgNE) below shows population-weighted exposures for populations of concern relative to average Traffic Proximity and Volume for the region. For example, linguistically isolated households in Connecticut are exposed to Traffic Proximity and Volume at more than twice the level of the region as a whole (over 104%). Similarly, minorities are exposed to Traffic Proximity and Volume more than 57% above the regional average. By contrast, persons over age 64 are, on average, are exposed to Traffic Proximity and Volume of more than 22% below the regional average. 
+In addition to variations in the general geography of the Traffic Proximity and Volume exposure, this exposure also varies demographically. Figure \@ref(fig:barplotTPVPopAvgNE) below shows population-weighted exposures for populations of concern relative to average Traffic Proximity and Volume for the state. For example, low income persons (following Connecticut's definition) are exposed to Traffic Proximity and Volume more than 71% above the state as a whole. Similarly, language isolated households are exposed to Traffic Proximity and Volume more than 69% above the state average. By contrast, persons over age 64 are, on average, are exposed to Traffic Proximity and Volume of more than 23% below the regional average. 
 
 ```{r barplotTPVPopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average Traffic Proximity and Volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Connecticut at Census Block Group level relative to the regional average."}
 # Pop Weighted avg of TPV for all Groups in Connecticut relative to NE average
@@ -1955,7 +1962,7 @@ ct_blkgrp_sf %>%
   geom_hline(yintercept = 0)
 ```
 
-Language isolated households and minorities experience higher exposure to traffic proximity and volume compared to the general population. There is a moderate positive correlation between the proportions of minorities and traffic proximity and volume, and a moderate positive correlation with language isolated households (see Figure \@ref(fig:cormatrixTPVPopAvg) below.).
+There is a moderate positive correlation between the proportions of minorities and traffic proximity and volume, and a moderate positive correlation with low income persons (see Figure \@ref(fig:cormatrixTPVPopAvg) below.).
 
 ```{r cormatrixTPVPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group."}
 # Create a correlation matrix of cancer risk and populations of concern
