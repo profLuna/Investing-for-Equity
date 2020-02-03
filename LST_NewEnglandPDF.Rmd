@@ -1,0 +1,469 @@
+---
+title: "Heat Risk in New England"
+author: "Marcos Luna and Neenah Estrella-Luna"
+date: "1/22/2020"
+output: 
+  bookdown::pdf_document2:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    fig_caption: yes        
+    includes:  
+      in_header: my_header.tex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+\pagebreak
+# Analysis of heat risk in New England
+
+This is an analysis of temperature across New England, with particular attention on areas exhibiting higher than average temperatures relative to surrounding areas - heat islands - and the demographic and air quality characteristics of those areas. Urban heat island effects (UHI) are defined by temperatures in urban regions exceeding those in surrounding suburban or rural regions. Temperature differences are a consequence of the high density of buildings, roads, and other impervious infrastructure in urban areas that absorb heat and release it more slowly. Higher summer temperatures due to UHI increase the risk of heat-related illnesses, result in increased energy use for air conditioning, and exacerbate air pollution, especially ground-level ozone. As the climate warms, UHI are likely to exacerbate both temperature and air pollution risks. 
+
+To identify exposure to UHI across New England, this study uses thermal infrared data MODIS satellite imagery to characterize land surface temperatures (LST). UHIs are identified as regions exhibiting LSTs more than 3 standard deviations above their surroundings. 
+
+## Analysis of Land Surface Temperature in New England
+
+This is an analysis of Land Surface Temperature (LST) across New England and its relationship to populations of concern and to air quality. The analysis is based on data from NASA's MODIS satellite platform. The data used here covers average temperatures across a week from July 28 to August 3, 2019. That week constituted the conclusion of a historically warm July for the region. This data originates at 1km spatial resolution and was extracted to average temperatures at each block group separately for days, nights, and day-night averages. 
+
+Average temperatures varied significantly across New England, with highest temperatures apparent in the most urbanized areas of the region (see Figure \@ref(fig:mapLSTavgNE) below). 
+
+```{r dataLST, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+library(tmap)
+library(tidyverse)
+library(sf)
+library(tmaptools)
+library(maptools)
+library(ggcorrplot)
+library(spdep)
+# library(rgdal)
+# library(gdalUtils)
+# library(raster)
+
+# load basic layers
+load("DATA/ne_layers.rds")
+
+# load previously processed LST data
+load("DATA/ne_blkgrpLST_sf.rds")
+
+### STEPS FOR PROCESSING LST DATA
+# # read in HDF (Hierarchical Data Format) scientific data sets (SDSs)
+# sdsJuly282019h12 <- get_subdatasets("LST/MODIS8dayLST1km/2345441438/MOD11A2_A2019209_h12v04_006_2019218045630_HEGOUT.hdf")
+# sdsJuly282019h13 <- get_subdatasets("LST/MODIS8dayLST1km/2345441418/MOD11A2_A2019209_h13v04_006_2019218045706_HEGOUT.hdf")
+# 
+# # retrieve desired data from dataset
+# LSTdayJuly282019h12 <- readGDAL(sdsJuly282019h12[1])
+# LSTnightJuly282019h12 <- readGDAL(sdsJuly282019h12[5])
+# LSTdayJuly282019h13 <- readGDAL(sdsJuly282019h13[1])
+# LSTnightJuly282019h13 <- readGDAL(sdsJuly282019h13[5])
+# 
+# # assign to raster image to manipulate data for visualization and analysis and convert from Kelvin to Fahrenheit
+# LSTdayJuly282019h12r <- raster(LSTdayJuly282019h12)*(9/5) - 459.67
+# LSTnightJuly282019h12r <- raster(LSTnightJuly282019h12)*(9/5) - 459.67
+# LSTdayJuly282019h13r <- raster(LSTdayJuly282019h13)*(9/5) - 459.67
+# LSTnightJuly282019h13r <- raster(LSTnightJuly282019h13)*(9/5) - 459.67
+# 
+# # # If origins are different, need to adjust tolerance to mosaic
+# # origin(LSTdayJuly282019h12r)
+# # origin(LSTdayJuly282019h13r)
+# 
+# # mosic rasters
+# # create LST day mosaic raster
+# LSTdayJuly2019r <- mosaic(LSTdayJuly282019h12r,LSTdayJuly282019h13r,
+#                           fun=mean, tolerance = 1)
+# 
+# # create LST night mosaic raster
+# LSTnightJuly2019r <- mosaic(LSTnightJuly282019h12r,LSTnightJuly282019h13r,
+#                           fun=mean, tolerance = 1)
+# 
+# # create average of day and night
+# LSTavgJuly2019r <- (LSTdayJuly2019r + LSTnightJuly2019r)/2
+# 
+# # clean up
+# rm(list = ls(pattern = "h12|h13"))
+# 
+# # Crop LST to New England
+# load("DATA/ne_layers.rds")
+# # define new projection
+# newproj <- st_crs(ne_blkgrp_sf)[[2]]
+# 
+# LSTavgJuly2019r_ne <- LSTavgJuly2019r %>% 
+#   projectRaster(., crs = newproj) %>% 
+#   crop(., ne_states_sf_cb)
+# 
+# LSTdayJuly2019r_ne <- LSTdayJuly2019r %>% 
+#   projectRaster(., crs = newproj) %>% 
+#   crop(., ne_states_sf_cb) 
+# 
+# LSTnightJuly2019r_ne <- LSTnightJuly2019r %>% 
+#   projectRaster(., crs = newproj) %>% 
+#   crop(., ne_states_sf_cb)
+# 
+# # Identify stats to compute thresholds
+# LSTavgJuly2019mean <- cellStats(x = LSTavgJuly2019r_ne, stat = "mean")
+# LSTdayJuly2019mean <- cellStats(x = LSTdayJuly2019r_ne, stat = "mean")
+# LSTnightJuly2019mean <- cellStats(x = LSTnightJuly2019r_ne, stat = "mean")
+# LSTavgJuly2019sd <- cellStats(x = LSTavgJuly2019r_ne, stat = "sd")
+# LSTdayJuly2019sd <- cellStats(x = LSTdayJuly2019r_ne, stat = "sd")
+# LSTnightJuly2019sd <- cellStats(x = LSTnightJuly2019r_ne, stat = "sd")
+# 
+# # Create rasters of cells exceeding threshold
+# LSTavgJulyHI <- LSTavgJuly2019r_ne > 
+#   (LSTavgJuly2019mean + LSTavgJuly2019sd * 3)
+# LSTdayJulyHI <- LSTdayJuly2019r_ne > 
+#   (LSTdayJuly2019mean + LSTdayJuly2019sd * 3)
+# LSTnightJulyHI <- LSTnightJuly2019r_ne > 
+#   (LSTnightJuly2019mean + LSTnightJuly2019sd * 3)
+# 
+# # Extract raster values to block groups
+# # check for empty geometries
+# any(is.na(st_dimension(ne_blkgrp_sf)))
+# # identiy empty geometries
+# empty_geo <- st_is_empty(ne_blkgrp_sf)
+# # filter out empty geometries
+# ne_blkgrp_sf <- ne_blkgrp_sf[!empty_geo,]
+# # clean up
+# rm(empty_geo)
+# 
+# # Extract mean LST values within each block group to a df
+# meanLSTavg_df <- ne_blkgrp_sf %>% 
+#   dplyr::select(GEOID) %>% 
+#   as_Spatial() %>% 
+#   extract(LSTavgJuly2019r_ne, ., 
+#           fun=mean, sp=TRUE, na.rm=TRUE, small=TRUE) %>% 
+#   as.data.frame() %>% 
+#   rename(meanAvgLST = layer)
+# 
+# meanLSTday_df <- ne_blkgrp_sf %>% 
+#   dplyr::select(GEOID) %>% 
+#   as_Spatial() %>% 
+#   extract(LSTdayJuly2019r_ne, ., 
+#           fun=mean, sp=TRUE, na.rm=TRUE, small=TRUE) %>% 
+#   as.data.frame() %>% 
+#   rename(meanDayLST = layer)
+# 
+# meanLSTnight_df <- ne_blkgrp_sf %>% 
+#   dplyr::select(GEOID) %>% 
+#   as_Spatial() %>% 
+#   extract(LSTnightJuly2019r_ne, ., 
+#           fun=mean, sp=TRUE, na.rm=TRUE, small=TRUE) %>% 
+#   as.data.frame() %>% 
+#   rename(meanNightLST = layer)
+# 
+# # Join LST statistics to block groups
+# ne_blkgrp_sf <- ne_blkgrp_sf %>% 
+#   left_join(., meanLSTavg_df, by = "GEOID") %>% 
+#   left_join(., meanLSTday_df, by = "GEOID") %>% 
+#   left_join(., meanLSTnight_df, by = "GEOID")
+```
+
+
+```{r mapLSTavgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of July 2019 average Land Surface Temperatures (LST) across New England at Census Block Group level.", strip.white=TRUE}
+# Map of average LST across New England
+tm_shape(ne_blkgrpLST_sf, unit = "mi") + 
+  tm_fill("meanAvgLST", style = "quantile", palette = "Oranges",
+          title = expression("Temperature " ( degree*F)),
+          legend.hist = TRUE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=1)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Avg Temperatures \nJuly 2019", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+```
+
+Average daytime temperatures show higher temperatures spreading our further from the core metro areas (see Figure \@ref(fig:mapLSTdayNE) below).
+
+```{r mapLSTdayNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of July 2019 average daytime Land Surface Temperatures (LST) across New England at Census Block Group level.", strip.white=TRUE}
+# Map of average LST across New England
+tm_shape(ne_blkgrpLST_sf, unit = "mi") + 
+  tm_fill("meanDayLST", style = "quantile", palette = "Reds",
+          title = expression("Temperature " ( degree*F)),
+          legend.hist = TRUE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=1)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Avg Daytime \nTemperatures \nJuly 2019", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+```
+
+Average nighttime temperatures across the region are lower than average, but continue to exhibit higher values in core urban areas (see Figure \@ref(fig:mapLSTnightNE) below).
+
+```{r mapLSTnightNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of July 2019 average nighttime Land Surface Temperatures (LST) across New England at Census Block Group level.", strip.white=TRUE}
+# Map of average LST across New England
+tm_shape(ne_blkgrpLST_sf, unit = "mi") + 
+  tm_fill("meanNightLST", style = "quantile", palette = "PuRd",
+          title = expression("Temperature " ( degree*F)),
+          legend.hist = TRUE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=1)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Avg Nighttime \nTemperatures \nJuly 2019", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+```
+
+Temperatures exhibit spatial clustering of both hot spots (i.e. geographic clusters of high temperatures) and cold spots (i.e. geographic clusters of lower temperatuers). The map below (Figure \@ref(fig:hotspotAvgLSTNE)) shows statistically significant temperature hot spots primarily in and around Boston, Providence, Hartford, and Stamford.
+
+```{r hotspotAvgLSTNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of July 2019 average Land Surface Temperatures (LST) at Census Block Group level."}
+# Get rid of empty geometries and NAs, and convert to spdf
+empty_geo <- st_is_empty(ne_blkgrpLST_sf)
+ne_blkgrp_sp_DemoEJ <- ne_blkgrpLST_sf[!empty_geo,] %>% 
+  dplyr::select(GEOID,meanAvgLST) %>% 
+  # st_transform(., crs = 2163) %>% # convert to US National Atlas Equal Area
+  na.omit() %>% 
+  as_Spatial()
+# Calculate Queen's case neighbors
+neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
+# Compute neighbor weights
+# spdep::set.ZeroPolicyOption(TRUE)
+listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
+# compute Getis-Ord Gi statistic
+local_g <- localG(ne_blkgrp_sp_DemoEJ$meanAvgLST, listw)
+local_g <- cbind(ne_blkgrp_sp_DemoEJ, as.matrix(local_g))
+names(local_g)[3] <- "gstat"
+# map the results
+tm_shape(local_g, unit = "mi",) + 
+  tm_fill("gstat",
+          palette = "-RdBu", 
+          style = "pretty",
+          title = expression(paste("Getis-Ord ", G[i]^"*")),
+          showNA = FALSE,
+          midpoint = NA,
+          labels = c("Significant Clusters","of Low Values","Significant Clusters","of High Values")) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Hot Spot Map of \nAvg July Temps for\nNew England", frame = FALSE, main.title.size = 0.6,
+            legend.position = c(.8,.2),
+            legend.title.size = 0.7)
+```
+
+Similar hot spot patterns are apparent during the day and night (see Figure \@ref(fig:hotspotDayLSTNE) and Figure \@ref(fig:hotspotNightLSTNE)).
+
+```{r hotspotDayLSTNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of July 2019 average daytime Land Surface Temperatures (LST) at Census Block Group level."}
+# Get rid of empty geometries and NAs, and convert to spdf
+empty_geo <- st_is_empty(ne_blkgrpLST_sf)
+ne_blkgrp_sp_DemoEJ <- ne_blkgrpLST_sf[!empty_geo,] %>% 
+  dplyr::select(GEOID,meanDayLST) %>% 
+  # st_transform(., crs = 2163) %>% # convert to US National Atlas Equal Area
+  na.omit() %>% 
+  as_Spatial()
+# Calculate Queen's case neighbors
+neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
+# Compute neighbor weights
+# spdep::set.ZeroPolicyOption(TRUE)
+listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
+# compute Getis-Ord Gi statistic
+local_g <- localG(ne_blkgrp_sp_DemoEJ$meanDayLST, listw)
+local_g <- cbind(ne_blkgrp_sp_DemoEJ, as.matrix(local_g))
+names(local_g)[3] <- "gstat"
+# map the results
+tm_shape(local_g, unit = "mi",) + 
+  tm_fill("gstat",
+          palette = "-RdBu", 
+          style = "pretty",
+          title = expression(paste("Getis-Ord ", G[i]^"*")),
+          showNA = FALSE,
+          midpoint = NA,
+          labels = c("Significant Clusters","of Low Values","Significant Clusters","of High Values")) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Hot Spot Map of \nAvg Daytime July \nTemps for\nNew England", frame = FALSE, main.title.size = 0.6,
+            legend.position = c(.8,.2),
+            legend.title.size = 0.7)
+```
+
+```{r hotspotNightLSTNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of July 2019 average nighttime Land Surface Temperatures (LST) at Census Block Group level."}
+# Get rid of empty geometries and NAs, and convert to spdf
+empty_geo <- st_is_empty(ne_blkgrpLST_sf)
+ne_blkgrp_sp_DemoEJ <- ne_blkgrpLST_sf[!empty_geo,] %>% 
+  dplyr::select(GEOID,meanNightLST) %>% 
+  # st_transform(., crs = 2163) %>% # convert to US National Atlas Equal Area
+  na.omit() %>% 
+  as_Spatial()
+# Calculate Queen's case neighbors
+neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
+# Compute neighbor weights
+# spdep::set.ZeroPolicyOption(TRUE)
+listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
+# compute Getis-Ord Gi statistic
+local_g <- localG(ne_blkgrp_sp_DemoEJ$meanNightLST, listw)
+local_g <- cbind(ne_blkgrp_sp_DemoEJ, as.matrix(local_g))
+names(local_g)[3] <- "gstat"
+# map the results
+tm_shape(local_g, unit = "mi",) + 
+  tm_fill("gstat",
+          palette = "-RdBu", 
+          style = "pretty",
+          title = expression(paste("Getis-Ord ", G[i]^"*")),
+          showNA = FALSE,
+          midpoint = NA,
+          labels = c("Significant Clusters","of Low Values","Significant Clusters","of High Values")) +
+  tm_shape(ne_states_sf_cb) + tm_borders(alpha = 0.4) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Hot Spot Map of \nAvg Nighttime \nJuly Temps for\nNew England", frame = FALSE, main.title.size = 0.6,
+            legend.position = c(.8,.2),
+            legend.title.size = 0.7)
+```
+
+
+Temperatures vary significantly by state (see Figure \@ref(fig:boxplotLSTAvgNE) below). Rhode Island, Connecticut, and Massachusetts are warmest with similar temperature distributions. Vermont shows the lowest overall temperatures, and Maine shows the widest range. 
+
+```{r boxplotLSTAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of July 2019 average temperatures by state at Census Block Group level."}
+# boxplot of temps by state for July 2019
+ne_blkgrpLST_sf %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = STATE, y = meanAvgLST, fill = STATE)) + 
+  geom_boxplot(notch = TRUE) + 
+  ggtitle("Average July 2019 Temperatures by New England State") +
+  theme_minimal() +
+  theme(legend.position = "none", axis.text=element_text(size=8)) + 
+  xlab(NULL) + 
+  ylab(expression("Temperature " ( degree*F))) +
+  coord_flip()
+```
+
+
+## Temperature in New England and Populations of Concern
+
+In addition to variations in the general geography of temperature, exposure to  also varies demographically. Figure \@ref(fig:barplotLSTAvgNE) below shows population-weighted exposures for populations of concern relative to average temperatures for the region. For example, language isolated households in New England are exposed to temperatures that are more than 5% above temperatures for the region as a whole. Similarly, minorities are exposed to temperatures 4.3% above the regional average. By contrast, persons over age 64 are, on average, exposed to temperatures at or below the regional average. 
+
+```{r barplotLSTAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average exposures to PM2.5 for populations of concern in New England relative to the regional average."}
+# Pop Weighted avg of PM2.5 for all Groups in New England relative to NE average
+ne_blkgrpLST_sf %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over64E, 
+                meanAvgLST) %>% 
+  gather(key = Group, value = Pop, totalpopE:over64E) %>% 
+  group_by(Group) %>% 
+  summarize(meanAvgLSTwMean = weighted.mean(x = meanAvgLST, 
+                                            w = Pop, na.rm = TRUE),
+            meanAvgLSTMean = mean(meanAvgLST, na.rm = TRUE)) %>% 
+  spread(key = Group, value = meanAvgLSTwMean) %>% 
+  transmute(Minority = (minorityE/meanAvgLSTMean - 1)*100,
+         #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+         `Lang Isol` = (eng_limitE/meanAvgLSTMean - 1)*100,
+         `Low Income` = (num2povE/meanAvgLSTMean - 1)*100,
+         `No HS` = (lthsE/meanAvgLSTMean - 1)*100,
+         `Under 5` = (under5E/meanAvgLSTMean - 1)*100,
+         `Over 64` = (over64E/meanAvgLSTMean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
+  geom_bar(stat = "identity", position = "identity") +
+  theme_minimal() +
+  labs(x = "", y = "", title = "Population-weighted temperature Exposure \n(relative to New England average)") + 
+  theme(legend.position = 'none') +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0)
+```
+
+There is a strong and statistically significant positive relationship between the proportion of minority residents or language-isolated households and temperature (see Figure \@ref(fig:cormatrixLSTAvgNE) below.).
+
+```{r cormatrixLSTAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of temperature and the proportions of populations of concern by Census Block Group."}
+# Create a correlation matrix of PM25 and populations of concern
+corrPM25 <- ne_blkgrpLST_sf %>% 
+  as.data.frame() %>% 
+  dplyr::transmute(Temperature = meanAvgLST, 
+                Minority = minority_pctE, 
+                `Low Income` = pct2povE, 
+                `Lang Isol` = eng_limit_pctE, 
+                `No HS Dip` = pct_lthsE, 
+                `Under 5` = pct_under5E, 
+                `Over 64` = pct_over64E) %>% 
+  drop_na() %>% 
+  cor(method = "spearman")
+# corrPM25
+ggcorrplot(corrPM25, hc.order = TRUE, type = "lower", lab = TRUE, 
+           title = "PM2.5 Correlation Matrix of Temperature \nand Populations for New England", 
+           legend.title = "Spearman's \nCorrelation\nCoefficient")
+```
+
+
+## Temperature in New England and Pollution
+
+Ambient temperatures are known to have a significant influence on the formation of air pollution. Figure \@ref(fig:cormatrixLSTAvgNEpollutants) below shows that average temperatures have a strong positive correlation with concentrations of Diesel Particulate Matter, Respiratory Hazard Risk, and Lifetime Cancer Risk. 
+
+```{r cormatrixLSTAvgNEpollutants, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of temperature and pollution by Census Block Group."}
+# Create a correlation matrix of PM25 and populations of concern
+corrLSTO3PM <- ne_blkgrpLST_sf %>% 
+  as.data.frame() %>% 
+  dplyr::transmute(Temperature = meanAvgLST, 
+                `Diesel PM` = DSLPM_19, 
+                Ozone = OZONE_19, 
+                PM2.5 = PM25_19,
+                `Cancer Risk` = CANCER_19,
+                `Resp Risk` = RESP_19) %>% 
+  drop_na() %>% 
+  cor(method = "spearman")
+# corrPM25
+ggcorrplot(corrLSTO3PM, hc.order = TRUE, type = "lower", lab = TRUE, 
+           title = "Correlation Matrix of Temperature \nand Air Pollution for New England", 
+           legend.title = "Spearman's \nCorrelation\nCoefficient")
+```
+
