@@ -1,0 +1,477 @@
+---
+title: "Transportation Options in RI"
+author: "Marcos Luna and Neenah Estrella-Luna"
+date: "1/24/2020"
+output: 
+  bookdown::pdf_document2:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    fig_caption: yes        
+    includes:  
+      in_header: my_header.tex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\pagebreak
+
+# Analysis of adequacy of public transit and walkability in Rhode Island
+
+This is an analysis of access to public transit and walkability in Rhode Island.
+
+## Analysis of Public Transit Access in Rhode Island
+
+This analysis seeks to identify communities that are underserved by access to public transit. Access to transit is measured in terms of distance to transit boarding stops and in terms of frequency of service. 
+
+Rhode Island is served primarily by the Rhode Island Public Transit Authority (RIPTA) which is a quasi-public, independent authority. This public transit service system is made up almost entirely by fixed-route bus service, which passes through 36 of Rhode Island's 39 municipalities. Amtrak train service passes through Rhode Island as well, but it is not considered in this analysis. This analysis looks at bus service access and frequency in Rhode Island.
+
+```{r data, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+### Analysis of Rhode Island transportation options
+library(tidyverse)
+library(sf)
+library(tmap)
+library(tidytransit)
+library(sp)
+library(tigris)
+options(tigris_use_cache = TRUE, tigris_class = "sf")
+library(lubridate)
+library(maptools)
+library(spdep)
+
+load("DATA/ne_layers.rds")
+
+### Read in RI transit data. See http://www.rigis.org/
+# read in RIPTA bus routes
+ri_busroutes_sf <- st_read(dsn = "DATA/transport/RIPTA_Bus_Routes",
+                           layer = "RIPTA_Bus_Routes")
+# read in RIPTA bus stops
+ri_busstops_sf <- st_read(dsn = "DATA/transport/RIPTA_Bus_Stops",
+                          layer = "RIPTA_Bus_Stops")
+# read in RI ferry routes
+ri_ferryroutes_sf <- st_read(dsn = "DATA/transport/RI_Ferry_Routes",
+                             layer = "Ferry_Routes")
+# read in RI railroad rights of way
+ri_railrow_sf <- st_read(dsn = "DATA/transport/RI_Railroad_Rights_of_Way",
+                         layer = "Railroad_Rights_of_Way") %>% 
+  filter(STATUS == "Active" & RAILUSE == "Passenger")
+# read in RI park and ride stops
+ri_parknride_sf <- st_read(dsn = "DATA/transport/RIPTA_Park_and_Ride_Stops",
+                           layer = "RIPTA_Park_and_Ride_Stops")
+
+# Convert to projected local CRS EPSG:2840: NAD83(HARN) / Rhode Island
+ri_busstops_sf <- st_transform(ri_busstops_sf, crs = 2840) 
+ri_blkgrps_sf <- ne_blkgrp_sf %>% 
+  filter(STATE == "Rhode Island") %>% 
+  st_transform(., crs = 2840)
+ri_tracts_sf <- ne_tracts_sf %>% 
+  filter(STATE == "Rhode Island") %>% 
+  st_transform(., crs = 2840)
+# Get rid of empty geometries
+empty_geo <- st_is_empty(ri_blkgrps_sf)
+ri_blkgrps_sf <- ri_blkgrps_sf[!empty_geo,]
+empty_geo <- st_is_empty(ri_tracts_sf)
+ri_tracts_sf <- ri_tracts_sf[!empty_geo,]
+# clean up
+rm(list = ls(pattern = "ne_"))
+
+# Create a 400m buffer around bus stops
+ri_busBuff400m <- st_buffer(ri_busstops_sf,dist = 400) %>% 
+  st_union() %>% 
+  st_as_sf()
+
+# Use areal interpolation to calculate populations of concern within buffer of accessibility
+ri_busBuff400m_sf <- ri_blkgrps_sf %>% 
+  mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>% 
+  mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>% 
+  mutate(RI_MINORITIES = if_else(RI_MINORITY == "M",totalpopE,0)) %>% 
+  mutate(RI_MINORITIES = replace_na(RI_MINORITIES,0)) %>% 
+  select(GEOID,
+         totalpopE,
+         minorityE,
+         under5E,
+         over64E,
+         under18E,
+         eng_limitE,
+         num2povE,
+         lthsE,
+         RI_LOWINC,
+         RI_MINORITIES) %>% 
+  mutate(OldArea = st_area(.)) %>% 
+  st_intersection(ri_busBuff400m,.) %>% 
+  mutate(NewArea = st_area(.),
+         Proportion = NewArea/OldArea,
+         NewPop = as.integer(totalpopE*Proportion),
+         NewMinority = as.integer(minorityE*Proportion),
+         NewUnder5 = as.integer(under5E*Proportion),
+         NewOver64 = as.integer(over64E*Proportion),
+         NewUnder18 = as.integer(under18E*Proportion),
+         NewEng_limit = as.integer(eng_limitE*Proportion),
+         NewPov = as.integer(num2povE*Proportion),
+         NewLths = as.integer(lthsE*Proportion),
+         NewRI_LOWINC = as.integer(RI_LOWINC*Proportion),
+         NewRI_MINORITIES = as.integer(RI_MINORITIES))
+
+# Repeat for tracts
+ri_busBuff400mTracts_sf <- ri_tracts_sf %>% 
+  select(GEOID,
+         disabledOver18E,
+         HHnoCarE) %>% 
+  mutate(OldArea = st_area(.)) %>% 
+  st_intersection(ri_busBuff400m,.) %>% 
+  mutate(NewArea = st_area(.),
+         Proportion = NewArea/OldArea,
+         NewDisabled = as.integer(disabledOver18E*Proportion),
+         NewNoCar = as.integer(HHnoCarE*Proportion))
+
+# Compute total block group populations within bus stop buffer
+ri_busBuff400m_df <- ri_busBuff400m_sf %>% 
+  as.data.frame() %>% 
+  summarize(`Total Pop` = sum(NewPop),
+            Minority = sum(NewMinority),
+            `Under 5` = sum(NewUnder5),
+            `Over 64` = sum(NewOver64),
+            `Under 18` = sum(NewUnder18),
+            `Limited English HH` = sum(NewEng_limit),
+            `Low Income` = sum(NewPov),
+            `No HS Dip` = sum(NewLths),
+            `RI Low Income` = sum(NewRI_LOWINC),
+            `RI Minority` = sum(NewRI_MINORITIES)) %>% 
+  gather(key = Group, value = BusPop)
+
+# Compute total tract populations within bus stop buffer
+ri_busBuff400mTracts_df <- ri_busBuff400mTracts_sf %>% 
+  as.data.frame() %>% 
+  summarize(`Disabled` = sum(NewDisabled),
+            `No Car HH` = sum(NewNoCar)) %>% 
+  gather(key = Group, value = BusPop)
+# Compute total tract populations within the state for same groups
+ri_tract_pops_df <- ri_tracts_sf %>% 
+  as.data.frame() %>% 
+  summarize(`Disabled` = sum(disabledOver18E),
+            `No Car HH` = sum(HHnoCarE)) %>% 
+  gather(key = Group, value = RIPop) %>% 
+  left_join(.,ri_busBuff400mTracts_df, by = "Group")
+  
+
+# Compute populations for state, join with buffer pops
+ri_busAccessPops_df <- ri_blkgrps_sf %>% 
+  as.data.frame() %>% 
+  mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>% 
+  mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>% 
+  mutate(RI_MINORITIES = if_else(RI_MINORITY == "M",totalpopE,0)) %>% 
+  mutate(RI_MINORITIES = replace_na(RI_MINORITIES,0)) %>% 
+  summarize(`Total Pop` = sum(totalpopE),
+            Minority = sum(minorityE),
+            `Under 5` = sum(under5E),
+            `Over 64` = sum(over64E),
+            `Under 18` = sum(under18E),
+            `Limited English HH` = sum(eng_limitE),
+            `Low Income` = sum(num2povE),
+            `No HS Dip` = sum(lthsE),
+            `RI Low Income` = sum(RI_LOWINC, na.rm = TRUE),
+            `RI Minority` = sum(RI_MINORITIES, na.rm = TRUE)) %>% 
+  gather(key = Group, value = RIPop) %>% 
+  left_join(., ri_busBuff400m_df, by = "Group") %>% 
+  rbind(.,ri_tract_pops_df) %>% 
+  mutate(PctBus = BusPop/RIPop*100)
+```
+
+Approximately half of the state population (~51%) lives within reasonable walking distance of a bus stop (defined as approximately 400 meters or 1/4 mile). However, this access varies by population group. Figure \@ref(fig:loliBusDist) below compares the percentages of different population groups living within reasonable walking distance of bus stops across the state. Most populations of concern, including transit-dependent groups, have access similar to or better than the general population. However, not the people over age 64 have less access on average compared to the general population.
+
+```{r loliBusDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of percentage of population groups within 400 meters of a bus stop across Rhode Island."}
+ri_busAccessPops_df %>% 
+  ggplot(aes(x = reorder(Group,-PctBus), 
+             y = PctBus)) +
+  geom_segment(aes(x = reorder(Group,-PctBus), xend = reorder(Group,-PctBus),
+                   y = ri_busAccessPops_df[1,4], yend = PctBus), 
+               color = "skyblue") +
+  geom_point(color = "blue", size = 4, alpha = 0.6) +
+  coord_flip() + xlab("") + ylab("") + ggtitle("Rhode Island Populations within Walking Distance (400m) \nof Bus Stops") + theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
+  geom_text(aes(x = Group, y = PctBus + 0.2 * sign(PctBus), 
+                label = paste0(round(PctBus,0),"%")), 
+            hjust = -0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) 
+```
+
+Specific values of the same can be seen in Table \@ref(tab:statsBusDist) below.
+
+```{r statsBusDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island populations living with 400 meters of a bus stop. Based on ACS 2017 Block Group data."}
+# See table of distance by group
+ri_busAccessPops_df %>% 
+  mutate(`% Bus Access` = paste0(round(PctBus,1),"%")) %>% 
+  select(-PctBus) %>% 
+  kableExtra::kable(format.args = list(big.mark = ','), align = "r",
+                    caption = "Populations Living withn 400m of Bus Stops")
+  
+```
+
+The quality of access to public transit can also be measured by the level or frequency of service. Figure \@ref(fig:mapGTFS) below shows average headways for bus routes throughout Rhode Island.
+
+```{r mapGTFS, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of average headways by bus route for Rhode Island for routes running Monday through Friday, from 6am - 9pm."}
+# Read in RI GTFS data
+ri_transit <- read_gtfs("https://www.ripta.com/stuff/contentmgr/files/0/3cda81dfa140edbe9aae214b26245b4a/files/google_transit.zip") %>% 
+  gtfs_as_sf()
+
+# add a table to the feed that indicates which service_id runs on which date. This is later useful for linking dates and trips via service_id.
+ri_transit <- set_date_service_table(ri_transit)
+
+# To understand service patterns better we need information on weekdays and holidays. With a calendar table we know the weekday and possible holidays for each date.
+holidays = tribble(~date, ~holiday,
+                   ymd("2020-07-04"), "Independence Day",
+                   ymd("2020-09-07"), "Labor Day",
+                   ymd("2020-12-25"), "Christmas")
+
+calendar = tibble(date = unique(ri_transit$.$date_service_table$date)) %>% 
+  mutate(
+    weekday = (function(date) {
+      c("Sunday", "Monday", "Tuesday", 
+        "Wednesday", "Thursday", "Friday", 
+        "Saturday")[as.POSIXlt(date)$wday + 1]
+    })(date)
+  )
+
+calendar <- calendar %>% left_join(holidays, by = "date")
+
+# To analyse on which dates trips run and to group similar services we use service patterns. Such a pattern simply lists all dates a trip runs on. To handle these patterns we create a servicepattern_id using a hash function. 
+ri_transit <- set_servicepattern(ri_transit)
+# Our gtfs feed now contains the data frame service_pattern which links each servicepattern_id to an existing service_id (and by extension trip_id).
+
+# Understand patterns of service by visualising the data.
+date_servicepattern_table <- ri_transit$.$date_servicepattern_table %>% 
+  left_join(calendar, by = "date")
+
+# ggplot(date_servicepattern_table) + theme_bw() +
+#   geom_point(aes(x = date, y = servicepattern_id, color = weekday), size = 1) +
+#   scale_x_date(breaks = scales::date_breaks("1 month")) +
+#   theme(legend.position = "bottom")
+
+# Use service pattern id for daily M-F service selected based on graphic
+service_ids <- ri_transit$.$service_pattern %>% 
+  filter(servicepattern_id == "s_33b3c49") %>% 
+  pull(service_id)
+
+# now that we’ve identified the set of service_id’s that refer to all weekday trips, we can summarize service between 6 am and 5 pm for bus service on weekdays.
+daily_stop_freq <- get_stop_frequency(ri_transit, start_hour = 6, end_hour = 21,
+                                      service_ids = service_ids)
+
+# Convert stops to points for mapping
+ri_transit_stops_sf <- stops_as_sf(ri_transit$stops)
+
+# Join headway frequencies to stops
+ri_transit_stops_sf <- ri_transit_stops_sf %>% 
+  inner_join(daily_stop_freq, by = "stop_id")
+
+# map it out
+# tmap_mode("view")
+# tm_shape(ri_transit_stops_sf) + tm_dots(col = "headway", alpha = 0.6)
+
+# use the get_route_frequency function to summarise transit service by route, for the same time period.
+daily_route_freq <- get_route_frequency(ri_transit, service_ids = service_ids,
+                                        start_hour = 6, end_hour = 21)
+
+# Join the route frequencies to geometry for mapping
+# get_route_geometry needs a gtfs object that includes shapes as simple feature data frames
+ri_routes_sf <- get_route_geometry(ri_transit, service_ids = service_ids)
+
+# join calculated frequencies to geometry
+ri_routes_sf <- ri_routes_sf %>% 
+  inner_join(daily_route_freq, by = "route_id")
+
+# Calculate average headway for block groups within walking distance of bus stops and then compute weighted average headway by population group
+ri_transit_stopHeadway_df <- ri_transit_stops_sf %>% 
+  st_transform(., crs = 2840) %>% 
+  st_join(., ri_busBuff400m_sf) %>% 
+  as.data.frame() %>% 
+  group_by(GEOID) %>% 
+  summarize(AvgStopHeadway = mean(headway,na.rm = TRUE))
+# Do the same for tracts
+ri_transit_stopHeadwayTracts_df <- ri_transit_stops_sf %>% 
+  st_transform(., crs = 2840) %>% 
+  st_join(., ri_busBuff400mTracts_sf) %>% 
+  as.data.frame() %>% 
+  group_by(GEOID) %>% 
+  summarize(AvgStopHeadway = mean(headway,na.rm = TRUE)) %>% 
+  as.data.frame() %>% 
+  left_join(ri_busBuff400mTracts_sf,.,by="GEOID") %>% 
+  as.data.frame() %>% 
+  transmute(Disabled = disabledOver18E,
+            `No Car HH` = HHnoCarE,
+            AvgStopHeadway) %>% 
+  gather(key = Group, value = Pop, Disabled:`No Car HH`) %>% 
+  group_by(Group) %>% 
+  summarize(AvgWHeadway = weighted.mean(x = AvgStopHeadway, 
+                                        w = Pop, na.rm = TRUE))
+
+# Join stop average headway to block groups within buffer
+ri_busHeadwayPops_df <- ri_busBuff400m_sf %>% 
+  as.data.frame() %>% 
+  left_join(.,ri_transit_stopHeadway_df, by = "GEOID") %>% 
+  transmute(`Total Pop` = NewPop,
+            Minority = NewMinority,
+            `Under 5` = NewUnder5,
+            `Over 64` = NewOver64,
+            `Under 18` = NewUnder18,
+            `English Limited HH` = NewEng_limit,
+            `Low Income` = NewPov,
+            `No HS Dip` = NewLths,
+            `RI Low Income` = NewRI_LOWINC,
+            `RI Minority` = NewRI_MINORITIES,
+            AvgStopHeadway) %>% 
+  gather(key = Group, value = Pop, `Total Pop`:`RI Minority`) %>% 
+  group_by(Group) %>% 
+  summarize(AvgWHeadway = weighted.mean(x = AvgStopHeadway, 
+                                        w = Pop, na.rm = TRUE)) %>% 
+  rbind(.,ri_transit_stopHeadwayTracts_df)
+
+tm_shape(ri_blkgrps_sf) + tm_fill(col = "gray") +
+tm_shape(ri_routes_sf) + tm_lines(col = "mean_headways")
+```
+
+These headways, or average waiting times, vary significantly across population groups. Figure \@ref(fig:loliHeadway) below compares the population-weigted average headways for different groups across the state. Most groups have average wait times lower than the general population. However, disabled persons, persons in households without a car, and persons over age 64 have wait times that exceed that of the general population.
+
+```{r loliHeadway, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph population-weigted average headways for groups within 400 meters of a bus stop across Rhode Island."}
+ri_busHeadwayPops_df %>% 
+  ggplot(aes(x = reorder(Group,-AvgWHeadway), y = AvgWHeadway)) +
+  geom_segment(aes(x = reorder(Group,-AvgWHeadway), 
+                   xend = reorder(Group,-AvgWHeadway),
+                   y = pull(ri_busHeadwayPops_df[8,2]), yend = AvgWHeadway), 
+               color = "tan1") +
+  geom_point(color = "orange", size = 4, alpha = 0.6) +
+  coord_flip() + xlab("") + ylab("minutes") + ggtitle("Population-Weighted Average Stop Headway for Rhode Island \nGroups within Walking Distance (400m) of Bus Stops") + theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
+  geom_text(aes(x = Group, y = AvgWHeadway + 0.2 * sign(AvgWHeadway), 
+                label = round(AvgWHeadway,0)), 
+            hjust = 1.8, size = 3,
+            color=rgb(100,100,100, maxColorValue=255))
+```
+
+
+## Analysis of Walkability in Rhode Island
+
+The National Walkability Index is a nationwide geographic data resource produced by the U.S. Environmental Protection Agency that ranks Census block groups according to their relative walkability. Walkability depends upon characteristics of the built environment that influence the likelihood of walking being used as a mode of travel. The Walkability Index is based on the EPA's previous data product, the Smart Location Database (SLD).
+
+```{r walkabilityData, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+# Analyze Walkability Index for RI. See https://edg.epa.gov/metadata/catalog/search/resource/details.page?uuid=%7B251AFDD9-23A7-4068-9B27-A3048A7E6012%7D
+# Import walkability layer
+walkability <- st_read(dsn = "DATA/Walkability/Natl_WI_SHP",
+        layer = "Natl_WI") 
+
+ri_blkgrp_walkability_sf <- walkability %>% 
+  as.data.frame() %>% 
+  select(GEOID10,SFIPS,CFIPS,TRFIPS,NatWalkInd) %>% 
+  left_join(ri_blkgrps_sf,., by = c("GEOID" = "GEOID10"))
+
+# Create summarized df of population weighted avg walkability by tract pop
+ri_tract_walkability_df <- ri_blkgrp_walkability_sf %>% 
+  as.data.frame() %>% 
+  select(SFIPS,CFIPS,TRFIPS,NatWalkInd) %>% 
+  mutate(TRACTID = paste0(SFIPS,CFIPS,TRFIPS)) %>% 
+  group_by(TRACTID) %>% 
+  summarize(NatWalkInd = mean(NatWalkInd)) %>% 
+  left_join(as.data.frame(ri_tracts_sf),., by = c("GEOID" = "TRACTID")) %>% 
+  transmute(Disabled = disabledOver18E,
+            `No Car HH` = HHnoCarE,
+            NatWalkInd) %>% 
+  gather(key = Group, value = Pop, Disabled:`No Car HH`) %>% 
+  group_by(Group) %>% 
+  summarize(wNatWalkIndex = weighted.mean(NatWalkInd, Pop, na.rm = TRUE))
+
+# Populated-Weighted Average Walkability Index for Populations of Concern
+ri_wAvgWalkability_df <- ri_blkgrp_walkability_sf %>% 
+  as.data.frame() %>% 
+  mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>% 
+  mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>% 
+  mutate(RI_MINORITIES = if_else(RI_MINORITY == "M",totalpopE,0)) %>% 
+  mutate(RI_MINORITIES = replace_na(RI_MINORITIES,0)) %>%
+  transmute(`Total Pop` = totalpopE,
+            Minority = minorityE,
+            `Low Income` = num2povE,
+            `Under 5` = under5E,
+            `Under 18` = under18E,
+            `Over 64` = over64E,
+            `Limited English HH` = eng_limitE,
+            `No HS Dip` = lthsE,
+            `RI Low Income` = RI_LOWINC,
+            `RI Minority` = RI_MINORITIES,
+            NatWalkInd) %>% 
+  gather(key = Group, value = Pop, `Total Pop`:`RI Minority`) %>% 
+  group_by(Group) %>% 
+  summarize(wNatWalkIndex = weighted.mean(NatWalkInd, Pop, na.rm = TRUE)) %>% 
+  rbind(., ri_tract_walkability_df)
+```
+
+Walkability varies across Rhode Island. It is highest in and around the state's major urban centers, such as Providence, and lowest in the western suburbs.
+
+```{r mapWalkability, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of Walkability Index scores for Census block groups across Rhode Island."}
+# Create a map of walkability
+tm_shape(ri_blkgrp_walkability_sf) + tm_fill("NatWalkInd")
+```
+
+Geographic clusters of areas with statistically high and low concentrations of walkability scores are evident in Figure \@ref(fig:hotspotWalkability) below.
+
+```{r hotspotWalkability, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of Hot Spots of Walkability Index scores for Census block groups across Rhode Island."}
+# Hot spot map of walkability
+# Get rid of empty geometries and NAs, and convert to spdf
+empty_geo <- st_is_empty(ri_blkgrp_walkability_sf)
+ri_blkgrp_walkability_sp <- ri_blkgrp_walkability_sf[!empty_geo,] %>% 
+  dplyr::select(GEOID,NatWalkInd) %>% 
+  # st_transform(., crs = 2163) %>% # convert to US National Atlas Equal Area
+  na.omit() %>% 
+  as_Spatial()
+# Calculate Queen's case neighbors
+neighborsQC <- poly2nb(ri_blkgrp_walkability_sp, queen = TRUE)
+# Compute neighbor weights
+# spdep::set.ZeroPolicyOption(TRUE)
+listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
+# compute Getis-Ord Gi statistic
+local_g <- localG(ri_blkgrp_walkability_sp$NatWalkInd, listw)
+local_g <- cbind(ri_blkgrp_walkability_sp, as.matrix(local_g))
+names(local_g)[3] <- "gstat"
+# map the results
+tm_shape(local_g, unit = "mi",) + 
+  tm_fill("gstat",
+          palette = "-RdBu", 
+          style = "pretty",
+          title = expression(paste("Getis-Ord ", G[i]^"*")),
+          showNA = FALSE,
+          midpoint = NA,
+          labels = c("Significant Clusters","of Low Values","No Significant Clusters","Significant Clusters","of High Values")) +
+  tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Hot Spot Map \nof Walkability Index for \nRhode Island", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+```
+
+Walkability varies for different population groups across the state. Figure \@ref(fig:loliWalkability) below compares population-weighted average walkability index scores for different populations. Most groups live in communities with average walkability index scores that are at or above that of the general population. However, persons over age 64 tend to live in communities with walkability scores below the state average. 
+
+```{r loliWalkability, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weigted average walkability index scores for groups across Rhode Island."}
+# Create lollipop graph of pop-weighted average walk index
+ri_wAvgWalkability_df %>% 
+  ggplot(aes(x = reorder(Group,wNatWalkIndex), y = wNatWalkIndex)) +
+  geom_segment(aes(x = reorder(Group,wNatWalkIndex), 
+                   xend = reorder(Group,wNatWalkIndex),
+                   y = pull(ri_wAvgWalkability_df[8,2]), yend = wNatWalkIndex), 
+               color = "green4") +
+  geom_point(color = "green", size = 4, alpha = 0.6) +
+  coord_flip() + xlab("") + ylab("Walk Index") + ggtitle("Population-Weighted Walk Index") + theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
+  geom_text(aes(x = Group, y = wNatWalkIndex + 0.2 * sign(wNatWalkIndex), 
+                label = round(wNatWalkIndex,1)), 
+            hjust = 0.6, size = 3,
+            color=rgb(100,100,100, maxColorValue=255))
+```
+
