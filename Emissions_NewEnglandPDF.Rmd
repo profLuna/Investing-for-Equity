@@ -829,7 +829,7 @@ ne_blkgrp_sf %>%
             Max = round(max(onroad_perkm_2017, na.rm = TRUE),0),
             `State Total` = sum(onroad_2017, na.rm = TRUE)) %>% 
   kableExtra::kable(format.args = list(big.mark = ','), 
-                    caption = "Annual 2017 CO~2~ emissions (mtons/km^2^) by Census block group and total CO~2~ emissions (mtons) by state")
+                    caption = "Annual 2017 CO2 emissions (mtons/km2) by Census block group and total CO2 emissions (mtons) by state")
 ```
 
 
