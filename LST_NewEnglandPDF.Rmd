@@ -20,7 +20,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This is an analysis of temperature across New England, with particular attention on areas exhibiting higher than average temperatures relative to surrounding areas - heat islands - and the demographic and air quality characteristics of those areas. Urban heat island effects (UHI) are defined by temperatures in urban regions exceeding those in surrounding suburban or rural regions. Temperature differences are a consequence of the high density of buildings, roads, and other impervious infrastructure in urban areas that absorb heat and release it more slowly. Higher summer temperatures due to UHI increase the risk of heat-related illnesses, result in increased energy use for air conditioning, and exacerbate air pollution, especially ground-level ozone. As the climate warms, UHI are likely to exacerbate both temperature and air pollution risks. 
 
-To identify exposure to UHI across New England, this study uses thermal infrared data MODIS satellite imagery to characterize land surface temperatures (LST). UHIs are identified as regions exhibiting LSTs more than 3 standard deviations above their surroundings. 
+To identify exposure to UHI across New England, this study uses thermal infrared data MODIS satellite imagery to characterize land surface temperatures (LST). UHIs are identified as regions exhibiting LSTs more than 1 standard deviation above the regional mean. 
 
 ## Analysis of Land Surface Temperature in New England
 
