@@ -920,9 +920,11 @@ ne_blkgrp_sf %>%
             `2017 Per Capita` = 
               as.character(round(`2017 Per Capita (mtons/person)`,2)),
             `Per Capita Change` = `Per Capita Pct Change`) %>% 
-  kableExtra::kable(format.args = list(big.mark = ','),
-                    caption = "Annual On-road CO~2~ Emissions",
-                    digits = 0, align = "r")
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','),
+                    caption = "Annual On-road Carbon Dioxide Emissions",
+                    digits = 0, align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
 
