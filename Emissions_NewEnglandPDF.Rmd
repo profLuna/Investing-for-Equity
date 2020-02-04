@@ -751,11 +751,11 @@ CO~2~ emissions closely follow major roadways arcoss the region (see Figure \@re
 
 # Map of CO2 across New England
 ne_blkgrp_sf %>% 
-  mutate(onroad_2017 = kgco2_2017/1000) %>% 
+  mutate(onroad_2017 = kgco2_2017/1000/(bg_area_m2/1000000)) %>% 
   tm_shape(., unit = "mi") + 
-  tm_fill("onroad_2017", style = "jenks", 
+  tm_fill("onroad_2017", style = "quantile", 
           title = expression(paste
-                             (CO[2]," (mtons)", sep = "")),
+                             (CO[2]," (mtons/", km^2,")", sep = "")),
           legend.hist = TRUE,
           colorNA = NULL,
           textNA = NULL,
@@ -767,7 +767,7 @@ ne_blkgrp_sf %>%
   tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
   tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Annual CO2 Emissions\n2017", 
+  tm_layout(title = "Annual On-road \nCarbon Dioxide\nEmissions, 2017", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
