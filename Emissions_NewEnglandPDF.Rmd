@@ -819,31 +819,32 @@ CO~2~ emissions vary by state (see Table \@ref(tab:statsCO2NE) and Figure \@ref(
 
 ```{r statsCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 CO2 emissions (mtons) at Census Block Group level and by state."}
 ne_blkgrp_sf %>% 
-  mutate(onroad_2017 = kgco2_2017/1000) %>%
+  mutate(onroad_2017 = kgco2_2017/1000,
+         onroad_perkm_2017 = kgco2_2017/1000/(bg_area_m2/1000000)) %>%
   as.data.frame() %>% 
   group_by(STATE) %>% 
-  summarize(Mean = round(mean(onroad_2017, na.rm = TRUE),0),
-            Median = round(median(onroad_2017, na.rm = TRUE),0),
-            Min = round(min(onroad_2017, na.rm = TRUE),0),
-            Max = round(max(onroad_2017, na.rm = TRUE),0),
+  summarize(Mean = round(mean(onroad_perkm_2017, na.rm = TRUE),0),
+            Median = round(median(onroad_perkm_2017, na.rm = TRUE),0),
+            Min = round(min(onroad_perkm_2017, na.rm = TRUE),0),
+            Max = round(max(onroad_perkm_2017, na.rm = TRUE),0),
             `State Total` = sum(onroad_2017, na.rm = TRUE)) %>% 
   kableExtra::kable(format.args = list(big.mark = ','), 
-                    caption = "Annual 2017 CO~2~ emissions (mtons) by Census block group and by state")
+                    caption = "Annual 2017 CO~2~ emissions (mtons/km^2^) by Census block group and total CO~2~ emissions (mtons) by state")
 ```
 
 
-```{r boxplotCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 7 Carbon Dioxoide on-road emissions in metric tons per square kilometer by state at Census Block Group level."}
+```{r boxplotCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of annual on-road Carbon Dioxoide emissions in metric tons per square kilometer by state at Census Block Group level."}
 # boxplot of CO2 by state for 2017
 ne_blkgrp_sf %>% 
   as.data.frame() %>% 
-  mutate(onroad_2017 = kgco2_2017/1000) %>%
+  mutate(onroad_2017 = kgco2_2017/1000/(bg_area_m2/1000000)) %>%
   ggplot(aes(x = STATE, y = onroad_2017, fill = STATE)) + 
   geom_boxplot(notch = TRUE) + 
   ggtitle(expression(atop(paste("Carbon Dioxide (", CO[2], ") Emissions"), "by Census block group by New England state, 2017"))) +
   theme_minimal() +
   theme(legend.position = "none", axis.text=element_text(size=8)) + 
   xlab(NULL) + 
-  ylab(expression(paste(CO[2]," (mtons/", sep = ""))) +
+  ylab(expression(paste(CO[2]," (mtons/", km^2, ")", sep = ""))) +
   coord_flip()
 ```
 
