@@ -1139,7 +1139,7 @@ newggslopegraph(dataframe = CO290_17wAvg_actual,
                 WiderLabels = TRUE)
 ```
 
-All populations of concern, except for persons over age 64, are much more exposed to CO~2~ emissions. There is a moderately positive correlation between the minorities, language isolated households, and emissions of CO~2~ per square kilometer (see Figure \@ref(fig:cormatrixCO2PopAvg) below.).
+All populations of concern, except for persons over age 64, are more exposed to CO~2~ emissions. There is a moderately positive correlation between the proportions of minorities and language isolated households and emissions of CO~2~ per square kilometer (see Figure \@ref(fig:cormatrixCO2PopAvg) below.).
 
 ```{r cormatrixCO2PopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of annual average carbon dioxide emissions and the proportions of populations of concern by Census Block Group."}
 # Create a correlation matrix of PM25 and populations of concern
