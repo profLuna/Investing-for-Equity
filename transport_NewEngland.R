@@ -171,7 +171,7 @@ ri_busBuff400m_sf <- ri_blkgrps_sf %>%
          NewPov = as.integer(num2povE*Proportion),
          NewLths = as.integer(lthsE*Proportion),
          NewRI_LOWINC = as.integer(RI_LOWINC*Proportion),
-         NewRI_MINORITIES = as.integer(RI_MINORITIES))
+         NewRI_MINORITIES = as.integer(RI_MINORITIES*Proportion))
 
 # Repeat for tracts
 ri_busBuff400mTracts_sf <- ri_tracts_sf %>% 
