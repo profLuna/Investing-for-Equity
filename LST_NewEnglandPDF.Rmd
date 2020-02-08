@@ -235,7 +235,7 @@ tm_shape(ne_blkgrpLST_sf, unit = "mi") +
 ```
 
 
-```{r mapLST_UHI_avgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of July 2019 average Land Surface Temperatures (LST) Urban Heat Islands across New England at Census Block Group level.", strip.white=TRUE}
+```{r mapLSTUHIavgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of July 2019 average Land Surface Temperatures (LST) Urban Heat Islands across New England at Census Block Group level.", strip.white=TRUE}
 # Identifying urban heat islands
 # Extract mean and standard devation for region
 meanLST <- mean(ne_blkgrpLST_sf$meanAvgLST,na.rm = TRUE)
@@ -265,7 +265,7 @@ tm_shape(., unit = "mi") +
 ```
 
 
-```{r mapLST_UHI_dayNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of July 2019 average day Land Surface Temperatures (LST) Urban Heat Islands across New England at Census Block Group level.", strip.white=TRUE}
+```{r mapLSTUHIdayNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of July 2019 average day Land Surface Temperatures (LST) Urban Heat Islands across New England at Census Block Group level.", strip.white=TRUE}
 # Identifying urban heat islands
 # Extract mean and standard devation for region
 meanLST <- mean(ne_blkgrpLST_sf$meanDayLST,na.rm = TRUE)
@@ -295,7 +295,7 @@ tm_shape(., unit = "mi") +
 ```
 
 
-```{r mapLST_UHI_nightNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of July 2019 average night Land Surface Temperatures (LST) Urban Heat Islands across New England at Census Block Group level.", strip.white=TRUE}
+```{r mapLSTUHInightNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of July 2019 average night Land Surface Temperatures (LST) Urban Heat Islands across New England at Census Block Group level.", strip.white=TRUE}
 # Identifying urban heat islands
 # Extract mean and standard devation for region
 meanLST <- mean(ne_blkgrpLST_sf$meanNightLST,na.rm = TRUE)
