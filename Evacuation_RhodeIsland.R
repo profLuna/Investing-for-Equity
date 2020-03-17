@@ -655,3 +655,17 @@ tm_layout(bg.color = "#e6f3f7") +
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
+
+
+
+##### TEST FOR EXPLORATION
+tm_shape(ri_hea_sf) + 
+tm_fill(col = "EVAC",
+        palette = c("darkkhaki", "rosybrown1", "khaki"),
+        labels = c("A: Catgeory 1 - 2",
+                   "B: Category 3 - 4"),
+        title = "Evacuation Zone and\nHurricane Category",
+        alpha = 0.6) +
+  tm_shape(ri_hevac_vulnerable) + tm_dots(col = "Group", 
+                                          palette = c("green","red","blue"),
+                                          alpha = 0.6)
