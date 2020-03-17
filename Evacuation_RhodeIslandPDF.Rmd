@@ -1,5 +1,5 @@
 ---
-title: "Evacuation Risks in RI"
+title: "Evacuation Risks in Rhode Island"
 author: "Marcos Luna and Neenah Estrella-Luna"
 date: "3/14/2020"
 output: 
@@ -20,7 +20,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This is an analysis of flood or storm surge-related evacuation risks for populations of concern in Rhode Island. In the event of significant inland or coastal flooding, evacuation may be required. For individuals and households with limited mobility, either due to inadequate access to transportation options or because of physical limitations, evacuation presents heightened risk. Evacuation may also prove especially difficult for individuals and households due to limited economic resources, difficulty understanding or accessing information, or low trust in official sources of information. 
 
-## Analysis of Flood Hazards in Rhode Island
+## Analysis of Flood Hazard Exposure in Rhode Island
 
 ```{r NFHZAdata, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 # Analysis of flooding and hurricane evacuation risks for populations of concern in Rhode Island
@@ -276,7 +276,7 @@ tm_layout(bg.color = "#e6f3f7") +
   tm_symbols(shape = I195, border.lwd = NA, size = 0.25) +
   tm_shape(I295roadSegment) + 
   tm_symbols(shape = I295, border.lwd = NA, size = 0.25) +
-  tm_shape(ri_towns_sf_pts) + tm_dots(size = 1.5) +
+  tm_shape(ri_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
@@ -415,19 +415,337 @@ tm_layout(bg.color = "#e6f3f7") +
   tm_symbols(shape = I195, border.lwd = NA, size = 0.25) +
   tm_shape(I295roadSegment) + 
   tm_symbols(shape = I295, border.lwd = NA, size = 0.25) +
-  tm_shape(ri_towns_sf_pts) + tm_dots(size = 1.5) +
+  tm_shape(ri_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_add_legend(type = "fill", col = c("green","red","blue"),
+  tm_add_legend(type = "fill", col = c("green","red","blue","white"),
                 border.col = "white", border.alpha = 0,
-                labels = c("Disabled", "No Car HH", "Over 64"),
+                labels = c("Disabled", 
+                           "No Car HH", 
+                           "Over 64",
+                           "* 1 dot = 5 people/households"),
                 title = "Population\nGroup*") +
-  tm_layout(title = "Transit Dependent Populations \nwithin Flood Zones", 
+  tm_layout(title = "Over-represented Populations \nwithin Flood Zones", 
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 ```
 
+\pagebreak
+## Analysis of Hurricane Evacuation Risk
+```{r HEVACdata, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+# read in hurricane evacuation zone layer
+ri_hea_sf <- st_read(dsn = "DATA/FEMA/RI", 
+                     layer = "Hurricane_Evacuation_Areas") %>% 
+  mutate(EVAC = as.character(EVAC)) %>% 
+  filter(EVAC %in% c("A","B")) %>% 
+  st_transform(., crs = 2840) %>% 
+  st_make_valid() %>% 
+  mutate(Area = st_area(.))
+
+# read in processed ri_blkgrps and ri_tracts
+ri_blkgrps_hevac <- st_read(dsn = "DATA/FEMA/RI", 
+                            layer = "ri_blkgrps_hevac") %>% 
+  left_join(., as.data.frame(ri_blkgrp_2840), by = "GEOID") %>%
+  st_transform(., crs = 2840) %>% 
+  mutate(NewArea = st_area(.)) %>%
+  st_make_valid()
+
+ri_tracts_hevac <- st_read(dsn = "DATA/FEMA/RI", 
+                           layer = "ri_tracts_hevac") %>% 
+  left_join(., as.data.frame(ri_tracts_2840), by = "GEOID") %>%
+  st_transform(., crs = 2840) %>% 
+  mutate(NewArea = st_area(.)) %>% 
+  st_make_valid()
+
+# Apportion populations based on geographic proportion of intersect
+ri_blkgrps_hevac <- ri_blkgrps_hevac %>%
+  mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>%
+  mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>%
+  mutate(RI_MINORITIES = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
+  mutate(RI_MINORITIES = replace_na(RI_MINORITIES,0)) %>%
+  mutate(Proportion = as.numeric(NewArea/OldArea),
+         NewPop = totalpopE*Proportion,
+         NewMinority = minorityE*Proportion,
+         NewUnder5 = under5E*Proportion,
+         NewOver64 = over64E*Proportion,
+         NewUnder18 = under18E*Proportion,
+         NewEng_limit = eng_limitE*Proportion,
+         NewPov = num2povE*Proportion,
+         NewLths = lthsE*Proportion,
+         NewRI_LOWINC = RI_LOWINC*Proportion,
+         NewRI_MINORITIES = RI_MINORITIES*Proportion)
+
+ri_tracts_hevac <- ri_tracts_hevac %>%
+  mutate(Proportion = as.numeric(NewArea/OldArea),
+         NewDisabled = disabledOver18E*Proportion,
+         NewNoCar = HHnoCarE*Proportion)
+
+# Compute total populations within hurricane evac zones
+ri_hevac_blkgrp_df <- ri_blkgrps_hevac %>%
+  as.data.frame() %>%
+  summarize(`Total Pop` = as.integer(sum(NewPop)),
+            Minority = as.integer(sum(NewMinority)),
+            `Under 5` = as.integer(sum(NewUnder5)),
+            `Over 64` = as.integer(sum(NewOver64)),
+            `Under 18` = as.integer(sum(NewUnder18)),
+            `Limited English HH` = as.integer(sum(NewEng_limit)),
+            `Low Income` = as.integer(sum(NewPov)),
+            `No HS Dip` = as.integer(sum(NewLths)),
+            `RI Low Income` = as.integer(sum(NewRI_LOWINC)),
+            `RI Minority` = as.integer(sum(NewRI_MINORITIES))) %>%
+  gather(key = Group, value = HevacPop)
+
+ri_hevac_tracts_df <- ri_tracts_hevac %>%
+  as.data.frame() %>%
+  summarize(`Disabled` = as.integer(sum(NewDisabled)),
+            `No Car HH` = as.integer(sum(NewNoCar))) %>%
+  gather(key = Group, value = HevacPop)
+
+# Compute total tract populations within the state for same groups
+ri_tract_hevac_pops_df <- ri_tracts_2840 %>%
+  as.data.frame() %>%
+  summarize(`Disabled` = sum(disabledOver18E),
+            `No Car HH` = sum(HHnoCarE)) %>%
+  gather(key = Group, value = RIPop) %>%
+  left_join(.,ri_hevac_tracts_df, by = "Group")
+
+# Compute populations for state,  and join with hurricane evac pops
+ri_HevacPops_df <- ri_blkgrp_2840 %>%
+  as.data.frame() %>%
+  mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>%
+  mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>%
+  mutate(RI_MINORITIES = if_else(RI_MINORITY == "M",totalpopE,0)) %>%
+  mutate(RI_MINORITIES = replace_na(RI_MINORITIES,0)) %>%
+  summarize(`Total Pop` = sum(totalpopE),
+            Minority = sum(minorityE),
+            `Under 5` = sum(under5E),
+            `Over 64` = sum(over64E),
+            `Under 18` = sum(under18E),
+            `Limited English HH` = sum(eng_limitE),
+            `Low Income` = sum(num2povE),
+            `No HS Dip` = sum(lthsE),
+            `RI Low Income` = sum(RI_LOWINC, na.rm = TRUE),
+            `RI Minority` = sum(RI_MINORITIES, na.rm = TRUE)) %>%
+  gather(key = Group, value = RIPop) %>%
+  left_join(., ri_hevac_blkgrp_df, by = "Group") %>%
+  rbind(.,ri_tract_hevac_pops_df) %>%
+  mutate(PctHevac = HevacPop/RIPop*100)
+```
+
+Rhode Island is subject to significant hurricane risk. Since 1900, Rhode Island has been struck by hurricanes 6 times, and 3 of those were major hurricanes (i.e., Category 3 or higher). The most recent hurricane to hit Rhode Island directly was Hurricane Bob in 1991, a Category 2 storm. The latter caused over $230 million in damages in Rhode Island alone and [left 60% of the state's population without power](https://www.nhc.noaa.gov/archive/storm_wallets/atlantic/atl1991/bob/preloc/fema02.gif). In general, Rhode Island is subject to a [hurricane return period of approximately 17 years](https://www.nhc.noaa.gov/climo/#returns), a level of risk comparable to the Gulf Coast of Texas.  
+
+Hurricane intensity is ranked from 1 to 5 on the Saffir-Simpson scale, which is based on sustained wind speeds. However the most destructive and deadly aspects of hurricanes are due to storm surge - ocean water pushed inland by the high winds. This coastal storm surge may be combined with intense rainfall which can exacerbate flooding. As a result, coastal evacuation may be necessary as a hurricane approaches.
+
+The analysis of hurricane evacuation risk presented here is based on Hurricane Evacuation Maps produced by the U.S. Army Corps of Engineers for New England. The maps show Hurricane Evacuation Zones that are recommended to be evacuated  during potential worst-case hurricane storm surge inundation. These evacuation zones are based on [storm surge modeling by the National Weather Service's National Hurricane Center](https://www.nhc.noaa.gov/nationalsurge/) using the hydrodynamic Sea, Lake, and Overland Surges from Hurricanes (SLOSH) model to simulate storm surge from tropical cyclones. These data products are provided to federal, state, and local government agencies to assist in planning, risk assessment studies, and operational decision-making.
+
+A significant proportion of Rhode Island's population lives near the coast and is therefore within these hurricane evacuation zones. Figure \@ref(fig:mapHEVACPop) below shows the population distribution and areas within Hurricane Evacuation Zones. Evacuation Zone “A” is recommended to be evacuated prior to an expected category 1 or 2 hurricane.  Evacuation Zone “B” is recommended to be evacuated prior to an expected category 3 or 4 hurricane.
+
+```{r mapHEVACPop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="FEMA flood zones and population distribution across Rhode Island at Census Block Group level."}
+# create simplified version of hurricane evac polygons
+ri_hea_sf_agg <- 
+  ri_hea_sf %>% 
+  group_by(EVAC) %>% 
+  summarize()
+
+r_hea_cata <- ri_hea_sf_agg %>% 
+  filter(EVAC == "A")
+
+r_hea_catb <- ri_hea_sf_agg %>% 
+  filter(EVAC == "B")
+
+# Map totalpop and hurricane evacuation zones
+tm_layout(bg.color = "#e6f3f7") +
+  tm_shape(ri_blkgrp_2840, unit = "mi") + tm_fill(col = "white") +
+  tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+  tm_shape(ri_awater_sf) + tm_fill(col = "#e6f3f7") + 
+  tm_shape(ne_states_sf_cb) + tm_borders() +
+  tm_shape(ri_totalpop_pts) + tm_dots(col = "forestgreen",
+                                      labels = "1 dot = 100 persons") +
+  tm_shape(ri_hea_sf_agg) + 
+  tm_fill(col = "EVAC",
+          palette = c("darkkhaki", "rosybrown1"),
+          labels = c("A: Category 1 - 2",
+                     "B: Category 3 - 4"),
+          title = "Evacuation Zone and\nHurricane Category",
+          alpha = 0.6) +
+  tm_shape(r_hea_cata) +
+  tm_borders(col = "darkgoldenrod",
+             lwd = 0.5,
+             alpha = 0.6) +
+  tm_shape(r_hea_catb) +
+  tm_borders(col = "rosybrown3",
+             lwd = 0.5,
+             alpha = 0.6) +
+  tm_shape(ne_states_sf_cb) + tm_borders() +
+  tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 2) +
+  tm_shape(I95roadSegment) + 
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.25) +
+  tm_shape(I95roadSegment2) + 
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.25) +
+  tm_shape(I195roadSegment) +
+  tm_symbols(shape = I195, border.lwd = NA, size = 0.25) +
+  tm_shape(I295roadSegment) + 
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.25) +
+  tm_shape(ri_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_add_legend(type = "fill", col = "forestgreen",
+                border.col = "white", border.alpha = 0,
+                labels = "1 dot = 100 people",
+                title = "Total Population") +
+  tm_layout(title = "Population Distribution \nand Hurricane\nEvacuation Zones", 
+            frame = TRUE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+```
+
+Approximately 10.3% of Rhode Island's land area falls within hurricane evacuation zones. The breakdown by hurricane evacuation zone is presented in Table \@ref(tab:tabHEVACarea) below.
+
+```{r tabHEVACarea, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island Populations within Hurricane Evacuation Zones."}
+ri_area <- as.numeric(ri_state_sf$ALAND)
+
+ri_hea_sf %>% 
+  as.data.frame() %>% 
+  group_by(EVAC) %>% 
+  summarize(SqKm = round(as.numeric(sum(Area)/10^6),1), 
+            SqMi = round(as.numeric(SqKm/2.59),1),
+            PctArea = paste0(as.character(round(as.numeric(sum(Area)/ri_area*100),1)),"%")) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','),
+                    col.names = c("Zone","SqKm","SqMi","PctArea"),
+                    caption = "Rhode Island Land Area within Hurricane Evacuation Zones", digits = 0, align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
+These percentages closely approximate the proportion of the total population in the state that are within these evacuation zones. However, exposure varies significantly by population subgroup. Table \@ref(tab:tabHEVACpop) below shows the total and percentages of the general population and various subgroups within hurricane evacuation zones. Aside from the total population, the largest subpopulation within an evacuation zone are low income persons, followed by individuals over age 64 and under 18. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
+\pagebreak
+```{r tabHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island Populations within Hurricane Evacuation Zones."}
+# Show table of pops within flood zones
+# Show table of pops within hurricane evacuation zones
+ri_HevacPops_df %>% 
+  mutate(PctHevac = paste0(as.character(round(PctHevac,1)),"%")) %>% 
+  arrange(-HevacPop) %>%  
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','),
+                    caption = "Rhode Island Populations within Hurricane Evacuation Zones", digits = 0, align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
+Some groups are disproportionately exposed to these flood hazards. While approximately 11.6% of the general population are within flood zones, the elderly (persons over age 64), individuals with serious disability, and households without access to a car exceed the population average within flood zones. These populations of concern are overrepresented in terms of flood exposure (see Figure \@ref(fig:chartHEVACpop) below).
+
+```{r chartHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island Populations within Hurricane Evacuation Zones."}
+# Create lollipop plot of pops within flood zones
+# Create lollipop plot of pops within hurricane evac zones
+ri_HevacPops_df %>% 
+  ggplot(aes(x = reorder(Group,-PctHevac), 
+             y = PctHevac)) +
+  geom_segment(aes(x = reorder(Group,-PctHevac), 
+                   xend = reorder(Group,-PctHevac),
+                   y = ri_HevacPops_df[1,4], yend = PctHevac), 
+               color = "skyblue") +
+  geom_point(color = "blue", size = 4, alpha = 0.8) +
+  coord_flip() + xlab("") + ylab("") + 
+  ggtitle("Rhode Island Populations within Hurricane Evacuation Zones") +
+  theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
+  geom_text(aes(x = Group, y = PctHevac + 0.2 * sign(PctHevac), 
+                label = paste0(round(PctHevac,1),"%")), 
+            hjust = 0.1, vjust = -0.5, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = ri_HevacPops_df[1,4], linetype = "dashed") +
+  geom_text(aes(x = "Disabled", y = 10.3, label = "Below state avg"),
+            color = "gray48") +
+  geom_segment(aes(x = "No Car HH", xend = "No Car HH", y = 11.4, yend = 9.6), 
+               arrow = arrow(length = unit(0.3,"cm"))) +
+  geom_text(aes(x = "Low Income", y = 13, label = "Above state avg"),
+            color = "gray48") +
+  geom_segment(aes(x = "Under 18", xend = "Under 18", y = 11.8, yend = 13.6), 
+               arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(3,14))
+```
+
+The map below (Figure \@ref(fig:mapHEVACPopConcern)) shows those overrepresented populations within the flood zones.
+
+```{r mapHEVACPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island Populations within Hurricane Evacuation Zones."}
+# Create a dot density of transit-dependent populations within hurricane evacuation zones
+# Create random points, with 1 point for every 5 people
+Over64_hevac_pts <- ri_blkgrps_hevac %>% 
+  dplyr::select(NewOver64) %>% 
+  filter(NewOver64 >= 5) %>% 
+  st_sample(., size = round(.$NewOver64/5)) %>% # create 1 random point for every 5 people
+  st_sf(.) %>% 
+  mutate(Group = "Over 64")
+
+Disabled_hevac_pts <- ri_tracts_hevac %>% 
+  dplyr::select(NewDisabled) %>% 
+  filter(NewDisabled >= 5) %>% 
+  st_sample(., size = round(.$NewDisabled/5)) %>% 
+  st_sf(.) %>% 
+  mutate(Group = "Disabled")
+
+NoCarHH_hevac_pts <- ri_tracts_hevac %>% 
+  dplyr::select(NewNoCar) %>% 
+  filter(NewNoCar >= 5) %>% 
+  st_sample(., size = round(.$NewNoCar/5)) %>% 
+  st_sf(.) %>% 
+  mutate(Group = "No Car HH")
+
+# Bring them together
+ri_hevac_vulnerable <- rbind(Over64_hevac_pts,Disabled_hevac_pts,
+                             NoCarHH_hevac_pts) %>% 
+  slice(sample(1:n())) # randomise order to avoid bias in plotting order
+
+# Map them out
+tm_layout(bg.color = "#e6f3f7") +
+  tm_shape(ri_blkgrp_2840, unit = "mi") + tm_fill(col = "white") +
+  tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+  tm_shape(ri_awater_sf) + tm_fill(col = "#e6f3f7") + 
+  tm_shape(ri_hea_sf) + 
+  tm_fill(col = "EVAC",
+          palette = c("darkkhaki", "rosybrown1"),
+          labels = c("A: Catgeory 1 - 2",
+                     "B: Category 3 - 4"),
+          title = "Evacuation Zone and\nHurricane Category") +
+  tm_shape(ne_states_sf_cb) + tm_borders() +
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ri_hevac_vulnerable) + tm_dots(col = "Group", 
+                                          palette = c("green","red","blue"),
+                                          legend.show = FALSE) +
+  tm_shape(ne_states_sf_cb) + tm_borders() +
+  tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 2) +
+  tm_shape(I95roadSegment) + 
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.25) +
+  tm_shape(I95roadSegment2) + 
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.25) +
+  tm_shape(I195roadSegment) +
+  tm_symbols(shape = I195, border.lwd = NA, size = 0.25) +
+  tm_shape(I295roadSegment) + 
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.25) +
+  tm_shape(ri_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_add_legend(type = "fill", col = c("green","red","blue","white"),
+                border.col = "white", border.alpha = 0,
+                labels = c("Disabled", 
+                           "No Car HH", 
+                           "Over 64",
+                           "* 1 dot = 5 people/households"),
+                title = "Population\nGroup*") +
+  tm_layout(title = "Over-represented Populations \nwithin Hurricane Evacuation\nZones", 
+            frame = TRUE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+```
