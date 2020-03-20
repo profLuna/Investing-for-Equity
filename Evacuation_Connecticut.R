@@ -204,7 +204,8 @@ ct_towns_sf_pts <- county_subdivisions(state = "CT", cb = TRUE) %>%
                      "New Britain",
                      "New London",
                      "Norwich",
-                     "North Canaan")) %>% 
+                     "North Canaan",
+                     "Old Saybrook")) %>% 
   st_transform(., crs = 2775) %>% 
   st_centroid(of_largest_polygon = TRUE)
 
@@ -579,3 +580,340 @@ tm_layout(bg.color = "#e6f3f7") +
 end_time <- Sys.time()
 end_time - start_time
 
+
+### Analysis of Hurricane Evacuation Risks ####
+# read in hurricane evacuation zone layer
+ct_hea_sf <- st_read(dsn = "DATA/FEMA/CT/Hurricane Evacuation Zones (2014)", 
+                     layer = "geo_export_ca0640ec-4b94-4f5e-b1be-5a02638d3722") %>% 
+  mutate(zone = as.character(zone)) %>% 
+  filter(zone %in% c("A","B")) %>% 
+  st_transform(., crs = 2775) %>% 
+  st_make_valid() %>% 
+  mutate(Area = st_area(.))
+
+# read in processed ct_blkgrps and ct_tracts
+ct_blkgrps_hevac <- st_read(dsn = "DATA/FEMA/CT", 
+                            layer = "ct_blkgrps_hevac") %>% 
+  left_join(., as.data.frame(ct_blkgrp_2775), by = "GEOID") %>%
+  st_transform(., crs = 2775) %>% 
+  mutate(NewArea = st_area(.)) %>%
+  st_make_valid()
+
+ct_tracts_hevac <- st_read(dsn = "DATA/FEMA/CT", 
+                           layer = "ct_tracts_hevac") %>% 
+  left_join(., as.data.frame(ct_tracts_2775), by = "GEOID") %>%
+  st_transform(., crs = 2775) %>% 
+  mutate(NewArea = st_area(.)) %>% 
+  st_make_valid()
+
+# Apportion populations based on geographic proportion of intersect
+ct_blkgrps_hevac <- ct_blkgrps_hevac %>%
+  mutate(CT_LOWINC = if_else(CT_INCOME == "I",totalpopE,0)) %>%
+  mutate(CT_LOWINC = replace_na(CT_LOWINC,0)) %>%
+  mutate(Proportion = as.numeric(NewArea/OldArea),
+         NewPop = totalpopE*Proportion,
+         NewMinority = minorityE*Proportion,
+         NewUnder5 = under5E*Proportion,
+         NewOver64 = over64E*Proportion,
+         NewUnder18 = under18E*Proportion,
+         NewEng_limit = eng_limitE*Proportion,
+         NewPov = num2povE*Proportion,
+         NewLths = lthsE*Proportion,
+         NewCT_LOWINC = CT_LOWINC*Proportion)
+
+ct_tracts_hevac <- ct_tracts_hevac %>%
+  mutate(Proportion = as.numeric(NewArea/OldArea),
+         NewDisabled = disabledOver18E*Proportion,
+         NewNoCar = HHnoCarE*Proportion)
+
+# Compute total populations within hurricane evac zones
+ct_hevac_blkgrp_df <- ct_blkgrps_hevac %>%
+  as.data.frame() %>%
+  summarize(`Total Pop` = as.integer(sum(NewPop)),
+            Minority = as.integer(sum(NewMinority)),
+            `Under 5` = as.integer(sum(NewUnder5)),
+            `Over 64` = as.integer(sum(NewOver64)),
+            `Under 18` = as.integer(sum(NewUnder18)),
+            `Limited English HH` = as.integer(sum(NewEng_limit)),
+            `Low Income` = as.integer(sum(NewPov)),
+            `No HS Dip` = as.integer(sum(NewLths)),
+            `CT Low Income` = as.integer(sum(NewCT_LOWINC))) %>%
+  gather(key = Group, value = HevacPop)
+
+ct_hevac_tracts_df <- ct_tracts_hevac %>%
+  as.data.frame() %>%
+  summarize(`Disabled` = as.integer(sum(NewDisabled)),
+            `No Car HH` = as.integer(sum(NewNoCar))) %>%
+  gather(key = Group, value = HevacPop)
+
+# Compute total tract populations within the state for same groups
+ct_tract_hevac_pops_df <- ct_tracts_2775 %>%
+  as.data.frame() %>%
+  summarize(`Disabled` = sum(disabledOver18E),
+            `No Car HH` = sum(HHnoCarE)) %>%
+  gather(key = Group, value = CTPop) %>%
+  left_join(.,ct_hevac_tracts_df, by = "Group")
+
+# Compute populations for state,  and join with hurricane evac pops
+ct_HevacPops_df <- ct_blkgrp_2775 %>%
+  as.data.frame() %>%
+  mutate(CT_LOWINC = if_else(CT_INCOME == "I",totalpopE,0)) %>%
+  mutate(CT_LOWINC = replace_na(CT_LOWINC,0)) %>%
+  summarize(`Total Pop` = sum(totalpopE),
+            Minority = sum(minorityE),
+            `Under 5` = sum(under5E),
+            `Over 64` = sum(over64E),
+            `Under 18` = sum(under18E),
+            `Limited English HH` = sum(eng_limitE),
+            `Low Income` = sum(num2povE),
+            `No HS Dip` = sum(lthsE),
+            `CT Low Income` = sum(CT_LOWINC, na.rm = TRUE)) %>%
+  gather(key = Group, value = CTPop) %>%
+  left_join(., ct_hevac_blkgrp_df, by = "Group") %>%
+  rbind(.,ct_tract_hevac_pops_df) %>%
+  mutate(PctHevac = HevacPop/CTPop*100)
+
+# Create a simplified version of NFHZA polygons to speed up mapping
+ct_hea_sf_simple <- ct_hea_sf %>% 
+  select(zone) %>% 
+  st_cast(., "MULTIPOLYGON") %>% # homogenize type
+  st_cast(., "POLYGON") %>% 
+  st_simplify(., dTolerance = 10) %>% # reduce vertices
+  st_make_valid() %>%
+  group_by(zone) %>% 
+  summarize() %>% 
+  mutate(Area = st_area(.))
+
+# Map totalpop and hurricane evacuation zones
+start_time <- Sys.time()
+tm_layout(bg.color = "#e6f3f7") +
+  tm_shape(ct_blkgrp_2775, unit = "mi") + tm_fill(col = "white") +
+  tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+  tm_shape(ny_state_sf) + tm_fill(col="white") +
+  tm_shape(ct_awater_sf) + tm_fill(col = "#e6f3f7") + 
+  tm_shape(ne_states_sf_cb) + tm_borders() +
+  tm_shape(ny_state_sf) + tm_borders() +
+  tm_shape(ct_totalpop_pts) + 
+  tm_dots(col = "darkgoldenrod3",
+          labels = "1 dot = 500 people",
+          alpha = 0.6) +
+  tm_shape(ct_hea_sf_simple) + 
+  tm_fill(col = "zone", 
+          palette = c("deeppink", "purple3"), 
+          labels = c("A: Category 1 - 2", 
+                     "B: Category 3 - 4"), 
+          title = "Evacuation Zone and\nHurricane Category",
+          alpha = 0.6,
+          border.alpha = 0) +
+  tm_shape(ne_states_sf_cb) + tm_borders() +
+  tm_shape(ny_state_sf) + tm_borders() +
+  tm_shape(ct_highways) + tm_lines(col = "seashell4", lwd = 2) +
+  tm_shape(I95roadSegment) + 
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.25) +
+  tm_shape(I95roadSegment2) + 
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.25) +
+  tm_shape(I395roadSegment) +
+  tm_symbols(shape = I395, border.lwd = NA, size = 0.25) +
+  tm_shape(I91roadSegment) + 
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.25) +
+  tm_shape(I84roadSegment) + 
+  tm_symbols(shape = I84, border.lwd = NA, size = 0.25) +
+  tm_shape(ct_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_add_legend(type = "fill", col = "darkgoldenrod3",
+                alpha = 0.6,
+                border.col = "white", border.alpha = 0,
+                labels = "1 dot = 500 people",
+                title = "Total Population") +
+  tm_layout(title = "Population Distribution \nand Hurricane\nEvacuation Zones", 
+            frame = TRUE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+end_time <- Sys.time()
+end_time - start_time 
+
+# Total and percentage of land area of RI within hurricane evacuation zones
+ct_hea_sf %>% 
+  as.data.frame() %>% 
+  group_by(zone) %>% 
+  summarize(SqKm = round(as.numeric(sum(Area)/10^6),1), 
+            SqMi = round(as.numeric(SqKm/2.59),1),
+            PctArea = paste0(as.character(round(as.numeric(sum(Area)/ct_area*100),1)),"%")) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','),
+                    caption = "Connecticut Land Area within Hurricane Evacuation Zones",
+                    digits = 0, align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+
+# Show table of pops within hurricane evacuation zones
+ct_HevacPops_df %>% 
+  mutate(PctHevac = paste0(as.character(round(PctHevac,1)),"%")) %>% 
+  arrange(-HevacPop) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','),
+                    caption = "Connecticut Populations within Hurricane Evacuation Zones",
+                    digits = 0, align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+
+# Create lollipop plot of pops within flood zones
+ct_HevacPops_df %>% 
+  ggplot(aes(x = reorder(Group,PctHevac), 
+             y = PctHevac)) +
+  geom_segment(aes(x = reorder(Group,PctHevac), 
+                   xend = reorder(Group,PctHevac),
+                   y = ct_HevacPops_df[1,4], yend = PctHevac), 
+               color = "skyblue") +
+  geom_point(color = "blue", size = 4, alpha = 0.8) +
+  coord_flip() + xlab("") + ylab("") + 
+  ggtitle("Connecticut Populations within Hurricane Evacuation Zones") + theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
+  geom_text(aes(x = Group, y = PctHevac + 0.2 * sign(PctHevac), 
+                label = paste0(round(PctHevac,1),"%")), 
+            hjust = 1.8, vjust = -1, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = ct_HevacPops_df[1,4], linetype = "dashed") +
+  geom_text(aes(x = "Over 64", y = 10.5, label = "Above state avg"),
+            color = "gray48") +
+  geom_segment(aes(x = "Total Pop", xend = "Total Pop", y = 9.7, yend = 10.5), 
+               arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(9,14.5))
+
+# Create a dot density map of over-represented populations in hurricane evacuation zones
+# Create random points, with 1 point for every 5 people
+NoCarHH_hevac_pts <- ct_tracts_hevac %>% 
+  dplyr::select(NewNoCar) %>% 
+  filter(NewNoCar >= 5) %>% 
+  st_sample(., size = round(.$NewNoCar/5)) %>% 
+  st_sf(.) %>% 
+  mutate(Group = "No Car HH")
+
+CTLowInc_hevac_pts <- ct_blkgrps_hevac %>% 
+  select(NewCT_LOWINC) %>% 
+  filter(NewCT_LOWINC >= 5) %>% 
+  st_sample(., size = round(.$NewCT_LOWINC/5)) %>% # create 1 random point for every 5 people
+  st_sf(.) %>% 
+  mutate(Group = "CT Low Income")
+
+LimitEngHH_hevac_pts <- ct_blkgrps_hevac %>% 
+  select(NewEng_limit) %>% 
+  filter(NewEng_limit >= 5) %>% 
+  st_sample(., size = round(.$NewEng_limit/5)) %>% # create 1 random point for every 5 people
+  st_sf(.) %>% 
+  mutate(Group = "Limited English HH")
+
+Disabled_hevac_pts <- ct_tracts_hevac %>% 
+  dplyr::select(NewDisabled) %>% 
+  filter(NewDisabled >= 5) %>% 
+  st_sample(., size = round(.$NewDisabled/5)) %>% 
+  st_sf(.) %>% 
+  mutate(Group = "Disabled")
+
+LowInc_hevac_pts <- ct_blkgrps_hevac %>% 
+  select(NewPov) %>% 
+  filter(NewPov >= 5) %>% 
+  st_sample(., size = round(.$NewPov/5)) %>% # create 1 random point for every 5 people
+  st_sf(.) %>% 
+  mutate(Group = "Low Income")
+
+Minor_hevac_pts <- ct_blkgrps_hevac %>% 
+  select(NewMinority) %>% 
+  filter(NewMinority >= 5) %>% 
+  st_sample(., size = round(.$NewMinority/5)) %>% # create 1 random point for every 5 people
+  st_sf(.) %>% 
+  mutate(Group = "Minority")
+
+Over64_hevac_pts <- ct_blkgrps_hevac %>% 
+  dplyr::select(NewOver64) %>% 
+  filter(NewOver64 >= 5) %>% 
+  st_sample(., size = round(.$NewOver64/5)) %>% # create 1 random point for every 5 people
+  st_sf(.) %>% 
+  mutate(Group = "Over 64")
+
+Under5_hevac_pts <- ct_blkgrps_hevac %>% 
+  select(NewUnder5) %>% 
+  filter(NewUnder5 >= 5) %>% 
+  st_sample(., size = round(.$NewUnder5/5)) %>% # create 1 random point for every 5 people
+  st_sf(.) %>% 
+  mutate(Group = "Under 5")
+
+NoHSdip_hevac_pts <- ct_blkgrps_hevac %>% 
+  select(NewLths) %>% 
+  filter(NewLths >= 5) %>% 
+  st_sample(., size = round(.$NewLths/5)) %>% # create 1 random point for every 5 people
+  st_sf(.) %>% 
+  mutate(Group = "No HS Dip")
+
+# Bring them together
+ct_hevac_vulnerable <- rbind(NoCarHH_hevac_pts, 
+                             CTLowInc_hevac_pts, 
+                             LimitEngHH_hevac_pts,
+                             Disabled_hevac_pts,
+                             LowInc_hevac_pts,
+                             Minor_hevac_pts,
+                             Over64_hevac_pts,
+                             Under5_hevac_pts,
+                             NoHSdip_hevac_pts) %>% 
+  # slice(sample(1:n())) %>% # randomise order to avoid bias in plotting order
+  group_by(Group) %>% 
+  summarize()
+
+# clean up pts layers
+rm(list = ls(pattern = "_hevac_pts"))
+
+# Map over-represented pops and hurricane evacuation zones
+start_time <- Sys.time()
+tm_layout(bg.color = "#e6f3f7") +
+  tm_shape(ct_blkgrp_2775, unit = "mi") + tm_fill(col = "white") +
+  tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+  tm_shape(ny_state_sf) + tm_fill(col="white") +
+  tm_shape(ct_awater_sf) + tm_fill(col = "#e6f3f7") + 
+  tm_shape(ct_hevac_vulnerable) + 
+  tm_dots(col = "darkgoldenrod3", 
+          labels = "1 dot = 500 people",
+          alpha = 0.6) +
+  tm_facets(by = "Group") +
+  tm_shape(ct_hea_sf_simple) + 
+  tm_fill(col = "zone", 
+          palette = c("deeppink", "purple3"), 
+          labels = c("A: Category 1 - 2", 
+                     "B: Category 3 - 4"), 
+          title = "Evacuation Zone and\nHurricane Category",
+          alpha = 0.6,
+          border.alpha = 0) +
+  tm_shape(ne_states_sf_cb) + tm_borders() +
+  tm_shape(ny_state_sf) + tm_borders() +
+  tm_shape(ct_highways) + tm_lines(col = "seashell4", lwd = 2) +
+  tm_shape(I95roadSegment) + 
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.25) +
+  tm_shape(I95roadSegment2) + 
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.25) +
+  tm_shape(I395roadSegment) +
+  tm_symbols(shape = I395, border.lwd = NA, size = 0.25) +
+  tm_shape(I91roadSegment) + 
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.25) +
+  tm_shape(I84roadSegment) + 
+  tm_symbols(shape = I84, border.lwd = NA, size = 0.25) +
+  tm_shape(ct_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_add_legend(type = "fill", col = "darkgoldenrod3",
+                alpha = 0.6,
+                border.col = "white", border.alpha = 0,
+                labels = "1 dot = 5 people",
+                title = "Population\nGroup") +
+  tm_layout(title = "Over-represented\nPopulations\nwithin Hurricane\nEvacuation Zones", 
+            frame = TRUE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+end_time <- Sys.time()
+end_time - start_time
