@@ -498,27 +498,23 @@ ct_nfhza_vulnerable <- rbind(NoCarHH_nfhza_pts,
 # clean up pts layers
 rm(list = ls(pattern = "_nfhza_pts"))
 
-##### CAN'T GET THIS NSE FUNCTION TO WORK
+
 # Iterate through list of overrepresented populations, create random point layers for each, and then rbind to one layer
 # create a vector of variable names over which to iterate
 ORfields_tracts <- names(as.data.frame(ct_tracts_nfhza)[60:61])
 ORfields_blkgrps <- names(as.data.frame(ct_blkgrps_nfhza)[c(249:251,253:256)])
 # create a function to select variable, filter records, and create sample points
-polys2points <- function(sf, x){
-  x1 <- x
+pop2points <- function(sf, x){
   x <- enquo(x)
-  xlabel <- as_label(x)
   sf %>% 
     select(!!x) %>% 
     filter(!!x >= 5) %>% 
-    st_sample(., size = !!.data$x/5) %>% 
-    st_sf() %>% 
+    st_sample(., size = round(.[[as_label(x)]]/5)) %>% 
+    st_sf(.) %>% 
     mutate(Group = quo_name(x))
 }
 
-testing <- polys2points(ct_tracts_nfhza, x = NewDisabled)
-
-testing <- subset(ct_tracts_nfhza, NewDisabled >= 5)
+testing <- pop2points(ct_tracts_nfhza, NewDisabled)
 
 # create list of tracts
 ORtracts_list <- lapply(ORfields_tracts, FUN = function(x) {
