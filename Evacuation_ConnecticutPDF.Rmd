@@ -13,6 +13,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+# TAKES ABOUT 37 mins TO KNIT
 knitr::opts_chunk$set(echo = TRUE)
 ```
 \pagebreak
@@ -165,19 +166,18 @@ ct_FloodPops_df <- ct_blkgrp_2775 %>%
 
 As a humid, coastal state, a significant portion of Connecticut's land area and population are exposed to the risk of flooding from overbanking of inland water bodies (e.g., ponds and rivers) or from coastal storm surge and sea level rise. 
 
-The analysis of flood exposure presented here is based on the Federal Emergency Management Agency's (FEMA) National Flood Hazard Layer (NFHL), a digital version of FEMA's most recent flood maps.  FEMA identifies areas subject to varying levels of flood risk through its Flood Insurance Rate Maps (FIRMs), which are produced for most parts of the country to identify areas subject to flooding. FEMA's FIRMs are a national standard used by all federal agencies for the purposes of requiring and rating the purchase of flood insurance and regulating new development.  
+The analysis of flood exposure presented here is based on the Federal Emergency Management Agency's (FEMA) National Flood Hazard Layer (NFHL), a digital version of FEMA's most recent flood maps.  FEMA identifies areas subject to varying levels of flood risk through its Flood Insurance Rate Maps (FIRMs), which are produced for most parts of the country to identify areas subject to flooding. FEMA's FIRMs are a national standard used by all federal agencies for the purposes of requiring and rating the purchase of flood insurance and regulating new development.  Population data comes from the American Community Survey (ACS) 2017 5-year estimates at the census tract and block group levels. 
 
-A significant proportion of Connecticut's population lives near the coast or near inland water bodies. As a result a significant proportion of the population lives near or within known flood zones. Figure \@ref(fig:mapNFHZAPop) below shows the population distribution and areas subject to floods with an Annual Exceedance Probability (AEP) of 1% (also known as a '100-year' flood) and areas subject to 0.2% AEP (also known as a '500-year' flood). Areas within the 1% AEP flood zone are designated by FEMA as Special Flood Hazard Areas, and development within those zones must be covered by flood insurance. Areas within the 0.2% AEP are not currently regulated, but these areas are nevertheless subject to flood risk under more extreme, albeit less frequent, flooding circumstances. Coastal areas within the 0.2% AEP zone are a reasonable proxy measure for the risks of sea level rise. Note that portions of northwest and northeast Connecticut are not currently mapped for flooding risk by FEMA. 
-
-```{r mapNFHZAPop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="FEMA flood zones and population distribution across Connecticut at Census Block Group level."}
-# Create a dot density map of total populations and overlay on flood zones
+A significant proportion of Connecticut's population lives near the coast or near inland water bodies. As a result, a significant proportion of the population lives near or within known flood zones. Figure \@ref(fig:mapNFHZAPop) below shows the population distribution and areas subject to floods with an Annual Exceedance Probability (AEP) of 1% (also known as a '100-year' flood) and areas subject to 0.2% AEP (also known as a '500-year' flood). Areas within the 1% AEP flood zone are designated by FEMA as Special Flood Hazard Areas, and development within those zones must be covered by flood insurance. Areas within the 0.2% AEP are not currently regulated, but these areas are nevertheless subject to flood risk under more extreme, albeit less frequent, flooding circumstances. Coastal areas within the 0.2% AEP zone are a reasonable proxy measure for the risks of sea level rise. Note that portions of northwest and northeast Connecticut are not currently mapped for flooding risk by FEMA. 
+```{r mapNFHZAdata, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+# Process data for mapping 
 # Create point layer of major cities for context
 # Note cb=FALSE is necessary for extracting centroids from town polygons. Otherwise, if cb=TRUE, cannot extract centroids from multipolygon features.
 # Read in NFHL for CT. Data comes from FEMA. 
 # List available layers in geodatabase
 # st_layers("DATA/FEMA/CT/NFHL_09_20200116/NFHL_09_20200116.gdb")
 # Read in flood hazard areas
-ct_nfhza_2775 <- st_read(dsn = "DATA/FEMA/CT/NFHL_09_20200116/NFHL_09_20200116.gdb", layer = "S_FLD_HAZ_AR") %>% 
+ct_nfhza_2775 <- st_read(dsn = "DATA/FEMA/CT/NFHL_09_20200116/NFHL_09_20200116.gdb", layer = "S_FLD_HAZ_AR", quiet = TRUE) %>% 
   filter(!FLD_ZONE %in% c("OPEN WATER","AREA NOT INCLUDED") & 
            !ZONE_SUBTY %in% c("AREA OF MINIMAL FLOOD HAZARD",
                               "AREA WITH REDUCED FLOOD RISK DUE TO LEVEE")) %>%
@@ -214,12 +214,16 @@ ct_awater_sf <- rbind_tigris(
   st_as_sf() %>% 
   st_transform(., crs = 2775)
 
-# crop flood zones to land areas only
-ct_nfhza_2775_land <- ct_nfhza_2775 %>% 
-  crop_shape(., ct_state_sf, polygon = TRUE) %>% 
-  st_difference(., ct_awater_sf) %>% 
-  mutate(Area = st_area(.)) %>% 
-  st_make_valid() # takes about 12.2 mins
+# # crop flood zones to land areas only
+# ct_nfhza_2775_land <- ct_nfhza_2775 %>% 
+#   crop_shape(., ct_state_sf, polygon = TRUE) %>% 
+#   st_difference(., ct_awater_sf) %>% 
+#   mutate(Area = st_area(.)) %>% 
+#   st_make_valid() # takes about 12.2 mins
+# # save time by just loading file
+# saveRDS(ct_nfhza_2775_land, file = "DATA/FEMA/CT/ct_nfhza_2775_land.Rds")
+# load cropped flood zones
+ct_nfhza_2775_land <- readRDS("DATA/FEMA/CT/ct_nfhza_2775_land.Rds")
 
 # Create a dot density map of total populations and overlay on flood zones
 # Create point layer of major cities for context
@@ -305,7 +309,10 @@ ct_nfhza_2775_land_simple <- ct_nfhza_2775_land %>%
   group_by(Interval) %>% 
   summarize() %>% 
   mutate(Area = st_area(.))
+```
 
+```{r mapNFHZAPop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="FEMA flood zones and population distribution across Connecticut at Census Block Group level."}
+# Create a dot density map of total populations and overlay on flood zones
 # Map totalpop and flood zones
 tm_layout(bg.color = "#e6f3f7") +
   tm_shape(ct_blkgrp_2775, unit = "mi") + tm_fill(col = "white") +
@@ -324,19 +331,19 @@ tm_layout(bg.color = "#e6f3f7") +
           title = "FEMA Flood Zones",
           alpha = 0.6,
           border.alpha = 0) +
-  tm_shape(ne_states_sf_cb) + tm_borders() +
-  tm_shape(ny_state_sf) + tm_borders() +
-  tm_shape(ct_highways) + tm_lines(col = "seashell4", lwd = 2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.8) +
+  tm_shape(ny_state_sf) + tm_borders(lwd = 0.8) +
+  tm_shape(ct_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(I95roadSegment) + 
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.25) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
   tm_shape(I95roadSegment2) + 
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.25) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
   tm_shape(I395roadSegment) +
-  tm_symbols(shape = I395, border.lwd = NA, size = 0.25) +
+  tm_symbols(shape = I395, border.lwd = NA, size = 0.2) +
   tm_shape(I91roadSegment) + 
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.25) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
   tm_shape(I84roadSegment) + 
-  tm_symbols(shape = I84, border.lwd = NA, size = 0.25) +
+  tm_symbols(shape = I84, border.lwd = NA, size = 0.2) +
   tm_shape(ct_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
@@ -376,7 +383,7 @@ ct_nfhza_2775_land %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-These percentages approximate the proportion of the total population in the state that are within these flood zones. However, exposure varies significantly by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups within flood zones. Aside from the total population, the largest subpopulations within a flood zone are minorities, followed by low income persons. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
+These percentages approximate the proportion of the total population in the state that are within these flood zones. However, exposure varies significantly by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups within flood zones. Aside from the total population, the largest absolute numbers of subpopulations within a flood zone are minorities followed by low income persons. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
 
 ```{r tabNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut Populations within Flood Zones."}
 # Show table of pops within flood zones
@@ -423,89 +430,94 @@ The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those overrepresented
 
 ```{r mapNFHZAPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island Populations within Flood Zones."}
 # Create a dot density map of transit-dependent populations in flood zone
-# Create random points, with 1 point for every 5 people
-NoCarHH_nfhza_pts <- ct_tracts_nfhza %>% 
-  dplyr::select(NewNoCar) %>% 
-  filter(NewNoCar >= 5) %>% 
-  st_sample(., size = round(.$NewNoCar/5)) %>% 
-  st_sf(.) %>% 
-  mutate(Group = "No Car HH")
-
-CTLowInc_nfhza_pts <- ct_blkgrps_nfhza %>% 
-  select(NewCT_LOWINC) %>% 
-  filter(NewCT_LOWINC >= 5) %>% 
-  st_sample(., size = round(.$NewCT_LOWINC/5)) %>% # create 1 random point for every 5 people
-  st_sf(.) %>% 
-  mutate(Group = "CT Low Income")
-
-LimitEngHH_nfhza_pts <- ct_blkgrps_nfhza %>% 
-  select(NewEng_limit) %>% 
-  filter(NewEng_limit >= 5) %>% 
-  st_sample(., size = round(.$NewEng_limit/5)) %>% # create 1 random point for every 5 people
-  st_sf(.) %>% 
-  mutate(Group = "Limited English HH")
-
-Disabled_nfhza_pts <- ct_tracts_nfhza %>% 
-  dplyr::select(NewDisabled) %>% 
-  filter(NewDisabled >= 5) %>% 
-  st_sample(., size = round(.$NewDisabled/5)) %>% 
-  st_sf(.) %>% 
-  mutate(Group = "Disabled")
-
-LowInc_nfhza_pts <- ct_blkgrps_nfhza %>% 
-  select(NewPov) %>% 
-  filter(NewPov >= 5) %>% 
-  st_sample(., size = round(.$NewPov/5)) %>% # create 1 random point for every 5 people
-  st_sf(.) %>% 
-  mutate(Group = "Low Income")
-
-Minor_nfhza_pts <- ct_blkgrps_nfhza %>% 
-  select(NewMinority) %>% 
-  filter(NewMinority >= 5) %>% 
-  st_sample(., size = round(.$NewMinority/5)) %>% # create 1 random point for every 5 people
-  st_sf(.) %>% 
-  mutate(Group = "Minority")
-
-Over64_nfhza_pts <- ct_blkgrps_nfhza %>% 
-  dplyr::select(NewOver64) %>% 
-  filter(NewOver64 >= 5) %>% 
-  st_sample(., size = round(.$NewOver64/5)) %>% # create 1 random point for every 5 people
-  st_sf(.) %>% 
-  mutate(Group = "Over 64")
-
-Under5_nfhza_pts <- ct_blkgrps_nfhza %>% 
-  select(NewUnder5) %>% 
-  filter(NewUnder5 >= 5) %>% 
-  st_sample(., size = round(.$NewUnder5/5)) %>% # create 1 random point for every 5 people
-  st_sf(.) %>% 
-  mutate(Group = "Under 5")
-
-NoHSdip_nfhza_pts <- ct_blkgrps_nfhza %>% 
-  select(NewLths) %>% 
-  filter(NewLths >= 5) %>% 
-  st_sample(., size = round(.$NewLths/5)) %>% # create 1 random point for every 5 people
-  st_sf(.) %>% 
-  mutate(Group = "No HS Dip")
-
-# Bring them together
-ct_nfhza_vulnerable <- rbind(NoCarHH_nfhza_pts, 
-                             CTLowInc_nfhza_pts, 
-                             LimitEngHH_nfhza_pts,
-                             Disabled_nfhza_pts,
-                             LowInc_nfhza_pts,
-                             Minor_nfhza_pts,
-                             Over64_nfhza_pts,
-                             Under5_nfhza_pts,
-                             NoHSdip_nfhza_pts) %>% 
-  # slice(sample(1:n())) %>% # randomise order to avoid bias in plotting order
-  group_by(Group) %>% 
-  summarize()
-
-# clean up pts layers
-rm(list = ls(pattern = "_nfhza_pts"))
+# # Create random points, with 1 point for every 5 people
+# NoCarHH_nfhza_pts <- ct_tracts_nfhza %>% 
+#   dplyr::select(NewNoCar) %>% 
+#   filter(NewNoCar >= 5) %>% 
+#   st_sample(., size = round(.$NewNoCar/5)) %>% 
+#   st_sf(.) %>% 
+#   mutate(Group = "No Car HH")
+# 
+# CTLowInc_nfhza_pts <- ct_blkgrps_nfhza %>% 
+#   select(NewCT_LOWINC) %>% 
+#   filter(NewCT_LOWINC >= 5) %>% 
+#   st_sample(., size = round(.$NewCT_LOWINC/5)) %>% # create 1 random point for every 5 people
+#   st_sf(.) %>% 
+#   mutate(Group = "CT Low Income")
+# 
+# LimitEngHH_nfhza_pts <- ct_blkgrps_nfhza %>% 
+#   select(NewEng_limit) %>% 
+#   filter(NewEng_limit >= 5) %>% 
+#   st_sample(., size = round(.$NewEng_limit/5)) %>% # create 1 random point for every 5 people
+#   st_sf(.) %>% 
+#   mutate(Group = "Limited English HH")
+# 
+# Disabled_nfhza_pts <- ct_tracts_nfhza %>% 
+#   dplyr::select(NewDisabled) %>% 
+#   filter(NewDisabled >= 5) %>% 
+#   st_sample(., size = round(.$NewDisabled/5)) %>% 
+#   st_sf(.) %>% 
+#   mutate(Group = "Disabled")
+# 
+# LowInc_nfhza_pts <- ct_blkgrps_nfhza %>% 
+#   select(NewPov) %>% 
+#   filter(NewPov >= 5) %>% 
+#   st_sample(., size = round(.$NewPov/5)) %>% # create 1 random point for every 5 people
+#   st_sf(.) %>% 
+#   mutate(Group = "Low Income")
+# 
+# Minor_nfhza_pts <- ct_blkgrps_nfhza %>% 
+#   select(NewMinority) %>% 
+#   filter(NewMinority >= 5) %>% 
+#   st_sample(., size = round(.$NewMinority/5)) %>% # create 1 random point for every 5 people
+#   st_sf(.) %>% 
+#   mutate(Group = "Minority")
+# 
+# Over64_nfhza_pts <- ct_blkgrps_nfhza %>% 
+#   dplyr::select(NewOver64) %>% 
+#   filter(NewOver64 >= 5) %>% 
+#   st_sample(., size = round(.$NewOver64/5)) %>% # create 1 random point for every 5 people
+#   st_sf(.) %>% 
+#   mutate(Group = "Over 64")
+# 
+# Under5_nfhza_pts <- ct_blkgrps_nfhza %>% 
+#   select(NewUnder5) %>% 
+#   filter(NewUnder5 >= 5) %>% 
+#   st_sample(., size = round(.$NewUnder5/5)) %>% # create 1 random point for every 5 people
+#   st_sf(.) %>% 
+#   mutate(Group = "Under 5")
+# 
+# NoHSdip_nfhza_pts <- ct_blkgrps_nfhza %>% 
+#   select(NewLths) %>% 
+#   filter(NewLths >= 5) %>% 
+#   st_sample(., size = round(.$NewLths/5)) %>% # create 1 random point for every 5 people
+#   st_sf(.) %>% 
+#   mutate(Group = "No HS Dip")
+# 
+# # Bring them together
+# ct_nfhza_vulnerable <- rbind(NoCarHH_nfhza_pts, 
+#                              CTLowInc_nfhza_pts, 
+#                              LimitEngHH_nfhza_pts,
+#                              Disabled_nfhza_pts,
+#                              LowInc_nfhza_pts,
+#                              Minor_nfhza_pts,
+#                              Over64_nfhza_pts,
+#                              Under5_nfhza_pts,
+#                              NoHSdip_nfhza_pts) %>% 
+#   # slice(sample(1:n())) %>% # randomise order to avoid bias in plotting order
+#   group_by(Group) %>% 
+#   summarize()
+# 
+# # clean up pts layers
+# rm(list = ls(pattern = "_nfhza_pts"))
+# 
+# # save time by just loading file
+# saveRDS(ct_nfhza_vulnerable, file = "DATA/FEMA/CT/ct_nfhza_vulnerable.Rds")
+# load vulnerable point file
+ct_nfhza_vulnerable <- readRDS("DATA/FEMA/CT/ct_nfhza_vulnerable.Rds")
 
 # Map over-represented pops and flood zones
-tm_layout(bg.color = "#e6f3f7") +
+m <- tm_layout(bg.color = "#e6f3f7") +
   tm_shape(ct_blkgrp_2775, unit = "mi") + tm_fill(col = "white") +
   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
   tm_shape(ny_state_sf) + tm_fill(col="white") +
@@ -514,7 +526,9 @@ tm_layout(bg.color = "#e6f3f7") +
   tm_dots(col = "darkgoldenrod3", 
           labels = "1 dot = 500 people",
           alpha = 0.6) +
-  tm_facets(by = "Group") +
+  tm_facets(by = "Group", 
+            ncol = 2,
+            free.coords = FALSE) +
   tm_shape(ct_nfhza_2775_land_simple) + 
   tm_fill(col = "Interval", 
           palette = c("dodgerblue", "blueviolet"), 
@@ -522,36 +536,45 @@ tm_layout(bg.color = "#e6f3f7") +
           title = "FEMA Flood Zones",
           alpha = 0.6,
           border.alpha = 0) +
-  tm_shape(ne_states_sf_cb) + tm_borders() +
-  tm_shape(ny_state_sf) + tm_borders() +
-  tm_shape(ct_highways) + tm_lines(col = "seashell4", lwd = 2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.6) +
+  tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
+  tm_shape(ct_highways) + tm_lines(col = "seashell4", lwd = 1) +
   tm_shape(I95roadSegment) + 
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.25) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
   tm_shape(I95roadSegment2) + 
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.25) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
   tm_shape(I395roadSegment) +
-  tm_symbols(shape = I395, border.lwd = NA, size = 0.25) +
+  tm_symbols(shape = I395, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment) + 
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.25) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I84roadSegment) + 
-  tm_symbols(shape = I84, border.lwd = NA, size = 0.25) +
+  tm_symbols(shape = I84, border.lwd = NA, size = 0.1) +
   tm_shape(ct_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_shape(nofemapolys) + tm_fill(col = "gray", alpha = 0.4) +
-  tm_text("LABEL", alpha = 0.5) +
+  tm_shape(nofemapolys) + 
+  tm_fill(col = "gray", alpha = 0.4) +
+  tm_text("LABEL", alpha = 0.5, size = 0.6) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
   tm_add_legend(type = "fill", col = "darkgoldenrod3",
                 alpha = 0.6,
                 border.col = "white", border.alpha = 0,
                 labels = "1 dot = 5 people",
-                title = "Population\nGroup") +
+                title = "Population Group") +
   tm_layout(title = "Over-represented\nPopulations\nwithin\nFlood Zones", 
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
-            legend.outside.position = c("right", "top"))
+            legend.outside.position = c("right", "top"),
+            # legend.outside.position = "bottom",
+            legend.outside.size = 0.15,
+            asp = 14/10)
+
+tmap_save(m, "DATA/FEMA/CT/CT_nhfza_vulnerable.png", 
+          height = 9, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/CT/CT_nhfza_vulnerable.png")
 ```
 
 \pagebreak
@@ -649,16 +672,16 @@ ct_HevacPops_df <- ct_blkgrp_2775 %>%
   mutate(PctHevac = HevacPop/CTPop*100)
 ```
 
-Connecticut is subject to significant hurricane risk. Since 1900, Connecticut has been struck by hurricanes 5 times, and 3 of those were major hurricanes (i.e., Category 3 or higher). The most recent hurricane to hit Connecticut directly was Hurricane Gloria in 1985, a Category 2 storm. The latter caused over $91 million in damages in Connecticut alone (mostly around Hartford) and left 727,000 people in Connecticut without power. Hurricane Sandy in 2012 did not hit Connecticut direclty, but nevertheless resulted in flooding Connecticut coastal communities. In general, Connecticut is subject to a [hurricane return period of approximately 17 years](https://www.nhc.noaa.gov/climo/#returns), a level of risk comparable to the Gulf Coast of Texas.  
+Connecticut is subject to significant hurricane risk. Since 1900, Connecticut has been struck by hurricanes 5 times, and 3 of those were major hurricanes (i.e., Category 3 or higher). The most recent hurricane to hit Connecticut directly was Hurricane Gloria in 1985, a Category 2 storm. The latter caused over $91 million in damage in Connecticut alone (mostly around Hartford) and left 727,000 people in Connecticut without power. Hurricane Sandy in 2012 did not hit Connecticut directly, but nevertheless resulted in flooding of Connecticut coastal communities. In general, Connecticut is subject to a [hurricane return period of approximately 17 years](https://www.nhc.noaa.gov/climo/#returns), a level of risk comparable to the Gulf Coast of Texas.  
 
 Hurricane intensity is ranked from 1 to 5 on the Saffir-Simpson scale, which is based on sustained wind speeds. However the most destructive and deadly aspects of hurricanes are due to storm surge - ocean water pushed inland by the high winds. This coastal storm surge may be combined with intense rainfall which can exacerbate flooding. As a result, coastal evacuation may be necessary as a hurricane approaches.
 
-The analysis of hurricane evacuation risk presented here is based on Hurricane Evacuation Maps produced by the U.S. Army Corps of Engineers for New England. The maps show Hurricane Evacuation Zones that are recommended to be evacuated  during potential worst-case hurricane storm surge inundation. These evacuation zones are based on [storm surge modeling by the National Weather Service's National Hurricane Center](https://www.nhc.noaa.gov/nationalsurge/) using the hydrodynamic Sea, Lake, and Overland Surges from Hurricanes (SLOSH) model to simulate storm surge from tropical cyclones. These data products are provided to federal, state, and local government agencies to assist in planning, risk assessment studies, and operational decision-making.
+The analysis of hurricane evacuation risk presented here is based on Hurricane Evacuation Maps produced by the U.S. Army Corps of Engineers for New England. The maps show Hurricane Evacuation Zones that are recommended to be evacuated  during potential worst-case hurricane storm surge inundation. These evacuation zones are based on [storm surge modeling by the National Weather Service's National Hurricane Center](https://www.nhc.noaa.gov/nationalsurge/) using the hydrodynamic Sea, Lake, and Overland Surges from Hurricanes (SLOSH) model to simulate storm surge from tropical cyclones. These data products are provided to federal, state, and local government agencies to assist in planning, risk assessment studies, and operational decision-making. Population data comes from the American Community Survey (ACS) 2017 5-year estimates at the census tract and block group levels. 
 
 A significant proportion of Connecticut's population lives near the coast and is therefore within these hurricane evacuation zones. Figure \@ref(fig:mapHEVACPop) below shows the population distribution and areas within Hurricane Evacuation Zones. Evacuation Zone “A” is recommended to be evacuated prior to an expected category 1 or 2 hurricane.  Evacuation Zone “B” is recommended to be evacuated prior to an expected category 3 or 4 hurricane.
 
 ```{r mapHEVACPop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="FEMA flood zones and population distribution across Connecticut at Census Block Group level."}
-# Create a simplified version of NFHZA polygons to speed up mapping
+# Create a simplified version of hea polygons to speed up mapping
 ct_hea_sf_simple <- ct_hea_sf %>% 
   select(zone) %>% 
   st_cast(., "MULTIPOLYGON") %>% # homogenize type
@@ -689,19 +712,19 @@ tm_layout(bg.color = "#e6f3f7") +
           title = "Evacuation Zone and\nHurricane Category",
           alpha = 0.6,
           border.alpha = 0) +
-  tm_shape(ne_states_sf_cb) + tm_borders() +
-  tm_shape(ny_state_sf) + tm_borders() +
-  tm_shape(ct_highways) + tm_lines(col = "seashell4", lwd = 2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.8) +
+  tm_shape(ny_state_sf) + tm_borders(lwd = 0.8) +
+  tm_shape(ct_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(I95roadSegment) + 
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.25) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
   tm_shape(I95roadSegment2) + 
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.25) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
   tm_shape(I395roadSegment) +
-  tm_symbols(shape = I395, border.lwd = NA, size = 0.25) +
+  tm_symbols(shape = I395, border.lwd = NA, size = 0.2) +
   tm_shape(I91roadSegment) + 
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.25) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
   tm_shape(I84roadSegment) + 
-  tm_symbols(shape = I84, border.lwd = NA, size = 0.25) +
+  tm_symbols(shape = I84, border.lwd = NA, size = 0.2) +
   tm_shape(ct_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
@@ -750,7 +773,7 @@ ct_HevacPops_df %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Some groups are disproportionately exposed to these hurricane evacuation hazards. While approximately 9.5% of the general population are within hurricane evacuation zones, households without access to a car, people in low income households, people in limited English speaking households, the elderly (persons over age 64), adults with less than a high school education, individuals with serious disability, and other popultions of concern exceed the population average within hurricane evacuation zones. These populations of concern are overrepresented in terms of hurricane evacuation exposure (see Figure \@ref(fig:chartHEVACpop) below).
+Some groups are disproportionately exposed to these hurricane evacuation hazards. While approximately 9.5% of the general population are within hurricane evacuation zones, households without access to a car, people in low income households, people in limited English speaking households, the elderly (persons over age 64), adults with less than a high school education, individuals with serious disability, and other popultions of concern exceed the population average within hurricane evacuation zones. These populations of concern are overrepresented in terms of hurricane evacuation exposure (see Figures \@ref(fig:chartHEVACpop) and \@ref(fig:mapHEVACPopConcern)) below).
 
 ```{r chartHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut Populations within Hurricane Evacuation Zones."}
 # Create lollipop plot of pops within flood zones
@@ -780,93 +803,96 @@ ct_HevacPops_df %>%
   expand_limits(y = c(9,14.5))
 ```
 
-The maps below (Figure \@ref(fig:mapHEVACPopConcern)) show those overrepresented populations within the flood zones.
-
 ```{r mapHEVACPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut Populations within Hurricane Evacuation Zones."}
 # Create a dot density map of over-represented populations in hurricane evacuation zones
-# Create random points, with 1 point for every 5 people
-NoCarHH_hevac_pts <- ct_tracts_hevac %>% 
-  dplyr::select(NewNoCar) %>% 
-  filter(NewNoCar >= 5) %>% 
-  st_sample(., size = round(.$NewNoCar/5)) %>% 
-  st_sf(.) %>% 
-  mutate(Group = "No Car HH")
+# # Create random points, with 1 point for every 5 people
+# NoCarHH_hevac_pts <- ct_tracts_hevac %>% 
+#   dplyr::select(NewNoCar) %>% 
+#   filter(NewNoCar >= 5) %>% 
+#   st_sample(., size = round(.$NewNoCar/5)) %>% 
+#   st_sf(.) %>% 
+#   mutate(Group = "No Car HH")
+# 
+# CTLowInc_hevac_pts <- ct_blkgrps_hevac %>% 
+#   select(NewCT_LOWINC) %>% 
+#   filter(NewCT_LOWINC >= 5) %>% 
+#   st_sample(., size = round(.$NewCT_LOWINC/5)) %>% # create 1 random point for every 5 people
+#   st_sf(.) %>% 
+#   mutate(Group = "CT Low Income")
+# 
+# LimitEngHH_hevac_pts <- ct_blkgrps_hevac %>% 
+#   select(NewEng_limit) %>% 
+#   filter(NewEng_limit >= 5) %>% 
+#   st_sample(., size = round(.$NewEng_limit/5)) %>% # create 1 random point for every 5 people
+#   st_sf(.) %>% 
+#   mutate(Group = "Limited English HH")
+# 
+# Disabled_hevac_pts <- ct_tracts_hevac %>% 
+#   dplyr::select(NewDisabled) %>% 
+#   filter(NewDisabled >= 5) %>% 
+#   st_sample(., size = round(.$NewDisabled/5)) %>% 
+#   st_sf(.) %>% 
+#   mutate(Group = "Disabled")
+# 
+# LowInc_hevac_pts <- ct_blkgrps_hevac %>% 
+#   select(NewPov) %>% 
+#   filter(NewPov >= 5) %>% 
+#   st_sample(., size = round(.$NewPov/5)) %>% # create 1 random point for every 5 people
+#   st_sf(.) %>% 
+#   mutate(Group = "Low Income")
+# 
+# Minor_hevac_pts <- ct_blkgrps_hevac %>% 
+#   select(NewMinority) %>% 
+#   filter(NewMinority >= 5) %>% 
+#   st_sample(., size = round(.$NewMinority/5)) %>% # create 1 random point for every 5 people
+#   st_sf(.) %>% 
+#   mutate(Group = "Minority")
+# 
+# Over64_hevac_pts <- ct_blkgrps_hevac %>% 
+#   dplyr::select(NewOver64) %>% 
+#   filter(NewOver64 >= 5) %>% 
+#   st_sample(., size = round(.$NewOver64/5)) %>% # create 1 random point for every 5 people
+#   st_sf(.) %>% 
+#   mutate(Group = "Over 64")
+# 
+# Under5_hevac_pts <- ct_blkgrps_hevac %>% 
+#   select(NewUnder5) %>% 
+#   filter(NewUnder5 >= 5) %>% 
+#   st_sample(., size = round(.$NewUnder5/5)) %>% # create 1 random point for every 5 people
+#   st_sf(.) %>% 
+#   mutate(Group = "Under 5")
+# 
+# NoHSdip_hevac_pts <- ct_blkgrps_hevac %>% 
+#   select(NewLths) %>% 
+#   filter(NewLths >= 5) %>% 
+#   st_sample(., size = round(.$NewLths/5)) %>% # create 1 random point for every 5 people
+#   st_sf(.) %>% 
+#   mutate(Group = "No HS Dip")
+# 
+# # Bring them together
+# ct_hevac_vulnerable <- rbind(NoCarHH_hevac_pts, 
+#                              CTLowInc_hevac_pts, 
+#                              LimitEngHH_hevac_pts,
+#                              Disabled_hevac_pts,
+#                              LowInc_hevac_pts,
+#                              Minor_hevac_pts,
+#                              Over64_hevac_pts,
+#                              Under5_hevac_pts,
+#                              NoHSdip_hevac_pts) %>% 
+#   # slice(sample(1:n())) %>% # randomise order to avoid bias in plotting order
+#   group_by(Group) %>% 
+#   summarize()
+# 
+# # clean up pts layers
+# rm(list = ls(pattern = "_hevac_pts"))
 
-CTLowInc_hevac_pts <- ct_blkgrps_hevac %>% 
-  select(NewCT_LOWINC) %>% 
-  filter(NewCT_LOWINC >= 5) %>% 
-  st_sample(., size = round(.$NewCT_LOWINC/5)) %>% # create 1 random point for every 5 people
-  st_sf(.) %>% 
-  mutate(Group = "CT Low Income")
-
-LimitEngHH_hevac_pts <- ct_blkgrps_hevac %>% 
-  select(NewEng_limit) %>% 
-  filter(NewEng_limit >= 5) %>% 
-  st_sample(., size = round(.$NewEng_limit/5)) %>% # create 1 random point for every 5 people
-  st_sf(.) %>% 
-  mutate(Group = "Limited English HH")
-
-Disabled_hevac_pts <- ct_tracts_hevac %>% 
-  dplyr::select(NewDisabled) %>% 
-  filter(NewDisabled >= 5) %>% 
-  st_sample(., size = round(.$NewDisabled/5)) %>% 
-  st_sf(.) %>% 
-  mutate(Group = "Disabled")
-
-LowInc_hevac_pts <- ct_blkgrps_hevac %>% 
-  select(NewPov) %>% 
-  filter(NewPov >= 5) %>% 
-  st_sample(., size = round(.$NewPov/5)) %>% # create 1 random point for every 5 people
-  st_sf(.) %>% 
-  mutate(Group = "Low Income")
-
-Minor_hevac_pts <- ct_blkgrps_hevac %>% 
-  select(NewMinority) %>% 
-  filter(NewMinority >= 5) %>% 
-  st_sample(., size = round(.$NewMinority/5)) %>% # create 1 random point for every 5 people
-  st_sf(.) %>% 
-  mutate(Group = "Minority")
-
-Over64_hevac_pts <- ct_blkgrps_hevac %>% 
-  dplyr::select(NewOver64) %>% 
-  filter(NewOver64 >= 5) %>% 
-  st_sample(., size = round(.$NewOver64/5)) %>% # create 1 random point for every 5 people
-  st_sf(.) %>% 
-  mutate(Group = "Over 64")
-
-Under5_hevac_pts <- ct_blkgrps_hevac %>% 
-  select(NewUnder5) %>% 
-  filter(NewUnder5 >= 5) %>% 
-  st_sample(., size = round(.$NewUnder5/5)) %>% # create 1 random point for every 5 people
-  st_sf(.) %>% 
-  mutate(Group = "Under 5")
-
-NoHSdip_hevac_pts <- ct_blkgrps_hevac %>% 
-  select(NewLths) %>% 
-  filter(NewLths >= 5) %>% 
-  st_sample(., size = round(.$NewLths/5)) %>% # create 1 random point for every 5 people
-  st_sf(.) %>% 
-  mutate(Group = "No HS Dip")
-
-# Bring them together
-ct_hevac_vulnerable <- rbind(NoCarHH_hevac_pts, 
-                             CTLowInc_hevac_pts, 
-                             LimitEngHH_hevac_pts,
-                             Disabled_hevac_pts,
-                             LowInc_hevac_pts,
-                             Minor_hevac_pts,
-                             Over64_hevac_pts,
-                             Under5_hevac_pts,
-                             NoHSdip_hevac_pts) %>% 
-  # slice(sample(1:n())) %>% # randomise order to avoid bias in plotting order
-  group_by(Group) %>% 
-  summarize()
-
-# clean up pts layers
-rm(list = ls(pattern = "_hevac_pts"))
+# # save time by just loading file
+# saveRDS(ct_hevac_vulnerable, file = "DATA/FEMA/CT/ct_hevac_vulnerable.Rds")
+# load vulnerable point file
+ct_hevac_vulnerable <- readRDS("DATA/FEMA/CT/ct_hevac_vulnerable.Rds")
 
 # Map over-represented pops and hurricane evacuation zones
-tm_layout(bg.color = "#e6f3f7") +
+m2 <- tm_layout(bg.color = "#e6f3f7") +
   tm_shape(ct_blkgrp_2775, unit = "mi") + tm_fill(col = "white") +
   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
   tm_shape(ny_state_sf) + tm_fill(col="white") +
@@ -875,28 +901,30 @@ tm_layout(bg.color = "#e6f3f7") +
   tm_dots(col = "darkgoldenrod3", 
           labels = "1 dot = 500 people",
           alpha = 0.6) +
-  tm_facets(by = "Group") +
+  tm_facets(by = "Group",
+            ncol = 2,
+            free.coords = FALSE) +
   tm_shape(ct_hea_sf_simple) + 
   tm_fill(col = "zone", 
           palette = c("deeppink", "purple3"), 
           labels = c("A: Category 1 - 2", 
                      "B: Category 3 - 4"), 
-          title = "Evacuation Zone and\nHurricane Category",
+          title = "Evacuation Zone &\nHurricane Category",
           alpha = 0.6,
           border.alpha = 0) +
-  tm_shape(ne_states_sf_cb) + tm_borders() +
-  tm_shape(ny_state_sf) + tm_borders() +
-  tm_shape(ct_highways) + tm_lines(col = "seashell4", lwd = 2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.6) +
+  tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
+  tm_shape(ct_highways) + tm_lines(col = "seashell4", lwd = 1) +
   tm_shape(I95roadSegment) + 
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.25) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
   tm_shape(I95roadSegment2) + 
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.25) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
   tm_shape(I395roadSegment) +
-  tm_symbols(shape = I395, border.lwd = NA, size = 0.25) +
+  tm_symbols(shape = I395, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment) + 
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.25) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I84roadSegment) + 
-  tm_symbols(shape = I84, border.lwd = NA, size = 0.25) +
+  tm_symbols(shape = I84, border.lwd = NA, size = 0.1) +
   tm_shape(ct_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
@@ -906,10 +934,17 @@ tm_layout(bg.color = "#e6f3f7") +
                 alpha = 0.6,
                 border.col = "white", border.alpha = 0,
                 labels = "1 dot = 5 people",
-                title = "Population\nGroup") +
+                title = "Population Group") +
   tm_layout(title = "Over-represented\nPopulations\nwithin Hurricane\nEvacuation Zones", 
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
-            legend.outside.position = c("right", "top"))
+            legend.outside.position = c("right", "top"),
+            legend.outside.size = 0.15,
+            asp = 14/10)
+
+tmap_save(m2, "DATA/FEMA/CT/CT_hevac_vulnerable.png", 
+          height = 9, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/CT/CT_hevac_vulnerable.png")
 ```
