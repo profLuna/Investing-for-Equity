@@ -679,9 +679,9 @@ Hurricane intensity is ranked from 1 to 5 on the Saffir-Simpson scale, which is 
 
 The analysis of hurricane evacuation risk presented here is based on [storm surge modeling by the National Weather Service's National Hurricane Center](https://www.nhc.noaa.gov/nationalsurge/) using the hydrodynamic Sea, Lake, and Overland Surges from Hurricanes (SLOSH) model to simulate storm surge from tropical cyclones. These data products are provided to federal, state, and local government agencies to assist in planning, risk assessment studies, and operational decision-making. Population data comes from the American Community Survey (ACS) 2017 5-year estimates at the census tract and block group levels. 
 
-A significant proportion of New Hampshire's population lives near the coast and is therefore within these hurricane evacuation zones. Figure \@ref(fig:mapHEVACPop) below shows the population distribution and areas within Hurricane Evacuation Zones. Evacuation Zone “A” is recommended to be evacuated prior to an expected category 1 or 2 hurricane.  Evacuation Zone “B” is recommended to be evacuated prior to an expected category 3 or 4 hurricane.
+A significant proportion of New Hampshire's population lives near the coast and is therefore within areas subject to inundation due to hurrican storm surge. Figure \@ref(fig:mapHEVACPop) below shows the population distribution and areas subject to hurricane inundation. Zone “A” is recommended to be evacuated prior to an expected category 1 or 2 hurricane.  Zone “B” is recommended to be evacuated prior to an expected category 3 or 4 hurricane.
 
-```{r mapHEVACPop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="FEMA flood zones and population distribution across New Hampshire at Census Block Group level."}
+```{r mapHEVACPop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hurricane flood zones and population distribution across New Hampshire at Census Block Group level."}
 # Create a simplified version of hea polygons to speed up mapping
 empty_geo <- st_is_empty(nh_hea_sf)
 nh_hea_sf <- nh_hea_sf[!empty_geo,]
