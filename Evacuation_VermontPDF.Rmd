@@ -81,6 +81,22 @@ vt_state_sf <- ne_states_sf_cb %>%
 # # read in processed vt_blkgrps and vt_tracts
 # st_layers(dsn = "DATA/FEMA/VT")
 
+vt_blkgrps_developed <- st_read(dsn = "DATA/FEMA/VT",
+                                layer = "vt_blkgrps_developed") %>% 
+  left_join(., as.data.frame(vt_blkgrp_2852), by = "GEOID") %>% 
+  st_transform(., crs = 2852) %>% 
+  mutate(NewArea = st_area(.)) %>%
+  st_make_valid() %>% 
+  mutate(Proportion = as.numeric(NewArea/OldArea),
+         NewPop = totalpopE*Proportion,
+         NewMinority = minorityE*Proportion,
+         NewUnder5 = under5E*Proportion,
+         NewOver64 = over64E*Proportion,
+         NewUnder18 = under18E*Proportion,
+         NewEng_limit = eng_limitE*Proportion,
+         NewPov = num2povE*Proportion,
+         NewLths = lthsE*Proportion)
+
 vt_blkgrps_nfhza <- st_read(dsn = "DATA/FEMA/VT", 
                             layer = "vt_blkgrps_nfhza") %>% 
   left_join(., as.data.frame(vt_blkgrp_2852), by = "GEOID") %>% 
@@ -319,10 +335,10 @@ ny_state_sf <- tigris::states(cb = TRUE) %>%
 nofemapolys <- readRDS("DATA/FEMA/VT/nofemapolys.Rds")
 
 # Create random points, with 1 point for every 100 people
-vt_totalpop_pts <- vt_blkgrp_2852 %>% 
-  select(totalpopE) %>% 
-  filter(totalpopE >= 100) %>% 
-  st_sample(., size = round(.$totalpopE/100)) %>% # create 1 random point for every 100 people
+vt_totalpop_pts <- vt_blkgrps_developed %>% 
+  select(NewPop) %>% 
+  filter(NewPop >= 100) %>% 
+  st_sample(., size = round(.$NewPop/100)) %>% # create 1 random point for every 100 people
   st_sf(.) %>% 
   group_by() %>% 
   summarize() # reduce to one multipoint object
@@ -355,12 +371,12 @@ vt_awater_sf_simple <- vt_awater_sf %>%
 # Create a dot density map of total populations and overlay on flood zones
 # Map totalpop and flood zones
 # tm_layout(bg.color = "#e6f3f7") +
-  tm_shape(vt_blkgrp_2852, unit = "mi") + tm_fill(col = "white") +
+m1 <- tm_shape(vt_blkgrp_2852, unit = "mi") + tm_fill(col = "white") +
   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
   tm_shape(ny_state_sf) + tm_fill(col="white") +
   tm_shape(vt_awater_sf_simple) + tm_fill(col = "#e6f3f7") + 
-  tm_shape(ne_states_sf_cb) + tm_borders() +
-  tm_shape(ny_state_sf) + tm_borders() +
+  # tm_shape(ne_states_sf_cb) + tm_borders() +
+  # tm_shape(ny_state_sf) + tm_borders() +
   tm_shape(vt_totalpop_pts) + tm_dots(col = "darkgoldenrod3",
                                       labels = "1 dot = 100 people",
                                       alpha = 0.6) +
@@ -371,8 +387,8 @@ vt_awater_sf_simple <- vt_awater_sf %>%
           title = "FEMA Flood Zones",
           alpha = 0.6,
           border.alpha = 0) +
-  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.8) +
-  tm_shape(ny_state_sf) + tm_borders(lwd = 0.8) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+  tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(I89roadSegment) + 
@@ -411,6 +427,11 @@ vt_awater_sf_simple <- vt_awater_sf %>%
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
+
+tmap_save(m1, "DATA/FEMA/VT/vt_flood.png",
+          height = 7, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/VT/vt_flood.png")
 ```
 
 Approximately 1.9% of Vermont's land area falls within FEMA flood zones. The breakdown by type of flood zone is presented in Table \@ref(tab:tabNFHZAarea) below. 
