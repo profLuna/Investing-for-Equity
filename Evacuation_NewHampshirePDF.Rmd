@@ -371,53 +371,58 @@ canada <- st_read(dsn = "DATA/FEMA/NH", layer = "lpr_000b16a_e") %>%
 ```{r mapNFHZAPop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="FEMA flood zones and population distribution across New Hampshire at Census Block Group level."}
 # Create a dot density map of total populations and overlay on flood zones
 # Map totalpop and flood zones
-tm_layout(bg.color = "#e6f3f7") +
-  tm_shape(nh_blkgrp_2823, unit = "mi") + tm_fill(col = "white") +
-  tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
-  tm_shape(canada) + tm_fill(col = "white") +
-  # tm_shape(ny_state_sf) + tm_fill(col="white") +
-  tm_shape(nh_awater_sf_simple) + tm_fill(col = "#e6f3f7") + 
-  tm_shape(ne_states_sf_cb) + tm_borders() +
-  # tm_shape(ny_state_sf) + tm_borders() +
-  tm_shape(nh_totalpop_pts) + tm_dots(col = "darkgoldenrod3",
-                                      labels = "1 dot = 500 people",
-                                      alpha = 0.6) +
-  tm_shape(nh_nfhza_2823_land_simple) + 
-  tm_fill(col = "Interval", 
-          palette = c("dodgerblue", "blueviolet"), 
-          labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"), 
-          title = "FEMA Flood Zones",
-          alpha = 0.6,
-          border.alpha = 0) +
-  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.8) +
-  # tm_shape(ny_state_sf) + tm_borders(lwd = 0.8) +
-  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
-  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
-  tm_shape(I89roadSegment) + 
-  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
-  tm_shape(I91roadSegment) + 
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
-  tm_shape(I93roadSegment) +
-  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
-  tm_shape(I95roadSegment) + 
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
-  tm_shape(nh_towns_sf_pts) + tm_dots() +
-  tm_text("NAME", size = 0.5, col = "black", 
-          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_shape(nofemapolys) + tm_fill(col = "gray", alpha = 0.4) +
-  tm_text("LABEL", alpha = 0.5, size = .7) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
-               position = c("left","TOP")) +
-  tm_add_legend(type = "fill", col = "darkgoldenrod3",
-                alpha = 0.6,
-                border.col = "white", border.alpha = 0,
-                labels = "1 dot = 500 people",
-                title = "Total Population") +
-  tm_layout(title = "Population Distribution \nand Flood Zones", 
-            frame = TRUE, main.title.size = 0.8,
-            legend.outside = TRUE,
-            legend.title.size = 0.8,
-            legend.outside.position = c("right", "top"))
+# m1 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(nh_blkgrp_2823, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   # tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(nh_awater_sf_simple) + tm_fill(col = "#e6f3f7") + 
+#   # tm_shape(ne_states_sf_cb) + tm_borders() +
+#   # tm_shape(ny_state_sf) + tm_borders() +
+#   tm_shape(nh_totalpop_pts) + tm_dots(col = "darkgoldenrod3",
+#                                       labels = "1 dot = 500 people",
+#                                       alpha = 0.6) +
+#   tm_shape(nh_nfhza_2823_land_simple) + 
+#   tm_fill(col = "Interval", 
+#           palette = c("dodgerblue", "blueviolet"), 
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"), 
+#           title = "FEMA Flood Zones",
+#           alpha = 0.6,
+#           border.alpha = 0) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.8) +
+#   tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   tm_shape(I89roadSegment) + 
+#   tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+#   tm_shape(I91roadSegment) + 
+#   tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+#   tm_shape(I93roadSegment) +
+#   tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+#   tm_shape(I95roadSegment) + 
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
+#   tm_shape(nh_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black", 
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_shape(nofemapolys) + tm_fill(col = "gray", alpha = 0.4) +
+#   tm_text("LABEL", alpha = 0.5, size = .7) +
+#   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+#                position = c("left","TOP")) +
+#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 500 people",
+#                 title = "Total Population") +
+#   tm_layout(title = "Population Distribution \nand Flood Zones", 
+#             frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m1, "DATA/FEMA/NH/nh_flood.png",
+#           height = 7, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/NH/nh_flood.png")
 ```
 
 Approximately 5% of New Hampshire's land area falls within FEMA flood zones. The breakdown by type of flood zone is presented in Table \@ref(tab:tabNFHZAarea) below. 
