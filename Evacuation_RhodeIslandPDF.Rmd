@@ -49,6 +49,13 @@ ri_blkgrp_2840 <- ri_blkgrp_2840[!empty_geo,]
 empty_geo <- st_is_empty(ri_tracts_2840)
 ri_tracts_2840 <- ri_tracts_2840[!empty_geo,]
 
+# Download country boundaries
+ri_counties_2840 <- counties(state = "RI",cb=TRUE) %>% 
+  st_transform(., crs = 2840)
+# Write out to folder for use in ArcGIS
+ri_counties_2840 %>%
+  st_write(., "DATA/FEMA/RI/ri_counties_2840.shp", delete_layer = TRUE)
+
 # Download Census TIGERLine hydrography for RI
 ## First, extract list of county names to use with tigris::water
 ri_counties <- counties("RI") %>% 
@@ -98,8 +105,27 @@ ri_fhza_2840_land <- ri_fhza_2840 %>%
   st_difference(., ri_awater_sf) %>% 
   mutate(Area = st_area(.))
 
+# save files
+saveRDS(ri_fhza_2840_land,"DATA/FEMA/RI/ri_fhza_2840_land.Rds")
+
 # read in processed ri_blkgrps and ri_tracts
 # st_layers(dsn = "DATA/FEMA/RI")
+ri_blkgrps_developed <- st_read(dsn = "DATA/FEMA/RI",
+                                layer = "ri_blkgrps_developed") %>% 
+  left_join(., as.data.frame(ri_blkgrp_2840), by = "GEOID") %>% 
+  st_transform(., crs = 2840) %>% 
+  mutate(NewArea = st_area(.)) %>%
+  st_make_valid() %>% 
+  mutate(Proportion = as.numeric(NewArea/OldArea),
+         NewPop = totalpopE*Proportion,
+         NewMinority = minorityE*Proportion,
+         NewUnder5 = under5E*Proportion,
+         NewOver64 = over64E*Proportion,
+         NewUnder18 = under18E*Proportion,
+         NewEng_limit = eng_limitE*Proportion,
+         NewPov = num2povE*Proportion,
+         NewLths = lthsE*Proportion)
+
 ri_blkgrps_nfhza <- st_read(dsn = "DATA/FEMA/RI", 
                             layer = "ri_blkgrps_nfhza") %>% 
   left_join(., as.data.frame(ri_blkgrp_2840), by = "GEOID") %>% 
@@ -199,106 +225,111 @@ Most of Rhode Island's population lives near the coast or near inland water bodi
 # Create a dot density map of total populations and overlay on flood zones
 # Create point layer of major cities for context
 # Note cb=FALSE is necessary for extracting centroids from town polygons. Otherwise, if cb=TRUE, cannot extract centroids from multipolygon features.
-ri_towns_sf_pts <- county_subdivisions(state = "RI", cb = TRUE) %>% 
-  filter(NAME %in% c("Providence", 
-                     "Woonsocket", 
-                     "Pawtucket", 
-                     "Warwick", 
-                     "Bristol", 
-                     "Portsmouth", 
-                     "Newport", 
-                     "Narragansett", 
-                     "North Kingstown", 
-                     "Charlestown", 
-                     "Situate",
-                     "Glocester")) %>% 
-  st_transform(., crs = 2840) %>% 
-  st_centroid(of_largest_polygon = TRUE)
+# ri_towns_sf_pts <- county_subdivisions(state = "RI", cb = TRUE) %>% 
+#   filter(NAME %in% c("Providence", 
+#                      "Woonsocket", 
+#                      "Pawtucket", 
+#                      "Warwick", 
+#                      "Bristol", 
+#                      "Portsmouth", 
+#                      "Newport", 
+#                      "Narragansett", 
+#                      "North Kingstown", 
+#                      "Charlestown", 
+#                      "Situate",
+#                      "Glocester")) %>% 
+#   st_transform(., crs = 2840) %>% 
+#   st_centroid(of_largest_polygon = TRUE)
+# 
+# # Create road layer for context
+# ri_highways <- tigris::primary_roads() %>% 
+#   filter(FULLNAME %in% c("I- 95","I- 195","I- 295", "US Hwy 6")) %>%
+#   tmaptools::crop_shape(., ne_states_sf_cb) %>% 
+#   st_transform(., crs = 2840)
+# 
+# # Extract highway segments for labeling
+# I95roadSegment <- ri_highways %>% 
+#   filter(LINEARID == "110468245978")
+# 
+# I95roadSegment2 <- ri_highways %>% 
+#   filter(LINEARID == "1107052605232")
+# 
+# I295roadSegment <- ri_highways %>% 
+#   filter(LINEARID == "1104755623349")
+# 
+# I195roadSegment <- ri_highways %>% 
+#   filter(LINEARID == "110448466166")
+# 
+# # Create custom icons of highway shields
+# I95 <- tmap_icons(file = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/I-95.svg/200px-I-95.svg.png")
+# I195 <- tmap_icons("https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/I-195.svg/200px-I-195.svg.png")
+# I295 <- tmap_icons("https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/I-295.svg/200px-I-295.svg.png")
+# 
+# # Create random points, with 1 point for every 100 people
+# ri_totalpop_pts <- ri_blkgrps_developed %>% 
+#   select(NewPop) %>% 
+#   filter(NewPop >= 100) %>% 
+#   st_sample(., size = round(.$NewPop/100)) %>% # create 1 random point for every 100 people
+#   st_sf(.) %>% 
+#   mutate(Group = "Total Pop") %>% 
+#   group_by(Group) %>% 
+#   summarize()
+# 
+# # Create a simplified version of NFHZA polygons to speed up mapping
+# ri_fhza_2840_land_simple <- ri_fhza_2840_land %>% 
+#   select(Interval) %>% 
+#   st_cast(., "MULTIPOLYGON") %>% # homogenize type
+#   st_cast(., "POLYGON") %>% 
+#   st_simplify(., dTolerance = 100) %>% # reduce vertices
+#   st_make_valid() %>%
+#   group_by(Interval) %>% 
+#   summarize() %>% 
+#   mutate(Area = st_area(.))
+# 
+# # Map totalpop and flood zones
+# m1 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(ri_blkgrp_2840, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(ri_awater_sf) + tm_fill(col = "#e6f3f7") + 
+#   # tm_shape(ne_states_sf_cb) + tm_borders() +
+#   tm_shape(ri_totalpop_pts) + tm_dots(col = "darkgoldenrod3",
+#                                       labels = "1 dot = 100 people") +
+#   tm_shape(ri_fhza_2840_land_simple) + 
+#   tm_fill(col = "Interval", 
+#           palette = c("dodgerblue", "blueviolet"), 
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"), 
+#           title = "FEMA Flood Zones",
+#           alpha = 0.6,
+#           border.alpha = 0) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
+#   tm_shape(I95roadSegment) + 
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) + 
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I195roadSegment) +
+#   tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
+#   tm_shape(I295roadSegment) + 
+#   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+#   tm_shape(ri_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black", 
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+#                position = c(0.6,0.005)) +
+#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 100 people",
+#                 title = "Total Population") +
+#   tm_layout(title = "Population Distribution \nand Flood Zones", 
+#             frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m1, "DATA/FEMA/RI/ri_flood.png",
+#           height = 7, width = 8, units = "in", dpi = 600)
 
-# Create road layer for context
-ri_highways <- tigris::primary_roads() %>% 
-  filter(FULLNAME %in% c("I- 95","I- 195","I- 295", "US Hwy 6")) %>%
-  tmaptools::crop_shape(., ne_states_sf_cb) %>% 
-  st_transform(., crs = 2840)
-
-# Extract highway segments for labeling
-I95roadSegment <- ri_highways %>% 
-  filter(LINEARID == "110468245978")
-
-I95roadSegment2 <- ri_highways %>% 
-  filter(LINEARID == "1107052605232")
-
-I295roadSegment <- ri_highways %>% 
-  filter(LINEARID == "1104755623349")
-
-I195roadSegment <- ri_highways %>% 
-  filter(LINEARID == "110448466166")
-
-# Create custom icons of highway shields
-I95 <- tmap_icons(file = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/I-95.svg/200px-I-95.svg.png")
-I195 <- tmap_icons("https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/I-195.svg/200px-I-195.svg.png")
-I295 <- tmap_icons("https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/I-295.svg/200px-I-295.svg.png")
-
-# Create random points, with 1 point for every 100 people
-ri_totalpop_pts <- ri_blkgrp_2840 %>% 
-  select(totalpopE) %>% 
-  filter(totalpopE >= 100) %>% 
-  st_sample(., size = round(.$totalpopE/100)) %>% # create 1 random point for every 100 people
-  st_sf(.) %>% 
-  mutate(Group = "Total Pop") %>% 
-  group_by(Group) %>% 
-  summarize()
-
-# Create a simplified version of NFHZA polygons to speed up mapping
-ri_fhza_2840_land_simple <- ri_fhza_2840_land %>% 
-  select(Interval) %>% 
-  st_cast(., "MULTIPOLYGON") %>% # homogenize type
-  st_cast(., "POLYGON") %>% 
-  st_simplify(., dTolerance = 100) %>% # reduce vertices
-  st_make_valid() %>%
-  group_by(Interval) %>% 
-  summarize() %>% 
-  mutate(Area = st_area(.))
-
-# Map totalpop and flood zones
-tm_layout(bg.color = "#e6f3f7") +
-  tm_shape(ri_blkgrp_2840, unit = "mi") + tm_fill(col = "white") +
-  tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
-  tm_shape(ri_awater_sf) + tm_fill(col = "#e6f3f7") + 
-  tm_shape(ne_states_sf_cb) + tm_borders() +
-  tm_shape(ri_totalpop_pts) + tm_dots(col = "darkgoldenrod3",
-                                      labels = "1 dot = 100 people") +
-  tm_shape(ri_fhza_2840_land_simple) + 
-  tm_fill(col = "Interval", 
-          palette = c("dodgerblue", "blueviolet"), 
-          labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"), 
-          title = "FEMA Flood Zones",
-          alpha = 0.6,
-          border.alpha = 0) +
-  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.8) +
-  tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
-  tm_shape(I95roadSegment) + 
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
-  tm_shape(I95roadSegment2) + 
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
-  tm_shape(I195roadSegment) +
-  tm_symbols(shape = I195, border.lwd = NA, size = 0.2) +
-  tm_shape(I295roadSegment) + 
-  tm_symbols(shape = I295, border.lwd = NA, size = 0.2) +
-  tm_shape(ri_towns_sf_pts) + tm_dots() +
-  tm_text("NAME", size = 0.5, col = "black", 
-          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
-               position = c(0.6,0.005)) +
-  tm_add_legend(type = "fill", col = "darkgoldenrod3",
-                border.col = "white", border.alpha = 0,
-                labels = "1 dot = 100 people",
-                title = "Total Population") +
-  tm_layout(title = "Population Distribution \nand Flood Zones", 
-            frame = TRUE, main.title.size = 0.8,
-            legend.outside = TRUE,
-            legend.title.size = 0.8,
-            legend.outside.position = c("right", "top"))
+knitr::include_graphics("DATA/FEMA/RI/ri_flood.png")
 ```
 
 Approximately 11.6% of Rhode Island's land area falls within FEMA flood zones. The breakdown by type of flood zone is presented in Table \@ref(tab:tabNFHZAarea) below. 
@@ -358,10 +389,10 @@ ri_FloodPops_df %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = ri_FloodPops_df[1,4], linetype = "dashed") +
-  geom_text(aes(x = "Disabled", y = 9.1, label = "Below state avg"),
-            color = "gray48") +
-  geom_segment(aes(x = "No Car HH", xend = "No Car HH", y = 10, yend = 8.2), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
+  # geom_text(aes(x = "Disabled", y = 9.1, label = "Below state avg"),
+  #           color = "gray48") +
+  # geom_segment(aes(x = "No Car HH", xend = "No Car HH", y = 10, yend = 8.2), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
   geom_text(aes(x = "Low Income", y = 11.3, label = "Above state avg"),
             color = "gray48") +
   geom_segment(aes(x = "Under 18", xend = "Under 18", y = 10.4, yend = 12.2), 
@@ -407,55 +438,60 @@ The map below (Figure \@ref(fig:mapNFHZAPopConcern)) shows those overrepresented
 
 # # save time by just loading file
 # saveRDS(ri_nfhza_vulnerable, file = "DATA/FEMA/RI/ri_nfhza_vulnerable.Rds")
-# load vulnerable point file
-ri_nfhza_vulnerable <- readRDS("DATA/FEMA/RI/ri_nfhza_vulnerable.Rds")
+# # load vulnerable point file
+# ri_nfhza_vulnerable <- readRDS("DATA/FEMA/RI/ri_nfhza_vulnerable.Rds")
+# 
+# # Map transit-dependent pops and flood zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(ri_blkgrp_2840, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(ri_awater_sf) + tm_fill(col = "#e6f3f7") + 
+#   tm_shape(ri_fhza_2840_land) + 
+#   tm_fill(col = "Interval", 
+#           palette = c("dodgerblue", "blueviolet"), 
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"), 
+#           title = "FEMA Flood Zones",
+#           border.alpha = 0) +
+#   # tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ri_nfhza_vulnerable) + 
+#   tm_dots(col = "darkgoldenrod3", 
+#           labels = "1 dot = 5 people",
+#           alpha = 0.6) +
+#   tm_facets(by = "Group", 
+#             ncol = 2,
+#             free.coords = FALSE) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
+#   tm_shape(I95roadSegment) + 
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) + 
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I195roadSegment) +
+#   tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
+#   tm_shape(I295roadSegment) + 
+#   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+#   tm_shape(ri_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black", 
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+#                position = c(0.6,0.005)) +
+#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 5 people",
+#                 title = "Population Group") +
+#   tm_layout(title = "Over-represented\nPopulations \nwithin Flood Zones", 
+#             frame = TRUE, main.title.size = 1,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"),
+#             legend.outside.size = 0.15,
+#             asp = 10/15)
+# 
+# tmap_save(m2, "DATA/FEMA/RI/RI_flood_vulnerable.png",
+#           height = 6, width = 8, units = "in", dpi = 600)
 
-# Map transit-dependent pops and flood zones
-tm_layout(bg.color = "#e6f3f7") +
-  tm_shape(ri_blkgrp_2840, unit = "mi") + tm_fill(col = "white") +
-  tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
-  tm_shape(ri_awater_sf) + tm_fill(col = "#e6f3f7") + 
-  tm_shape(ri_fhza_2840_land) + 
-  tm_fill(col = "Interval", 
-          palette = c("dodgerblue", "blueviolet"), 
-          labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"), 
-          title = "FEMA Flood Zones",
-          border.alpha = 0) +
-  tm_shape(ne_states_sf_cb) + tm_borders() +
-  tm_shape(ri_nfhza_vulnerable) + 
-  tm_dots(col = "darkgoldenrod3", 
-          labels = "1 dot = 5 people",
-          alpha = 0.6) +
-  tm_facets(by = "Group", 
-            ncol = 2,
-            free.coords = FALSE) +
-  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.6) +
-  tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
-  tm_shape(I95roadSegment) + 
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-  tm_shape(I95roadSegment2) + 
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-  tm_shape(I195roadSegment) +
-  tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
-  tm_shape(I295roadSegment) + 
-  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
-  tm_shape(ri_towns_sf_pts) + tm_dots() +
-  tm_text("NAME", size = 0.5, col = "black", 
-          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
-               position = c(0.6,0.005)) +
-  tm_add_legend(type = "fill", col = "darkgoldenrod3",
-                alpha = 0.6,
-                border.col = "white", border.alpha = 0,
-                labels = "1 dot = 5 people",
-                title = "Population Group") +
-  tm_layout(title = "Over-represented\nPopulations \nwithin Flood Zones", 
-            frame = TRUE, main.title.size = 1,
-            legend.outside = TRUE,
-            legend.title.size = 0.8,
-            legend.outside.position = c("right", "top"),
-            legend.outside.size = 0.15,
-            asp = 10/15)
+knitr::include_graphics("DATA/FEMA/RI/RI_flood_vulnerable.png")
 ```
 
 \pagebreak
@@ -581,58 +617,63 @@ A significant proportion of Rhode Island's population lives near the coast and i
 # r_hea_catb <- ri_hea_sf_agg %>% 
 #   filter(EVAC == "B")
 
-# Create a simplified version of hea polygons to speed up mapping
-ri_hea_sf_simple <- ri_hea_sf %>% 
-  select(EVAC) %>% 
-  filter(EVAC %in% c("A","B")) %>% 
-  st_cast(., "MULTIPOLYGON") %>% # homogenize type
-  st_cast(., "POLYGON") %>% 
-  st_simplify(., dTolerance = 10) %>% # reduce vertices
-  st_make_valid() %>%
-  group_by(EVAC) %>% 
-  summarize() %>% 
-  mutate(Area = st_area(.))
+# # Create a simplified version of hea polygons to speed up mapping
+# ri_hea_sf_simple <- ri_hea_sf %>% 
+#   select(EVAC) %>% 
+#   filter(EVAC %in% c("A","B")) %>% 
+#   st_cast(., "MULTIPOLYGON") %>% # homogenize type
+#   st_cast(., "POLYGON") %>% 
+#   st_simplify(., dTolerance = 10) %>% # reduce vertices
+#   st_make_valid() %>%
+#   group_by(EVAC) %>% 
+#   summarize() %>% 
+#   mutate(Area = st_area(.))
+# 
+# # Map totalpop and hurricane evacuation zones
+# m3 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(ri_blkgrp_2840, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(ri_awater_sf) + tm_fill(col = "#e6f3f7") + 
+#   # tm_shape(ne_states_sf_cb) + tm_borders() +
+#   tm_shape(ri_totalpop_pts) + tm_dots(col = "springgreen3",
+#                                       labels = "1 dot = 100 persons") +
+#   tm_shape(ri_hea_sf_simple) + 
+#   tm_fill(col = "EVAC", 
+#           palette = c("deeppink", "purple3"), 
+#           labels = c("A: Category 1 - 2", 
+#                      "B: Category 3 - 4"), 
+#           title = "Evacuation Zone and\nHurricane Category",
+#           alpha = 0.6,
+#           border.alpha = 0) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
+#   tm_shape(I95roadSegment) + 
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) + 
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I195roadSegment) +
+#   tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
+#   tm_shape(I295roadSegment) + 
+#   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+#   tm_shape(ri_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black", 
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+#                position = c(0.6,0.005)) +
+#   tm_add_legend(type = "fill", col = "springgreen3",
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 100 people",
+#                 title = "Total Population") +
+#   tm_layout(title = "Population Distribution \nand Hurricane\nEvacuation Zones", 
+#             frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m3, "DATA/FEMA/RI/RI_hevac.png",
+#           height = 6, width = 8, units = "in", dpi = 600)
 
-# Map totalpop and hurricane evacuation zones
-tm_layout(bg.color = "#e6f3f7") +
-  tm_shape(ri_blkgrp_2840, unit = "mi") + tm_fill(col = "white") +
-  tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
-  tm_shape(ri_awater_sf) + tm_fill(col = "#e6f3f7") + 
-  tm_shape(ne_states_sf_cb) + tm_borders() +
-  tm_shape(ri_totalpop_pts) + tm_dots(col = "darkgoldenrod3",
-                                      labels = "1 dot = 100 persons") +
-  tm_shape(ri_hea_sf_simple) + 
-  tm_fill(col = "EVAC", 
-          palette = c("deeppink", "purple3"), 
-          labels = c("A: Category 1 - 2", 
-                     "B: Category 3 - 4"), 
-          title = "Evacuation Zone and\nHurricane Category",
-          alpha = 0.6,
-          border.alpha = 0) +
-  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.8) +
-  tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
-  tm_shape(I95roadSegment) + 
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
-  tm_shape(I95roadSegment2) + 
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
-  tm_shape(I195roadSegment) +
-  tm_symbols(shape = I195, border.lwd = NA, size = 0.2) +
-  tm_shape(I295roadSegment) + 
-  tm_symbols(shape = I295, border.lwd = NA, size = 0.2) +
-  tm_shape(ri_towns_sf_pts) + tm_dots() +
-  tm_text("NAME", size = 0.5, col = "black", 
-          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
-               position = c(0.6,0.005)) +
-  tm_add_legend(type = "fill", col = "darkgoldenrod3",
-                border.col = "white", border.alpha = 0,
-                labels = "1 dot = 100 people",
-                title = "Total Population") +
-  tm_layout(title = "Population Distribution \nand Hurricane\nEvacuation Zones", 
-            frame = TRUE, main.title.size = 0.8,
-            legend.outside = TRUE,
-            legend.title.size = 0.8,
-            legend.outside.position = c("right", "top"))
+knitr::include_graphics("DATA/FEMA/RI/RI_hevac.png")
 ```
 
 Approximately 10.3% of Rhode Island's land area falls within hurricane evacuation zones. The breakdown by hurricane evacuation zone is presented in Table \@ref(tab:tabHEVACarea) below.
@@ -692,10 +733,10 @@ ri_HevacPops_df %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = ri_HevacPops_df[1,4], linetype = "dashed") +
-  geom_text(aes(x = "Disabled", y = 10.3, label = "Below state avg"),
-            color = "gray48") +
-  geom_segment(aes(x = "No Car HH", xend = "No Car HH", y = 11.4, yend = 9.6), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
+  # geom_text(aes(x = "Disabled", y = 10.3, label = "Below state avg"),
+  #           color = "gray48") +
+  # geom_segment(aes(x = "No Car HH", xend = "No Car HH", y = 11.4, yend = 9.6), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
   geom_text(aes(x = "Low Income", y = 13, label = "Above state avg"),
             color = "gray48") +
   geom_segment(aes(x = "Under 18", xend = "Under 18", y = 11.8, yend = 13.6), 
@@ -742,54 +783,59 @@ The map below (Figure \@ref(fig:mapHEVACPopConcern)) shows those overrepresented
 # # save time by just loading file
 # saveRDS(ri_hevac_vulnerable, file = "DATA/FEMA/RI/ri_hevac_vulnerable.Rds")
 # load vulnerable point file
-ri_hevac_vulnerable <- readRDS("DATA/FEMA/RI/ri_hevac_vulnerable.Rds")
+# ri_hevac_vulnerable <- readRDS("DATA/FEMA/RI/ri_hevac_vulnerable.Rds")
+# 
+# # Map them out
+# m4 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(ri_blkgrp_2840, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(ri_awater_sf) + tm_fill(col = "#e6f3f7") + 
+#   # tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+#   tm_shape(ri_hevac_vulnerable) + 
+#   tm_dots(col = "springgreen3", 
+#           labels = "1 dot = 500 people",
+#           alpha = 0.6) +
+#   tm_facets(by = "Group",
+#             ncol = 2,
+#             free.coords = FALSE) +
+#   tm_shape(ri_hea_sf_simple) + 
+#   tm_fill(col = "EVAC", 
+#           palette = c("deeppink", "purple3"), 
+#           labels = c("A: Category 1 - 2", 
+#                      "B: Category 3 - 4"), 
+#           title = "Evacuation Zone &\nHurricane Category",
+#           alpha = 0.6,
+#           border.alpha = 0) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
+#   tm_shape(I95roadSegment) + 
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) + 
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I195roadSegment) +
+#   tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
+#   tm_shape(I295roadSegment) + 
+#   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+#   tm_shape(ri_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black", 
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+#                position = c(0.6,0.005)) +
+#   tm_add_legend(type = "fill", col = "springgreen3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 5 people",
+#                 title = "Population Group") +
+#   tm_layout(title = "Over-represented\nPopulations\nwithin Hurricane\nEvacuation\nZones", 
+#             frame = TRUE, main.title.size = 1,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"),
+#             legend.outside.size = 0.15,
+#             asp = 10/15)
+# 
+# tmap_save(m4, "DATA/FEMA/RI/RI_hevac_vulnerable.png",
+#           height = 6, width = 8, units = "in", dpi = 600)
 
-# Map them out
-tm_layout(bg.color = "#e6f3f7") +
-  tm_shape(ri_blkgrp_2840, unit = "mi") + tm_fill(col = "white") +
-  tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
-  tm_shape(ri_awater_sf) + tm_fill(col = "#e6f3f7") + 
-  # tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
-  tm_shape(ri_hevac_vulnerable) + 
-  tm_dots(col = "darkgoldenrod3", 
-          labels = "1 dot = 500 people",
-          alpha = 0.6) +
-  tm_facets(by = "Group",
-            ncol = 2,
-            free.coords = FALSE) +
-  tm_shape(ri_hea_sf_simple) + 
-  tm_fill(col = "EVAC", 
-          palette = c("deeppink", "purple3"), 
-          labels = c("A: Category 1 - 2", 
-                     "B: Category 3 - 4"), 
-          title = "Evacuation Zone &\nHurricane Category",
-          alpha = 0.6,
-          border.alpha = 0) +
-  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.6) +
-  tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
-  tm_shape(I95roadSegment) + 
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-  tm_shape(I95roadSegment2) + 
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-  tm_shape(I195roadSegment) +
-  tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
-  tm_shape(I295roadSegment) + 
-  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
-  tm_shape(ri_towns_sf_pts) + tm_dots() +
-  tm_text("NAME", size = 0.5, col = "black", 
-          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
-               position = c(0.6,0.005)) +
-  tm_add_legend(type = "fill", col = "darkgoldenrod3",
-                alpha = 0.6,
-                border.col = "white", border.alpha = 0,
-                labels = "1 dot = 5 people",
-                title = "Population Group") +
-  tm_layout(title = "Over-represented\nPopulations\nwithin Hurricane\nEvacuation\nZones", 
-            frame = TRUE, main.title.size = 1,
-            legend.outside = TRUE,
-            legend.title.size = 0.8,
-            legend.outside.position = c("right", "top"),
-            legend.outside.size = 0.15,
-            asp = 10/15)
+knitr::include_graphics("DATA/FEMA/RI/RI_hevac_vulnerable.png")
 ```
