@@ -341,56 +341,56 @@ ct_nfhza_2775_land_simple <- ct_nfhza_2775_land %>%
 ```{r mapNFHZAPop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="FEMA flood zones and population distribution across Connecticut at Census Block Group level."}
 # Create a dot density map of total populations and overlay on flood zones
 # Map totalpop and flood zones
-m1 <- tm_layout(bg.color = "#e6f3f7") +
-  tm_shape(ct_blkgrp_2775, unit = "mi") + tm_fill(col = "white") +
-  tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
-  tm_shape(ny_state_sf) + tm_fill(col="white") +
-  tm_shape(ct_awater_sf) + tm_fill(col = "#e6f3f7") + 
-  # tm_shape(ne_states_sf_cb) + tm_borders() +
-  # tm_shape(ny_state_sf) + tm_borders() +
-  tm_shape(ct_totalpop_pts) + tm_dots(col = "darkgoldenrod3",
-                                      labels = "1 dot = 500 people",
-                                      alpha = 0.6) +
-  tm_shape(ct_nfhza_2775_land_simple) + 
-  tm_fill(col = "Interval", 
-          palette = c("dodgerblue", "blueviolet"), 
-          labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"), 
-          title = "FEMA Flood Zones",
-          alpha = 0.6,
-          border.alpha = 0) +
-  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
-  tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
-  tm_shape(ct_highways) + tm_lines(col = "seashell4", lwd = 1) +
-  tm_shape(I95roadSegment) + 
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-  tm_shape(I95roadSegment2) + 
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-  tm_shape(I395roadSegment) +
-  tm_symbols(shape = I395, border.lwd = NA, size = 0.1) +
-  tm_shape(I91roadSegment) + 
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
-  tm_shape(I84roadSegment) + 
-  tm_symbols(shape = I84, border.lwd = NA, size = 0.1) +
-  tm_shape(ct_towns_sf_pts) + tm_dots() +
-  tm_text("NAME", size = 0.5, col = "black", 
-          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_shape(nofemapolys) + tm_fill(col = "gray", alpha = 0.4) +
-  tm_text("LABEL", alpha = 0.5) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
-               position = c(0.6,0.005)) +
-  tm_add_legend(type = "fill", col = "darkgoldenrod3",
-                alpha = 0.6,
-                border.col = "white", border.alpha = 0,
-                labels = "1 dot = 500 people",
-                title = "Total Population") +
-  tm_layout(title = "Population\nDistribution\nand Flood Zones", 
-            frame = TRUE, main.title.size = 0.8,
-            legend.outside = TRUE,
-            legend.title.size = 0.8,
-            legend.outside.position = c("right", "top"))
-
-tmap_save(m1, "DATA/FEMA/CT/ct_flood.png",
-          height = 4, width = 8, units = "in", dpi = 600)
+# m1 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(ct_blkgrp_2775, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(ct_awater_sf) + tm_fill(col = "#e6f3f7") + 
+#   # tm_shape(ne_states_sf_cb) + tm_borders() +
+#   # tm_shape(ny_state_sf) + tm_borders() +
+#   tm_shape(ct_totalpop_pts) + tm_dots(col = "darkgoldenrod3",
+#                                       labels = "1 dot = 500 people",
+#                                       alpha = 0.6) +
+#   tm_shape(ct_nfhza_2775_land_simple) + 
+#   tm_fill(col = "Interval", 
+#           palette = c("dodgerblue", "blueviolet"), 
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"), 
+#           title = "FEMA Flood Zones",
+#           alpha = 0.6,
+#           border.alpha = 0) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ct_highways) + tm_lines(col = "seashell4", lwd = 1) +
+#   tm_shape(I95roadSegment) + 
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) + 
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I395roadSegment) +
+#   tm_symbols(shape = I395, border.lwd = NA, size = 0.1) +
+#   tm_shape(I91roadSegment) + 
+#   tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
+#   tm_shape(I84roadSegment) + 
+#   tm_symbols(shape = I84, border.lwd = NA, size = 0.1) +
+#   tm_shape(ct_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black", 
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_shape(nofemapolys) + tm_fill(col = "gray", alpha = 0.4) +
+#   tm_text("LABEL", alpha = 0.5) +
+#   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+#                position = c(0.6,0.005)) +
+#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 500 people",
+#                 title = "Total Population") +
+#   tm_layout(title = "Total\nPopulation\nDistribution\nand Flood Zones", 
+#             frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m1, "DATA/FEMA/CT/ct_flood.png",
+#           height = 4, width = 8, units = "in", dpi = 600)
 
 knitr::include_graphics("DATA/FEMA/CT/ct_flood.png")
 ```
@@ -415,23 +415,23 @@ ct_nfhza_2775_land %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-These percentages approximate the proportion of the total population in the state that are within these flood zones. However, exposure varies significantly by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups within flood zones. Aside from the total population, the largest absolute numbers of subpopulations within a flood zone are minorities followed by low income persons. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
+These percentages approximate the proportion of the total population in the state that are living within these flood zones. However, exposure varies significantly by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups living within flood zones. Aside from the total population, the largest absolute numbers of subpopulations living within a flood zone are minorities followed by low income persons. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
 
-```{r tabNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut Populations within Flood Zones."}
+```{r tabNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut Populations Living within Flood Zones."}
 # Show table of pops within flood zones
 ct_FloodPops_df %>% 
   mutate(PctFlood = paste0(as.character(round(PctFlood,1)),"%")) %>% 
   arrange(-FloodPop) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
-                    caption = "Connecticut Populations within Flood Zones",
+                    caption = "Connecticut Populations Living within Flood Zones",
                     digits = 0, align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Some groups are disproportionately exposed to these flood hazards. While approximately 7.2% of the general population are within flood zones, households without access to a car, people in low income households, limited English speaking households, and the elderly (persons over age 64), exceed the population average within flood zones. These populations of concern are overrepresented in terms of flood exposure (see Figure \@ref(fig:chartNFHZApop) below).
+Some groups are disproportionately exposed to these flood hazards. While approximately 7.2% of the general population are living within flood zones, households without access to a car, people in low income households, limited English speaking households, and the elderly (persons over age 64), exceed the population average living within flood zones. These populations of concern are disproportionately exposed to flood risk (see Figure \@ref(fig:chartNFHZApop) below).
 
-```{r chartNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut Populations within Flood Zones."}
+```{r chartNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut Populations Living within Flood Zones."}
 # Create lollipop plot of pops within flood zones
 ct_FloodPops_df %>% 
   ggplot(aes(x = reorder(Group,PctFlood), 
@@ -442,7 +442,7 @@ ct_FloodPops_df %>%
                color = "skyblue") +
   geom_point(color = "blue", size = 4, alpha = 0.8) +
   coord_flip() + xlab("") + ylab("") + 
-  ggtitle("Connecticut Populations within Flood Zones") + theme_light() +
+  ggtitle("Connecticut Populations Living within Flood Zones") + theme_light() +
   theme(panel.grid.major.y = element_blank(),
         panel.border = element_blank(),
         axis.ticks.y = element_blank()) +
@@ -458,9 +458,9 @@ ct_FloodPops_df %>%
                arrow = arrow(length = unit(0.3,"cm")))
 ```
 
-The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those overrepresented populations within the flood zones.
+The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those populations that are disproportionately exposed to flood risk.
 
-```{r mapNFHZAPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island Populations within Flood Zones."}
+```{r mapNFHZAPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island Populations Living within Flood Zones."}
 # Create a dot density map of transit-dependent populations in flood zone
 # # Create random points, with 1 point for every 5 people
 # NoCarHH_nfhza_pts <- ct_tracts_nfhza %>% 
@@ -545,7 +545,7 @@ The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those overrepresented
 # 
 # # save time by just loading file
 # saveRDS(ct_nfhza_vulnerable, file = "DATA/FEMA/CT/ct_nfhza_vulnerable.Rds")
-# load vulnerable point file
+# # load vulnerable point file
 # ct_nfhza_vulnerable <- readRDS("DATA/FEMA/CT/ct_nfhza_vulnerable.Rds")
 # 
 # # Map over-represented pops and flood zones
@@ -553,48 +553,48 @@ The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those overrepresented
 #   tm_shape(ct_blkgrp_2775, unit = "mi") + tm_fill(col = "white") +
 #   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
 #   tm_shape(ny_state_sf) + tm_fill(col="white") +
-#   tm_shape(ct_awater_sf) + tm_fill(col = "#e6f3f7") + 
-#   tm_shape(ct_nfhza_vulnerable) + 
-#   tm_dots(col = "darkgoldenrod3", 
+#   tm_shape(ct_awater_sf) + tm_fill(col = "#e6f3f7") +
+#   tm_shape(ct_nfhza_vulnerable) +
+#   tm_dots(col = "darkgoldenrod3",
 #           labels = "1 dot = 500 people",
 #           alpha = 0.6) +
-#   tm_facets(by = "Group", 
+#   tm_facets(by = "Group",
 #             ncol = 2,
 #             free.coords = FALSE) +
-#   tm_shape(ct_nfhza_2775_land_simple) + 
-#   tm_fill(col = "Interval", 
-#           palette = c("dodgerblue", "blueviolet"), 
-#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"), 
+#   tm_shape(ct_nfhza_2775_land_simple) +
+#   tm_fill(col = "Interval",
+#           palette = c("dodgerblue", "blueviolet"),
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
 #           title = "FEMA Flood Zones",
 #           alpha = 0.6,
 #           border.alpha = 0) +
 #   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
 #   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
 #   tm_shape(ct_highways) + tm_lines(col = "seashell4", lwd = 1) +
-#   tm_shape(I95roadSegment) + 
+#   tm_shape(I95roadSegment) +
 #   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-#   tm_shape(I95roadSegment2) + 
+#   tm_shape(I95roadSegment2) +
 #   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
 #   tm_shape(I395roadSegment) +
 #   tm_symbols(shape = I395, border.lwd = NA, size = 0.1) +
-#   tm_shape(I91roadSegment) + 
+#   tm_shape(I91roadSegment) +
 #   tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
-#   tm_shape(I84roadSegment) + 
+#   tm_shape(I84roadSegment) +
 #   tm_symbols(shape = I84, border.lwd = NA, size = 0.1) +
 #   tm_shape(ct_towns_sf_pts) + tm_dots() +
-#   tm_text("NAME", size = 0.5, col = "black", 
+#   tm_text("NAME", size = 0.5, col = "black",
 #           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-#   tm_shape(nofemapolys) + 
+#   tm_shape(nofemapolys) +
 #   tm_fill(col = "gray", alpha = 0.4) +
 #   tm_text("LABEL", alpha = 0.5, size = 0.6) +
-#   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+#   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
 #                position = c(0.6,0.005)) +
 #   tm_add_legend(type = "fill", col = "darkgoldenrod3",
 #                 alpha = 0.6,
 #                 border.col = "white", border.alpha = 0,
 #                 labels = "1 dot = 5 people",
 #                 title = "Population Group") +
-#   tm_layout(title = "Over-represented\nPopulations\nwithin\nFlood Zones", 
+#   tm_layout(title = "Selected\nPopulations\nLiving within\nFlood Zones",
 #             frame = TRUE, main.title.size = 0.8,
 #             legend.outside = TRUE,
 #             legend.title.size = 0.8,
@@ -603,7 +603,7 @@ The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those overrepresented
 #             legend.outside.size = 0.15,
 #             asp = 14/10)
 # 
-# tmap_save(m, "DATA/FEMA/CT/CT_nhfza_vulnerable.png", 
+# tmap_save(m, "DATA/FEMA/CT/CT_nhfza_vulnerable.png",
 #           height = 9, width = 8, units = "in", dpi = 600)
 
 knitr::include_graphics("DATA/FEMA/CT/CT_nhfza_vulnerable.png")
@@ -714,14 +714,14 @@ A significant proportion of Connecticut's population lives near the coast and is
 
 ```{r mapHEVACPop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="FEMA flood zones and population distribution across Connecticut at Census Block Group level."}
 # # Create a simplified version of hea polygons to speed up mapping
-# ct_hea_sf_simple <- ct_hea_sf %>% 
-#   select(zone) %>% 
+# ct_hea_sf_simple <- ct_hea_sf %>%
+#   select(zone) %>%
 #   st_cast(., "MULTIPOLYGON") %>% # homogenize type
-#   st_cast(., "POLYGON") %>% 
+#   st_cast(., "POLYGON") %>%
 #   st_simplify(., dTolerance = 10) %>% # reduce vertices
 #   st_make_valid() %>%
-#   group_by(zone) %>% 
-#   summarize() %>% 
+#   group_by(zone) %>%
+#   summarize() %>%
 #   mutate(Area = st_area(.))
 # 
 # # Map totalpop and hurricane evacuation zones
@@ -729,45 +729,45 @@ A significant proportion of Connecticut's population lives near the coast and is
 #   tm_shape(ct_blkgrp_2775, unit = "mi") + tm_fill(col = "white") +
 #   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
 #   tm_shape(ny_state_sf) + tm_fill(col="white") +
-#   tm_shape(ct_awater_sf) + tm_fill(col = "#e6f3f7") + 
+#   tm_shape(ct_awater_sf) + tm_fill(col = "#e6f3f7") +
 #   # tm_shape(ne_states_sf_cb) + tm_borders() +
 #   # tm_shape(ny_state_sf) + tm_borders() +
-#   tm_shape(ct_totalpop_pts) + 
+#   tm_shape(ct_totalpop_pts) +
 #   tm_dots(col = "springgreen3",
 #           labels = "1 dot = 500 people",
 #           alpha = 0.6) +
-#   tm_shape(ct_hea_sf_simple) + 
-#   tm_fill(col = "zone", 
-#           palette = c("deeppink", "purple3"), 
-#           labels = c("A: Category 1 - 2", 
-#                      "B: Category 3 - 4"), 
+#   tm_shape(ct_hea_sf_simple) +
+#   tm_fill(col = "zone",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
 #           title = "Evacuation Zone and\nHurricane Category",
 #           alpha = 0.6,
 #           border.alpha = 0) +
 #   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
 #   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
 #   tm_shape(ct_highways) + tm_lines(col = "seashell4", lwd = 1) +
-#   tm_shape(I95roadSegment) + 
+#   tm_shape(I95roadSegment) +
 #   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-#   tm_shape(I95roadSegment2) + 
+#   tm_shape(I95roadSegment2) +
 #   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
 #   tm_shape(I395roadSegment) +
 #   tm_symbols(shape = I395, border.lwd = NA, size = 0.1) +
-#   tm_shape(I91roadSegment) + 
+#   tm_shape(I91roadSegment) +
 #   tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
-#   tm_shape(I84roadSegment) + 
+#   tm_shape(I84roadSegment) +
 #   tm_symbols(shape = I84, border.lwd = NA, size = 0.1) +
 #   tm_shape(ct_towns_sf_pts) + tm_dots() +
-#   tm_text("NAME", size = 0.5, col = "black", 
+#   tm_text("NAME", size = 0.5, col = "black",
 #           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-#   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+#   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
 #                position = c(0.6,0.005)) +
 #   tm_add_legend(type = "fill", col = "springgreen3",
 #                 alpha = 0.6,
 #                 border.col = "white", border.alpha = 0,
 #                 labels = "1 dot = 500 people",
 #                 title = "Total Population") +
-#   tm_layout(title = "Population\nDistribution\nand Hurricane\nEvacuation Zones", 
+#   tm_layout(title = "Total\nPopulation\nDistribution\nand Hurricane\nEvacuation Zones",
 #             frame = TRUE, main.title.size = 0.8,
 #             legend.outside = TRUE,
 #             legend.title.size = 0.8,
@@ -796,23 +796,23 @@ ct_hea_sf %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-These percentages belie the proportion of the population in the state that are within these evacuation zones. Moreover, exposure varies significantly by population subgroup. Table \@ref(tab:tabHEVACpop) below shows the total and percentages of the general population and various subgroups within hurricane evacuation zones. Aside from the total population, the largest subpopulation within an evacuation zone are minorities, and low income persons, followed by individuals over age 64 and under 18. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
+These percentages belie the proportion of the population in the state that are living within these evacuation zones. Moreover, exposure varies significantly by population subgroup. Table \@ref(tab:tabHEVACpop) below shows the total and percentages of the general population and various subgroups living within hurricane evacuation zones. Aside from the total population, the largest subpopulation living within an evacuation zone are minorities, and low income persons, followed by individuals over age 64 and under 18. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
 \pagebreak
-```{r tabHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut Populations within Hurricane Evacuation Zones."}
+```{r tabHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut Populations Living within Hurricane Evacuation Zones."}
 # Show table of pops within hurricane evacuation zones
 ct_HevacPops_df %>% 
   mutate(PctHevac = paste0(as.character(round(PctHevac,1)),"%")) %>% 
   arrange(-HevacPop) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
-                    caption = "Connecticut Populations within Hurricane Evacuation Zones",
+                    caption = "Connecticut Populations Living within Hurricane Evacuation Zones",
                     digits = 0, align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Some groups are disproportionately exposed to these hurricane evacuation hazards. While approximately 9.5% of the general population are within hurricane evacuation zones, households without access to a car, people in low income households, people in limited English speaking households, the elderly (persons over age 64), adults with less than a high school education, individuals with serious disability, and other popultions of concern exceed the population average within hurricane evacuation zones. These populations of concern are overrepresented in terms of hurricane evacuation exposure (see Figures \@ref(fig:chartHEVACpop) and \@ref(fig:mapHEVACPopConcern)) below).
+Some groups are disproportionately exposed to these hurricane evacuation hazards. While approximately 9.5% of the general population are living within hurricane evacuation zones, households without access to a car, people in low income households, people in limited English speaking households, the elderly (persons over age 64), adults with less than a high school education, individuals with serious disability, and other popultions of concern exceed the population average living within hurricane evacuation zones. These populations of concern are disproportionately exposed hurricane evacuation risk (see Figures \@ref(fig:chartHEVACpop) and \@ref(fig:mapHEVACPopConcern)) below).
 
-```{r chartHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut Populations within Hurricane Evacuation Zones."}
+```{r chartHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut Populations Living within Hurricane Evacuation Zones."}
 # Create lollipop plot of pops within flood zones
 ct_HevacPops_df %>% 
   ggplot(aes(x = reorder(Group,PctHevac), 
@@ -823,7 +823,7 @@ ct_HevacPops_df %>%
                color = "skyblue") +
   geom_point(color = "blue", size = 4, alpha = 0.8) +
   coord_flip() + xlab("") + ylab("") + 
-  ggtitle("Connecticut Populations within Hurricane Evacuation Zones") + theme_light() +
+  ggtitle("Connecticut Populations Living within Hurricane Evacuation\nZones") + theme_light() +
   theme(panel.grid.major.y = element_blank(),
         panel.border = element_blank(),
         axis.ticks.y = element_blank()) +
@@ -840,7 +840,7 @@ ct_HevacPops_df %>%
   expand_limits(y = c(9,14.5))
 ```
 
-```{r mapHEVACPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut Populations within Hurricane Evacuation Zones."}
+```{r mapHEVACPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut Populations Living within Hurricane Evacuation Zones."}
 # Create a dot density map of over-represented populations in hurricane evacuation zones
 # # Create random points, with 1 point for every 5 people
 # NoCarHH_hevac_pts <- ct_tracts_hevac %>% 
@@ -933,46 +933,46 @@ ct_HevacPops_df %>%
 #   tm_shape(ct_blkgrp_2775, unit = "mi") + tm_fill(col = "white") +
 #   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
 #   tm_shape(ny_state_sf) + tm_fill(col="white") +
-#   tm_shape(ct_awater_sf) + tm_fill(col = "#e6f3f7") + 
-#   tm_shape(ct_hevac_vulnerable) + 
-#   tm_dots(col = "springgreen3", 
+#   tm_shape(ct_awater_sf) + tm_fill(col = "#e6f3f7") +
+#   tm_shape(ct_hevac_vulnerable) +
+#   tm_dots(col = "springgreen3",
 #           labels = "1 dot = 500 people",
 #           alpha = 0.6) +
 #   tm_facets(by = "Group",
 #             ncol = 2,
 #             free.coords = FALSE) +
-#   tm_shape(ct_hea_sf_simple) + 
-#   tm_fill(col = "zone", 
-#           palette = c("deeppink", "purple3"), 
-#           labels = c("A: Category 1 - 2", 
-#                      "B: Category 3 - 4"), 
+#   tm_shape(ct_hea_sf_simple) +
+#   tm_fill(col = "zone",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
 #           title = "Evacuation Zone &\nHurricane Category",
 #           alpha = 0.6,
 #           border.alpha = 0) +
 #   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
 #   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
 #   tm_shape(ct_highways) + tm_lines(col = "seashell4", lwd = 1) +
-#   tm_shape(I95roadSegment) + 
+#   tm_shape(I95roadSegment) +
 #   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-#   tm_shape(I95roadSegment2) + 
+#   tm_shape(I95roadSegment2) +
 #   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
 #   tm_shape(I395roadSegment) +
 #   tm_symbols(shape = I395, border.lwd = NA, size = 0.1) +
-#   tm_shape(I91roadSegment) + 
+#   tm_shape(I91roadSegment) +
 #   tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
-#   tm_shape(I84roadSegment) + 
+#   tm_shape(I84roadSegment) +
 #   tm_symbols(shape = I84, border.lwd = NA, size = 0.1) +
 #   tm_shape(ct_towns_sf_pts) + tm_dots() +
-#   tm_text("NAME", size = 0.5, col = "black", 
+#   tm_text("NAME", size = 0.5, col = "black",
 #           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-#   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+#   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
 #                position = c(0.6,0.005)) +
 #   tm_add_legend(type = "fill", col = "springgreen3",
 #                 alpha = 0.6,
 #                 border.col = "white", border.alpha = 0,
 #                 labels = "1 dot = 5 people",
 #                 title = "Population Group") +
-#   tm_layout(title = "Over-represented\nPopulations\nwithin Hurricane\nEvacuation Zones", 
+#   tm_layout(title = "Selected\nPopulations\nLiving within\nHurricane\nEvacuation Zones",
 #             frame = TRUE, main.title.size = 0.8,
 #             legend.outside = TRUE,
 #             legend.title.size = 0.8,
@@ -980,7 +980,7 @@ ct_HevacPops_df %>%
 #             legend.outside.size = 0.15,
 #             asp = 14/10)
 # 
-# tmap_save(m2, "DATA/FEMA/CT/CT_hevac_vulnerable.png", 
+# tmap_save(m2, "DATA/FEMA/CT/CT_hevac_vulnerable.png",
 #           height = 9, width = 8, units = "in", dpi = 600)
 
 knitr::include_graphics("DATA/FEMA/CT/CT_hevac_vulnerable.png")
