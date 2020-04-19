@@ -414,16 +414,16 @@ canada <- st_read(dsn = "DATA/FEMA", layer = "lpr_000b16a_e") %>%
 #   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
 #   tm_shape(canada) + tm_fill(col = "white") +
 #   # tm_shape(ny_state_sf) + tm_fill(col="white") +
-#   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") + 
+#   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
 #   # tm_shape(ne_states_sf_cb) + tm_borders() +
 #   # tm_shape(ny_state_sf) + tm_borders() +
 #   tm_shape(me_totalpop_pts) + tm_dots(col = "darkgoldenrod3",
 #                                       labels = "1 dot = 500 people",
 #                                       alpha = 0.4) +
-#   tm_shape(me_nfhza_2802_land_simple) + 
-#   tm_fill(col = "Interval", 
-#           palette = c("dodgerblue", "blueviolet"), 
-#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"), 
+#   tm_shape(me_nfhza_2802_land_simple) +
+#   tm_fill(col = "Interval",
+#           palette = c("dodgerblue", "blueviolet"),
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
 #           title = "FEMA Flood Zones",
 #           alpha = 0.8,
 #           border.alpha = 0) +
@@ -431,25 +431,25 @@ canada <- st_read(dsn = "DATA/FEMA", layer = "lpr_000b16a_e") %>%
 #   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.8) +
 #   # tm_shape(me_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
 #   tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 0.5) +
-#   tm_shape(I295roadSegment) + 
+#   tm_shape(I295roadSegment) +
 #   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
 #   tm_shape(I95roadSegment) +
 #   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-#   tm_shape(I95roadSegment2) + 
+#   tm_shape(I95roadSegment2) +
 #   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
 #   tm_shape(me_towns_sf_pts) + tm_dots() +
-#   tm_text("NAME", size = 0.5, col = "black", 
+#   tm_text("NAME", size = 0.5, col = "black",
 #           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
 #   tm_shape(nofemapolys) + tm_fill(col = "gray", alpha = 0.4) +
 #   tm_text("LABEL", alpha = 0.5, size = 1) +
-#   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
+#   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5,
 #                position = c("right","bottom")) +
 #   tm_add_legend(type = "fill", col = "darkgoldenrod3",
 #                 alpha = 0.6,
 #                 border.col = "white", border.alpha = 0,
 #                 labels = "1 dot = 500 people",
 #                 title = "Total Population") +
-#   tm_layout(title = "Population Distribution \nand Flood Zones", 
+#   tm_layout(title = "Total Population\nDistribution and\nFlood Zones",
 #             frame = TRUE, main.title.size = 0.8,
 #             legend.outside = TRUE,
 #             legend.title.size = 0.8,
@@ -481,23 +481,23 @@ me_nfhza_2802_land %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-These percentages belie the proportions of the total population in the state that are within these flood zones. Moreover, exposure varies  by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups within flood zones. Aside from the total population, the largest absolute numbers of subpopulations within a flood zone are low income persons followed by people over 64 or under 18. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
+These percentages belie the proportions of the total population in the state that are living within these flood zones. Moreover, exposure varies  by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups living within flood zones. Aside from the total population, the largest absolute numbers of subpopulations living within a flood zone are low income persons followed by people over 64 or under 18. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
 
-```{r tabNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Maine Populations within Flood Zones."}
+```{r tabNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Maine Populations Living within Flood Zones."}
 # Show table of pops within flood zones
 me_FloodPops_df %>% 
   mutate(PctFlood = paste0(as.character(round(PctFlood,1)),"%")) %>% 
   arrange(-FloodPop) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
-                    caption = "Maine Populations within Flood Zones",
+                    caption = "Maine Populations Living within Flood Zones",
                     digits = 0, align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Some groups are disproportionately exposed to these flood hazards. While approximately 2.4% of the general population are within flood zones, households without access to a car, individuals over age 64, people with disabilities, people in low income households, and other populations of concern, exceed the population average within flood zones. These populations of concern are overrepresented in terms of flood exposure (see Figure \@ref(fig:chartNFHZApop) below).
+Some groups are disproportionately exposed to these flood hazards. While approximately 2.4% of the general population are living within flood zones, households without access to a car, individuals over age 64, people with disabilities, people in low income households, and other populations of concern, exceed the population average living within flood zones. These populations of concern are disproportionately exposed to flood risk (see Figure \@ref(fig:chartNFHZApop) below).
 
-```{r chartNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Maine Populations within Flood Zones."}
+```{r chartNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Maine Populations Living within Flood Zones."}
 # Create lollipop plot of pops within flood zones
 me_FloodPops_df %>% 
   ggplot(aes(x = reorder(Group,PctFlood), 
@@ -508,7 +508,7 @@ me_FloodPops_df %>%
                color = "skyblue") +
   geom_point(color = "blue", size = 4, alpha = 0.8) +
   coord_flip() + xlab("") + ylab("") + 
-  ggtitle("Maine Populations within Flood Zones") + theme_light() +
+  ggtitle("Maine Populations Living within Flood Zones") + theme_light() +
   theme(panel.grid.major.y = element_blank(),
         panel.border = element_blank(),
         axis.ticks.y = element_blank()) +
@@ -524,9 +524,9 @@ me_FloodPops_df %>%
                arrow = arrow(length = unit(0.3,"cm")))
 ```
 
-The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those overrepresented populations within the flood zones.
+The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show populations disproportionately exposed to flood risk.
 
-```{r mapNFHZAPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Maine Populations within Flood Zones."}
+```{r mapNFHZAPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Maine Populations Living within Flood Zones."}
 # Create a dot density map of transit-dependent populations in flood zone
 
 # pop2points <- function(sf, x, group){
@@ -565,9 +565,9 @@ The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those overrepresented
 # # save time by just loading file
 # saveRDS(me_nfhza_vulnerable, file = "DATA/FEMA/ME/me_nfhza_vulnerable.Rds")
 # load vulnerable point file
-me_nfhza_vulnerable <- readRDS("DATA/FEMA/ME/me_nfhza_vulnerable.Rds")
-
-# # Map over-represented pops and flood zones
+# me_nfhza_vulnerable <- readRDS("DATA/FEMA/ME/me_nfhza_vulnerable.Rds")
+# 
+# # # Map over-represented pops and flood zones
 # m2 <- tm_layout(bg.color = "#e6f3f7") +
 #   tm_shape(me_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
 #   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
@@ -610,7 +610,7 @@ me_nfhza_vulnerable <- readRDS("DATA/FEMA/ME/me_nfhza_vulnerable.Rds")
 #                 border.col = "white", border.alpha = 0,
 #                 labels = "1 dot = 10 people",
 #                 title = "Population Group") +
-#   tm_layout(title = "Over-represented\nPopulations\nwithin\nFlood Zones",
+#   tm_layout(title = "Selected\nPopulations\nLiving within\nFlood Zones",
 #             frame = TRUE, main.title.size = 0.8,
 #             legend.outside = TRUE,
 #             legend.title.size = 0.8,
@@ -802,7 +802,7 @@ tm_layout(bg.color = "#e6f3f7") +
                 border.col = "white", border.alpha = 0,
                 labels = "1 dot = 500 people",
                 title = "Total Population") +
-  tm_layout(title = "Population Distribution \nand Hurricane\nInundation Zones", 
+  tm_layout(title = "Total Population\nDistribution \nand Hurricane\nInundation Zones", 
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -826,23 +826,23 @@ me_hea_sf %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-These percentages belie the proportion of the population in the state that are within these inundation zones. Exposure varies significantly by population subgroup. Table \@ref(tab:tabHEVACpop) below shows the total and percentages of the general population and various subgroups within hurricane inundation zones. Aside from the total population, the largest subpopulation within an inundation zone are low income individuals and individuals over age 64 . The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
+These percentages belie the proportion of the population in the state that are living within these inundation zones. Exposure varies significantly by population subgroup. Table \@ref(tab:tabHEVACpop) below shows the total and percentages of the general population and various subgroups living within hurricane inundation zones. Aside from the total population, the largest subpopulation living within an inundation zone are low income individuals and individuals over age 64 . The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
 
-```{r tabHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Maine Populations within Hurricane Evacuation Zones."}
+```{r tabHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Maine Populations Living within Hurricane Inundation Zones."}
 # Show table of pops within hurricane evacuation zones
 me_HevacPops_df %>% 
   mutate(PctHevac = paste0(as.character(round(PctHevac,1)),"%")) %>% 
   arrange(-HevacPop) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
-                    caption = "Maine Populations within Hurricane Inundation Zones",
+                    caption = "Maine Populations Living within Hurricane Inundation Zones",
                     digits = 0, align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Some groups are disproportionately exposed to these hurricane evacuation hazards. While approximately 1.1% of the general population are within hurricane inundation zones, individuals over age 64 and households without access to a car exceed the population average within hurricane inundation zones. These populations of concern are overrepresented in terms of hurricane evacuation exposure (see Figures \@ref(fig:chartHEVACpop) and \@ref(fig:mapHEVACPopConcern) below).
+Some groups are disproportionately exposed to these hurricane evacuation hazards. While approximately 1.1% of the general population are living within hurricane inundation zones, individuals over age 64 and households without access to a car exceed the population average living within hurricane inundation zones. These populations of concern are disproportionately exposed to hurricane inundation risk (see Figures \@ref(fig:chartHEVACpop) and \@ref(fig:mapHEVACPopConcern) below).
 
-```{r chartHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Maine Populations within Hurricane Inundation Zones."}
+```{r chartHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Maine Populations Living within Hurricane Inundation Zones."}
 # Create lollipop plot of pops within flood zones
 me_HevacPops_df %>% 
   ggplot(aes(x = reorder(Group,PctHevac), 
@@ -853,7 +853,7 @@ me_HevacPops_df %>%
                color = "skyblue") +
   geom_point(color = "blue", size = 4, alpha = 0.8) +
   coord_flip() + xlab("") + ylab("") + 
-  ggtitle("Maine Populations within Hurricane Inundation\nZones") + theme_light() +
+  ggtitle("Maine Populations Living within Hurricane Inundation\nZones") + theme_light() +
   theme(panel.grid.major.y = element_blank(),
         panel.border = element_blank(),
         axis.ticks.y = element_blank()) +
@@ -869,7 +869,7 @@ me_HevacPops_df %>%
                arrow = arrow(length = unit(0.3,"cm")))
 ```
 
-```{r mapHEVACPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Maine Populations within Hurricane Inundation Zones."}
+```{r mapHEVACPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Maine Populations Living within Hurricane Inundation Zones."}
 # # Create a dot density map of over-represented populations in hurricane evacuation zones
 # LimitEngHH_hevac_pts <- pop2points(me_blkgrps_hevac,NewEng_limit,"Limited English HH")
 # 
@@ -897,22 +897,22 @@ me_HevacPops_df %>%
 # # save time by just loading file
 # saveRDS(me_hevac_vulnerable, file = "DATA/FEMA/ME/me_hevac_vulnerable.Rds")
 # load vulnerable point file
-me_hevac_vulnerable <- readRDS("DATA/FEMA/ME/me_hevac_vulnerable.Rds")
-
+# me_hevac_vulnerable <- readRDS("DATA/FEMA/ME/me_hevac_vulnerable.Rds")
+# 
 # # Map over-represented pops and hurricane evacuation zones
 # m2 <- tm_layout(bg.color = "#e6f3f7") +
 #   tm_shape(me_hea_sf_simple, unit = "mi") + tm_fill(col = "white") +
 #   tm_shape(me_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
 #   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
 #   # tm_shape(ny_state_sf) + tm_fill(col="white") +
-#   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") + 
+#   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
 #   tm_shape(ne_states_sf_cb) + tm_borders() +
 #   # tm_shape(ny_state_sf) + tm_borders() +
-#   tm_shape(me_hea_sf_simple) + 
-#   tm_fill(col = "Zone", 
-#           palette = c("deeppink", "purple3"), 
-#           labels = c("A: Category 1 - 2", 
-#                      "B: Category 3 - 4"), 
+#   tm_shape(me_hea_sf_simple) +
+#   tm_fill(col = "Zone",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
 #           title = "Inundation Zone and\nHurricane Category",
 #           alpha = 0.8,
 #           border.alpha = 0) +
@@ -927,25 +927,25 @@ me_hevac_vulnerable <- readRDS("DATA/FEMA/ME/me_hevac_vulnerable.Rds")
 #   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.8) +
 #   # tm_shape(me_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
 #   tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
-#   tm_shape(I295roadSegment) + 
+#   tm_shape(I295roadSegment) +
 #   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
 #   tm_shape(I95roadSegment) +
 #   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-#   tm_shape(I95roadSegment2) + 
+#   tm_shape(I95roadSegment2) +
 #   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-#   tm_shape(I95roadSegment2) + 
+#   tm_shape(I95roadSegment2) +
 #   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
 #   tm_shape(me_towns_sf_pts) + tm_dots() +
-#   tm_text("NAME", size = 0.5, col = "black", 
+#   tm_text("NAME", size = 0.5, col = "black",
 #           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-#   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
+#   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5,
 #                position = c("right","BOTTOM")) +
 #   tm_add_legend(type = "fill", col = "springgreen3",
 #                 alpha = 0.6,
 #                 border.col = "white", border.alpha = 0,
 #                 labels = "1 dot = 10 people",
 #                 title = "Total Population") +
-#   tm_layout(title = "Over-represented\nPopulations\nwithin Hurricane\nInundation Zones", frame = TRUE, main.title.size = 0.8,
+#   tm_layout(title = "Selected\nPopulations Living\nwithin Hurricane\nInundation Zones", frame = TRUE, main.title.size = 0.8,
 #             legend.outside = TRUE,
 #             legend.title.size = 0.8,
 #             legend.outside.position = c("right", "top"),
