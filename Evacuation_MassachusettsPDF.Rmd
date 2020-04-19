@@ -403,7 +403,7 @@ ma_awater_sf_simple <- ma_awater_sf %>%
 
 ```{r mapNFHZAPop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="FEMA flood zones and population distribution across Massachusetts at Census Block Group level."}
 # Create a dot density map of total populations and overlay on flood zones
-# # Map totalpop and flood zones
+# Map totalpop and flood zones
 # m1 <- tm_layout(bg.color = "#e6f3f7") +
 #   tm_shape(ma_blkgrp_2805, unit = "mi") + tm_fill(col = "white") +
 #   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
@@ -459,7 +459,7 @@ ma_awater_sf_simple <- ma_awater_sf %>%
 #                 border.col = "white", border.alpha = 0,
 #                 labels = "1 dot = 1,000 people",
 #                 title = "Total Population") +
-#   tm_layout(title = "Population\nDistribution \nand Flood Zones",
+#   tm_layout(title = "Total\nPopulation\nDistribution \nand Flood Zones",
 #             frame = TRUE, main.title.size = 0.8,
 #             legend.outside = TRUE,
 #             legend.title.size = 0.8,
@@ -491,23 +491,23 @@ ma_nfhza_2805_land %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-These percentages approximate the proportion of the total population in the state that are within these flood zones. However, exposure varies significantly by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups within flood zones. Aside from the total population, the largest absolute numbers of subpopulations within a flood zone are low income persons followed by minorities. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
+These percentages approximate the proportion of the total population in the state that are living within these flood zones. However, exposure varies significantly by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups living within flood zones. Aside from the total population, the largest absolute numbers of subpopulations living within a flood zone are low income persons followed by minorities. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
 
-```{r tabNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Massachusetts Populations within Flood Zones."}
+```{r tabNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Massachusetts Populations Living within Flood Zones."}
 # Show table of pops within flood zones
 ma_FloodPops_df %>% 
   mutate(PctFlood = paste0(as.character(round(PctFlood,1)),"%")) %>% 
   arrange(-FloodPop) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
-                    caption = "Massachusetts Populations within Flood Zones",
+                    caption = "Massachusetts Populations Living within Flood Zones",
                     digits = 0, align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Some groups are disproportionately exposed to these flood hazards. While approximately 5.4% of the general population are within flood zones, limited English speaking households, households without access to a car, people in low income households, and other populations of concern, exceed the population average within flood zones. These populations of concern are overrepresented in terms of flood exposure (see Figure \@ref(fig:chartNFHZApop) below).
+Some groups are disproportionately exposed to these flood hazards. While approximately 5.4% of the general population are living within flood zones, limited English speaking households, households without access to a car, people in low income households, and other populations of concern, exceed the population average living within flood zones. These populations of concern are disproportionately exposed to flood risk (see Figure \@ref(fig:chartNFHZApop) below).
 
-```{r chartNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Massachusetts Populations within Flood Zones."}
+```{r chartNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Massachusetts Populations Living within Flood Zones."}
 # Create lollipop plot of pops within flood zones
 ma_FloodPops_df %>% 
   ggplot(aes(x = reorder(Group,PctFlood), 
@@ -518,7 +518,7 @@ ma_FloodPops_df %>%
                color = "skyblue") +
   geom_point(color = "blue", size = 4, alpha = 0.8) +
   coord_flip() + xlab("") + ylab("") + 
-  ggtitle("Massachusetts Populations within Flood Zones") + theme_light() +
+  ggtitle("Massachusetts Populations Living within Flood Zones") + theme_light() +
   theme(panel.grid.major.y = element_blank(),
         panel.border = element_blank(),
         axis.ticks.y = element_blank()) +
@@ -534,9 +534,9 @@ ma_FloodPops_df %>%
                arrow = arrow(length = unit(0.3,"cm")))
 ```
 
-The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those overrepresented populations within the flood zones.
+The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those populations disproportionately exposed to flood risk.
 
-```{r mapNFHZAPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Massachusetts Populations within Flood Zones."}
+```{r mapNFHZAPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Massachusetts Populations Living within Flood Zones."}
 # Create a dot density map of transit-dependent populations in flood zone
 
 # create a function to select variable, filter records, and create sample points
@@ -603,10 +603,10 @@ The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those overrepresented
 # 
 # # save time by just loading file
 # saveRDS(ma_nfhza_vulnerable, file = "DATA/FEMA/MA/ma_nfhza_vulnerable.Rds")
-# # load vulnerable point file
+# load vulnerable point file
 # ma_nfhza_vulnerable <- readRDS("DATA/FEMA/MA/ma_nfhza_vulnerable.Rds")
 # 
-# Map over-represented pops and flood zones
+# # Map over-represented pops and flood zones
 # m <- tm_layout(bg.color = "#e6f3f7") +
 #   tm_shape(ma_blkgrp_2805, unit = "mi") + tm_fill(col = "white") +
 #   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
@@ -661,7 +661,7 @@ The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those overrepresented
 #                 border.col = "white", border.alpha = 0,
 #                 labels = "1 dot = 10 people",
 #                 title = "Population Group") +
-#   tm_layout(title = "Over-represented\nPopulations\nwithin\nFlood Zones",
+#   tm_layout(title = "Selected\nPopulations\nLiving within\nFlood Zones",
 #             frame = TRUE, main.title.size = 0.8,
 #             legend.outside = TRUE,
 #             legend.title.size = 0.8,
@@ -832,8 +832,8 @@ tm_layout(bg.color = "#e6f3f7") +
           border.alpha = 0) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
-  tm_shape(ma_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
-  tm_shape(ma_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(ma_highways) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(ma_highways2nd) + tm_lines(col = "seashell4", lwd = 1) +
   tm_shape(I95roadSegment) + 
   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
   tm_shape(I95roadSegment2) + 
@@ -862,7 +862,7 @@ tm_layout(bg.color = "#e6f3f7") +
                 border.col = "white", border.alpha = 0,
                 labels = "1 dot = 500 people",
                 title = "Total Population") +
-  tm_layout(title = "Population Distribution \nand Hurricane\nEvacuation Zones", 
+  tm_layout(title = "Total Population\nDistribution \nand Hurricane\nEvacuation Zones", 
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -886,23 +886,23 @@ ma_hea_sf %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-These percentages belie the proportion of the population in the state that are within these evacuation zones. Moreover, exposure varies significantly by population subgroup. Table \@ref(tab:tabHEVACpop) below shows the total and percentages of the general population and various subgroups within hurricane evacuation zones. Aside from the total population, the largest subpopulation within an evacuation zone are minorities and low income persons. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
+These percentages belie the proportion of the population in the state that are living within these evacuation zones. Moreover, exposure varies significantly by population subgroup. Table \@ref(tab:tabHEVACpop) below shows the total and percentages of the general population and various subgroups living within hurricane evacuation zones. Aside from the total population, the largest subpopulation living within an evacuation zone are minorities and low income persons. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
 \pagebreak
-```{r tabHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Massachusetts Populations within Hurricane Evacuation Zones."}
+```{r tabHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Massachusetts Populations Living within Hurricane Evacuation Zones."}
 # Show table of pops within hurricane evacuation zones
 ma_HevacPops_df %>% 
   mutate(PctHevac = paste0(as.character(round(PctHevac,1)),"%")) %>% 
   arrange(-HevacPop) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
-                    caption = "Massachusetts Populations within Hurricane Evacuation Zones",
+                    caption = "Massachusetts Populations Living within Hurricane Evacuation Zones",
                     digits = 0, align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Some groups are disproportionately exposed to these hurricane evacuation hazards. While approximately 14.1% of the general population are within hurricane evacuation zones, people in limited English speaking households, households without access to a car, minorities, people in low income households, adults with less than a high school education, and other popultions of concern exceed the population average within hurricane evacuation zones. These populations of concern are overrepresented in terms of hurricane evacuation exposure (see Figures \@ref(fig:chartHEVACpop) and \@ref(fig:mapHEVACPopConcern) below).
+Some groups are disproportionately exposed to these hurricane evacuation hazards. While approximately 14.1% of the general population are living within hurricane evacuation zones, people in limited English speaking households, households without access to a car, minorities, people in low income households, adults with less than a high school education, and other populations of concern exceed the population average living within hurricane evacuation zones. These populations of concern are disproportionately exposed to hurricane evacuation risk (see Figures \@ref(fig:chartHEVACpop) and \@ref(fig:mapHEVACPopConcern) below).
 
-```{r chartHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Massachusetts Populations within Hurricane Evacuation Zones."}
+```{r chartHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Massachusetts Populations Living within Hurricane Evacuation Zones."}
 # Create lollipop plot of pops within flood zones
 ma_HevacPops_df %>% 
   ggplot(aes(x = reorder(Group,PctHevac), 
@@ -913,7 +913,7 @@ ma_HevacPops_df %>%
                color = "skyblue") +
   geom_point(color = "blue", size = 4, alpha = 0.8) +
   coord_flip() + xlab("") + ylab("") + 
-  ggtitle("Massachusetts Populations within Hurricane Evacuation\nZones") + theme_light() +
+  ggtitle("Massachusetts Populations Living within\nHurricane Evacuation Zones") + theme_light() +
   theme(panel.grid.major.y = element_blank(),
         panel.border = element_blank(),
         axis.ticks.y = element_blank()) +
@@ -925,12 +925,12 @@ ma_HevacPops_df %>%
   geom_hline(yintercept = ma_HevacPops_df[1,4], linetype = "dashed") +
   geom_text(aes(x = "MA Low Income", y = 21, label = "Above state avg"),
             color = "gray48") +
-  geom_segment(aes(x = "Total Pop", xend = "Total Pop", y = 14.8, yend = 20), 
+  geom_segment(aes(x = "Total Pop", xend = "Total Pop", y = 15, yend = 22), 
                arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(8,40))
 ```
 
-```{r mapHEVACPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Massachusetts Populations within Hurricane Evacuation Zones."}
+```{r mapHEVACPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Massachusetts Populations Living within Hurricane Evacuation Zones."}
 # # Create a dot density map of over-represented populations in hurricane evacuation zones
 # MANoEngHH_hevac_pts <- pop2points(ma_blkgrps_hevac,NewMA_NOENGLISH,"MA Limited English HH")
 # 
@@ -1023,7 +1023,7 @@ ma_HevacPops_df %>%
 #                 border.col = "white", border.alpha = 0,
 #                 labels = "1 dot = 10 people",
 #                 title = "Population Group") +
-#   tm_layout(title = "Over-represented\nPopulations\nwithin Hurricane\nEvacuation Zones",
+#   tm_layout(title = "Selected\nPopulations\nLiving within\nHurricane\nEvacuation Zones",
 #             frame = TRUE, main.title.size = 0.8,
 #             legend.outside = TRUE,
 #             legend.title.size = 0.8,
