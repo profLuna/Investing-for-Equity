@@ -371,65 +371,65 @@ vt_awater_sf_simple <- vt_awater_sf %>%
 # Create a dot density map of total populations and overlay on flood zones
 # Map totalpop and flood zones
 # tm_layout(bg.color = "#e6f3f7") +
-m1 <- tm_shape(vt_blkgrp_2852, unit = "mi") + tm_fill(col = "white") +
-  tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
-  tm_shape(ny_state_sf) + tm_fill(col="white") +
-  tm_shape(vt_awater_sf_simple) + tm_fill(col = "#e6f3f7") + 
-  # tm_shape(ne_states_sf_cb) + tm_borders() +
-  # tm_shape(ny_state_sf) + tm_borders() +
-  tm_shape(vt_totalpop_pts) + tm_dots(col = "darkgoldenrod3",
-                                      labels = "1 dot = 100 people",
-                                      alpha = 0.6) +
-  tm_shape(vt_nfhza_2852_land_simple) + 
-  tm_fill(col = "Interval", 
-          palette = c("dodgerblue", "blueviolet"), 
-          labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"), 
-          title = "FEMA Flood Zones",
-          alpha = 0.6,
-          border.alpha = 0) +
-  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
-  tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
-  tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
-  tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
-  tm_shape(I89roadSegment) + 
-  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
-  tm_shape(I91roadSegment) + 
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
-  tm_shape(I91roadSegment2) + 
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
-  tm_shape(I93roadSegment) + 
-  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
-  # tm_shape(USHwy2Segment) +
-  # tm_symbols(shape = Hwy2, border.lwd = NA, size = 0.2) +
-  # tm_shape(USHwy4Segment) +
-  # tm_symbols(shape = Hwy4, border.lwd = NA, size = 0.2) +
-  # tm_shape(USHwy7Segment) +
-  # tm_symbols(shape = Hwy7, border.lwd = NA, size = 0.2) +
-  tm_shape(vt_towns_sf_pts) + tm_dots() +
-  tm_text("NAME", size = 0.5, col = "black", 
-          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_shape(nofemapolys) + tm_fill(col = "gray", alpha = 0.4) +
-  # tm_text("LABEL", alpha = 0.5) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
-               position = c(0.6,0.005)) +
-  tm_add_legend(type = "fill", col = "darkgoldenrod3",
-                alpha = 0.6,
-                border.col = "white", border.alpha = 0,
-                labels = "1 dot = 100 people",
-                title = "Total Population") +
-  tm_add_legend(type = "fill", col = "gray",
-                alpha = 0.4,
-                border.col = "white", border.alpha = 0,
-                labels = "No FEMA Data",
-                title = "FEMA Coverage") +
-  tm_layout(title = "Population Distribution \nand Flood Zones", 
-            frame = TRUE, main.title.size = 0.8,
-            legend.outside = TRUE,
-            legend.title.size = 0.8,
-            legend.outside.position = c("right", "top"))
-
-tmap_save(m1, "DATA/FEMA/VT/vt_flood.png",
-          height = 7, width = 8, units = "in", dpi = 600)
+# m1 <- tm_shape(vt_blkgrp_2852, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(vt_awater_sf_simple) + tm_fill(col = "#e6f3f7") + 
+#   # tm_shape(ne_states_sf_cb) + tm_borders() +
+#   # tm_shape(ny_state_sf) + tm_borders() +
+#   tm_shape(vt_totalpop_pts) + tm_dots(col = "darkgoldenrod3",
+#                                       labels = "1 dot = 100 people",
+#                                       alpha = 0.6) +
+#   tm_shape(vt_nfhza_2852_land_simple) + 
+#   tm_fill(col = "Interval", 
+#           palette = c("dodgerblue", "blueviolet"), 
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"), 
+#           title = "FEMA Flood Zones",
+#           alpha = 0.6,
+#           border.alpha = 0) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   tm_shape(I89roadSegment) + 
+#   tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+#   tm_shape(I91roadSegment) + 
+#   tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+#   tm_shape(I91roadSegment2) + 
+#   tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+#   tm_shape(I93roadSegment) + 
+#   tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+#   # tm_shape(USHwy2Segment) +
+#   # tm_symbols(shape = Hwy2, border.lwd = NA, size = 0.2) +
+#   # tm_shape(USHwy4Segment) +
+#   # tm_symbols(shape = Hwy4, border.lwd = NA, size = 0.2) +
+#   # tm_shape(USHwy7Segment) +
+#   # tm_symbols(shape = Hwy7, border.lwd = NA, size = 0.2) +
+#   tm_shape(vt_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black", 
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_shape(nofemapolys) + tm_fill(col = "gray", alpha = 0.4) +
+#   # tm_text("LABEL", alpha = 0.5) +
+#   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+#                position = c(0.6,0.005)) +
+#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 100 people",
+#                 title = "Total Population") +
+#   tm_add_legend(type = "fill", col = "gray",
+#                 alpha = 0.4,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "No FEMA Data",
+#                 title = "FEMA Coverage") +
+#   tm_layout(title = "Total\nPopulation Distribution \nand Flood Zones", 
+#             frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m1, "DATA/FEMA/VT/vt_flood.png",
+#           height = 7, width = 8, units = "in", dpi = 600)
 
 knitr::include_graphics("DATA/FEMA/VT/vt_flood.png")
 ```
@@ -454,23 +454,23 @@ vt_nfhza_2852_land %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-The proportion of the total state population within flood zones exceeds the percentage of the state area within flood zones. Moreover, exposure varies by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups within flood zones. Aside from the total population, the largest absolute numbers of subpopulations within a flood zone are low income persons followed by those under 18 and over 64. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
+The proportion of the total state population living within flood zones exceeds the percentage of the state area within flood zones. Moreover, exposure varies by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups living within flood zones. Aside from the total population, the largest absolute numbers of subpopulations living within a flood zone are low income persons followed by those under 18 and over 64. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
 
-```{r tabNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont Populations within Flood Zones."}
+```{r tabNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont Populations Living within Flood Zones."}
 # Show table of pops within flood zones
 vt_FloodPops_df %>% 
   mutate(PctFlood = paste0(as.character(round(PctFlood,1)),"%")) %>% 
   arrange(-FloodPop) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
-                    caption = "Vermont Populations within Flood Zones",
+                    caption = "Vermont Populations Living within Flood Zones",
                     digits = 0, align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Some groups are disproportionately exposed to these flood hazards. While approximately 5.7% of the general population are within flood zones, limited English speaking households, households without access to a car, people in low income households, and other populations of concern, exceed the population average within flood zones. These populations of concern are overrepresented in terms of flood exposure (see Figure \@ref(fig:chartNFHZApop) below).
+Some groups are disproportionately exposed to these flood hazards. While approximately 5.7% of the general population are living within flood zones, limited English speaking households, households without access to a car, people in low income households, and other populations of concern, exceed the population average living within flood zones. These populations of concern are disproportionately exposed to flood risk (see Figure \@ref(fig:chartNFHZApop) below).
 
-```{r chartNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont Populations within Flood Zones."}
+```{r chartNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont Populations Living within Flood Zones."}
 # Create lollipop plot of pops within flood zones
 vt_FloodPops_df %>% 
   ggplot(aes(x = reorder(Group,PctFlood), 
@@ -481,7 +481,7 @@ vt_FloodPops_df %>%
                color = "skyblue") +
   geom_point(color = "blue", size = 4, alpha = 0.8) +
   coord_flip() + xlab("") + ylab("") + 
-  ggtitle("Vermont Populations within Flood Zones") + theme_light() +
+  ggtitle("Vermont Populations Living within Flood Zones") + theme_light() +
   theme(panel.grid.major.y = element_blank(),
         panel.border = element_blank(),
         axis.ticks.y = element_blank()) +
@@ -497,9 +497,9 @@ vt_FloodPops_df %>%
                arrow = arrow(length = unit(0.3,"cm")))
 ```
 
-The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those overrepresented populations within the flood zones.
+The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those groups disproportionately exposed to flood risk.
 
-```{r mapNFHZAPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont Populations within Flood Zones."}
+```{r mapNFHZAPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont Populations Living within Flood Zones."}
 # Create a dot density map of transit-dependent populations in flood zone
 
 # create a function to select variable, filter records, and create sample points
@@ -553,7 +553,7 @@ The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those overrepresented
 #   tm_shape(vt_nfhza_vulnerable) +
 #   tm_dots(col = "darkgoldenrod3",
 #           labels = "1 dot = 10 people",
-#           alpha = 0.6) +
+#           alpha = 0.8) +
 #   tm_facets(by = "Group",
 #             ncol = 2,
 #             free.coords = FALSE) +
@@ -564,17 +564,17 @@ The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those overrepresented
 #           title = "FEMA Flood Zones",
 #           alpha = 0.6,
 #           border.alpha = 0) +
-#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.6) +
-#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2) +
+#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2) +
 #   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1) +
 #   tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1) +
-#   tm_shape(I89roadSegment) + 
+#   tm_shape(I89roadSegment) +
 #   tm_symbols(shape = I89, border.lwd = NA, size = 0.1) +
-#   tm_shape(I91roadSegment) + 
+#   tm_shape(I91roadSegment) +
 #   tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
-#   tm_shape(I91roadSegment2) + 
+#   tm_shape(I91roadSegment2) +
 #   tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
-#   tm_shape(I93roadSegment) + 
+#   tm_shape(I93roadSegment) +
 #   tm_symbols(shape = I93, border.lwd = NA, size = 0.1) +
 #   tm_shape(vt_towns_sf_pts) + tm_dots() +
 #   tm_text("NAME", size = 0.5, col = "black",
@@ -594,7 +594,7 @@ The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those overrepresented
 #                 border.col = "white", border.alpha = 0,
 #                 labels = "No FEMA Data",
 #                 title = "FEMA Coverage") +
-#   tm_layout(title = "Over-represented\nPopulations\nwithin\nFlood Zones",
+#   tm_layout(title = "Selected\nPopulations\nLiving within\nFlood Zones",
 #             frame = TRUE, main.title.size = 0.8,
 #             legend.outside = TRUE,
 #             legend.title.size = 0.8,
