@@ -225,39 +225,39 @@ Most of Rhode Island's population lives near the coast or near inland water bodi
 # Create a dot density map of total populations and overlay on flood zones
 # Create point layer of major cities for context
 # Note cb=FALSE is necessary for extracting centroids from town polygons. Otherwise, if cb=TRUE, cannot extract centroids from multipolygon features.
-# ri_towns_sf_pts <- county_subdivisions(state = "RI", cb = TRUE) %>% 
-#   filter(NAME %in% c("Providence", 
-#                      "Woonsocket", 
-#                      "Pawtucket", 
-#                      "Warwick", 
-#                      "Bristol", 
-#                      "Portsmouth", 
-#                      "Newport", 
-#                      "Narragansett", 
-#                      "North Kingstown", 
-#                      "Charlestown", 
+# ri_towns_sf_pts <- county_subdivisions(state = "RI", cb = TRUE) %>%
+#   filter(NAME %in% c("Providence",
+#                      "Woonsocket",
+#                      "Pawtucket",
+#                      "Warwick",
+#                      "Bristol",
+#                      "Portsmouth",
+#                      "Newport",
+#                      "Narragansett",
+#                      "North Kingstown",
+#                      "Charlestown",
 #                      "Situate",
-#                      "Glocester")) %>% 
-#   st_transform(., crs = 2840) %>% 
+#                      "Glocester")) %>%
+#   st_transform(., crs = 2840) %>%
 #   st_centroid(of_largest_polygon = TRUE)
 # 
 # # Create road layer for context
-# ri_highways <- tigris::primary_roads() %>% 
+# ri_highways <- tigris::primary_roads() %>%
 #   filter(FULLNAME %in% c("I- 95","I- 195","I- 295", "US Hwy 6")) %>%
-#   tmaptools::crop_shape(., ne_states_sf_cb) %>% 
+#   tmaptools::crop_shape(., ne_states_sf_cb) %>%
 #   st_transform(., crs = 2840)
 # 
 # # Extract highway segments for labeling
-# I95roadSegment <- ri_highways %>% 
+# I95roadSegment <- ri_highways %>%
 #   filter(LINEARID == "110468245978")
 # 
-# I95roadSegment2 <- ri_highways %>% 
+# I95roadSegment2 <- ri_highways %>%
 #   filter(LINEARID == "1107052605232")
 # 
-# I295roadSegment <- ri_highways %>% 
+# I295roadSegment <- ri_highways %>%
 #   filter(LINEARID == "1104755623349")
 # 
-# I195roadSegment <- ri_highways %>% 
+# I195roadSegment <- ri_highways %>%
 #   filter(LINEARID == "110448466166")
 # 
 # # Create custom icons of highway shields
@@ -266,61 +266,61 @@ Most of Rhode Island's population lives near the coast or near inland water bodi
 # I295 <- tmap_icons("https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/I-295.svg/200px-I-295.svg.png")
 # 
 # # Create random points, with 1 point for every 100 people
-# ri_totalpop_pts <- ri_blkgrps_developed %>% 
-#   select(NewPop) %>% 
-#   filter(NewPop >= 100) %>% 
+# ri_totalpop_pts <- ri_blkgrps_developed %>%
+#   select(NewPop) %>%
+#   filter(NewPop >= 100) %>%
 #   st_sample(., size = round(.$NewPop/100)) %>% # create 1 random point for every 100 people
-#   st_sf(.) %>% 
-#   mutate(Group = "Total Pop") %>% 
-#   group_by(Group) %>% 
+#   st_sf(.) %>%
+#   mutate(Group = "Total Pop") %>%
+#   group_by(Group) %>%
 #   summarize()
 # 
 # # Create a simplified version of NFHZA polygons to speed up mapping
-# ri_fhza_2840_land_simple <- ri_fhza_2840_land %>% 
-#   select(Interval) %>% 
+# ri_fhza_2840_land_simple <- ri_fhza_2840_land %>%
+#   select(Interval) %>%
 #   st_cast(., "MULTIPOLYGON") %>% # homogenize type
-#   st_cast(., "POLYGON") %>% 
+#   st_cast(., "POLYGON") %>%
 #   st_simplify(., dTolerance = 100) %>% # reduce vertices
 #   st_make_valid() %>%
-#   group_by(Interval) %>% 
-#   summarize() %>% 
+#   group_by(Interval) %>%
+#   summarize() %>%
 #   mutate(Area = st_area(.))
 # 
 # # Map totalpop and flood zones
 # m1 <- tm_layout(bg.color = "#e6f3f7") +
 #   tm_shape(ri_blkgrp_2840, unit = "mi") + tm_fill(col = "white") +
 #   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
-#   tm_shape(ri_awater_sf) + tm_fill(col = "#e6f3f7") + 
+#   tm_shape(ri_awater_sf) + tm_fill(col = "#e6f3f7") +
 #   # tm_shape(ne_states_sf_cb) + tm_borders() +
 #   tm_shape(ri_totalpop_pts) + tm_dots(col = "darkgoldenrod3",
 #                                       labels = "1 dot = 100 people") +
-#   tm_shape(ri_fhza_2840_land_simple) + 
-#   tm_fill(col = "Interval", 
-#           palette = c("dodgerblue", "blueviolet"), 
-#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"), 
+#   tm_shape(ri_fhza_2840_land_simple) +
+#   tm_fill(col = "Interval",
+#           palette = c("dodgerblue", "blueviolet"),
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
 #           title = "FEMA Flood Zones",
 #           alpha = 0.6,
 #           border.alpha = 0) +
 #   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
 #   tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
-#   tm_shape(I95roadSegment) + 
+#   tm_shape(I95roadSegment) +
 #   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-#   tm_shape(I95roadSegment2) + 
+#   tm_shape(I95roadSegment2) +
 #   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
 #   tm_shape(I195roadSegment) +
 #   tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
-#   tm_shape(I295roadSegment) + 
+#   tm_shape(I295roadSegment) +
 #   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
 #   tm_shape(ri_towns_sf_pts) + tm_dots() +
-#   tm_text("NAME", size = 0.5, col = "black", 
+#   tm_text("NAME", size = 0.5, col = "black",
 #           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-#   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+#   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5,
 #                position = c(0.6,0.005)) +
 #   tm_add_legend(type = "fill", col = "darkgoldenrod3",
 #                 border.col = "white", border.alpha = 0,
 #                 labels = "1 dot = 100 people",
 #                 title = "Total Population") +
-#   tm_layout(title = "Population Distribution \nand Flood Zones", 
+#   tm_layout(title = "Total\nPopulation Distribution \nand Flood Zones",
 #             frame = TRUE, main.title.size = 0.8,
 #             legend.outside = TRUE,
 #             legend.title.size = 0.8,
@@ -352,23 +352,23 @@ ri_fhza_2840_land %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-These percentages closely approximate the proportion of the total population in the state that are within these flood zones. However, exposure varies significantly by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups within flood zones. Aside from the total population, the largest absolute numbers of subpopulations within a flood zone are low income persons, followed by individuals over age 64 and under 18. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
+These percentages closely approximate the proportion of the total population in the state that are living within these flood zones. However, exposure varies significantly by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups living within flood zones. Aside from the total population, the largest absolute numbers of subpopulations living within a flood zone are low income persons, followed by individuals over age 64 and under 18. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
 
-```{r tabNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island Populations within Flood Zones."}
+```{r tabNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island Populations Living within Flood Zones."}
 # Show table of pops within flood zones
 ri_FloodPops_df %>% 
   mutate(PctFlood = paste0(as.character(round(PctFlood,1)),"%")) %>% 
   arrange(-FloodPop) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
-                    caption = "Rhode Island Populations within Flood Zones",
+                    caption = "Rhode Island Populations Living within Flood Zones",
                     digits = 0, align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Some groups are disproportionately exposed to these flood hazards. While approximately 10% of the general population are within flood zones, individuals with serious disability, the elderly (persons over age 64), and households without access to a car exceed the population average within flood zones. These populations of concern are overrepresented in terms of flood exposure (see Figure \@ref(fig:chartNFHZApop) below).
+Some groups are disproportionately exposed to these flood hazards. While approximately 10% of the general population are living within flood zones, individuals with serious disability, the elderly (persons over age 64), and households without access to a car exceed the population average living within flood zones. These populations of concern are disproportionately exposed to flood hazard  (see Figure \@ref(fig:chartNFHZApop) below).
 
-```{r chartNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island Populations within Flood Zones."}
+```{r chartNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island Populations Living within Flood Zones."}
 # Create lollipop plot of pops within flood zones
 ri_FloodPops_df %>% 
   ggplot(aes(x = reorder(Group,PctFlood), 
@@ -379,7 +379,7 @@ ri_FloodPops_df %>%
                color = "skyblue") +
   geom_point(color = "blue", size = 4, alpha = 0.8) +
   coord_flip() + xlab("") + ylab("") + 
-  ggtitle("Rhode Island Populations within Flood Zones") + theme_light() +
+  ggtitle("Rhode Island Populations Living within Flood Zones") + theme_light() +
   theme(panel.grid.major.y = element_blank(),
         panel.border = element_blank(),
         axis.ticks.y = element_blank()) +
@@ -400,9 +400,9 @@ ri_FloodPops_df %>%
   expand_limits(y = c(4,12.5))
 ```
 
-The map below (Figure \@ref(fig:mapNFHZAPopConcern)) shows those overrepresented populations within the flood zones.
+The map below (Figure \@ref(fig:mapNFHZAPopConcern)) shows those populations that are disproportionately exposed to flood risk.
 
-```{r mapNFHZAPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island Populations within Flood Zones."}
+```{r mapNFHZAPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island Populations Living within Flood Zones."}
 # Create a dot density map of transit-dependent populations in flood zone
 # # Create random points, with 1 point for every 5 people
 # Over64_nfhza_pts <- ri_blkgrps_nfhza %>% 
@@ -445,42 +445,42 @@ The map below (Figure \@ref(fig:mapNFHZAPopConcern)) shows those overrepresented
 # m2 <- tm_layout(bg.color = "#e6f3f7") +
 #   tm_shape(ri_blkgrp_2840, unit = "mi") + tm_fill(col = "white") +
 #   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
-#   tm_shape(ri_awater_sf) + tm_fill(col = "#e6f3f7") + 
-#   tm_shape(ri_fhza_2840_land) + 
-#   tm_fill(col = "Interval", 
-#           palette = c("dodgerblue", "blueviolet"), 
-#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"), 
+#   tm_shape(ri_awater_sf) + tm_fill(col = "#e6f3f7") +
+#   tm_shape(ri_fhza_2840_land) +
+#   tm_fill(col = "Interval",
+#           palette = c("dodgerblue", "blueviolet"),
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
 #           title = "FEMA Flood Zones",
 #           border.alpha = 0) +
 #   # tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
-#   tm_shape(ri_nfhza_vulnerable) + 
-#   tm_dots(col = "darkgoldenrod3", 
+#   tm_shape(ri_nfhza_vulnerable) +
+#   tm_dots(col = "darkgoldenrod3",
 #           labels = "1 dot = 5 people",
 #           alpha = 0.6) +
-#   tm_facets(by = "Group", 
+#   tm_facets(by = "Group",
 #             ncol = 2,
 #             free.coords = FALSE) +
 #   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
 #   tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
-#   tm_shape(I95roadSegment) + 
+#   tm_shape(I95roadSegment) +
 #   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-#   tm_shape(I95roadSegment2) + 
+#   tm_shape(I95roadSegment2) +
 #   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
 #   tm_shape(I195roadSegment) +
 #   tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
-#   tm_shape(I295roadSegment) + 
+#   tm_shape(I295roadSegment) +
 #   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
 #   tm_shape(ri_towns_sf_pts) + tm_dots() +
-#   tm_text("NAME", size = 0.5, col = "black", 
+#   tm_text("NAME", size = 0.5, col = "black",
 #           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-#   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+#   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5,
 #                position = c(0.6,0.005)) +
 #   tm_add_legend(type = "fill", col = "darkgoldenrod3",
 #                 alpha = 0.6,
 #                 border.col = "white", border.alpha = 0,
 #                 labels = "1 dot = 5 people",
 #                 title = "Population Group") +
-#   tm_layout(title = "Over-represented\nPopulations \nwithin Flood Zones", 
+#   tm_layout(title = "Selected\nPopulations \nLiving within\nFlood Zones",
 #             frame = TRUE, main.title.size = 1,
 #             legend.outside = TRUE,
 #             legend.title.size = 0.8,
@@ -606,65 +606,65 @@ A significant proportion of Rhode Island's population lives near the coast and i
 
 ```{r mapHEVACPop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="FEMA flood zones and population distribution across Rhode Island at Census Block Group level."}
 # # create simplified version of hurricane evac polygons
-# ri_hea_sf_agg <- 
-#   ri_hea_sf %>% 
-#   group_by(EVAC) %>% 
+# ri_hea_sf_agg <-
+#   ri_hea_sf %>%
+#   group_by(EVAC) %>%
 #   summarize()
 # 
-# r_hea_cata <- ri_hea_sf_agg %>% 
+# r_hea_cata <- ri_hea_sf_agg %>%
 #   filter(EVAC == "A")
 # 
-# r_hea_catb <- ri_hea_sf_agg %>% 
+# r_hea_catb <- ri_hea_sf_agg %>%
 #   filter(EVAC == "B")
-
+# 
 # # Create a simplified version of hea polygons to speed up mapping
-# ri_hea_sf_simple <- ri_hea_sf %>% 
-#   select(EVAC) %>% 
-#   filter(EVAC %in% c("A","B")) %>% 
+# ri_hea_sf_simple <- ri_hea_sf %>%
+#   select(EVAC) %>%
+#   filter(EVAC %in% c("A","B")) %>%
 #   st_cast(., "MULTIPOLYGON") %>% # homogenize type
-#   st_cast(., "POLYGON") %>% 
+#   st_cast(., "POLYGON") %>%
 #   st_simplify(., dTolerance = 10) %>% # reduce vertices
 #   st_make_valid() %>%
-#   group_by(EVAC) %>% 
-#   summarize() %>% 
+#   group_by(EVAC) %>%
+#   summarize() %>%
 #   mutate(Area = st_area(.))
 # 
 # # Map totalpop and hurricane evacuation zones
 # m3 <- tm_layout(bg.color = "#e6f3f7") +
 #   tm_shape(ri_blkgrp_2840, unit = "mi") + tm_fill(col = "white") +
 #   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
-#   tm_shape(ri_awater_sf) + tm_fill(col = "#e6f3f7") + 
+#   tm_shape(ri_awater_sf) + tm_fill(col = "#e6f3f7") +
 #   # tm_shape(ne_states_sf_cb) + tm_borders() +
 #   tm_shape(ri_totalpop_pts) + tm_dots(col = "springgreen3",
 #                                       labels = "1 dot = 100 persons") +
-#   tm_shape(ri_hea_sf_simple) + 
-#   tm_fill(col = "EVAC", 
-#           palette = c("deeppink", "purple3"), 
-#           labels = c("A: Category 1 - 2", 
-#                      "B: Category 3 - 4"), 
+#   tm_shape(ri_hea_sf_simple) +
+#   tm_fill(col = "EVAC",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
 #           title = "Evacuation Zone and\nHurricane Category",
 #           alpha = 0.6,
 #           border.alpha = 0) +
 #   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
 #   tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
-#   tm_shape(I95roadSegment) + 
+#   tm_shape(I95roadSegment) +
 #   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-#   tm_shape(I95roadSegment2) + 
+#   tm_shape(I95roadSegment2) +
 #   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
 #   tm_shape(I195roadSegment) +
 #   tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
-#   tm_shape(I295roadSegment) + 
+#   tm_shape(I295roadSegment) +
 #   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
 #   tm_shape(ri_towns_sf_pts) + tm_dots() +
-#   tm_text("NAME", size = 0.5, col = "black", 
+#   tm_text("NAME", size = 0.5, col = "black",
 #           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-#   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+#   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5,
 #                position = c(0.6,0.005)) +
 #   tm_add_legend(type = "fill", col = "springgreen3",
 #                 border.col = "white", border.alpha = 0,
 #                 labels = "1 dot = 100 people",
 #                 title = "Total Population") +
-#   tm_layout(title = "Population Distribution \nand Hurricane\nEvacuation Zones", 
+#   tm_layout(title = "Total\nPopulation Distribution \nand Hurricane\nEvacuation Zones",
 #             frame = TRUE, main.title.size = 0.8,
 #             legend.outside = TRUE,
 #             legend.title.size = 0.8,
@@ -694,9 +694,9 @@ ri_hea_sf %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-These percentages closely approximate the proportion of the total population in the state that are within these evacuation zones. However, exposure varies significantly by population subgroup. Table \@ref(tab:tabHEVACpop) below shows the total and percentages of the general population and various subgroups within hurricane evacuation zones. Aside from the total population, the largest absolute numbers of subpopulations within an evacuation zone are low income persons, followed by individuals over age 64 and under 18. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
+These percentages closely approximate the proportion of the total population in the state that are living within these evacuation zones. However, exposure varies significantly by population subgroup. Table \@ref(tab:tabHEVACpop) below shows the total and percentages of the general population and various subgroups living within hurricane evacuation zones. Aside from the total population, the largest absolute numbers of subpopulations living within an evacuation zone are low income persons, followed by individuals over age 64 and under 18. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
 \pagebreak
-```{r tabHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island Populations within Hurricane Evacuation Zones."}
+```{r tabHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island Populations Living within Hurricane Evacuation Zones."}
 # Show table of pops within flood zones
 # Show table of pops within hurricane evacuation zones
 ri_HevacPops_df %>% 
@@ -704,13 +704,13 @@ ri_HevacPops_df %>%
   arrange(-HevacPop) %>%  
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
-                    caption = "Rhode Island Populations within Hurricane Evacuation Zones", digits = 0, align = "r") %>% 
+                    caption = "Rhode Island Populations Living within Hurricane Evacuation Zones", digits = 0, align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Some groups are disproportionately exposed to these flood hazards. While approximately 11.6% of the general population are within flood zones, the elderly (persons over age 64), individuals with serious disability, and households without access to a car exceed the population average within flood zones. These populations of concern are overrepresented in terms of flood exposure (see Figure \@ref(fig:chartHEVACpop) below).
+Some groups are disproportionately exposed to these flood hazards. While approximately 11.6% of the general population are living within flood zones, the elderly (persons over age 64), individuals with serious disability, and households without access to a car exceed the population average living within flood zones. These populations of concern are disproportionately exposed to the risk of hurricane evacuation (see Figure \@ref(fig:chartHEVACpop) below).
 
-```{r chartHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island Populations within Hurricane Evacuation Zones."}
+```{r chartHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island Populations Living within Hurricane Evacuation Zones."}
 # Create lollipop plot of pops within flood zones
 # Create lollipop plot of pops within hurricane evac zones
 ri_HevacPops_df %>% 
@@ -722,7 +722,7 @@ ri_HevacPops_df %>%
                color = "skyblue") +
   geom_point(color = "blue", size = 4, alpha = 0.8) +
   coord_flip() + xlab("") + ylab("") + 
-  ggtitle("Rhode Island Populations within Hurricane Evacuation Zones") +
+  ggtitle("Rhode Island Populations Living within Hurricane\nEvacuation Zones") +
   theme_light() +
   theme(panel.grid.major.y = element_blank(),
         panel.border = element_blank(),
@@ -744,9 +744,9 @@ ri_HevacPops_df %>%
   expand_limits(y = c(3,14))
 ```
 
-The map below (Figure \@ref(fig:mapHEVACPopConcern)) shows those overrepresented populations within the flood zones.
+The map below (Figure \@ref(fig:mapHEVACPopConcern)) shows those that are disproportionately exposed to hurricane evacuation risk.
 
-```{r mapHEVACPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island Populations within Hurricane Evacuation Zones."}
+```{r mapHEVACPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island Populations Living within Hurricane Evacuation Zones."}
 # Create a dot density of transit-dependent populations within hurricane evacuation zones
 # # Create random points, with 1 point for every 5 people
 # Over64_hevac_pts <- ri_blkgrps_hevac %>% 
@@ -789,44 +789,44 @@ The map below (Figure \@ref(fig:mapHEVACPopConcern)) shows those overrepresented
 # m4 <- tm_layout(bg.color = "#e6f3f7") +
 #   tm_shape(ri_blkgrp_2840, unit = "mi") + tm_fill(col = "white") +
 #   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
-#   tm_shape(ri_awater_sf) + tm_fill(col = "#e6f3f7") + 
+#   tm_shape(ri_awater_sf) + tm_fill(col = "#e6f3f7") +
 #   # tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
-#   tm_shape(ri_hevac_vulnerable) + 
-#   tm_dots(col = "springgreen3", 
+#   tm_shape(ri_hevac_vulnerable) +
+#   tm_dots(col = "springgreen3",
 #           labels = "1 dot = 500 people",
 #           alpha = 0.6) +
 #   tm_facets(by = "Group",
 #             ncol = 2,
 #             free.coords = FALSE) +
-#   tm_shape(ri_hea_sf_simple) + 
-#   tm_fill(col = "EVAC", 
-#           palette = c("deeppink", "purple3"), 
-#           labels = c("A: Category 1 - 2", 
-#                      "B: Category 3 - 4"), 
+#   tm_shape(ri_hea_sf_simple) +
+#   tm_fill(col = "EVAC",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
 #           title = "Evacuation Zone &\nHurricane Category",
 #           alpha = 0.6,
 #           border.alpha = 0) +
 #   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
 #   tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
-#   tm_shape(I95roadSegment) + 
+#   tm_shape(I95roadSegment) +
 #   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-#   tm_shape(I95roadSegment2) + 
+#   tm_shape(I95roadSegment2) +
 #   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
 #   tm_shape(I195roadSegment) +
 #   tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
-#   tm_shape(I295roadSegment) + 
+#   tm_shape(I295roadSegment) +
 #   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
 #   tm_shape(ri_towns_sf_pts) + tm_dots() +
-#   tm_text("NAME", size = 0.5, col = "black", 
+#   tm_text("NAME", size = 0.5, col = "black",
 #           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-#   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+#   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5,
 #                position = c(0.6,0.005)) +
 #   tm_add_legend(type = "fill", col = "springgreen3",
 #                 alpha = 0.6,
 #                 border.col = "white", border.alpha = 0,
 #                 labels = "1 dot = 5 people",
 #                 title = "Population Group") +
-#   tm_layout(title = "Over-represented\nPopulations\nwithin Hurricane\nEvacuation\nZones", 
+#   tm_layout(title = "Selected\nPopulations\nLiving within\nHurricane\nEvacuation\nZones",
 #             frame = TRUE, main.title.size = 1,
 #             legend.outside = TRUE,
 #             legend.title.size = 0.8,
