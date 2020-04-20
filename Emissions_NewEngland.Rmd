@@ -381,26 +381,7 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
                 WiderLabels = TRUE)
 ```
 
-Indeed, there is a moderate but statistically significant positive relationship between the proportion of minority residents or language-isolated households and the concentration of PM~2.5~ (see Figure \@ref(fig:cormatrixPM25PopAvg) below.).
-
-```{r cormatrixPM25PopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of annual PM~2.5~ concentrations and the proportions of populations of concern by Census Block Group.", include=FALSE}
-# Create a correlation matrix of PM25 and populations of concern
-corrPM25 <- ne_blkgrp_sf %>% 
-  as.data.frame() %>% 
-  dplyr::transmute(PM25 = PM25_19, 
-                Minority = minority_pctE, 
-                `Low Income` = pct2povE, 
-                `Lang Isol` = eng_limit_pctE, 
-                `No HS Dip` = pct_lthsE, 
-                `Under 5` = pct_under5E, 
-                `Over 64` = pct_over64E) %>% 
-  drop_na() %>% 
-  cor(method = "spearman")
-# corrPM25
-ggcorrplot(corrPM25, hc.order = TRUE, type = "lower", lab = TRUE, 
-           title = "PM2.5 Correlation Matrix for New England", 
-           legend.title = "Spearman's \nCorrelation\nCoefficient")
-```
+Indeed, there is a moderate but statistically significant positive relationship between the proportion of minority residents or language-isolated households and the concentration of PM~2.5~ (see Appendix).
 
 
 ## Analysis of Ozone (O~3~) in New England
@@ -734,27 +715,7 @@ newggslopegraph(dataframe = O311_16wAvg_actual,
                 WiderLabels = TRUE)
 ```
 
-Indeed, there is a moderate but statistically significant positive relationship between the proportion of minority residents and the concentration of Ozone (see Figure \@ref(fig:cormatrixO3PopAvg) below.).
-
-```{r cormatrixO3PopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of summer Ozone concentrations and the proportions of populations of concern by Census Block Group.", include=FALSE}
-# Create a correlation matrix of PM25 and populations of concern
-corrO3 <- ne_blkgrp_sf %>% 
-  as.data.frame() %>% 
-  dplyr::transmute(Ozone = OZONE_19, 
-                Minority = minority_pctE, 
-                `Low Income` = pct2povE, 
-                `Lang Isol` = eng_limit_pctE, 
-                `No HS Dip` = pct_lthsE, 
-                `Under 5` = pct_under5E, 
-                `Over 64` = pct_over64E) %>% 
-  drop_na() %>% 
-  cor(method = "spearman")
-# corrPM25
-ggcorrplot(corrO3, hc.order = TRUE, type = "lower", lab = TRUE, 
-           title = "Ozone Correlation Matrix for New England", 
-           legend.title = "Spearman's \nCorrelation\nCoefficient")
-```
-
+Indeed, there is a moderate but statistically significant positive relationship between the proportion of minority residents and the concentration of Ozone (see Appendix).
 
 
 ## Analysis of Carbon Dioxide (CO~2~) in New England
@@ -856,21 +817,6 @@ ne_blkgrp_sf %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-
-```{r boxplotCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 7 Carbon Dioxoide (CO~2~) on-road emissions in metric tons per square kilometer (mtons/km^2^) by state at Census Block Group level.", include=FALSE}
-# boxplot of CO2 by state for 2017
-ne_blkgrp_sf %>% 
-  as.data.frame() %>% 
-  mutate(onroad_2017 = kgco2_2017/1000) %>%
-  ggplot(aes(x = STATE, y = onroad_2017, fill = STATE)) + 
-  geom_boxplot(notch = TRUE) + 
-  ggtitle(expression(atop(paste("Carbon Dioxide (", CO[2], ") Emissions"), "by Census block group by New England state, 2017"))) +
-  theme_minimal() +
-  theme(legend.position = "none", axis.text=element_text(size=8)) + 
-  xlab(NULL) + 
-  ylab(expression(paste(CO[2]," (mtons/", sep = ""))) +
-  coord_flip()
-```
 
 Since 1990, on-road CO~2~ emissions increased significantly across the region, on average by `r {round((sum(ne_blkgrp_sf$kgco2_2017, na.rm = TRUE)-sum(ne_blkgrp_sf$kgco2_1990, na.rm = TRUE))/sum(ne_blkgrp_sf$kgco2_1990, na.rm = TRUE)*100,1)}`%. These changes have not been uniform (see Figure \@ref(fig:mapCO2NEchange) below). Except for Maine, the greatest declines, up to 97%, have been in outer suburban and rural areas. By contrast, increases in CO~2~ emissions of over 600% appear across most urban cores. Boston is the notable exception where increases have been relatively modest. Dramtic increases characterize areas around Worcester, Massachusetts and the South Shore of Massachusetts and the Cape, as well as around Portland, Maine, and from Stamford to Hartford, Connecticut. Significant increases also occur west and north of Montpelier, Vermont.
 
@@ -1181,28 +1127,7 @@ ne_blkgrp_sf %>%
   geom_hline(yintercept = 0)
 ```
 
-Language isolated households and minorities are much more exposed to Diesel Particulate Matter concentrations than the general population. There is a strong positive correlation between the proportions of minorities and ambient concentrations of Diesel Particulate Matter, and a moderately strong positive correlation with language isolated households (see Figure \@ref(fig:cormatrixDPMPopAvg) below.).
-
-```{r cormatrixDPMPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of annual average Diesel Particulate Matter concentrations and the proportions of populations of concern by Census Block Group.", include=FALSE}
-# Create a correlation matrix of PM25 and populations of concern
-corrDPM <- ne_blkgrp_sf %>% 
-  as.data.frame() %>% 
-  dplyr::transmute(DPM = DSLPM_19, 
-                Minority = minority_pctE, 
-                `Low Income` = pct2povE, 
-                `Lang Isol` = eng_limit_pctE, 
-                `No HS Dip` = pct_lthsE, 
-                `Under 5` = pct_under5E, 
-                `Over 64` = pct_over64E) %>% 
-  drop_na() %>% 
-  cor(method = "spearman")
-# corrPM25
-ggcorrplot(corrDPM, hc.order = TRUE, type = "lower", lab = TRUE, 
-           title = "DPM Correlation Matrix for New England", 
-           legend.title = "Spearman's \nCorrelation\nCoefficient",
-           ggtheme = ggplot2::theme_minimal(base_family = "TT Times New Roman"))
-```
-
+Language isolated households and minorities are much more exposed to Diesel Particulate Matter concentrations than the general population. There is a strong positive correlation between the proportions of minorities and ambient concentrations of Diesel Particulate Matter, and a moderately strong positive correlation with language isolated households (see Appendix).
 
 
 ## Analysis of Air Toxics Cancer Risk in New England
@@ -1370,28 +1295,7 @@ ne_blkgrp_sf %>%
   geom_hline(yintercept = 0)
 ```
 
-Language isolated households and minorities experience higher lifetime risk of cancer from inhalation of air toxics than the general population. There is a moderate to strong positive correlation between the proportions of minorities and cancer risk, and a moderately strong positive correlation with language isolated households (see Figure \@ref(fig:cormatrixATCPopAvg) below.).
-
-```{r cormatrixATCPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group.", include=FALSE}
-# Create a correlation matrix of cancer risk and populations of concern
-corrACT <- ne_blkgrp_sf %>% 
-  as.data.frame() %>% 
-  dplyr::transmute(`Cancer Risk` = CANCER_19, 
-                Minority = minority_pctE, 
-                `Low Income` = pct2povE, 
-                `Lang Isol` = eng_limit_pctE, 
-                `No HS Dip` = pct_lthsE, 
-                `Under 5` = pct_under5E, 
-                `Over 64` = pct_over64E) %>% 
-  drop_na() %>% 
-  cor(method = "spearman")
-# corrPM25
-ggcorrplot(corrACT, hc.order = TRUE, type = "lower", lab = TRUE, 
-           title = "Cancer Risk Correlation Matrix for New England", 
-           legend.title = "Spearman's \nCorrelation\nCoefficient",
-           ggtheme = ggplot2::theme_minimal(base_family = "TT Times New Roman"))
-```
-
+Language isolated households and minorities experience higher lifetime risk of cancer from inhalation of air toxics than the general population. There is a moderate to strong positive correlation between the proportions of minorities and cancer risk, and a moderately strong positive correlation with language isolated households (see Appendix).
 
 
 ## Analysis of Respiratory Hazard Index from Air Toxics in New England
@@ -1559,28 +1463,7 @@ ne_blkgrp_sf %>%
   geom_hline(yintercept = 0)
 ```
 
-Language isolated households and minorities experience higher respiratory hazard indices from inhalation of air toxics compared to the general population. There is a moderate to strong positive correlation between the proportions of minorities and respiratory hazard index, and a moderately strong positive correlation with language isolated households (see Figure \@ref(fig:cormatrixRHIPopAvg) below.).
-
-```{r cormatrixRHIPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group.",include=FALSE}
-# Create a correlation matrix of cancer risk and populations of concern
-corrACT <- ne_blkgrp_sf %>% 
-  as.data.frame() %>% 
-  dplyr::transmute(`Resp Hazard Index` = RESP_19, 
-                Minority = minority_pctE, 
-                `Low Income` = pct2povE, 
-                `Lang Isol` = eng_limit_pctE, 
-                `No HS Dip` = pct_lthsE, 
-                `Under 5` = pct_under5E, 
-                `Over 64` = pct_over64E) %>% 
-  drop_na() %>% 
-  cor(method = "spearman")
-# corrPM25
-ggcorrplot(corrACT, hc.order = TRUE, type = "lower", lab = TRUE, 
-           title = "Respiratory Hazard Index \nCorrelation Matrix for New England", 
-           legend.title = "Spearman's \nCorrelation\nCoefficient",
-           ggtheme = ggplot2::theme_minimal(base_family = "TT Times New Roman"))
-```
-
+Language isolated households and minorities experience higher respiratory hazard indices from inhalation of air toxics compared to the general population. There is a moderate to strong positive correlation between the proportions of minorities and respiratory hazard index, and a moderately strong positive correlation with language isolated households (see Appendix).
 
 
 ## Analysis of Traffic Proximity and Volume in New England
@@ -1677,21 +1560,6 @@ ne_blkgrp_sf %>%
 ```
 
 
-```{r boxplotTPVNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across New England at Census Block Group level.",eval=FALSE,include=FALSE}
-# boxplot of traffic proximity and volume by state for 2017
-ne_blkgrp_sf %>% 
-  as.data.frame() %>% 
-  ggplot(aes(x = STATE, y = PTRAF_19, fill = STATE)) + 
-  geom_boxplot(notch = TRUE) + 
-  ggtitle("Traffic Proximity and Volume \nby Census block group \nby New England state, 2017") +
-  theme_minimal() +
-  theme(legend.position = "none", axis.text=element_text(size=8)) + 
-  xlab(NULL) + 
-  ylab("AADT/Distance(km)") +
-  coord_flip()
-```
-
-
 ### Traffic Proximity and Volume Exposure in New England and Populations of Concern
 
 In addition to variations in the general geography of the Traffic Proximity and Volume exposure, this exposure also varies demographically. Figure \@ref(fig:barplotTPVPopAvgNE) below shows population-weighted exposures for populations of concern relative to average Traffic Proximity and Volume for the region. For example, linguistically isolated households in New England are exposed to Traffic Proximity and Volume at more than twice the level of the region as a whole (over 104%). Similarly, minorities are exposed to Traffic Proximity and Volume more than 57% above the regional average. By contrast, persons over age 64 are, on average, are exposed to Traffic Proximity and Volume of more than 22% below the regional average. 
@@ -1749,28 +1617,6 @@ ne_blkgrp_sf %>%
 ```
 
 Language isolated households and minorities experience higher exposure to traffic proximity and volume compared to the general population. 
-
-```{r cormatrixTPVPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group.", eval=FALSE, include=FALSE}
-# There is a moderate positive correlation between the proportions of minorities and traffic proximity and volume, and a moderate positive correlation with language isolated households (see Figure \@ref(fig:cormatrixTPVPopAvg) below.).
-
-# Create a correlation matrix of cancer risk and populations of concern
-corrTPV <- ne_blkgrp_sf %>% 
-  as.data.frame() %>% 
-  dplyr::transmute(`Traffic Exposure` = PTRAF_19, 
-                Minority = minority_pctE, 
-                `Low Income` = pct2povE, 
-                `Lang Isol` = eng_limit_pctE, 
-                `No HS Dip` = pct_lthsE, 
-                `Under 5` = pct_under5E, 
-                `Over 64` = pct_over64E) %>% 
-  drop_na() %>% 
-  cor(method = "spearman")
-# corrPM25
-ggcorrplot(corrTPV, hc.order = TRUE, type = "lower", lab = TRUE, 
-           title = "Traffic Proximity and Volume \nCorrelation Matrix for New England", 
-           legend.title = "Spearman's \nCorrelation\nCoefficient",
-           ggtheme = ggplot2::theme_minimal(base_family = "TT Times New Roman"))
-```
 
 
 # (APPENDIX) Appendix {-} 
