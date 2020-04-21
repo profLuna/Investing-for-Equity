@@ -460,7 +460,7 @@ ct_FloodPops_df %>%
 
 The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those populations that are disproportionately exposed to flood risk.
 
-```{r mapNFHZAPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island Populations Living within Flood Zones."}
+```{r mapNFHZAPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut Populations Living within Flood Zones."}
 # Create a dot density map of transit-dependent populations in flood zone
 # # Create random points, with 1 point for every 5 people
 # NoCarHH_nfhza_pts <- ct_tracts_nfhza %>% 
@@ -779,7 +779,7 @@ A significant proportion of Connecticut's population lives near the coast and is
 knitr::include_graphics("DATA/FEMA/CT/CT_hevac.png")
 ```
 
-Approximately 3.3% of Rhode Island's land area falls within hurricane evacuation zones. The breakdown by hurricane evacuation zone is presented in Table \@ref(tab:tabHEVACarea) below.
+Approximately 3.3% of Connecticut's land area falls within hurricane evacuation zones. The breakdown by hurricane evacuation zone is presented in Table \@ref(tab:tabHEVACarea) below.
 
 ```{r tabHEVACarea, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut Populations within Hurricane Evacuation Zones."}
 # Total and percentage of land area of RI within hurricane evacuation zones
