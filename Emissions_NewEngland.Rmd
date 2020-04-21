@@ -26,7 +26,7 @@ This is an analysis of PM~2.5~ across New England and its relationship to popula
 
 PM~2.5~ levels vary significantly across New England, with highest concentrations in southwest Connecticut, from Stamford to Hartford, and also from Providence, Rhode Island, to the Boston metro region, and from Portland, Maine along the I-95 corridor to Bangor (see Figure \@ref(fig:mapPM25NE) below). 
 
-```{r mapPM25NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2016 annual PM~2.5~ concentrations across New England at Census Block Group level."}
+```{r mapPM25NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2016 annual PM2.5 concentrations across New England at Census Block Group level."}
 library(tidyverse)
 library(sf)
 library(tmap)
@@ -73,7 +73,7 @@ tm_shape(ne_blkgrp_sf, unit = "mi") +
 
 PM~2.5~ concentrations exhibit spatial clustering of both hot spots (i.e. geographic clusters of high values) and cold spots (i.e. geographic clusters of lower values). The map below (Figure \@ref(fig:hotspotPM25NE)) shows statistically significant PM~2.5~ hot spots.
 
-```{r hotspotPM25NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2016 annual PM~2.5~ concentrations at Census Block Group level."}
+```{r hotspotPM25NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2016 annual PM2.5 concentrations at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
 empty_geo <- st_is_empty(ne_blkgrp_sf)
 ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf[!empty_geo,] %>% 
@@ -121,7 +121,7 @@ There is a statistically significant hot spot of PM~2.5~ around Stamford, Connec
 
 These PM~2.5~ levels vary significantly by state (see Figure \@ref(fig:boxplotPM25NE) below). Connecticut stands out with the highest median PM~2.5~ concentrations among the New England states, while Vermont has the lowest overall concentrations. The differences in concentrations between the states are all statistically significant.  
 
-```{r boxplotPM25NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 2016 annual PM~2.5~ concentrations by state at Census Block Group level."}
+```{r boxplotPM25NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 2016 annual PM2.5 concentrations by state at Census Block Group level."}
 # boxplot of PM2.5 by state for 2016
 ne_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -147,7 +147,7 @@ ne_blkgrp_sf %>%
 
 Since 2011, PM~2.5~ levels have declined across the region, on average by `r {round(mean(ne_blkgrp_sf$PM25_pctChange, na.rm = TRUE),1)}`%. Unsurprisingly, this decline has not been uniform (see Figure \@ref(fig:mapPM25NEchange) below). The greatest declines, up to 43%, have been in the northern half of Vermont and the region between Boston and Portsmouth. 
 
-```{r mapPM25NEchange, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of percent change in annual PM~2.5~ concentrations across New England between 2011 and 2016 at Census Block Group level."}
+```{r mapPM25NEchange, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of percent change in annual PM2.5 concentrations across New England between 2011 and 2016 at Census Block Group level."}
 # Map of PM2.5 change across New England
 tm_shape(ne_blkgrp_sf, unit = "mi") + 
   tm_fill("PM25_pctChange", palette = "Greens",
@@ -174,7 +174,7 @@ tm_shape(ne_blkgrp_sf, unit = "mi") +
 
 Averaged across the states, the differences in these declines are also apparent. Figure \@ref(fig:slopegraphPM25NE) below compares the average annual PM~2.5~ concentrations by state and for the region between 2011 and 2016. The region and the states all showed significant declines since 2011, although note that concentrations in Connecticut have remained consistently well above the rest of the region. 
 
-```{r slopegraphPM25NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual PM~2.5~ concentrations for 2011 and 2016 for New England and states."}
+```{r slopegraphPM25NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual PM2.5 concentrations for 2011 and 2016 for New England and states."}
 # Slope graph of PM2.5 by state and region between 2011 and 2016
 # Create df of 2019 actual values
 PM19wSTAvgs_actual <- ne_blkgrp_sf %>% 
@@ -245,7 +245,7 @@ newggslopegraph(dataframe = PM11_16wSTAvg_actual,
 
 In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvgNE) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the region. For example, minorities in New England are exposed to PM~2.5~ concentrations that are more than 5% above concentrations for the region as a whole. Similarly, linguistically isolated households are exposed to concentrations 4.9% above the regional average. By contrast, persons over age 64 are, on average, exposed to concentrations of PM~2.5~ at or below the regional average. 
 
-```{r barplotPM25PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average exposures to PM~2.5~ for populations of concern in New England relative to the regional average."}
+```{r barplotPM25PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average exposures to PM2.5 for populations of concern in New England relative to the regional average."}
 # Pop Weighted avg of PM2.5 for all Groups in New England relative to NE average
 ne_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -298,7 +298,7 @@ ne_blkgrp_sf %>%
 
 Like the region as a whole, these populations have also experienced a decline in exposure since 2011. Note however that except for persons over age 64 and low income persons, all other populations of concern continue to experience exposures greater than the regional average, with minorities leading on this measure. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE).  
 
-```{r slopegraphPM25PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual PM~2.5~ concentrations by population of concern for 2011 and 2016."}
+```{r slopegraphPM25PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual PM2.5 concentrations by population of concern for 2011 and 2016."}
 # Pop Weighted avg of PM2.5 EXPOSURE CHANGE 2011 - 2016 for all Groups in New England relative to NE average. 
 # Create df of 2019 actual values
 PM19wAvgs_actual <- ne_blkgrp_sf %>% 
@@ -388,7 +388,7 @@ Indeed, there is a moderate but statistically significant positive relationship 
 
 Ozone (O~3~) levels vary significantly across New England, with highest concentrations in southwest Connecticut, and declining toward the north and east (see Figure \@ref(fig:mapO3NE) below). 
 
-```{r mapO3NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2016 Ozone (O~3~) summer seasonal average of daily maximum 8-hour concentration in air in parts per billion across New England at Census Block Group level."}
+```{r mapO3NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2016 Ozone (O3) summer seasonal average of daily maximum 8-hour concentration in air in parts per billion across New England at Census Block Group level."}
 
 # Map of O3 across New England
 tm_shape(ne_blkgrp_sf, unit = "mi") + 
@@ -464,7 +464,7 @@ There are statistically significant hot spots of Ozone (O~3~) primarily around S
 
 These Ozone (O~3~) levels vary significantly by state (see Figure \@ref(fig:boxplotO3NE) below). Connecticut stands out with the highest median summer seasonal average Ozone (O~3~) concentrations among the New England states, while Maine has the lowest overall concentrations. The differences in median concentrations between the states are all statistically significant.  
 
-```{r boxplotO3NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 2016 Ozone (O~3~) summer seasonal average of daily maximum 8-hour concentrations in air in parts per billion by state at Census Block Group level."}
+```{r boxplotO3NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 2016 Ozone (O3) summer seasonal average of daily maximum 8-hour concentrations in air in parts per billion by state at Census Block Group level."}
 # boxplot of PM2.5 by state for 2016
 ne_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -480,7 +480,7 @@ ne_blkgrp_sf %>%
 
 Since 2011, Ozone (O~3~) levels have increased slightly across the region, on average by `r {round(mean(ne_blkgrp_sf$OZONE_pctChange, na.rm = TRUE),1)}`%. These changes have not been uniform (see Figure \@ref(fig:mapO3NEchange) below). The greatest declines, up to 10.5%, have been in the northern half of Maine and Vermont, northeastern Vermont, southwestern Massachusetts, and southern Rhode Island. By contrast, increases in summer ozone concentrations of up to 8.1% appear in southwestern Connecticut, from Stamford to Hartford and north into western Massachusetts around Springfield. Significant increases also occur along the western border of Vermont, especially in the Champlain Valley. Minor increaes appear also in the greater Boston metro region, and southern and central Maine west and north of Portland.
 
-```{r mapO3NEchange, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of percent change in summer seasonal Ozone (O~3~) concentrations across New England between 2011 and 2016 at Census Block Group level."}
+```{r mapO3NEchange, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of percent change in summer seasonal Ozone (O3) concentrations across New England between 2011 and 2016 at Census Block Group level."}
 # Map of O3 change across New England
 tm_shape(ne_blkgrp_sf, unit = "mi") + 
   tm_fill("OZONE_pctChange", palette = "-RdYlGn",
@@ -507,7 +507,7 @@ tm_shape(ne_blkgrp_sf, unit = "mi") +
 
 Averaged across the states, the differences in these changes are also apparent. Figure \@ref(fig:slopegraphO3NE) below compares the average summer Ozone (O~3~) concentrations by state and for the region between 2011 and 2016. New England as a whole showed a slightly less than a 1% increase in summer average Ozone concentrations, while Connecticut showed an increase of nearly 5%. Massachusetts increased as well, but by only 0.5%. All other states showed an average decline in Ozone, with Rhode Island leading (-2.6%). Although note that Rhode Island's concentrations still remain significantly above the regional average. 
 
-```{r slopegraphO3NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Summer average Ozone (O~3~) concentrations for 2011 and 2016 for New England and states."}
+```{r slopegraphO3NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Summer average Ozone (O3) concentrations for 2011 and 2016 for New England and states."}
 # Slope graph of O3 by state and region between 2011 and 2016
 # Create df of 2019 actual values
 O319wSTAvgs_actual <- ne_blkgrp_sf %>% 
@@ -579,7 +579,7 @@ newggslopegraph(dataframe = O311_16wSTAvg_actual,
 
 In addition to variations in the general geography of Ozone (O~3~) concentrations, exposure to this pollutant also varies demographically. Figure \@ref(fig:barplotO3PopAvgNE) below shows population-weighted exposures for populations of concern relative to average Ozone concentrations for the region. For example, minorities in New England are exposed to summer Ozone concentrations that are more than 3% above concentrations for the region as a whole. Similarly, linguistically isolated households are exposed to concentrations 2.6% above the regional average. By contrast, low income persons are, on average, exposed to concentrations of Ozone at or below the regional average. 
 
-```{r barplotO3PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average exposures to Ozone (O~3~) for populations of concern in New England relative to the regional average."}
+```{r barplotO3PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average exposures to Ozone (O3) for populations of concern in New England relative to the regional average."}
 # Pop Weighted avg of O3 for all Groups in New England relative to NE average
 ne_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -632,7 +632,7 @@ ne_blkgrp_sf %>%
 
 Like the region as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvgNE). All populations of concern have experienced an increase in population-weighted exposure to Ozone, with minorities and persons in language-isolated households experiencing the greatest increase in exposure. 
 
-```{r slopegraphO3PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Summer Ozone (O~3~) concentrations by population of concern for 2011 and 2016."}
+```{r slopegraphO3PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Summer Ozone (O3) concentrations by population of concern for 2011 and 2016."}
 # Pop Weighted avg of O3 EXPOSURE CHANGE 2011 - 2016 for all Groups in New England relative to NE average. 
 # Create df of 2019 actual values
 O319wAvgs_actual <- ne_blkgrp_sf %>% 
@@ -722,7 +722,7 @@ Indeed, there is a moderate but statistically significant positive relationship 
 
 On-road emissions of CO~2~ closely follow major roadways across the region (see Figure \@ref(fig:mapCO2NE) below). 
 
-```{r mapCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2017 Carbon Dioxide (CO~2~) annual on-road emissions in metric tons per square kilometer (mtons/km^2^) across New England at Census Block Group level."}
+```{r mapCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2017 Carbon Dioxide (CO2) annual on-road emissions in metric tons per square kilometer across New England at Census Block Group level."}
 
 # Map of CO2 across New England
 ne_blkgrp_sf %>% 
@@ -799,7 +799,7 @@ tm_shape(local_g, unit = "mi",) +
 
 CO~2~ emissions vary by state (see Table \@ref(tab:statsCO2NE) above and Figure \@ref(fig:boxplotCO2NE) below). Massachusetts shows the highest absolute on-road emissions.  
 
-```{r statsCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 On-road CO~2~ emissions (mtons) at Census Block Group level and by state."}
+```{r statsCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 On-road CO2 emissions (mtons) at Census Block Group level and by state."}
 ne_blkgrp_sf %>% 
   mutate(onroad_2017 = kgco2_2017/1000) %>%
   as.data.frame() %>% 
@@ -811,16 +811,14 @@ ne_blkgrp_sf %>%
             `State Total` = sum(onroad_2017, na.rm = TRUE)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
-                    caption = "Annual 2017 On-road CO2 emissions (mtons)
-                    \nby Census block group by state",
-                    padding = 5, align = "r") %>% 
+                    caption = "Annual 2017 On-road CO2 emissions (mtons) by Census block group by state", align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
 
 Since 1990, on-road CO~2~ emissions increased significantly across the region, on average by `r {round((sum(ne_blkgrp_sf$kgco2_2017, na.rm = TRUE)-sum(ne_blkgrp_sf$kgco2_1990, na.rm = TRUE))/sum(ne_blkgrp_sf$kgco2_1990, na.rm = TRUE)*100,1)}`%. These changes have not been uniform (see Figure \@ref(fig:mapCO2NEchange) below). Except for Maine, the greatest declines, up to 97%, have been in outer suburban and rural areas. By contrast, increases in CO~2~ emissions of over 600% appear across most urban cores. Boston is the notable exception where increases have been relatively modest. Dramtic increases characterize areas around Worcester, Massachusetts and the South Shore of Massachusetts and the Cape, as well as around Portland, Maine, and from Stamford to Hartford, Connecticut. Significant increases also occur west and north of Montpelier, Vermont.
 
-```{r mapCO2NEchange, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of percent change in annual CO~2~ emissions across New England between 1990 and 2017 at Census Block Group level."}
+```{r mapCO2NEchange, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of percent change in annual CO2 emissions across New England between 1990 and 2017 at Census Block Group level."}
 # Map of CO2 change across New England
 ne_blkgrp_sf %>% 
   mutate(CO2_pctChange90_17 = (kgco2_2017 - kgco2_1990)/kgco2_1990*100) %>%
@@ -850,7 +848,7 @@ ne_blkgrp_sf %>%
 
 Averaged across the states, the differences in these changes are also apparent, although less extreme than at the Census block group level. Table \@ref(tab:changeCO2NE) and Figure \@ref(fig:slopegraphCO2NE) compare the  annual CO~2~ emissions by state and for the region between 1990 and 2017. New England as a whole showed an approximately 20% increase in annual on-road CO~2~ emissions. All states showed total increases, with New Hampshire leading with a 34% increase, followed by Maine with a 26% increase. Rhode Island showed the smallest increase since 1990 (2%), although note that Rhode Island's average annual on-road emissions still remain significantly above the regional average.
 
-```{r slopegraphCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Total On-road CO~2~ emissions for 1990 and 2017 for New England."}
+```{r slopegraphCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Total On-road CO2 emissions for 1990 and 2017 for New England."}
 # Slope graph of CO2 by state and region between 1990 and 2017
 # Create df of 2017 actual values
 CO217ST_actual <- ne_blkgrp_sf %>% 
@@ -914,7 +912,7 @@ newggslopegraph(dataframe = CO290_17ST_actual,
 
 The growth in CO~2~ emissions exceeds population growth across the region and in most states as is evident in the per capita emissions (see last three columns in Table \@ref(tab:changeCO2NE)). While New Hampshire leads in percentage growth of total emissions for the region, Maine leads in per capita growth. Only Vermont and Rhode Island showed declines in per capita emissions. 
 
-```{r changeCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 CO~2~ emissions (mtons) and Percent Change by state at Census Block Group level."}
+```{r changeCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 CO2 emissions (mtons) and Percent Change by state at Census Block Group level."}
 # acquire table of 1990 state pop values
 library(tidycensus)
 census_api_key("f2776fbc29cf847505de9308a82c8d65290d16b3")
@@ -958,6 +956,7 @@ ne_blkgrp_sf %>%
                     format.args = list(big.mark = ','),
                     caption = "Annual On-road CO2 Emissions",
                     digits = 0, align = "r") %>% 
+  kableExtra::column_spec(2:7, width = "2cm") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
@@ -966,7 +965,7 @@ ne_blkgrp_sf %>%
 
 Diesel Particulate Matter (PM) emissions are concentrated around major cities in New England and radiate outward along major traffic routes (see Figure \@ref(fig:mapDPMNE) below). 
 
-```{r mapDPMNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2014 annual average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter ($mu$g/m^3^) across New England at Census Block Group level."}
+```{r mapDPMNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2014 annual average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter across New England at Census Block Group level."}
 
 # Map of DPM across New England
 ne_blkgrp_sf %>% 
@@ -1039,9 +1038,9 @@ tm_shape(local_g, unit = "mi",) +
             legend.title.size = 0.7)
 ```
 
-Diesel Particulate Matter concentrations vary by state (see Table \@ref(tab:statsDPMNE) above and Figure \@ref(fig:boxplotDPMNE) below). Rhode Island shows the highest average ambient concentrations, although Massachusetts shows more extreme values.  
+Diesel Particulate Matter concentrations vary by state (see Table \@ref(tab:statsDPMNE). Rhode Island shows the highest average ambient concentrations, although Massachusetts shows more extreme values.  
 
-```{r statsDPMNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2014 average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter ($mu$g/m^3^) across New England at Census Block Group level."}
+```{r statsDPMNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2014 average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter across New England at Census Block Group level."}
 ne_blkgrp_sf %>%
   as.data.frame() %>% 
   group_by(STATE) %>% 
@@ -1051,23 +1050,8 @@ ne_blkgrp_sf %>%
             Max = round(max(DSLPM_19, na.rm = TRUE),3)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
-                    caption = "Annual 2014 DPM concentrations by Census block group", padding = 5, align = "r") %>% 
+                    caption = "Annual 2014 DPM concentrations by Census block group", align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
-```
-
-
-```{r boxplotDPMNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 7 Carbon Dioxoide (CO~2~) on-road emissions in metric tons per square kilometer (mtons/km^2^) by state at Census Block Group level."}
-# boxplot of CO2 by state for 2017
-ne_blkgrp_sf %>% 
-  as.data.frame() %>% 
-  ggplot(aes(x = STATE, y = DSLPM_19, fill = STATE)) + 
-  geom_boxplot(notch = TRUE) + 
-  ggtitle("Diesel Particulate Matter (DPM) concentrations \nby Census block group by New England state, 2017") +
-  theme_minimal() +
-  theme(legend.position = "none", axis.text=element_text(size=8)) + 
-  xlab(NULL) + 
-  ylab(expression(paste("DPM"," (", mu, "g/", m^3, ")", sep = ""))) +
-  coord_flip()
 ```
 
 
@@ -1115,10 +1099,9 @@ ne_blkgrp_sf %>%
   gather(key = Group, value = Pct) %>% 
   ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
   geom_bar(stat = "identity", position = "identity") +
-  theme_minimal(base_family = "TT Times New Roman") +
+  theme_minimal() +
   labs(x = "", y = "", title = "Population-Weighted Exposure to DPM \n(relative to New England average)") + 
-  theme(legend.position = 'none',
-        text = element_text(family = "TT Times New Roman")) +
+  theme(legend.position = 'none') +
   geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
                 label = paste0(round(Pct,1),"%")), 
             hjust = 0.5, size = 3, nudge_y = 3,
@@ -1218,8 +1201,7 @@ ne_blkgrp_sf %>%
             Max = round(max(CANCER_19, na.rm = TRUE),1)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
-                    caption = "Annual 2014 Cancer Risk from Inhalation of Air Toxics by Census block group (risk in-1 million)",
-                    padding = 5, align = "r") %>% 
+                    caption = "Annual 2014 Cancer Risk from Inhalation of Air Toxics by Census block group (risk in-1 million)", align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
@@ -1283,10 +1265,9 @@ ne_blkgrp_sf %>%
   gather(key = Group, value = Pct) %>% 
   ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
   geom_bar(stat = "identity", position = "identity") +
-  theme_minimal(base_family = "TT Times New Roman") +
+  theme_minimal() +
   labs(x = "", y = "", title = "Population-Weighted Average Lifetime Cancer Risk \n(relative to New England average)") + 
-  theme(legend.position = 'none',
-        text = element_text(family = "TT Times New Roman")) +
+  theme(legend.position = 'none') +
   geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
                 label = paste0(round(Pct,1),"%")), 
             hjust = 0.5, size = 3, nudge_y = 0.5,
@@ -1386,8 +1367,7 @@ ne_blkgrp_sf %>%
             Max = round(max(RESP_19, na.rm = TRUE),2)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
-                    caption = "Annual 2014 Respiratory Hazard Index from Inhalation of Air Toxics by Census block group (ratio of exposure concentration to health-based reference concentration)",
-                    padding = 5, align = "r") %>% 
+                    caption = "Annual 2014 Respiratory Hazard Index from Inhalation of Air Toxics by Census block group (ratio of exposure concentration to health-based reference concentration)", align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
@@ -1451,10 +1431,9 @@ ne_blkgrp_sf %>%
   gather(key = Group, value = Pct) %>% 
   ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
   geom_bar(stat = "identity", position = "identity") +
-  theme_minimal(base_family = "TT Times New Roman") +
+  theme_minimal() +
   labs(x = "", y = "", title = "Population-Weighted Average Respiratory Hazard Index \n(relative to New England average)") + 
-  theme(legend.position = 'none',
-        text = element_text(family = "TT Times New Roman")) +
+  theme(legend.position = 'none') +
   geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
                 label = paste0(round(Pct,1),"%")), 
             hjust = 0.5, size = 3, nudge_y = 0.5,
@@ -1554,8 +1533,7 @@ ne_blkgrp_sf %>%
             Max = round(max(PTRAF_19, na.rm = TRUE),0)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
-                    caption = "Annual traffic proximity and volume (AADT/Distance(km))",
-                    padding = 5, align = "r") %>% 
+                    caption = "Annual traffic proximity and volume (AADT/Distance(km))", align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
@@ -1604,10 +1582,9 @@ ne_blkgrp_sf %>%
   gather(key = Group, value = Pct) %>% 
   ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
   geom_bar(stat = "identity", position = "identity") +
-  theme_minimal(base_family = "TT Times New Roman") +
+  theme_minimal() +
   labs(x = "", y = "", title = "Population-Weighted Average Traffic Proximity and Volume \n(relative to New England average)") + 
-  theme(legend.position = 'none',
-        text = element_text(family = "TT Times New Roman")) +
+  theme(legend.position = 'none') +
   geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
                 label = paste0(round(Pct,1),"%")), 
             hjust = 0.5, size = 3, nudge_y = 3,
@@ -1618,19 +1595,20 @@ ne_blkgrp_sf %>%
 
 Language isolated households and minorities experience higher exposure to traffic proximity and volume compared to the general population. 
 
+\pagebreak
+# Appendix {-}
 
-# (APPENDIX) Appendix {-} 
-
-# Appendix A
+## Appendix A
 
 This is Appendix A where we describe the data and methodologies used in this analysis.
 
-# Appendix B
+\pagebreak
+## Appendix B
 
 Here are supplementary figures and tables.
 
 
-```{r cormatrixPM25PopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of annual PM~2.5~ concentrations and the proportions of populations of concern by Census Block Group."}
+```{r cormatrixPM25PopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of annual PM2.5 concentrations and the proportions of populations of concern by Census Block Group."}
 # Create a correlation matrix of PM25 and populations of concern
 corrPM25 <- ne_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -1669,7 +1647,7 @@ ggcorrplot(corrO3, hc.order = TRUE, type = "lower", lab = TRUE,
            legend.title = "Spearman's \nCorrelation\nCoefficient")
 ```
 
-```{r boxplotCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 7 Carbon Dioxoide (CO~2~) on-road emissions in metric tons per square kilometer (mtons/km^2^) by state at Census Block Group level."}
+```{r boxplotCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 2017 Carbon Dioxoide (CO2) on-road emissions in metric tons per square kilometer by state at Census Block Group level."}
 # boxplot of CO2 by state for 2017
 ne_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -1684,7 +1662,7 @@ ne_blkgrp_sf %>%
   coord_flip()
 ```
 
-```{r boxplotDPMNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 7 Carbon Dioxoide (CO~2~) on-road emissions in metric tons per square kilometer (mtons/km^2^) by state at Census Block Group level."}
+```{r boxplotDPMNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 2017 Carbon Dioxoide (CO2) on-road emissions in metric tons per square kilometer by state at Census Block Group level."}
 # boxplot of CO2 by state for 2017
 ne_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -1715,7 +1693,7 @@ corrDPM <- ne_blkgrp_sf %>%
 ggcorrplot(corrDPM, hc.order = TRUE, type = "lower", lab = TRUE, 
            title = "DPM Correlation Matrix for New England", 
            legend.title = "Spearman's \nCorrelation\nCoefficient",
-           ggtheme = ggplot2::theme_minimal(base_family = "TT Times New Roman"))
+           ggtheme = ggplot2::theme_minimal())
 ```
 
 ```{r cormatrixATCPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group."}
@@ -1735,7 +1713,7 @@ corrACT <- ne_blkgrp_sf %>%
 ggcorrplot(corrACT, hc.order = TRUE, type = "lower", lab = TRUE, 
            title = "Cancer Risk Correlation Matrix for New England", 
            legend.title = "Spearman's \nCorrelation\nCoefficient",
-           ggtheme = ggplot2::theme_minimal(base_family = "TT Times New Roman"))
+           ggtheme = ggplot2::theme_minimal())
 ```
 
 ```{r cormatrixRHIPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group."}
@@ -1755,7 +1733,7 @@ corrACT <- ne_blkgrp_sf %>%
 ggcorrplot(corrACT, hc.order = TRUE, type = "lower", lab = TRUE, 
            title = "Respiratory Hazard Index \nCorrelation Matrix for New England", 
            legend.title = "Spearman's \nCorrelation\nCoefficient",
-           ggtheme = ggplot2::theme_minimal(base_family = "TT Times New Roman"))
+           ggtheme = ggplot2::theme_minimal())
 ```
 
 ```{r boxplotTPVNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across New England at Census Block Group level."}
@@ -1789,5 +1767,5 @@ corrTPV <- ne_blkgrp_sf %>%
 ggcorrplot(corrTPV, hc.order = TRUE, type = "lower", lab = TRUE, 
            title = "Traffic Proximity and Volume \nCorrelation Matrix for New England", 
            legend.title = "Spearman's \nCorrelation\nCoefficient",
-           ggtheme = ggplot2::theme_minimal(base_family = "TT Times New Roman"))
+           ggtheme = ggplot2::theme_minimal())
 ```
