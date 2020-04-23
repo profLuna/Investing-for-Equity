@@ -84,7 +84,7 @@ ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf[!empty_geo,] %>%
 # Calculate Queen's case neighbors
 neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
 # Compute neighbor weights
-spdep::set.ZeroPolicyOption(TRUE)
+# spdep::set.ZeroPolicyOption(TRUE)
 listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
 # compute Getis-Ord Gi statistic
 local_g <- localG(ne_blkgrp_sp_DemoEJ$PM25_19, listw)
@@ -427,7 +427,7 @@ ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf[!empty_geo,] %>%
 # Calculate Queen's case neighbors
 neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
 # Compute neighbor weights
-spdep::set.ZeroPolicyOption(TRUE)
+# spdep::set.ZeroPolicyOption(TRUE)
 listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
 # compute Getis-Ord Gi statistic
 local_g <- localG(ne_blkgrp_sp_DemoEJ$OZONE_19, listw)
@@ -764,7 +764,7 @@ ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf[!empty_geo,] %>%
 # Calculate Queen's case neighbors
 neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
 # Compute neighbor weights
-spdep::set.ZeroPolicyOption(TRUE)
+# spdep::set.ZeroPolicyOption(TRUE)
 listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
 # compute Getis-Ord Gi statistic
 local_g <- localG(ne_blkgrp_sp_DemoEJ$onroad_2017, listw)
@@ -961,7 +961,7 @@ ne_blkgrp_sf %>%
 ```
 
 
-## Analysis of Diesel Particulate Matter ($mu$g/m^3^) in New England
+## Analysis of Diesel Particulate Matter ($\mu$g/m^3^) in New England
 
 Diesel Particulate Matter (PM) emissions are concentrated around major cities in New England and radiate outward along major traffic routes (see Figure \@ref(fig:mapDPMNE) below). 
 
@@ -1005,7 +1005,7 @@ ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf[!empty_geo,] %>%
 # Calculate Queen's case neighbors
 neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
 # Compute neighbor weights
-spdep::set.ZeroPolicyOption(TRUE)
+# spdep::set.ZeroPolicyOption(TRUE)
 listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
 # compute Getis-Ord Gi statistic
 local_g <- localG(ne_blkgrp_sp_DemoEJ$DSLPM_19, listw)
@@ -1156,7 +1156,7 @@ ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf[!empty_geo,] %>%
 # Calculate Queen's case neighbors
 neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
 # Compute neighbor weights
-spdep::set.ZeroPolicyOption(TRUE)
+# spdep::set.ZeroPolicyOption(TRUE)
 listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
 # compute Getis-Ord Gi statistic
 local_g <- localG(ne_blkgrp_sp_DemoEJ$CANCER_19, listw)
@@ -1322,7 +1322,7 @@ ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf[!empty_geo,] %>%
 # Calculate Queen's case neighbors
 neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
 # Compute neighbor weights
-spdep::set.ZeroPolicyOption(TRUE)
+# spdep::set.ZeroPolicyOption(TRUE)
 listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
 # compute Getis-Ord Gi statistic
 local_g <- localG(ne_blkgrp_sp_DemoEJ$RESP_19, listw)
@@ -1488,7 +1488,7 @@ ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf[!empty_geo,] %>%
 # Calculate Queen's case neighbors
 neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
 # Compute neighbor weights
-spdep::set.ZeroPolicyOption(TRUE)
+# spdep::set.ZeroPolicyOption(TRUE)
 listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
 # compute Getis-Ord Gi statistic
 local_g <- localG(ne_blkgrp_sp_DemoEJ$PTRAF_19, listw)
