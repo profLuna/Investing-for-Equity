@@ -1903,7 +1903,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Population numbers of minorities, as well as the total population, and PM~2.5 concentrations, are each reported by Block Group. Since each Block Group is associated with one PM~2.5~ concentration value, we might assume (incorrectly) that everyone is equally exposed to the average PM~2.5~ values of all Block Groups - `r mean(c(2.5,6.2,10,5))`. However, not all Block Groups have the same number of people, which means that each PM~2.5~ concentration value is associated with a different number of people. Do Minorities occupy Block Groups with higher concentrations than the simple average would indicate?
+Population numbers of minorities, as well as the total population, and PM~2.5 concentrations, are each reported by Block Group. Since each Block Group is associated with one PM~2.5~ concentration value, we might assume (incorrectly) that everyone is equally exposed to the average PM~2.5~ values of all Block Groups - `r round(mean(c(2.5,6.2,10,5)),2)`. However, not all Block Groups have the same number of people, which means that each PM~2.5~ concentration value is associated with a different number of people. Do Minorities occupy Block Groups with higher concentrations than the simple average would indicate?
 
 To calculate the population-weighted average PM~2.5~ exposure for Minorities, the number of Minorities in each Block Group is used as a 'weight'. The PM~2.5~ concentraions of each Block Group is multiplied by its respective number of Minorities. See the table below. 
 
@@ -1920,7 +1920,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-The total or sum of the products (i.e., Minority pop x PM~2.5~ concentrations) is then divided by the sum of the weights (i.e., total Minority population), so that 324.5/45 = `r 324.5/45`. The result is a weighted average PM~2.5~ concentration that is influenced by the number of minorities. 
+The total or sum of the products (i.e., Minority pop x PM~2.5~ concentrations) is then divided by the sum of the weights (i.e., total Minority population), so that 324.5/45 = `r round(324.5/45,2)`. The result is a weighted average PM~2.5~ concentration that is influenced by the number of minorities. 
 
 This process is repeated for the Total Population so that the two population-weighted average PM~2.5~ concentrations can be compared. Below is the calculation of population-weighted calculation for the total population. 
 
@@ -1937,7 +1937,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-For the TotalPop, the population-weighted average of PM~2.5~ is 548.9/92 = `r 548.9/92`. Thus we can see that Minorities experience a higher population-weighted average PM~2.5~ concentration than the general or total population. 
+For the TotalPop, the population-weighted average of PM~2.5~ is 548.9/92 = `r round(548.9/92,2)`. Thus we can see that Minorities experience a higher population-weighted average PM~2.5~ concentration than the general or total population. 
 
 \pagebreak
 # Appendix B: Supplementary Figures {-}
