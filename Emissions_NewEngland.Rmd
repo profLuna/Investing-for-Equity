@@ -20,9 +20,9 @@ knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE)
 
 This is an analysis of transportation-related emissions and related externalities in New England. Transportation-related emissions include pollutants directly emitted by on-road vehicles such as PM~2.5~ and diesel particulate matter, as well as other transportation-related pollution such as ground-level ozone (O~3~) and air toxics. These substances pose risks to the health and quality of life of people who are exposed to them. 
 
-## Analysis of PM~2.5~ in New England
+## PM~2.5~ in New England
 
-This is an analysis of PM~2.5~ across New England and its relationship to populations of concern. PM~2.5~ refers to particulate matter in the air that is 2.5 microns or less in diameter (about 30 times smaller than the width of a human hair). These small particulates pose a threat to human health because they can penetrate deeply into the lungs and even enter the bloodstream. The EPA has documented that exposure to PM~2.5~ is associated with health effects such as elevated risk of premature mortality from cardiovascular diseases or lung cancer, and increased health problems such as asthma attacks.[^EPAPM10] Moreover, the EPA has found that people with pre-existing heart or lung disease, children and older adults, and nonwhite populations are at particular risk.[^EPAPM10risk]
+PM~2.5~ refers to particulate matter in the air that is 2.5 microns or less in diameter (about 30 times smaller than the width of a human hair). These small particulates pose a threat to human health because they can penetrate deeply into the lungs and even enter the bloodstream. The EPA has documented that exposure to PM~2.5~ is associated with health effects such as elevated risk of premature mortality from cardiovascular diseases or lung cancer, and increased health problems such as asthma attacks.[^EPAPM10] Moreover, the EPA has found that people with pre-existing heart or lung disease, children and older adults, and nonwhite populations are at particular risk.[^EPAPM10risk]
 
 Sources of PM~2.5~ emissions include power plants and industrial facilities that burn coal or petroleum-based fuels (i.e., oil or natural gas). However, most PM~2.5~ forms in the atmosphere as a result of chemical reactions between gases such as oxides of nitrogen (NO~x~) or sulfur dioxide (SO~2~), which are pollutants emitted from power plants, industries, and automobiles. PM~2.5~ has been regulated by the US EPA under the National Ambient Air Quality Standards (NAAQS) since 1997. As of April 2020, the EPA's primary (health-based) standard for PM~2.5~ is an annual average of 12$\mu$g/m^3^ (12 micrograms per cubic meter of air).[^EPAPM25standards] Research shows that PM~2.5~ continues to have a significant negative impact on mortality at concentrations below the EPA's standard.[^LOWPM25research] Former EPA officials and scientists in an Independent Particulate Matter Review Panel have found that the current standard is not protective of public health and recommend that the annual standard be revised to a range of 10$\mu$g/m^3^ to 8$\mu$g/m^3^. However, even at the lower end of the range, risk is not reduced to zero.[^IPMRP]
 
@@ -399,7 +399,7 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
 Indeed, there is a moderate but statistically significant positive relationship between the proportion of minority residents or language-isolated households and the concentration of PM~2.5~ (see Appendix).
 
 \pagebreak
-## Analysis of Ozone (O~3~) in New England
+## Ozone (O~3~) in New England
 
 Ground-level ozone (O~3~) is the primary constituent of smog.[^NOTO3hole] However, ozone is not usually emitted directly into the air. It is created at ground level by a chemical reaction in the air between oxides of nitrogen (NO~x~) and volatile organic compounds (VOCs) in the presence of sunlight. These ozone precursor pollutants are emitted from automobile exhaust, gasoline vapors, industrial boilers, refineries, chemical plants, and other sources. Ozone concentrations tend to be highest during the summer months due to increased sunlight and heat. Ozone can also be carried long distances by wind, affecting areas far from the sources of precursor pollutants.
 
@@ -748,7 +748,7 @@ newggslopegraph(dataframe = O311_16wAvg_actual,
 Indeed, there is a moderate but statistically significant positive relationship between the proportion of minority residents and the concentration of Ozone (see Appendix).
 
 \pagebreak
-## Analysis of Carbon Dioxide (CO~2~) in New England
+## Carbon Dioxide (CO~2~) in New England
 
 Carbon dioxide (CO~2~) emissions are the primary driver of human-induced climate change.[^GWFAQ] Direct exposure to CO~2~ is not a significant health concern, but its cumulative effects on the climate and global environment are. In addition to risks such as sea level rise, increasing frequency and intensity of extreme weather (e.g., flooding, storms, droughts, heat waves), and economic disruption, climate change is likely to degrade air quality by exacerbating smog formation and other airborne irritants.[^UCSO3] The single largest source of CO~2~ emissions is the transportation sector, especially automobiles. Other sources of CO~2~ emissions include the combustion of coal or petroleum-based fuels for  electricity production, industry, heating of commercial and residential buildings, agriculture, and land use and forestry.[^GHGInventory] 
 
@@ -999,7 +999,7 @@ ne_blkgrp_sf %>%
 ```
 
 \pagebreak
-## Analysis of Diesel Particulate Matter ($\mu$g/m^3^) in New England
+## Diesel Particulate Matter in New England
 
 Diesel Particulate Matter (DPM) refers to particulate matter generated from the combustion of diesel fuel. Diesel PM (DPM) mass (expressed as $\mu$gDPM/m^3^) has historically been used as a surrogate measure of exposure for diesel exhaust more generally. Diesel exhaust is a complex mixture of thousands of gases and fine particles that contains more than 40 toxic air contaminants.  These include many known or suspected cancer-causing substances, such as benzene, arsenic and formaldehyde.  It also contains other harmful pollutants, including nitrogen oxides (a component of smog). In addition to long term cancer risk, exposure to diesel exhaust can have immediate health effects.  It can irritate the eyes, nose, throat and lungs, and it can cause coughs, headaches, light-headedness and nausea. Exposure to diesel exhaust also causes inflammation in the lungs, which may aggravate chronic respiratory symptoms and increase the frequency or intensity of asthma attacks.[^DPMcalEPA] 
 
@@ -1179,7 +1179,7 @@ ne_blkgrp_sf %>%
 Language isolated households and minorities are much more exposed to Diesel Particulate Matter concentrations than the general population. There is a strong positive correlation between the proportions of minorities and ambient concentrations of Diesel Particulate Matter (see Appendix).
 
 \pagebreak
-## Analysis of Air Toxics Cancer Risk in New England
+## Air Toxics Cancer Risk in New England
 
 Air toxics, often referred to as hazardous air pollutants (HAPs), are pollutants that are known or suspected to cause cancer or other serious health effects, such as reproductive effects or birth defects, or adverse environmental effects.  
 
@@ -1261,7 +1261,7 @@ tm_shape(local_g, unit = "mi",) +
             legend.title.size = 0.7)
 ```
 
-Lifetime cancer risk from inhalation of air toxics vary by state (see Table \@ref(tab:statsATCNE) and Figure \@ref(fig:boxplotATCNE) below). Massachusetts, Connecticut, and Rhode Island show the highest average lifetime cancer risks with similar median values, although Connecticut shows some block groups taht are far above the median for all other states. New Hampshire shows risks that are significantly higher than Maine and Vermont.   
+Lifetime cancer risk from inhalation of air toxics vary by state (see Table \@ref(tab:statsATCNE) and Figure \@ref(fig:boxplotATCNE) below). Massachusetts, Connecticut, and Rhode Island show the highest average lifetime cancer risks with similar median values, although Connecticut shows some block groups that are far above the median for all other states. New Hampshire shows risks that are significantly higher than Maine and Vermont.   
 
 ```{r statsATCNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2014 lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across New England at Census Block Group level."}
 ne_blkgrp_sf %>%
@@ -1355,7 +1355,7 @@ ne_blkgrp_sf %>%
 Language isolated households and minorities experience higher lifetime risk of cancer from inhalation of air toxics than the general population. There is a moderate to strong positive correlation between the proportions of minorities and cancer risk, and a moderately strong positive correlation with language isolated households (see Appendix).
 
 \pagebreak
-## Analysis of Respiratory Hazard Index from Air Toxics in New England
+## Respiratory Hazard Index from Air Toxics in New England
 
 Respiratory hazard from air toxics refers to noncancer effects caused by a lifetime of exposure to air toxics listed as Hazardous Air Pollutants (HAPs).[^NATAoverview] EPA's National Air Toxics Assessment (NATA) program calculates a hazard quotient, which is the ratio of ambient air concentration to a chemical’s health-based reference concentration (RfC). No adverse health effects are expected from exposure if the hazard quotient is less than one. This hazard quotient represents the cumulative impacts of all the relevant air toxics for which respiratory effects were the key health effect.[^NATARfC]
 
@@ -1533,7 +1533,7 @@ ne_blkgrp_sf %>%
 Language isolated households and minorities experience higher respiratory hazard indices from inhalation of air toxics compared to the general population. There is a moderate to strong positive correlation between the proportions of minorities and respiratory hazard index, and a moderately strong positive correlation with language isolated households (see Appendix).
 
 \pagebreak
-## Analysis of Traffic Proximity and Volume in New England
+## Traffic Proximity and Volume in New England
 
 Proximity to motor vehicle traffic is associated with greater exposure to toxic gases and particulate matter, as well as increased noise. Vehicle-related emissions include ultrafine particulates and other components of PM~2.5~, lead and other metals, air toxics such as benzene, nitrogen oxides (NO~x~), hydrocarbons and carbon monoxide (CO), as well as precursors that add to the formation of ground level ozone (O~3~) and smog. Research has repeatedly shown that living near highly trafficked roads is related to increased risk of a variety of adverse health outcomes, including asthma, cardiovascular disease, hypertension, stroke, stress, and increased rates of mortality. EPA’s 2005 National Air Toxics Assessment (NATA) estimated that mobile emissions accounted for about 30% of average cancer risk from Hazardous Air Pollutants.[^EJSCREENTraffic]
 
@@ -1708,7 +1708,7 @@ Language isolated households and minorities experience higher exposure to traffi
 
 [^EPAO3lowerlimit]: See U.S. EPA. (2006). Air Quality Criteria for Ozone and Related Photochemical Oxidants. Washington, DC. http://cfpub.epa.gov/ncea/cfm/recordisplay.cfm?deid=149923.
 
-[^NONATTAINMENT]: Note that the EJSCREEN values do not directly indicate nonattainment of the NAAQS standard because the EJSCREEN data is based on estimates from a combination of modeling and monitoring for a single year, while nonattainment is determined for a large area (often a county) based on three years of monitoring data. For example, five counties in Connecticut have been designated as "nonattainment" status for NAAQS ozone standards as of March 2020. For a list of nonattainment counties see EPA 8-Hour Ozone (2015) Designated Area State/Area/County Report. https://www3.epa.gov/airquality/greenbook/jbcs.html#CT 
+[^NONATTAINMENT]: Note that the EJSCREEN values do not directly indicate nonattainment of the NAAQS standard because the EJSCREEN data is based on estimates from a combination of modeling and monitoring for a single year, while nonattainment is determined for a large area (often a county) based on three years of monitoring data. For example, five counties in Connecticut have been designated as "nonattainment" status for NAAQS ozone standards as of March 2020. For a list of nonattainment counties see EPA 8-Hour Ozone Designated Area State/Area/County Report. https://www3.epa.gov/airquality/greenbook/jbcs.html#CT 
 
 [^UCSO3]: See Union of Concerned Scientists. Climate Change and Your Health: Rising temperatures worsening ozone pollution. https://www.nrcm.org/wp-content/uploads/2013/09/UCS_climate_health_impact6.1.11.pdf
 
@@ -1735,7 +1735,7 @@ Language isolated households and minorities experience higher exposure to traffi
 [^EJSCREENTraffic]: See "Details on Environmental Indicators: Traffic Proximity" in  EJSCREEN Environmental Justice Mapping and Screening Tool: EJSCREEN Technical Documentation 2019. www.epa.gov/ejscreen
 
 \pagebreak
-# Appendix A: Methodology {-}
+# Appendix A: Data and Methodology {-}
 
 The analyses presented here are based on data from three sources:
 
@@ -1903,7 +1903,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Population numbers of minorities, as well as the total population, and PM~2.5 concentrations, are each reported by Block Group. Since each Block Group is associated with one PM~2.5~ concentration value, we might assume (incorrectly) that everyone is equally exposed to the average PM~2.5~ values of all Block Groups - {`r mean(c(2.5,6.2,10,5))`}. However, not all Block Groups have the same number of people, which means that each PM~2.5~ concentration value is associated with a different number of people. Do Minorities occupy Block Groups with higher concentrations than the simple average would indicate?
+Population numbers of minorities, as well as the total population, and PM~2.5 concentrations, are each reported by Block Group. Since each Block Group is associated with one PM~2.5~ concentration value, we might assume (incorrectly) that everyone is equally exposed to the average PM~2.5~ values of all Block Groups - `r mean(c(2.5,6.2,10,5))`. However, not all Block Groups have the same number of people, which means that each PM~2.5~ concentration value is associated with a different number of people. Do Minorities occupy Block Groups with higher concentrations than the simple average would indicate?
 
 To calculate the population-weighted average PM~2.5~ exposure for Minorities, the number of Minorities in each Block Group is used as a 'weight'. The PM~2.5~ concentraions of each Block Group is multiplied by its respective number of Minorities. See the table below. 
 
@@ -1920,7 +1920,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-The total or sum of the products (i.e., Minority pop x PM~2.5~ concentrations) is then divided by the sum of the weights (i.e., total Minority population), so that 324.5/45 = {`r 324.5/45`}. The result is a weighted average PM~2.5~ concentration that is influenced by the number of minorities. 
+The total or sum of the products (i.e., Minority pop x PM~2.5~ concentrations) is then divided by the sum of the weights (i.e., total Minority population), so that 324.5/45 = `r 324.5/45`. The result is a weighted average PM~2.5~ concentration that is influenced by the number of minorities. 
 
 This process is repeated for the Total Population so that the two population-weighted average PM~2.5~ concentrations can be compared. Below is the calculation of population-weighted calculation for the total population. 
 
@@ -1937,7 +1937,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-For the TotalPop, the population-weighted average of PM~2.5~ is 548.9/92 = {`r 548.9/92`}. Thus we can see that Minorities experience a higher population-weighted average PM~2.5~ concentration than the general or total population. 
+For the TotalPop, the population-weighted average of PM~2.5~ is 548.9/92 = `r 548.9/92`. Thus we can see that Minorities experience a higher population-weighted average PM~2.5~ concentration than the general or total population. 
 
 \pagebreak
 # Appendix B: Supplementary Figures {-}
