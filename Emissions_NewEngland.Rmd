@@ -13,20 +13,24 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE)
 ```
 \pagebreak
 # Analysis of transportation-related emissions in New England
 
-This is an analysis of transportation-related emissions and related externalities in New England.
+This is an analysis of transportation-related emissions and related externalities in New England. Transportation-related emissions include pollutants directly emitted by on-road vehicles such as PM~2.5~ and diesel particulate matter, as well as other transportation-related pollution such as ground-level ozone (O~3~) and air toxics. These substances pose risks to the health and quality of life of people who are exposed to them. 
 
 ## Analysis of PM~2.5~ in New England
 
-This is an analysis of PM~2.5~ across New England and its relationship to populations of concern. The analysis is based on data from the EPA's EJSCREEN. EJSCREEN data provides PM~2.5~ annual concentrations at the Census Block Group level for the years 2011 tp 2016 (as of December 2019). 
+This is an analysis of PM~2.5~ across New England and its relationship to populations of concern. PM~2.5~ refers to particulate matter in the air that is 2.5 microns or less in diameter (about 30 times smaller than the width of a human hair). These small particulates pose a threat to human health because they can penetrate deeply into the lungs and even enter the bloodstream. The EPA has documented that exposure to PM~2.5~ is associated with health effects such as elevated risk of premature mortality from cardiovascular diseases or lung cancer, and increased health problems such as asthma attacks.[^EPAPM10] Moreover, the EPA has found that people with pre-existing heart or lung disease, children and older adults, and nonwhite populations are at particular risk.[^EPAPM10risk]
+
+Sources of PM~2.5~ emissions include power plants and industrial facilities that burn coal or petroleum-based fuels (i.e., oil or natural gas). However, most PM~2.5~ forms in the atmosphere as a result of chemical reactions between gases such as oxides of nitrogen (NO~x~) or sulfur dioxide (SO~2~), which are pollutants emitted from power plants, industries, and automobiles. PM~2.5~ has been regulated by the US EPA under the National Ambient Air Quality Standards (NAAQS) since 1997. As of April 2020, the EPA's primary (health-based) standard for PM~2.5~ is an annual average of 12$\mu$g/m^3^ (12 micrograms per cubic meter of air).[^EPAPM25standards] Research shows that PM~2.5~ continues to have a significant negative impact on mortality at concentrations below the EPA's standard.[^LOWPM25research] Former EPA officials and scientists in an Independent Particulate Matter Review Panel have found that the current standard is not protective of public health and recommend that the annual standard be revised to a range of 10$\mu$g/m^3^ to 8$\mu$g/m^3^. However, even at the lower end of the range, risk is not reduced to zero.[^IPMRP]
+
+The analysis of PM~2.5~ presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides PM~2.5~ annual concentrations at the Census Block Group level for the years 2011 to 2016 (as of December 2019). 
 
 PM~2.5~ levels vary significantly across New England, with highest concentrations in southwest Connecticut, from Stamford to Hartford, and also from Providence, Rhode Island, to the Boston metro region, and from Portland, Maine along the I-95 corridor to Bangor (see Figure \@ref(fig:mapPM25NE) below). 
 
-```{r mapPM25NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2016 annual PM2.5 concentrations across New England at Census Block Group level."}
+```{r mapPM25NE, fig.align = "center", fig.cap="Map of 2016 annual PM2.5 concentrations across New England at Census Block Group level."}
 library(tidyverse)
 library(sf)
 library(tmap)
@@ -73,7 +77,7 @@ tm_shape(ne_blkgrp_sf, unit = "mi") +
 
 PM~2.5~ concentrations exhibit spatial clustering of both hot spots (i.e. geographic clusters of high values) and cold spots (i.e. geographic clusters of lower values). The map below (Figure \@ref(fig:hotspotPM25NE)) shows statistically significant PM~2.5~ hot spots.
 
-```{r hotspotPM25NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2016 annual PM2.5 concentrations at Census Block Group level."}
+```{r hotspotPM25NE, cache=TRUE, fig.align = "center", fig.cap="Hot spot map of 2016 annual PM2.5 concentrations at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
 empty_geo <- st_is_empty(ne_blkgrp_sf)
 ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf[!empty_geo,] %>% 
@@ -117,22 +121,33 @@ tm_shape(local_g, unit = "mi",) +
             legend.title.size = 0.7)
 ```
 
-There is a statistically significant hot spot of PM~2.5~ around Stamford, Connecticut. Warm clusters encompass southwestern  Connecticut to Hartford, from Providence, Rhode Island ot Boston, and Augusta to Bangor, Maine along the I-95 corridor. 
+There is a significant hot spot of PM~2.5~ around Stamford, Connecticut. Warm clusters encompass southwestern  Connecticut to Hartford, from Providence, Rhode Island ot Boston, and Augusta to Bangor, Maine along the I-95 corridor. 
 
 These PM~2.5~ levels vary significantly by state (see Figure \@ref(fig:boxplotPM25NE) below). Connecticut stands out with the highest median PM~2.5~ concentrations among the New England states, while Vermont has the lowest overall concentrations. The differences in concentrations between the states are all statistically significant.  
 
-```{r boxplotPM25NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 2016 annual PM2.5 concentrations by state at Census Block Group level."}
+```{r boxplotPM25NE, cache=TRUE, fig.align = "center", fig.cap="Boxplot of 2016 annual PM2.5 concentrations by state at Census Block Group level."}
 # boxplot of PM2.5 by state for 2016
 ne_blkgrp_sf %>% 
   as.data.frame() %>% 
-  ggplot(aes(x = STATE, y = PM25_19, fill = STATE)) + 
+  drop_na(PM25_19) %>% 
+  ggplot(aes(x = reorder(STATE, PM25_19, FUN = "median", .desc = TRUE), 
+             y = PM25_19, fill = STATE)) + 
   geom_boxplot(notch = TRUE) + 
   ggtitle(expression(atop(paste(PM[2.5], " Annual Concentration by New England state,"), "2016"))) +
   theme_minimal() +
   theme(legend.position = "none", axis.text=element_text(size=8)) + 
   xlab(NULL) + 
   ylab(expression(paste(PM[2.5]," (", mu, "g/", m^3, ")", sep = ""))) +
-  coord_flip()
+  coord_flip() +
+  expand_limits(y = c(0,14)) +
+  geom_hline(aes(yintercept = 12), color = "red4", linetype = "dashed") +
+  geom_text(aes(x = "Maine", y = 12.4, 
+                label = "NAAQS Primary PM2.5 Standard"), 
+            color = "red4", angle = 270) +
+  geom_hline(aes(yintercept = 8), color = "orange", linetype = "dashed") +
+  geom_text(aes(x = "Maine", y = 8.4, 
+                label = "Recommended PM2.5 Standard"), 
+            color = "orange", angle = 270)
 # # boxplot of PM2.5 by state for 2011
 # ne_blkgrp_sf %>% 
 #   as.data.frame() %>% 
@@ -147,7 +162,7 @@ ne_blkgrp_sf %>%
 
 Since 2011, PM~2.5~ levels have declined across the region, on average by `r {round(mean(ne_blkgrp_sf$PM25_pctChange, na.rm = TRUE),1)}`%. Unsurprisingly, this decline has not been uniform (see Figure \@ref(fig:mapPM25NEchange) below). The greatest declines, up to 43%, have been in the northern half of Vermont and the region between Boston and Portsmouth. 
 
-```{r mapPM25NEchange, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of percent change in annual PM2.5 concentrations across New England between 2011 and 2016 at Census Block Group level."}
+```{r mapPM25NEchange, cache=TRUE, fig.align = "center", fig.cap="Map of percent change in annual PM2.5 concentrations across New England between 2011 and 2016 at Census Block Group level."}
 # Map of PM2.5 change across New England
 tm_shape(ne_blkgrp_sf, unit = "mi") + 
   tm_fill("PM25_pctChange", palette = "Greens",
@@ -174,7 +189,7 @@ tm_shape(ne_blkgrp_sf, unit = "mi") +
 
 Averaged across the states, the differences in these declines are also apparent. Figure \@ref(fig:slopegraphPM25NE) below compares the average annual PM~2.5~ concentrations by state and for the region between 2011 and 2016. The region and the states all showed significant declines since 2011, although note that concentrations in Connecticut have remained consistently well above the rest of the region. 
 
-```{r slopegraphPM25NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual PM2.5 concentrations for 2011 and 2016 for New England and states."}
+```{r slopegraphPM25NE, fig.align = "center", fig.cap="Annual PM2.5 concentrations for 2011 and 2016 for New England and states."}
 # Slope graph of PM2.5 by state and region between 2011 and 2016
 # Create df of 2019 actual values
 PM19wSTAvgs_actual <- ne_blkgrp_sf %>% 
@@ -383,12 +398,20 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
 
 Indeed, there is a moderate but statistically significant positive relationship between the proportion of minority residents or language-isolated households and the concentration of PM~2.5~ (see Appendix).
 
-
+\pagebreak
 ## Analysis of Ozone (O~3~) in New England
 
-Ozone (O~3~) levels vary significantly across New England, with highest concentrations in southwest Connecticut, and declining toward the north and east (see Figure \@ref(fig:mapO3NE) below). 
+Ground-level ozone (O~3~) is the primary constituent of smog.[^NOTO3hole] However, ozone is not usually emitted directly into the air. It is created at ground level by a chemical reaction in the air between oxides of nitrogen (NO~x~) and volatile organic compounds (VOCs) in the presence of sunlight. These ozone precursor pollutants are emitted from automobile exhaust, gasoline vapors, industrial boilers, refineries, chemical plants, and other sources. Ozone concentrations tend to be highest during the summer months due to increased sunlight and heat. Ozone can also be carried long distances by wind, affecting areas far from the sources of precursor pollutants.
 
-```{r mapO3NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2016 Ozone (O3) summer seasonal average of daily maximum 8-hour concentration in air in parts per billion across New England at Census Block Group level."}
+The EPA has documented an association between exposure to ambient ozone and a variety of health outcomes, including reduction in lung function, increased inflammation and increased hospital admissions and mortality.[^EPAPM10risk] People most at risk from breathing air containing ozone include people with asthma, children, older adults, and people who are active outdoors, especially outdoor workers. Children are at greatest risk from exposure to ozone because their lungs are still developing and they are more likely to be active outdoors when ozone levels are high, which increases their exposure.  Children are also more likely than adults to have asthma.[^O3risks] 
+
+Ground level ozone has been regulated by the US EPA under the National Ambient Air Quality Standards (NAAQS) since 1971. As of April 2020, the EPA's primary (health-based) standard for ground level ozone is 70 parts per billion (ppb).[^EPAO3standards] However, the EPA has acknowledged that clinical and epidemiological evidence has been inconclusive about a possible threshold for ozone-induced health effects. EPA concluded that if a population threshold level exists, it is near the lower limit of ambient ozone concentrations in the United States.[^EPAO3lowerlimit]
+
+The analysis of ozone (O~3~) presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides ozone (O~3~) May–September (summer/ ozone season) average of daily-maximum 8-hour-average ozone concentrations, in parts per billion (ppb), at the Census Block Group level for the years 2011 to 2016 (as of December 2019).
+
+Ozone (O~3~) levels vary significantly across New England, with highest concentrations in southwest Connecticut, and declining toward the north and east (see Figure \@ref(fig:mapO3NE) below).[^NONATTAINMENT]
+
+```{r mapO3NE, fig.align = "center", fig.cap="Map of 2016 Ozone (O3) summer seasonal average of daily maximum 8-hour concentration in air in parts per billion across New England at Census Block Group level."}
 
 # Map of O3 across New England
 tm_shape(ne_blkgrp_sf, unit = "mi") + 
@@ -416,7 +439,7 @@ tm_shape(ne_blkgrp_sf, unit = "mi") +
 
 Ozone (O~3~) concentrations exhibit spatial clustering of both hot spots (i.e. geographic clusters of high values) and cold spots (i.e. geographic clusters of lower values). The map below (Figure \@ref(fig:hotspotO3NE)) shows statistically significant Ozone (O~3~) hot spots.
 
-```{r hotspotO3NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2016 Ozone concentrations at Census Block Group level."}
+```{r hotspotO3NE, cache=TRUE, fig.align = "center", fig.cap="Hot spot map of 2016 Ozone concentrations at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
 empty_geo <- st_is_empty(ne_blkgrp_sf)
 ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf[!empty_geo,] %>% 
@@ -464,23 +487,30 @@ There are statistically significant hot spots of Ozone (O~3~) primarily around S
 
 These Ozone (O~3~) levels vary significantly by state (see Figure \@ref(fig:boxplotO3NE) below). Connecticut stands out with the highest median summer seasonal average Ozone (O~3~) concentrations among the New England states, while Maine has the lowest overall concentrations. The differences in median concentrations between the states are all statistically significant.  
 
-```{r boxplotO3NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 2016 Ozone (O3) summer seasonal average of daily maximum 8-hour concentrations in air in parts per billion by state at Census Block Group level."}
+```{r boxplotO3NE, cache=TRUE, fig.align = "center", fig.cap="Boxplot of 2016 Ozone (O3) summer seasonal average of daily maximum 8-hour concentrations in air in parts per billion by state at Census Block Group level."}
 # boxplot of PM2.5 by state for 2016
 ne_blkgrp_sf %>% 
   as.data.frame() %>% 
-  ggplot(aes(x = STATE, y = OZONE_19, fill = STATE)) + 
+  drop_na(OZONE_19) %>% 
+  ggplot(aes(x = reorder(STATE, OZONE_19, FUN = "median", .desc = TRUE), 
+             y = OZONE_19, fill = STATE)) + 
   geom_boxplot(notch = TRUE) + 
   ggtitle(expression(atop(paste("Ozone (", O[3], ") Summer Concentration"), "by New England state, 2016"))) +
   theme_minimal() +
   theme(legend.position = "none", axis.text=element_text(size=8)) + 
   xlab(NULL) + 
   ylab(expression(paste(O[3]," (ppb)", sep = ""))) +
-  coord_flip()
+  coord_flip() +
+  expand_limits(y = c(0,75)) +
+  geom_hline(aes(yintercept = 70), color = "red4", linetype = "dashed") +
+  geom_text(aes(x = "Massachusetts", y = 72, 
+                label = "NAAQS Primary O3 Standard"), 
+            color = "red4", angle = 270)
 ```
 
 Since 2011, Ozone (O~3~) levels have increased slightly across the region, on average by `r {round(mean(ne_blkgrp_sf$OZONE_pctChange, na.rm = TRUE),1)}`%. These changes have not been uniform (see Figure \@ref(fig:mapO3NEchange) below). The greatest declines, up to 10.5%, have been in the northern half of Maine and Vermont, northeastern Vermont, southwestern Massachusetts, and southern Rhode Island. By contrast, increases in summer ozone concentrations of up to 8.1% appear in southwestern Connecticut, from Stamford to Hartford and north into western Massachusetts around Springfield. Significant increases also occur along the western border of Vermont, especially in the Champlain Valley. Minor increaes appear also in the greater Boston metro region, and southern and central Maine west and north of Portland.
 
-```{r mapO3NEchange, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of percent change in summer seasonal Ozone (O3) concentrations across New England between 2011 and 2016 at Census Block Group level."}
+```{r mapO3NEchange, cache=TRUE, fig.align = "center", fig.cap="Map of percent change in summer seasonal Ozone (O3) concentrations across New England between 2011 and 2016 at Census Block Group level."}
 # Map of O3 change across New England
 tm_shape(ne_blkgrp_sf, unit = "mi") + 
   tm_fill("OZONE_pctChange", palette = "-RdYlGn",
@@ -507,7 +537,7 @@ tm_shape(ne_blkgrp_sf, unit = "mi") +
 
 Averaged across the states, the differences in these changes are also apparent. Figure \@ref(fig:slopegraphO3NE) below compares the average summer Ozone (O~3~) concentrations by state and for the region between 2011 and 2016. New England as a whole showed a slightly less than a 1% increase in summer average Ozone concentrations, while Connecticut showed an increase of nearly 5%. Massachusetts increased as well, but by only 0.5%. All other states showed an average decline in Ozone, with Rhode Island leading (-2.6%). Although note that Rhode Island's concentrations still remain significantly above the regional average. 
 
-```{r slopegraphO3NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Summer average Ozone (O3) concentrations for 2011 and 2016 for New England and states."}
+```{r slopegraphO3NE, fig.align = "center", fig.cap="Summer average Ozone (O3) concentrations for 2011 and 2016 for New England and states."}
 # Slope graph of O3 by state and region between 2011 and 2016
 # Create df of 2019 actual values
 O319wSTAvgs_actual <- ne_blkgrp_sf %>% 
@@ -579,7 +609,7 @@ newggslopegraph(dataframe = O311_16wSTAvg_actual,
 
 In addition to variations in the general geography of Ozone (O~3~) concentrations, exposure to this pollutant also varies demographically. Figure \@ref(fig:barplotO3PopAvgNE) below shows population-weighted exposures for populations of concern relative to average Ozone concentrations for the region. For example, minorities in New England are exposed to summer Ozone concentrations that are more than 3% above concentrations for the region as a whole. Similarly, linguistically isolated households are exposed to concentrations 2.6% above the regional average. By contrast, low income persons are, on average, exposed to concentrations of Ozone at or below the regional average. 
 
-```{r barplotO3PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average exposures to Ozone (O3) for populations of concern in New England relative to the regional average."}
+```{r barplotO3PopAvgNE, fig.align = "center", fig.cap="Graph of population-weighted average exposures to Ozone (O3) for populations of concern in New England relative to the regional average."}
 # Pop Weighted avg of O3 for all Groups in New England relative to NE average
 ne_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -632,7 +662,7 @@ ne_blkgrp_sf %>%
 
 Like the region as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvgNE). All populations of concern have experienced an increase in population-weighted exposure to Ozone, with minorities and persons in language-isolated households experiencing the greatest increase in exposure. 
 
-```{r slopegraphO3PopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Summer Ozone (O3) concentrations by population of concern for 2011 and 2016."}
+```{r slopegraphO3PopAvgNE, fig.align = "center", fig.cap="Summer Ozone (O3) concentrations by population of concern for 2011 and 2016."}
 # Pop Weighted avg of O3 EXPOSURE CHANGE 2011 - 2016 for all Groups in New England relative to NE average. 
 # Create df of 2019 actual values
 O319wAvgs_actual <- ne_blkgrp_sf %>% 
@@ -717,20 +747,26 @@ newggslopegraph(dataframe = O311_16wAvg_actual,
 
 Indeed, there is a moderate but statistically significant positive relationship between the proportion of minority residents and the concentration of Ozone (see Appendix).
 
-
+\pagebreak
 ## Analysis of Carbon Dioxide (CO~2~) in New England
+
+Carbon dioxide (CO~2~) emissions are the primary driver of human-induced climate change.[^GWFAQ] Direct exposure to CO~2~ is not a significant health concern, but its cumulative effects on the climate and global environment are. In addition to risks such as sea level rise, increasing frequency and intensity of extreme weather (e.g., flooding, storms, droughts, heat waves), and economic disruption, climate change is likely to degrade air quality by exacerbating smog formation and other airborne irritants.[^UCSO3] The single largest source of CO~2~ emissions is the transportation sector, especially automobiles. Other sources of CO~2~ emissions include the combustion of coal or petroleum-based fuels for  electricity production, industry, heating of commercial and residential buildings, agriculture, and land use and forestry.[^GHGInventory] 
+
+In 2007, the US Supreme Court ruled that CO~2~ is a pollutant under the terms of the Clean Air Act and therefore the EPA has statutory authority to regulate greenhouse gas (GHG) emissions. The EPA and National Highway Traffic Safety Administration (NHTSA) subsequently issued new fuel economy standards which included GHG standards for light-duty vehicles (passenger cars and trucks) for model years 2012 - 2016 and then model years 2017 - 2025. The latter required auto manufacturers to reduce average GHG emissions by approximately 23% by 2026.[^CAFECO2rule] The Intergovernmental Panel on Climate Change (IPCC), the global authority on climate change science and policy, has warned that the world must bring GHG emissions down to "net zero" as soon as possible in order to avoid catastrophic climate change.[^IPCC] 
+
+The analysis of carbon dioxide (CO~2~) presented here is based on data from the Database of Road Transportation Emissions (DARTE), a product of the NASA Carbon Monitoring System (CMS). DARTE provides CO~2~ emissions from on-road transportation annually for 1980-2017 as a continuous surface at a spatial resolution of 1 km and also aggregated at the Census Block Group level.[^DARTE]
 
 On-road emissions of CO~2~ closely follow major roadways across the region (see Figure \@ref(fig:mapCO2NE) below). 
 
-```{r mapCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2017 Carbon Dioxide (CO2) annual on-road emissions in metric tons per square kilometer across New England at Census Block Group level."}
+```{r mapCO2NE, cache=TRUE, fig.align = "center", fig.cap="Map of 2017 Carbon Dioxide (CO2) annual on-road emissions in metric tons per square kilometer across New England at Census Block Group level."}
 
 # Map of CO2 across New England
 ne_blkgrp_sf %>% 
-  mutate(onroad_2017 = kgco2_2017/1000) %>% 
+  mutate(onroad_2017 = kgco2_2017/1000/(bg_area_m2/1000000)) %>% 
   tm_shape(., unit = "mi") + 
-  tm_fill("onroad_2017", style = "jenks", 
+  tm_fill("onroad_2017", style = "quantile", 
           title = expression(paste
-                             (CO[2]," (mtons)", sep = "")),
+                             (CO[2]," (mtons/", km^2,")", sep = "")),
           legend.hist = FALSE,
           colorNA = NULL,
           textNA = NULL,
@@ -752,7 +788,7 @@ ne_blkgrp_sf %>%
 
 Significant hot spots, or clusters of high on-road CO~2~ emissions, appear around major New England cities, including Hartford, Providence, Portsmouth, Portland, and along the I-495 belt around Boston (see Figure \@ref(fig:hotspotCO2NE) below).
 
-```{r hotspotCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2017 On-road CO2 Emissions at Census Block Group level."}
+```{r hotspotCO2NE, cache=TRUE, fig.align = "center", fig.cap="Hot spot map of 2017 On-road CO2 Emissions at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
 empty_geo <- st_is_empty(ne_blkgrp_sf)
 ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf[!empty_geo,] %>% 
@@ -797,9 +833,9 @@ tm_shape(local_g, unit = "mi",) +
             legend.title.size = 0.7)
 ```
 
-CO~2~ emissions vary by state (see Table \@ref(tab:statsCO2NE) above and Figure \@ref(fig:boxplotCO2NE) below). Massachusetts shows the highest absolute on-road emissions.  
+CO~2~ emissions vary by state (see Table \@ref(tab:statsCO2NE) below). Massachusetts shows the highest absolute on-road emissions.  
 
-```{r statsCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 On-road CO2 emissions (mtons) at Census Block Group level and by state."}
+```{r statsCO2NE, fig.align = "center", fig.cap="Annual 2017 On-road CO2 emissions (mtons) at Census Block Group level and by state."}
 ne_blkgrp_sf %>% 
   mutate(onroad_2017 = kgco2_2017/1000) %>%
   as.data.frame() %>% 
@@ -809,6 +845,7 @@ ne_blkgrp_sf %>%
             Min = round(min(onroad_2017, na.rm = TRUE),0),
             Max = round(max(onroad_2017, na.rm = TRUE),0),
             `State Total` = sum(onroad_2017, na.rm = TRUE)) %>% 
+  arrange(STATE) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     caption = "Annual 2017 On-road CO2 emissions (mtons) by Census block group by state", align = "r") %>% 
@@ -816,9 +853,9 @@ ne_blkgrp_sf %>%
 ```
 
 
-Since 1990, on-road CO~2~ emissions increased significantly across the region, on average by `r {round((sum(ne_blkgrp_sf$kgco2_2017, na.rm = TRUE)-sum(ne_blkgrp_sf$kgco2_1990, na.rm = TRUE))/sum(ne_blkgrp_sf$kgco2_1990, na.rm = TRUE)*100,1)}`%. These changes have not been uniform (see Figure \@ref(fig:mapCO2NEchange) below). Except for Maine, the greatest declines, up to 97%, have been in outer suburban and rural areas. By contrast, increases in CO~2~ emissions of over 600% appear across most urban cores. Boston is the notable exception where increases have been relatively modest. Dramtic increases characterize areas around Worcester, Massachusetts and the South Shore of Massachusetts and the Cape, as well as around Portland, Maine, and from Stamford to Hartford, Connecticut. Significant increases also occur west and north of Montpelier, Vermont.
+Since 1990, on-road CO~2~ emissions increased significantly across the region, on average by `r {round((sum(ne_blkgrp_sf$kgco2_2017, na.rm = TRUE)-sum(ne_blkgrp_sf$kgco2_1990, na.rm = TRUE))/sum(ne_blkgrp_sf$kgco2_1990, na.rm = TRUE)*100,1)}`%. These changes have not been uniform (see Figure \@ref(fig:mapCO2NEchange) below). Except for Maine, the greatest declines, up to 97%, have been in outer suburban and rural areas. By contrast, increases in CO~2~ emissions of over 600% appear across most urban cores. Boston is the notable exception where increases have been relatively modest. Dramatic increases characterize areas around Worcester, Massachusetts and the South Shore of Massachusetts and the Cape, as well as around Portland, Maine, and from Stamford to Hartford, Connecticut. Significant increases also occur west and north of Montpelier, Vermont.
 
-```{r mapCO2NEchange, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of percent change in annual CO2 emissions across New England between 1990 and 2017 at Census Block Group level."}
+```{r mapCO2NEchange, fig.align = "center", fig.cap="Map of percent change in annual CO2 emissions across New England between 1990 and 2017 at Census Block Group level."}
 # Map of CO2 change across New England
 ne_blkgrp_sf %>% 
   mutate(CO2_pctChange90_17 = (kgco2_2017 - kgco2_1990)/kgco2_1990*100) %>%
@@ -848,7 +885,7 @@ ne_blkgrp_sf %>%
 
 Averaged across the states, the differences in these changes are also apparent, although less extreme than at the Census block group level. Table \@ref(tab:changeCO2NE) and Figure \@ref(fig:slopegraphCO2NE) compare the  annual CO~2~ emissions by state and for the region between 1990 and 2017. New England as a whole showed an approximately 20% increase in annual on-road CO~2~ emissions. All states showed total increases, with New Hampshire leading with a 34% increase, followed by Maine with a 26% increase. Rhode Island showed the smallest increase since 1990 (2%), although note that Rhode Island's average annual on-road emissions still remain significantly above the regional average.
 
-```{r slopegraphCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Total On-road CO2 emissions for 1990 and 2017 for New England."}
+```{r slopegraphCO2NE, fig.align = "center", fig.cap="Total On-road CO2 emissions for 1990 and 2017 for New England."}
 # Slope graph of CO2 by state and region between 1990 and 2017
 # Create df of 2017 actual values
 CO217ST_actual <- ne_blkgrp_sf %>% 
@@ -912,7 +949,7 @@ newggslopegraph(dataframe = CO290_17ST_actual,
 
 The growth in CO~2~ emissions exceeds population growth across the region and in most states as is evident in the per capita emissions (see last three columns in Table \@ref(tab:changeCO2NE)). While New Hampshire leads in percentage growth of total emissions for the region, Maine leads in per capita growth. Only Vermont and Rhode Island showed declines in per capita emissions. 
 
-```{r changeCO2NE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 CO2 emissions (mtons) and Percent Change by state at Census Block Group level."}
+```{r changeCO2NE, fig.align = "center", fig.cap="Annual 2017 CO2 emissions (mtons) and Percent Change by state at Census Block Group level."}
 # acquire table of 1990 state pop values
 library(tidycensus)
 census_api_key("f2776fbc29cf847505de9308a82c8d65290d16b3")
@@ -952,6 +989,7 @@ ne_blkgrp_sf %>%
             `2017 Per Capita (mtons/person)` = 
               as.character(round(`2017 Per Capita (mtons/person)`,2)),
             `Per Capita Pct Change` = `Per Capita Pct Change`) %>% 
+  arrange(STATE) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
                     caption = "Annual On-road CO2 Emissions",
@@ -960,12 +998,18 @@ ne_blkgrp_sf %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-
+\pagebreak
 ## Analysis of Diesel Particulate Matter ($\mu$g/m^3^) in New England
+
+Diesel Particulate Matter (DPM) refers to particulate matter generated from the combustion of diesel fuel. Diesel PM (DPM) mass (expressed as $\mu$gDPM/m^3^) has historically been used as a surrogate measure of exposure for diesel exhaust more generally. Diesel exhaust is a complex mixture of thousands of gases and fine particles that contains more than 40 toxic air contaminants.  These include many known or suspected cancer-causing substances, such as benzene, arsenic and formaldehyde.  It also contains other harmful pollutants, including nitrogen oxides (a component of smog). In addition to long term cancer risk, exposure to diesel exhaust can have immediate health effects.  It can irritate the eyes, nose, throat and lungs, and it can cause coughs, headaches, light-headedness and nausea. Exposure to diesel exhaust also causes inflammation in the lungs, which may aggravate chronic respiratory symptoms and increase the frequency or intensity of asthma attacks.[^DPMcalEPA] 
+
+Major sources of diesel exhaust include engines and motorized vehicles that use diesel fuel, such as trucks, buses, trains, ships, and diesel-powered generators. DPM is classified by the EPA as a Hazardous Air Pollutant (HAP). HAPs are pollutants that are known or suspected to cause cancer or other serious health effects, such as reproductive effects or birth defects, or adverse environmental effects. The EPA has not quantified the cancer risk from exposure to DPM. However, it has established a diesel exhaust reference concentration (RfC) for noncancer health effects. The RfC is 5 $\mu$g/m^3^ for diesel exhaust measured as diesel particulate matter (DPM). This RfC does not consider allergenic effects such as those associated with asthma, immunologic effects or the potential for cardiac effects.[^NATA2014]
+
+The analysis of Diesel Particulate Matter (DPM) presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides annual DPM concentrations, in micrograms per cubic meter of air ($\mu$g/m^3^), at the Census Block Group level for 2014, the latest year of data available from the National Air Toxics Assessment.
 
 Diesel Particulate Matter (PM) emissions are concentrated around major cities in New England and radiate outward along major traffic routes (see Figure \@ref(fig:mapDPMNE) below). 
 
-```{r mapDPMNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2014 annual average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter across New England at Census Block Group level."}
+```{r mapDPMNE, fig.align = "center", fig.cap="Map of 2014 annual average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter across New England at Census Block Group level."}
 
 # Map of DPM across New England
 ne_blkgrp_sf %>% 
@@ -994,7 +1038,7 @@ ne_blkgrp_sf %>%
 
 There are no significant spatial clusters of high Diesel Paticulate Matter concentrations (see Figure \@ref(fig:hotspotDPMNE) below).
 
-```{r hotspotDPMNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2014 Diesel Particulate Matter emissions at Census Block Group level."}
+```{r hotspotDPMNE, cache=TRUE, fig.align = "center", fig.cap="Hot spot map of 2014 Diesel Particulate Matter emissions at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
 empty_geo <- st_is_empty(ne_blkgrp_sf)
 ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf[!empty_geo,] %>%
@@ -1038,9 +1082,30 @@ tm_shape(local_g, unit = "mi",) +
             legend.title.size = 0.7)
 ```
 
-Diesel Particulate Matter concentrations vary by state (see Table \@ref(tab:statsDPMNE). Rhode Island shows the highest average ambient concentrations, although Massachusetts shows more extreme values.  
+Diesel Particulate Matter concentrations vary by state (see Table \@ref(tab:statsDPMNE) and Figure \@ref(fig:boxplotDPMNE)). Rhode Island shows the highest average ambient concentrations, although Massachusetts shows more extreme values that approach the EPA's noncancer reference concentration (RfC).  
 
-```{r statsDPMNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2014 average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter across New England at Census Block Group level."}
+```{r boxplotDPMNE, fig.align = "center", fig.cap="Boxplot of 2017 Carbon Dioxoide (CO2) on-road emissions in metric tons per square kilometer by state at Census Block Group level."}
+# boxplot of CO2 by state for 2017
+ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  drop_na(DSLPM_19) %>% 
+  ggplot(aes(x = reorder(STATE, DSLPM_19, FUN = "median", .desc = TRUE), 
+             y = DSLPM_19, fill = STATE)) + 
+  geom_boxplot(notch = TRUE) + 
+  ggtitle("Diesel Particulate Matter (DPM) concentrations \nby Census block group by New England state, 2017") +
+  theme_minimal() +
+  theme(legend.position = "none", axis.text=element_text(size=8)) + 
+  xlab(NULL) + 
+  ylab(expression(paste("DPM"," (", mu, "g/", m^3, ")", sep = ""))) +
+  coord_flip() +
+  expand_limits(y = c(0,6)) +
+  geom_hline(aes(yintercept = 5), color = "red4", linetype = "dashed") +
+  geom_text(aes(x = "Connecticut", y = 5.2, 
+                label = "EPA noncancer RfC"), 
+            color = "red4", angle = 270)
+```
+
+```{r statsDPMNE, fig.align = "center", fig.cap="Annual 2014 average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter across New England at Census Block Group level."}
 ne_blkgrp_sf %>%
   as.data.frame() %>% 
   group_by(STATE) %>% 
@@ -1048,6 +1113,7 @@ ne_blkgrp_sf %>%
             Median = round(median(DSLPM_19, na.rm = TRUE),3),
             Min = round(min(DSLPM_19, na.rm = TRUE),3),
             Max = round(max(DSLPM_19, na.rm = TRUE),3)) %>% 
+  arrange(STATE) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     caption = "Annual 2014 DPM concentrations by Census block group", align = "r") %>% 
@@ -1059,7 +1125,7 @@ ne_blkgrp_sf %>%
 
 In addition to variations in the general geography of Diesel Particulate Matter concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvgNE) below shows population-weighted exposures for populations of concern relative to average Diesel Particulate Matter concentraions for the region. For example, linguistically isolated households in New England are exposed to  Diesel Particulate Matter concentrations that are more than 45% above concentrations for the region as a whole. Similarly, minorities are exposed to concentrations more than 30% above the regional average. By contrast, persons over age 64 are, on average, exposed to concentrations of Diesel Particulate Matter 9% below the regional average. 
 
-```{r barplotDPMPopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average exposures to annual average ambient concentrations of Diesel Particulate Matter across New England relative to the regional average."}
+```{r barplotDPMPopAvgNE, fig.align = "center", fig.cap="Graph of population-weighted average exposures to annual average ambient concentrations of Diesel Particulate Matter across New England relative to the regional average."}
 # Pop Weighted avg of DPM for all Groups in New England relative to NE average
 ne_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -1110,14 +1176,20 @@ ne_blkgrp_sf %>%
   geom_hline(yintercept = 0)
 ```
 
-Language isolated households and minorities are much more exposed to Diesel Particulate Matter concentrations than the general population. There is a strong positive correlation between the proportions of minorities and ambient concentrations of Diesel Particulate Matter, and a moderately strong positive correlation with language isolated households (see Appendix).
+Language isolated households and minorities are much more exposed to Diesel Particulate Matter concentrations than the general population. There is a strong positive correlation between the proportions of minorities and ambient concentrations of Diesel Particulate Matter (see Appendix).
 
-
+\pagebreak
 ## Analysis of Air Toxics Cancer Risk in New England
+
+Air toxics, often referred to as hazardous air pollutants (HAPs), are pollutants that are known or suspected to cause cancer or other serious health effects, such as reproductive effects or birth defects, or adverse environmental effects.  
+
+Most air toxics originate from transportation and industry, including automobiles, industrial facilities, and power plants. EPA regulates 187 chemicals under its HAP program. Since 1996, the EPA's National Air Toxics Assessment (NATA) program has provided nationwide assessments of outdoor air quality with respect to emissions of air toxics. NATA uses emissions estimates from the National Emissions Inventory (NEI), which is updated every three years. The NEI includes all of the Toxics Release Inventory (TRI) reporting facilities that release hazardous air pollutants, along with many other sources of air pollutants, such as motor vehicles. NATA estimates the cancer risks from breathing these air toxics over a lifetime.[^NATAoverview] 
+
+The analysis of air toxics cancer risk presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides lifetime cancer risk from inhalation of air toxics, as risk-in-1 million, at the Census Block Group level for 2014, the latest year of data available from the National Air Toxics Assessment. 
 
 Air Toxics Cancer Risk are concentrated around major cities in New England and radiate outward along major traffic routes (see Figure \@ref(fig:mapATCNE) below). 
 
-```{r mapATCNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2014 lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across New England at Census Block Group level."}
+```{r mapATCNE, fig.align = "center", fig.cap="Map of 2014 lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across New England at Census Block Group level."}
 
 # Map of DPM across New England
 ne_blkgrp_sf %>% 
@@ -1145,7 +1217,7 @@ ne_blkgrp_sf %>%
 
 There appear to be significant spatial clusters of high lifetime cancer risk from inhalation of air toxics in small areas in southwestern Connecticut, and also in Boston and Springfield, Massachusetts (see Figure \@ref(fig:hotspotATCNE) below).
 
-```{r hotspotATCNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2014 lifetime cancer risk from inhalation of air toxics at Census Block Group level."}
+```{r hotspotATCNE, fig.align = "center", fig.cap="Hot spot map of 2014 lifetime cancer risk from inhalation of air toxics at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
 empty_geo <- st_is_empty(ne_blkgrp_sf)
 ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf[!empty_geo,] %>%
@@ -1189,7 +1261,7 @@ tm_shape(local_g, unit = "mi",) +
             legend.title.size = 0.7)
 ```
 
-Lifetime cancer risk from inhalation of air toxics vary by state (see Table \@ref(tab:statsATCNE) above and Figure \@ref(fig:boxplotATCNE) below). Massachusetts, Connecticut, and Rhode Island show the highest average lifetime cancer risks with similar median values. New Hampshire shows concentrations that are significantly higher than Maine and Vermont.   
+Lifetime cancer risk from inhalation of air toxics vary by state (see Table \@ref(tab:statsATCNE) and Figure \@ref(fig:boxplotATCNE) below). Massachusetts, Connecticut, and Rhode Island show the highest average lifetime cancer risks with similar median values, although Connecticut shows some block groups taht are far above the median for all other states. New Hampshire shows risks that are significantly higher than Maine and Vermont.   
 
 ```{r statsATCNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2014 lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across New England at Census Block Group level."}
 ne_blkgrp_sf %>%
@@ -1199,25 +1271,29 @@ ne_blkgrp_sf %>%
             Median = round(median(CANCER_19, na.rm = TRUE),1),
             Min = round(min(CANCER_19, na.rm = TRUE),1),
             Max = round(max(CANCER_19, na.rm = TRUE),1)) %>% 
+  arrange(STATE) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
-                    caption = "Annual 2014 Cancer Risk from Inhalation of Air Toxics by Census block group (risk in-1 million)", align = "r") %>% 
+                    caption = "Cancer Risk from Inhalation of Air Toxics by Census block group (risk-in-1 million)", align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
 
-```{r boxplotATCNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across New England by state at Census Block Group level."}
+```{r boxplotATCNE, fig.align = "center", fig.cap="Boxplot of lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across New England by state at Census Block Group level."}
 # boxplot of lifetime cancer risk by state for 2014
 ne_blkgrp_sf %>% 
   as.data.frame() %>% 
-  ggplot(aes(x = STATE, y = CANCER_19, fill = STATE)) + 
+  drop_na(CANCER_19) %>% 
+  ggplot(aes(x = reorder(STATE, CANCER_19, FUN = "median", .desc = TRUE), 
+             y = CANCER_19, fill = STATE)) + 
   geom_boxplot(notch = TRUE) + 
-  ggtitle("Lifetime Cancer Risk from \nInhalation of Air Toxics \nby Census block group by New England state, 2017") +
+  ggtitle("Lifetime Cancer Risk from Inhalation of Air Toxics \nby Census block group by New England state, 2014") +
   theme_minimal() +
   theme(legend.position = "none", axis.text=element_text(size=8)) + 
   xlab(NULL) + 
-  ylab("risk in-1 million") +
-  coord_flip()
+  ylab("risk-in-1 million") +
+  coord_flip() +
+  expand_limits(y = 0)
 ```
 
 
@@ -1225,7 +1301,7 @@ ne_blkgrp_sf %>%
 
 In addition to variations in the general geography of Diesel Particulate Matter concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotATCPopAvgNE) below shows population-weighted exposures for populations of concern relative to average Lifetime Cancer Risk from Inhalation of Air Toxics for the region. For example, linguistically isolated households in New England experience lifetime cancer risks from inhalation of air toxics that are 11% above the region as a whole. Similarly, minorities are experience lifetime cancer risks of 9% above the regional average. By contrast, persons over age 64 are, on average, exposed to concentrations of Diesel Particulate Matter 2% below the regional average. 
 
-```{r barplotATCPopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across New England at Census Block Group level relative to the regional average."}
+```{r barplotATCPopAvgNE, fig.align = "center", fig.cap="Population-weighted average lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across New England at Census Block Group level relative to the regional average."}
 # Pop Weighted avg of DPM for all Groups in New England relative to NE average
 ne_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -1278,12 +1354,16 @@ ne_blkgrp_sf %>%
 
 Language isolated households and minorities experience higher lifetime risk of cancer from inhalation of air toxics than the general population. There is a moderate to strong positive correlation between the proportions of minorities and cancer risk, and a moderately strong positive correlation with language isolated households (see Appendix).
 
-
+\pagebreak
 ## Analysis of Respiratory Hazard Index from Air Toxics in New England
+
+Respiratory hazard from air toxics refers to noncancer effects caused by a lifetime of exposure to air toxics listed as Hazardous Air Pollutants (HAPs).[^NATAoverview] EPA's National Air Toxics Assessment (NATA) program calculates a hazard quotient, which is the ratio of ambient air concentration to a chemical’s health-based reference concentration (RfC). No adverse health effects are expected from exposure if the hazard quotient is less than one. This hazard quotient represents the cumulative impacts of all the relevant air toxics for which respiratory effects were the key health effect.[^NATARfC]
+
+The analysis of respiratory hazard presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides respiratory hazard, as a ratio of exposure concentration to a health-based reference concentration (RfC), at the Census Block Group level for 2014, the latest year of data available from the National Air Toxics Assessment.
 
 Higher Respiratory Hazard Indices are concentrated around major cities in New England and radiate outward along major traffic routes (see Figure \@ref(fig:mapRHINE) below). 
 
-```{r mapRHINE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2014 respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across New England at Census Block Group level."}
+```{r mapRHINE, fig.align = "center", fig.cap="Map of 2014 respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across New England at Census Block Group level."}
 
 # Map of RHI across New England
 ne_blkgrp_sf %>% 
@@ -1301,7 +1381,7 @@ ne_blkgrp_sf %>%
   tm_text("NAME", size = 0.5, col = "black", xmod = 0.7, ymod = 0.2) +
   tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Annual Respiratory\nHazard Index\nfrom Inhalation of\nAir Toxics\n2014", 
+  tm_layout(title = "Respiratory\nHazard Index\nfrom Inhalation of\nAir Toxics\n2014", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1311,7 +1391,7 @@ ne_blkgrp_sf %>%
 
 There appear to be significant spatial clusters of high indices of respiratory hazard in Boston (see Figure \@ref(fig:hotspotRHINE) below).
 
-```{r hotspotRHINE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2014 respiratory hazard index from inhalation of air toxics at Census Block Group level."}
+```{r hotspotRHINE, fig.align = "center", fig.cap="Hot spot map of 2014 respiratory hazard index from inhalation of air toxics at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
 empty_geo <- st_is_empty(ne_blkgrp_sf)
 ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf[!empty_geo,] %>%
@@ -1355,9 +1435,9 @@ tm_shape(local_g, unit = "mi",) +
             legend.title.size = 0.7)
 ```
 
-Respiratory hazard indices vary by state (see Table \@ref(tab:statsRHINE) above and Figure \@ref(fig:boxplotRHINE) below). Massachusetts, Connecticut, and Rhode Island show the highest average lifetime respiratory hazard indices.  
+Respiratory hazard indices vary by state (see Table \@ref(tab:statsRHINE) and Figure \@ref(fig:boxplotRHINE)). Massachusetts, Connecticut, and Rhode Island show the highest average lifetime respiratory hazard indices.  
 
-```{r statsRHINE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2014 respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across New England at Census Block Group level."}
+```{r statsRHINE, fig.align = "center", fig.cap="Annual 2014 respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across New England at Census Block Group level."}
 ne_blkgrp_sf %>%
   as.data.frame() %>% 
   group_by(STATE) %>% 
@@ -1365,25 +1445,33 @@ ne_blkgrp_sf %>%
             Median = round(median(RESP_19, na.rm = TRUE),2),
             Min = round(min(RESP_19, na.rm = TRUE),2),
             Max = round(max(RESP_19, na.rm = TRUE),2)) %>% 
+  arrange(STATE) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
-                    caption = "Annual 2014 Respiratory Hazard Index from Inhalation of Air Toxics by Census block group (ratio of exposure concentration to health-based reference concentration)", align = "r") %>% 
+                    caption = "Respiratory Hazard Index from Inhalation of Air Toxics by Census block group (ratio of exposure concentration to health-based reference concentration)", align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
 
-```{r boxplotRHINE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across New England by state at Census Block Group level."}
+```{r boxplotRHINE, fig.align = "center", fig.cap="Boxplot of respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across New England by state at Census Block Group level."}
 # boxplot of lifetime cancer risk by state for 2014
 ne_blkgrp_sf %>% 
   as.data.frame() %>% 
-  ggplot(aes(x = STATE, y = RESP_19, fill = STATE)) + 
+  drop_na(RESP_19) %>% 
+  ggplot(aes(x = reorder(STATE, RESP_19, FUN = "median", .desc = TRUE), 
+             y = RESP_19, fill = STATE)) + 
   geom_boxplot(notch = TRUE) + 
-  ggtitle("Respiratory Hazard Index from Inhalation of \nAir Toxics by Census block group \nby New England state, 2017") +
+  ggtitle("Respiratory Hazard Index from Inhalation of \nAir Toxics by Census block group \nby New England state, 2014") +
   theme_minimal() +
   theme(legend.position = "none", axis.text=element_text(size=8)) + 
   xlab(NULL) + 
-  ylab("ratio of exposure concentration to health-based reference concentration") +
-  coord_flip()
+  ylab("RfC") +
+  coord_flip() +
+  expand_limits(y = c(0,1.2)) +
+  geom_hline(aes(yintercept = 1), color = "red4", linetype = "dashed") +
+  geom_text(aes(x = "Connecticut", y = 1.05, 
+                label = "EPA RfC threshold"), 
+            color = "red4", angle = 270)
 ```
 
 
@@ -1391,7 +1479,7 @@ ne_blkgrp_sf %>%
 
 In addition to variations in the general geography of the Respitory Hazard Index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvgNE) below shows population-weighted exposures for populations of concern relative to average Respiratory Hazard Index from Inhalation of Air Toxics for the region. For example, linguistically isolated households in New England experience respiratory hazard indices that are 15% above the region as a whole. Similarly, minorities are experience hazard indices more than 11% above the regional average. By contrast, persons over age 64 are, on average, exposed to respiratory hazard indices over 2% below the regional average. 
 
-```{r barplotRHIPopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across New England at Census Block Group level relative to the regional average."}
+```{r barplotRHIPopAvgNE, fig.align = "center", fig.cap="Population-weighted average respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across New England at Census Block Group level relative to the regional average."}
 # Pop Weighted avg of RHI for all Groups in New England relative to NE average
 ne_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -1444,12 +1532,16 @@ ne_blkgrp_sf %>%
 
 Language isolated households and minorities experience higher respiratory hazard indices from inhalation of air toxics compared to the general population. There is a moderate to strong positive correlation between the proportions of minorities and respiratory hazard index, and a moderately strong positive correlation with language isolated households (see Appendix).
 
-
+\pagebreak
 ## Analysis of Traffic Proximity and Volume in New England
 
-Traffic Proximity and Volume is a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km). It was calculated from 2017 U.S. DOT traffic data and the data for this analysis was sourced from EPA’s EJSCREEN database. Exposure to high annual daily traffic volume is concentrated around major cities in New England and radiates outward along major traffic routes (see Figure \@ref(fig:mapTPVNE) below). 
+Proximity to motor vehicle traffic is associated with greater exposure to toxic gases and particulate matter, as well as increased noise. Vehicle-related emissions include ultrafine particulates and other components of PM~2.5~, lead and other metals, air toxics such as benzene, nitrogen oxides (NO~x~), hydrocarbons and carbon monoxide (CO), as well as precursors that add to the formation of ground level ozone (O~3~) and smog. Research has repeatedly shown that living near highly trafficked roads is related to increased risk of a variety of adverse health outcomes, including asthma, cardiovascular disease, hypertension, stroke, stress, and increased rates of mortality. EPA’s 2005 National Air Toxics Assessment (NATA) estimated that mobile emissions accounted for about 30% of average cancer risk from Hazardous Air Pollutants.[^EJSCREENTraffic]
 
-```{r mapTPVNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Map of 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across New England at Census Block Group level."}
+EPA's EJSCREEN provides an indicator of traffic exposure measured as residential proximity to roads weighted by traffic volume. More specifically, EJSCREEN's Traffic Proximity and Volume indicator is a count of vehicles (average annual daily traffic) at major roads within 500 meters of residential areas (i.e., Census Blocks) divided by distance in kilometers (km).[^EPATraffic] For example, a residential area at 100 meters distance from a single highway with 33,000 AADT (average annual daily traffic) would result in a score of 33,000/100=330, which is approximately the median person’s block group traffic proximity indicator value in New England. The Traffic Proximity and Volume indicator values are aggregated at the Census Block Group level. 
+
+Exposure to high annual daily traffic volume is concentrated around major cities in New England and radiates outward along major traffic routes (see Figure \@ref(fig:mapTPVNE) below). 
+
+```{r mapTPVNE, fig.align = "center", fig.cap="Map of 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across New England at Census Block Group level."}
 
 # Map of TPV across New England
 ne_blkgrp_sf %>% 
@@ -1477,7 +1569,7 @@ ne_blkgrp_sf %>%
 
 There appear to be significant spatial clusters of traffic proximity and volume in Boston (see Figure \@ref(fig:hotspotTPVNE) below).
 
-```{r hotspotTPVNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hot spot map of 2017 traffic proximity and volume at Census Block Group level."}
+```{r hotspotTPVNE, fig.align = "center", fig.cap="Hot spot map of 2017 traffic proximity and volume at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
 empty_geo <- st_is_empty(ne_blkgrp_sf)
 ne_blkgrp_sp_DemoEJ <- ne_blkgrp_sf[!empty_geo,] %>%
@@ -1521,9 +1613,9 @@ tm_shape(local_g, unit = "mi",) +
             legend.title.size = 0.7)
 ```
 
-Traffic Proximity and Volume exposure vary by state (see Table \@ref(tab:statsTPVNE)). Massachusetts shows the highest Traffic Proximity and Volume exposure, followed distantly by Connecticut, and Rhode Island.  
+Traffic Proximity and Volume exposure vary by state (see Table \@ref(tab:statsTPVNE)). Massachusetts shows the highest median Traffic Proximity and Volume exposure, followed by Rhode Island, and Connecticut. Note that the highest values are orders of magnitude above the median values, indicating that some Block Groups are much more exposed to high traffic volumes in close proximity, particularly in Massachusetts. 
 
-```{r statsTPVNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across New England at Census Block Group level."}
+```{r statsTPVNE, fig.align = "center", fig.cap="Annual 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across New England at Census Block Group level."}
 ne_blkgrp_sf %>%
   as.data.frame() %>% 
   group_by(STATE) %>% 
@@ -1531,6 +1623,7 @@ ne_blkgrp_sf %>%
             Median = round(median(PTRAF_19, na.rm = TRUE),0),
             Min = round(min(PTRAF_19, na.rm = TRUE),0),
             Max = round(max(PTRAF_19, na.rm = TRUE),0)) %>% 
+  arrange(STATE) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     caption = "Annual traffic proximity and volume (AADT/Distance(km))", align = "r") %>% 
@@ -1542,7 +1635,7 @@ ne_blkgrp_sf %>%
 
 In addition to variations in the general geography of the Traffic Proximity and Volume exposure, this exposure also varies demographically. Figure \@ref(fig:barplotTPVPopAvgNE) below shows population-weighted exposures for populations of concern relative to average Traffic Proximity and Volume for the region. For example, linguistically isolated households in New England are exposed to Traffic Proximity and Volume at more than twice the level of the region as a whole (over 104%). Similarly, minorities are exposed to Traffic Proximity and Volume more than 57% above the regional average. By contrast, persons over age 64 are, on average, are exposed to Traffic Proximity and Volume of more than 22% below the regional average. 
 
-```{r barplotTPVPopAvgNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Graph of population-weighted average Traffic Proximity and Volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across New England at Census Block Group level relative to the regional average."}
+```{r barplotTPVPopAvgNE, fig.align = "center", fig.cap="Population-weighted average Traffic Proximity and Volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across New England at Census Block Group level relative to the regional average."}
 # Pop Weighted avg of TPV for all Groups in New England relative to NE average
 ne_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -1595,18 +1688,278 @@ ne_blkgrp_sf %>%
 
 Language isolated households and minorities experience higher exposure to traffic proximity and volume compared to the general population. 
 
+[^EJSCREEN]: U.S. Environmental Protection Agency (EPA), 2019. EJSCREEN Technical Documentation. For more information see www.epa.gov/ejscreen
+
+[^EPAPM10]: See EPA Particulate Matter (PM) Basics. https://www.epa.gov/pm-pollution/particulate-matter-pm-basics
+
+[^EPAPM25standards]: An area would meet the primary standard if the three-year average of its annual average PM~2.5~ concentration is less than or equal to the level of the standard. See EPA National Ambient Air Quality Standards (NAAQS) for PM. https://www.epa.gov/pm-pollution/national-ambient-air-quality-standards-naaqs-pm
+
+[^EPAPM10risk]: See EPA SUMMARY OF PROPOSAL TO RETAIN THE AIR QUALITY STANDARDS FOR PARTICLE POLLUTION. https://www.epa.gov/sites/production/files/2020-04/documents/fact_sheet_pm_naaqs_proposal.pdf
+
+[^LOWPM25research]: See Liuhua Shi, Antonella Zanobetti, Itai Kloog, Brent A. Coull, Petros Koutrakis, Steven J. Melly, and Joel D. Schwartz. 2016. Low-Concentration PM2.5 and Mortality: Estimating Acute and Chronic Effects in a Population-Based Study. Environmental Health Perspectives 124:1 CID: https://doi.org/10.1289/ehp.1409111 
+
+[^NOTO3hole]: Tropospheric, or ground-level ozone, is not to be confused with the stratospheric ozone layer. The latter occurs naturally high in the atmosphere and protects us from ultraviolet radiation.
+
+[^O3risks]: See EPA Health Effects of Ozone Pollution. https://www.epa.gov/ground-level-ozone-pollution/health-effects-ozone-pollution
+
+[^IPMRP]: See Letter to US EPA Administrator regarding Advice from the Independent Particulate Matter Review Panel (formerly EPA CASAC Particulate Matter Review Panel) on EPA’s Policy Assessment for the Review of the National Ambient Air Quality Standards for Particulate Matter (External Review Draft –September 2019). https://ucs-documents.s3.amazonaws.com/science-and-democracy/IPMRP-FINAL-LETTER-ON-DRAFT-PA-191022.pdf
+
+[^EPAO3standards]: An area would meet the primary standard if the fourth-highest daily maximum 8-hour average of ozone, averaged across three consecutive years, is less than equal to the standard. See EPA 2015 National Ambient Air Quality Standards (NAAQS) for Ozone. https://www.epa.gov/ground-level-ozone-pollution/2015-national-ambient-air-quality-standards-naaqs-ozone
+
+[^EPAO3lowerlimit]: See U.S. EPA. (2006). Air Quality Criteria for Ozone and Related Photochemical Oxidants. Washington, DC. http://cfpub.epa.gov/ncea/cfm/recordisplay.cfm?deid=149923.
+
+[^NONATTAINMENT]: Note that the EJSCREEN values do not directly indicate nonattainment of the NAAQS standard because the EJSCREEN data is based on estimates from a combination of modeling and monitoring for a single year, while nonattainment is determined for a large area (often a county) based on three years of monitoring data. For example, five counties in Connecticut have been designated as "nonattainment" status for NAAQS ozone standards as of March 2020. For a list of nonattainment counties see EPA 8-Hour Ozone (2015) Designated Area State/Area/County Report. https://www3.epa.gov/airquality/greenbook/jbcs.html#CT 
+
+[^UCSO3]: See Union of Concerned Scientists. Climate Change and Your Health: Rising temperatures worsening ozone pollution. https://www.nrcm.org/wp-content/uploads/2013/09/UCS_climate_health_impact6.1.11.pdf
+
+[^GHGInventory]: See EPA Inventory of U.S. Greenhouse Gas Emissions and Sinks. https://www.epa.gov/ghgemissions/inventory-us-greenhouse-gas-emissions-and-sinks
+
+[^GWFAQ]: See Union of Concerned Scientists. Global Warming FAQ. https://www.ucsusa.org/resources/global-warming-faq
+
+[^IPCC]: See IPCC. Summary for Policymakers of IPCC Special Report on Global Warming of 1.5°C approved by governments. https://www.ipcc.ch/2018/10/08/summary-for-policymakers-of-ipcc-special-report-on-global-warming-of-1-5c-approved-by-governments/
+
+[^DARTE]: Gately, C., L.R. Hutyra, and I.S. Wing. 2019. DARTE Annual On-road CO2 Emissions on a 1-km Grid, Conterminous USA, V2, 1980-2017. ORNL DAAC, Oak Ridge, Tennessee, USA. https://doi.org/10.3334/ORNLDAAC/1735
+
+[^DPMcalEPA]: See CalEPA Office of Environmental Health Hazard Assessment and the American Lung Association. Health Effects of Diesel Exhaust. https://oehha.ca.gov/media/downloads/calenviroscreen/indicators/diesel4-02.pdf
+
+[^NATA2014]: See 2014 NATA Technical Support Document. https://www.epa.gov/sites/production/files/2018-09/documents/2014_nata_technical_support_document.pdf
+
+[^CAFECO2rule]: See The Safer Affordable Fuel Efficient (SAFE) Vehicles Final Rule for Model Years 2021-2026. https://www.epa.gov/regulations-emissions-vehicles-and-engines/safer-affordable-fuel-efficient-safe-vehicles-final-rule
+
+[^NATAoverview]: National Air Toxics Assessment Overview. https://www.epa.gov/national-air-toxics-assessment/nata-overview
+
+[^NATARfC]: See "Characterizing Effects of Air Toxics" in Technical Support Document: EPA’s 2014 National Air Toxics Assessment. https://www.epa.gov/national-air-toxics-assessment/2014-nata-technical-support-document
+
+[^EPATraffic]: Measures of traffic proximity in EJSCREEN are based on average annual daily traffic (AADT) estimates in the Highway Performance Monitoring System (HPMS) dataset in the Department of Transportation (DOT) National Transportation Atlas Database (NTAD).
+
+[^EJSCREENTraffic]: See "Details on Environmental Indicators: Traffic Proximity" in  EJSCREEN Environmental Justice Mapping and Screening Tool: EJSCREEN Technical Documentation 2019. www.epa.gov/ejscreen
+
 \pagebreak
-# Appendix {-}
+# Appendix A: Methodology {-}
 
-## Appendix A
+The analyses presented here are based on data from three sources:
 
-This is Appendix A where we describe the data and methodologies used in this analysis.
+* U.S. EPA's EJSCREEN
+  + PM~2.5~
+  + Ozone (O~3~)
+  + Diesel Particulate Matter
+  + Air Toxics Cancer Risk
+  + Respiratory Hazard Index from Air Toxics
+  + Traffic Proximity and Volume
+* Database of Road Transportation Emissions (DARTE)
+  + On-road Carbon Dioxide (CO~2~) Emissions
+* American Community Survey 5-year Estimates
+  + Population demographics
+ 
+## EPA's EJSCREEN {-}
+
+The U.S. EPA's EJSCREEN is an online environmental justice mapping and screening tool that provides a "nationally consistent dataset and approach for combining environmental and demographic indicators."  EJSCREEN provides data on 11 environmental indicators, ranging across air, land, and water. The six indicators analyzed here were chosen based on their relationship to transportation sources, especially motor vehicles. Data for each indicator is available by Census Block Group across the U.S. The 2015 (earliest available) and 2019 (latest available) data sets were downloaded from https://www.epa.gov/ejscreen/download-ejscreen-data as CSV files and processed in R. 
+
+All data was analyzed or aggregated geographically by Census Tract and Block Group. A Census Tract is a small, relatively permanent statistical subdivision of a county that contains between 1,200 and 8,000 people. The entire area of a county is covered by Census Tracts, just as the entire area of a state is covered by counties and county equivalents. Census Tracts range in areal size depending on the population density; smaller in denser areas and larger in less densely populated areas. Census Block Groups are subdivisions of Census Tracts that contain between 600 and 3,000 people. Like Tracts, Block Groups range in areal size depending on the population density of the area. Block Groups are the smallest geographic unit at which detailed demographic and household data from the American Community Survey is made available by the Census.  
+
+Below is a summary of the measurement unit and source of each environmental indicator. For more detail on these data sources, see the EJSCREEN Environmental Justice Mapping and Screening Tool: EJSCREEN Technical Documentation 2019. www.epa.gov/ejscreen.
+
+### PM~2.5~ {-}
+
+PM~2.5~ refers to paticulate matter less than 2.5 microns (millionths of a meter) in diameter. PM~2.5~ ambient concentrations are measured as mass in micrograms (millionths of a gram) per cubic meter of air ($\mu$g/m^3^). Ambient concentrations are provided by Census Block Group across the U.S. These concentrations are estimated from a combination of monitoring data and air quality modeling. Ambient PM~2.5~ concentration is estimated by EPA’s Office of Research and Development using a Bayesian space–time downscaling fusion model approach. EPA’s Office of Air and Radiation originally estimated these concentrations at Census Tract level and then assigned the same values to all Block Groups within their respective Tracts. 
+
+PM~2.5~ data from EJSCREEN's 2019 data set is for 2016. PM~2.5~ data from EJSCREEN's 2015 data set is for 2011. 
+
+### Ozone (O~3~) {-}
+
+Ozone (O~3~) refers to ground level (i.e. Tropospheric) ozone formed as a result of chemical interactions between oxides of nitrogen (NO~x~) and volatile organic compounds (VOCs) in the presence of sunlight. Ambient concentrations of ozone are measured as a summer seasonal average (May to September) of daily maximum 8-hour concentration in air in parts per billion (ppb). Ambient concentrations are provided by Census Block Group across the U.S. These concentrations are estimated from a combination of monitoring data and air quality modeling. Ambient ozone concentration is estimated by EPA’s Office of Research and Development using a Bayesian space–time downscaling fusion model approach. EPA’s Office of Air and Radiation originally estimated these concentrations at Census Tract level and then assigned the same values to all Block Groups within their respective Tracts.
+
+Ozone data from EJSCREEN's 2019 data set is for 2016. Ozone data from EJSCREEN's 2015 data set is for 2011.
+
+### Diesel Particulate Matter {-}
+
+Diesel Particulate Matter (DPM) refers to particulate matter emitted in diesel exhaust and is typically used as a surrogate measure of diesel exhaust more generally. DPM ambient concentrations are measured as mass in micrograms (millionths of a gram) per cubic meter of air ($\mu$g/m^3^). Ambient concentrations are provided by Census Block Group across the U.S. These concentrations are estimated from EPA's National Air Toxics Assessment (NATA) program. NATA uses emissions estimates from the National Emissions Inventory (NEI), which is updated every three years. The NEI includes all of the Toxics Release Inventory (TRI) reporting facilities that release hazardous air pollutants, along with many other sources of air pollutants, such as motor vehicles. NATA estimates are at Tract resolution. Each Block Group was assigned the DPM score of the tract containing it.
+
+The 2019 version of EJSCREEN uses 2014 NATA data, which is based on NEI emissions estimates for 2014.
+
+### Air Toxics Cancer Risk {-}
+
+Air Toxics Cancer Risk refers to lifetime risk (i.e. over 70 years) of developing cancer as a result of breathing ambient levels of toxic or Hazardous Air Pollutants (HAPs). This risk is reported as the risk-in-1 million of developing cancer. EJSCREEN uses the most recent data from EPA’s National-Scale Air Toxics Assessment (NATA). NATA estimates cancer risk from the health implications of 138 air pollutants classified as HAPs. NATA uses emissions estimates from the National Emissions Inventory (NEI), which is updated every three years. The NEI includes all of the Toxics Release Inventory (TRI) reporting facilities that release hazardous air pollutants, along with many other sources of air pollutants, such as motor vehicles. NATA estimates are at Tract resolution. Each Block Group was assigned the hazard score of the tract containing it.
+
+The 2019 version of EJSCREEN uses 2014 NATA data, which is based on NEI emissions estimates for 2014. 
+
+### Respiratory Hazard Index {-}
+
+Respiratory Hazard Index refers to noncancer effects caused by a lifetime of exposure to air toxics listed as Hazardous Air Pollutants (HAPs). EPA's National Air Toxics Assessment (NATA) program calculates a hazard quotient, which is the ratio of ambient air concentration to a chemical’s health-based reference concentration (RfC). No adverse health effects are expected from exposure if the hazard quotient is less than one. This hazard quotient represents the cumulative impacts of all the relevant air toxics for which respiratory effects were the key health effect. NATA uses emissions estimates from the National Emissions Inventory (NEI), which is updated every three years. The NEI includes all of the Toxics Release Inventory (TRI) reporting facilities that release hazardous air pollutants, along with many other sources of air pollutants, such as motor vehicles. NATA estimates are at Tract resolution. Each Block Group was assigned the hazard score of the tract containing it.
+
+The 2019 version of EJSCREEN uses 2014 NATA data, which is based on NEI emissions estimates for 2014. 
+
+### Traffic Proimity and Volume {-}
+
+Traffic Proximity and Volume refers to an index of exposure to road traffic. This index is calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters of residential areas (i.e., Census
+Block centroids) divided by distance in kilometers (km). Traffic volume is based on average annual daily traffic (AADT) estimates in the Highway Performance Monitoring System (HPMS) dataset in the Department of Transportation (DOT) National Transportation Atlas Database (NTAD). Each Block Group was assigned a Traffic Proximity and Volume score based on a population-weighted average of the scores for the Census Blocks within the respective Block Group. 
+
+The 2019 version of EJSCREEN uses 2017 HPMS data.
+
+## Database of Road Transportation Emissions (DARTE) {-}
+
+The Database of Road Transportation Emissions (DARTE) is "the first nationally consistent inventory of US on-road CO2 emissions built from bottom-up source activity data and establishes a national benchmark for monitoring, reporting, and verification of emissions that are vital for regulating greenhouse gases." DARTE provides a 38-year, 1-km resolution inventory of annual on-road CO~2~ emissions for the conterminous United States based on roadway-level vehicle traffic data and state-specific emissions factors for multiple vehicle types on urban and rural roads as compiled in the Database of Road Transportation Emissions (DARTE). For more details about DARTE, see the User Guide for DARTE Annual On-road CO2 Emissions on a 1-km Grid, Conterminous USA, V2, 1980-2017 at https://daac.ornl.gov/cgi-bin/dsviewer.pl?ds_id=1735.
+
+### On-road Carbon Dioxide (CO~2~) Emissions {-}
+
+DARTE CO~2~ emissions data from the on-road transportation sector are provided annually for 1980-2017 as a continuous surface at a spatial resolution of 1km in the form of GeoTIFF files for each year. The same data is also provided  aggregated to U.S. 2010 Census Block Group polygons. Units of data are total emissions in kilograms CO~2~ per year for each Block Group. 
+
+For the purposes of this analysis, DARTE Block Group data for the years 1990 to 2017 was downloaded as a geodatabase and processed in R. 
+
+## American Community Survey 5-year Estimates {-}
+
+The American Community Survey (ACS) is an ongoing survey by the U.S. Census Bureau that provides information on a yearly basis about the U.S. and its people. The ACS provides detailed information on economic, housing, and demographic characteristics about the population that are not captured by the decennial Census. 
+
+The ACS provides greater demographic detail and temporal resolution than the decennial Census, but its geographic resolution is more limited. While the decennial Census is based on an enumeration (i.e., a total count) of everyone in the U.S. once every decade, the ACS is based on a statistical sample of approximately 3.5 million addresses across the country each year. As a result of this sampling approach, the ACS estimates must be pooled, or combined, across multiple years in order to provide reliable estimates for smaller areas (i.e. areas with less than 20,000 people), such as at the Tract or Block Group levels. While it is possible to know the number of low income households across the U.S. annually, one may only know this about a Tract or Block Group based on 5-year estimates. Since 2010, the ACS has published 5-year data (beginning with 2005–2009 estimates) for all geographic areas down to the census Tract and Block Group levels. For more detail on the ACS, see Understanding and Using American Community Survey Data: What All Data Users Need to Know at https://www.census.gov/programs-surveys/acs/guidance/handbooks/general.html.
+
+For the purposes of this analysis ACS 5-year estimates for the period 2013 - 2017 for Census Tracts and Block Groups in New England, as well as their associated TIGER/Line spatial files, were downloaded from the Census Bureau via API using the tigris package in R. Demographic variables consistent with those used by the EPA in EJSCREEN were chosen, as well as environmental justice population thresholds used by states where available. Table \@ref(tab:ACSvariables) below lists the demographic variables that were downloaded directly or computed from ACS variables:
+```{r ACSvariables}
+ACSvDF <- data.frame(Variable = c("Total Population",
+                                  "Minority",
+                                  "Low Income",
+                                  "Limited English Household",
+                                  "Less than High School Education",
+                                  "Under 5",
+                                  "Under 18",
+                                  "Over 64",
+                                  "Disabled",
+                                  "No Car Household",
+                                  "CT Income",
+                                  "MA Income",
+                                  "MA Limited English Household",
+                                  "MA Minority",
+                                  "RI Income",
+                                  "RI Minority"),
+                     Description = c("Total population",
+                                     "Persons of Hispanic or Latino origin or persons who are not White",
+                                     "People in households where the household income is less than or equal to twice the federal poverty level",
+                                     "People in households where all adults speak English less than \"very well\"",
+                                     "Adults 25 years+ with less than a high school education",
+                                     "Persons under 5 years of age",
+                                     "Persons under 18 years of age",
+                                     "Persons over 64 years of age",
+                                     "Persons 18 years+ with a disability",
+                                     "Households with no vehicle available",
+                                     "Connecticut Low Income threshold: 30% or more people in households where the household income is less than or equal to twice the federal poverty level",
+                                     "Massachusetts Low Income threshold: 25% or more of households with median household incomes below 65% statewide median",
+                                     "Massachusetts Language Isolation threshold: 25% or more people in households where all adults speak English less than \"very well\"",
+                                     "Massachusetts Minority threshold: 25% or more are persons of Hispanic or Latino origin or persons who are not White",
+                                     "Rhode Island Low Income threshold: highest 15% of block groups with people in households where the household income is less than or equal to twice the federal poverty level",
+                                     "Rhode Island Minority threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
+                     'ACS Table ID' = c("B03002: Hispanic or Latino Origin by Race",
+                                "B03002: Hispanic or Latino Origin by Race",
+                                "C17002: Ratio of Income to Poverty Level",
+                                "C16002: Household Language by Household Limited English Speaking Status",
+                                "B15002: Sex by Educational Attainment",
+                                "B01001: Sex by Age",
+                                "B01001: Sex by Age",
+                                "B01001: Sex by Age",
+                                "B18101: Sex by Age by Disability Status",
+                                "B08201: Household Size by Vehicles Available",
+                                "C17002: Ratio of Income to Poverty Level",
+                                "B19001: Household Income",
+                                "C16002: Household Language by Household Limited English Speaking Status",
+                                "B03002: Hispanic or Latino Origin by Race",
+                                "C17002: Ratio of Income to Poverty Level",
+                                "B03002: Hispanic or Latino Origin by Race"),
+                     Geography = c("Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Tract",
+                                   "Tract",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group"))
+
+ACSvDF %>% 
+  kableExtra::kable(longtable = T, booktabs = T, 
+                    caption = "Demographic Variables", align = "l",
+                    col.names = c("Variable","Description","ACS Table ID","Geography")) %>% 
+  kableExtra::column_spec(2:3, width = "3cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+  
+```
+
+## Population-weighted averages {-}
+
+Wherever feasible, population exposure to pollutants or other risks is reported as a population-weighted average. A population weighted-average is equivalent to a weighted mean in which the raw values for which a mean (or average) is calculated are multiplied by a weight factor. For example, we are interested in knowing whether Minorities are exposed to higher average PM~2.5~ concentrations than the general or Total Population. Consider the table below.
+
+```{r wmean1}
+data.frame(BG = c("BG1","BG2","BG3","BG4"),
+           PM25 = c(2.5,6.2,10,5),
+           Minority = c(5,10,20,10),
+           NonMinority = c(20,12,5,10)) %>% 
+  mutate(TotalPop = Minority + NonMinority) %>% 
+  kableExtra::kable(longtable = T, booktabs = T, 
+                    caption = "Block Group Populations and PM2.5", align = "l") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
+Population numbers of minorities, as well as the total population, and PM~2.5 concentrations, are each reported by Block Group. Since each Block Group is associated with one PM~2.5~ concentration value, we might assume (incorrectly) that everyone is equally exposed to the average PM~2.5~ values of all Block Groups - {`r mean(c(2.5,6.2,10,5))`}. However, not all Block Groups have the same number of people, which means that each PM~2.5~ concentration value is associated with a different number of people. Do Minorities occupy Block Groups with higher concentrations than the simple average would indicate?
+
+To calculate the population-weighted average PM~2.5~ exposure for Minorities, the number of Minorities in each Block Group is used as a 'weight'. The PM~2.5~ concentraions of each Block Group is multiplied by its respective number of Minorities. See the table below. 
+
+```{r wmean2}
+data.frame(BG = c("BG1","BG2","BG3","BG4"),
+           PM25 = c(2.5,6.2,10,5),
+           Minority = c(5,10,20,10),
+           NonMinority = c(20,12,5,10)) %>% 
+  mutate(TotalPop = Minority + NonMinority,
+         PM25xMinority = PM25*Minority) %>% 
+  bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
+  kableExtra::kable(longtable = T, booktabs = T, 
+                    caption = "Block Group Populations and PM2.5", align = "l") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
+The total or sum of the products (i.e., Minority pop x PM~2.5~ concentrations) is then divided by the sum of the weights (i.e., total Minority population), so that 324.5/45 = {`r 324.5/45`}. The result is a weighted average PM~2.5~ concentration that is influenced by the number of minorities. 
+
+This process is repeated for the Total Population so that the two population-weighted average PM~2.5~ concentrations can be compared. Below is the calculation of population-weighted calculation for the total population. 
+
+```{r wmean3}
+data.frame(BG = c("BG1","BG2","BG3","BG4"),
+           PM25 = c(2.5,6.2,10,5),
+           Minority = c(5,10,20,10),
+           NonMinority = c(20,12,5,10)) %>% 
+  mutate(TotalPop = Minority + NonMinority,
+         PM25xTotalPop = PM25*TotalPop) %>% 
+  bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
+  kableExtra::kable(longtable = T, booktabs = T, 
+                    caption = "Block Group Populations and PM2.5", align = "l") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
+For the TotalPop, the population-weighted average of PM~2.5~ is 548.9/92 = {`r 548.9/92`}. Thus we can see that Minorities experience a higher population-weighted average PM~2.5~ concentration than the general or total population. 
 
 \pagebreak
-## Appendix B
+# Appendix B: Supplementary Figures {-}
 
-Here are supplementary figures and tables.
-
+```{r cormatrixPollutants, fig.align = "center", fig.cap="Spearman's correlation matrix of pollutants by Census Block Group."}
+# Create a correlation matrix of PM25 and populations of concern
+corrPollutants <- ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  dplyr::transmute(PM2.5 = PM25_19, 
+                Ozone = OZONE_19, 
+                DPM = DSLPM_19, 
+                CO2 = kgco2_2017,
+                `Cancer Risk` = CANCER_19, 
+                `Resp Hazard Index` = RESP_19, 
+                `Traffic Exposure` = PTRAF_19) %>% 
+  drop_na() %>% 
+  cor(method = "spearman")
+# corr
+ggcorrplot(corrPollutants, hc.order = TRUE, type = "lower", lab = TRUE, 
+           title = "Pollutant Correlation Matrix for New England", 
+           legend.title = "Spearman's \nCorrelation\nCoefficient")
+```
 
 ```{r cormatrixPM25PopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of annual PM2.5 concentrations and the proportions of populations of concern by Census Block Group."}
 # Create a correlation matrix of PM25 and populations of concern
@@ -1662,19 +2015,6 @@ ne_blkgrp_sf %>%
   coord_flip()
 ```
 
-```{r boxplotDPMNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 2017 Carbon Dioxoide (CO2) on-road emissions in metric tons per square kilometer by state at Census Block Group level."}
-# boxplot of CO2 by state for 2017
-ne_blkgrp_sf %>% 
-  as.data.frame() %>% 
-  ggplot(aes(x = STATE, y = DSLPM_19, fill = STATE)) + 
-  geom_boxplot(notch = TRUE) + 
-  ggtitle("Diesel Particulate Matter (DPM) concentrations \nby Census block group by New England state, 2017") +
-  theme_minimal() +
-  theme(legend.position = "none", axis.text=element_text(size=8)) + 
-  xlab(NULL) + 
-  ylab(expression(paste("DPM"," (", mu, "g/", m^3, ")", sep = ""))) +
-  coord_flip()
-```
 
 ```{r cormatrixDPMPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of annual average Diesel Particulate Matter concentrations and the proportions of populations of concern by Census Block Group."}
 # Create a correlation matrix of PM25 and populations of concern
@@ -1736,20 +2076,6 @@ ggcorrplot(corrACT, hc.order = TRUE, type = "lower", lab = TRUE,
            ggtheme = ggplot2::theme_minimal())
 ```
 
-```{r boxplotTPVNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Boxplot of 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across New England at Census Block Group level."}
-# boxplot of traffic proximity and volume by state for 2017
-ne_blkgrp_sf %>% 
-  as.data.frame() %>% 
-  ggplot(aes(x = STATE, y = PTRAF_19, fill = STATE)) + 
-  geom_boxplot(notch = TRUE) + 
-  ggtitle("Traffic Proximity and Volume \nby Census block group \nby New England state, 2017") +
-  theme_minimal() +
-  theme(legend.position = "none", axis.text=element_text(size=8)) + 
-  xlab(NULL) + 
-  ylab("AADT/Distance(km)") +
-  coord_flip()
-```
-
 ```{r cormatrixTPVPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group."}
 # Create a correlation matrix of cancer risk and populations of concern
 corrTPV <- ne_blkgrp_sf %>% 
@@ -1768,4 +2094,26 @@ ggcorrplot(corrTPV, hc.order = TRUE, type = "lower", lab = TRUE,
            title = "Traffic Proximity and Volume \nCorrelation Matrix for New England", 
            legend.title = "Spearman's \nCorrelation\nCoefficient",
            ggtheme = ggplot2::theme_minimal())
+```
+
+```{r boxplotTPVNE, fig.align = "center", fig.cap="Boxplot of 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across New England at Census Block Group level."}
+# boxplot of traffic proximity and volume by state for 2017
+ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  drop_na(PTRAF_19) %>% 
+  ggplot(aes(x = reorder(STATE, PTRAF_19, FUN = "median", .desc = TRUE), 
+             y = PTRAF_19, fill = STATE)) + 
+  geom_boxplot(notch = TRUE) + 
+  ggtitle("Traffic Proximity and Volume \nby Census block group \nby New England state, 2017") +
+  theme_minimal() +
+  theme(legend.position = "none", axis.text=element_text(size=8)) + 
+  xlab(NULL) + 
+  ylab("AADT/Distance(km)") +
+  coord_flip()
+  # scale_y_continuous(limits = quantile(ne_blkgrp_sf$PTRAF_19, c(0.1,0.9))) 
+  # expand_limits(y = c(0,5000)) +
+  # geom_hline(aes(yintercept = 333), color = "red4", linetype = "dashed") +
+  # geom_text(aes(x = "Connecticut", y = 400, 
+  #               label = "New England median"), 
+  #           color = "red4", angle = 270)
 ```
