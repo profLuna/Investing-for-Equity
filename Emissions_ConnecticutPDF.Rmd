@@ -1,7 +1,7 @@
 ---
-title: "Transportation Emissions in CT"
+title: "Transportation Emissions in Connecticut"
 author: "Marcos Luna and Neenah Estrella-Luna"
-date: "1/24/2020"
+date: "5/5/2020"
 output: 
   bookdown::pdf_document2:
     toc: true
@@ -237,7 +237,7 @@ knitr::include_graphics("DATA/EJSCREEN/ct_pm25hotspot.png")
 
 There is a statistically significant hot spot of PM~2.5~ around Stamford to Danbury and Milford. Warm clusters extend to just south of New Britain. 
 
-These PM~2.5~ levels vary significantly across the state, although the clusters of Block Groups with high PM~2.5~ values remains apparent. Figure \@ref(fig:boxplotPM25CT) is a boxplot of PM~2.5~ concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median PM~2.5~ concentration for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$PM25_19, na.rm = TRUE),2)`. Each dot represents an individual Block Group. Note that a large cluster of dots is concentrated on the far right, at the upper end of concentration values. Most of these are in southwest Connecticut. 
+These PM~2.5~ levels vary significantly across the state, although the clusters of Block Groups with high PM~2.5~ values remains apparent. Figure \@ref(fig:boxplotPM25CT) is a boxplot of PM~2.5~ concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median PM~2.5~ concentration for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$PM25_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. Note that a large cluster of dots is concentrated on the far right, at the upper end of concentration values. Most of these are in southwest Connecticut. 
 
 ```{r boxplotPM25CT, fig.align = "center", fig.cap="Boxplot of 2016 annual PM2.5 concentrations at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of PM2.5 by state for 2016
@@ -290,7 +290,7 @@ m3 <- tm_shape(ct_blkgrp_sf, unit = "mi") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Change in annual\nPM2.5 Concentrations \n2011-2016", 
+  tm_layout(title = "Change in\nannual PM2.5\nConcentrations \n2011-2016", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -411,24 +411,37 @@ ct_blkgrp_sf %>%
   spread(key = Group, value = PM25wMean) %>% 
   transmute(Minority = (minorityE/PM25Mean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
-         `Lang Isol` = (eng_limitE/PM25Mean - 1)*100,
+         `Limited English HH` = (eng_limitE/PM25Mean - 1)*100,
          `Low Income` = (num2povE/PM25Mean - 1)*100,
-         `No HS` = (lthsE/PM25Mean - 1)*100,
+         `No HS Dip` = (lthsE/PM25Mean - 1)*100,
          `Under 5` = (under5E/PM25Mean - 1)*100,
          `Over 64` = (over64E/PM25Mean - 1)*100,
          `CT Low Income` = (CT_LOWINC/PM25Mean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
-  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
-  geom_bar(stat = "identity", position = "identity") +
-  theme_minimal() +
+  ggplot(aes(x = reorder(Group,Pct), 
+             y = Pct)) +
+  geom_segment(aes(x = reorder(Group,Pct), 
+                   xend = reorder(Group,Pct),
+                   y = 0, yend = Pct), 
+               color = "skyblue") +
+  geom_point(color = "blue", size = 4, alpha = 0.8) +
+  coord_flip() + 
   labs(x = "", y = "", title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure"), "(relative to Connecticut average)"))) + 
-  theme(legend.position = 'none') +
+  theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
   geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
-                label = paste0(round(Pct,2),"%")), 
-            hjust = 0.5, size = 3,
+                label = paste0(round(Pct,1),"%")), 
+            hjust = 0.5, vjust = -.8, size = 3,
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
-  geom_hline(yintercept = 0)
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_text(aes(x = "Under 5", y = 1.7, label = "Above state avg"),
+            color = "gray48") +
+  geom_segment(aes(x = "Low Income", xend = "Low Income", y = 0.6, yend = 2), 
+               arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-1,3))
 ```
 
 Like the region as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that all  populations of concern continue to experience exposures greater than the regional average, with language isolated households leading on this measure. 
@@ -452,7 +465,7 @@ PM19wAvgs_actual <- ct_blkgrp_sf %>%
                                       w = Pop, na.rm = TRUE)) %>% 
   mutate(Group = case_when(
     Group == "minorityE" ~ "Minority",
-    Group == "eng_limitE" ~ "Lang Isol",
+    Group == "eng_limitE" ~ "Limited English HH",
     Group == "num2povE" ~ "Low Income",
     Group == "lthsE" ~ "No HS Dip",
     Group == "under5E" ~ "Under 5",
@@ -475,18 +488,18 @@ PM15wAvgs_actual <- ct_blkgrp_sf %>%
                                       w = Pop, na.rm = TRUE)) %>%  
   mutate(Group = case_when(
     Group == "mins_15" ~ "Minority",
-    Group == "lingiso_15" ~ "Lang Isol",
+    Group == "lingiso_15" ~ "Limited English HH",
     Group == "lowinc_15" ~ "Low Income",
     Group == "lths_15" ~ "No HS Dip",
     Group == "under5_15" ~ "Under 5",
     Group == "over64_15" ~ "Over 64")) %>% 
   mutate(Year = 2011)
 # Create regional average benchmark
-pm15NEavg <- mean(ne_blkgrp_sf$pm_15, na.rm = TRUE)
-pm19NEavg <- mean(ne_blkgrp_sf$PM25_19, na.rm = TRUE)
+pm15CTavg <- mean(ct_blkgrp_sf$pm_15, na.rm = TRUE)
+pm19CTavg <- mean(ct_blkgrp_sf$PM25_19, na.rm = TRUE)
 pmRegionalAvg_actual <- data.frame(
   Group = c("STATE AVG", "STATE AVG"),
-  PM25wMean = c(pm15NEavg,pm19NEavg),
+  PM25wMean = c(pm15CTavg,pm19CTavg),
   Year = c(2011,2016)
 )
 #rbind tables
@@ -505,7 +518,7 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
                                       (PM[2.5]," (", mu, "g/", m^3, ")", sep = "")),
                 Caption = NULL,
                 LineColor = c("STATE AVG" = "#000000",
-                              "Lang Isol" = "#E69F00",
+                              "Limited English HH" = "#E69F00",
                               "Minority" = "#56B4E9",
                               "No HS" = "#009E73",
                               "Poverty" = "#F0E442",
@@ -642,7 +655,7 @@ knitr::include_graphics("DATA/EJSCREEN/ct_O3hotspot.png")
 
 There are statistically significant hot spots of Ozone (O~3~) primarily between Stamford and Milford. A warm cluster extends as north as New Britain. 
 
-These Ozone (O~3~) levels vary significantly across the state. Figure \@ref(fig:boxplotO3CT) is a boxplot of O~3~ concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median O~3~ concentration for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$OZONE_19, na.rm = TRUE),2)`. Each dot represents an individual Block Group.   
+These Ozone (O~3~) levels vary significantly across the state. Figure \@ref(fig:boxplotO3CT) is a boxplot of O~3~ concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median O~3~ concentration for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$OZONE_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group.   
 
 ```{r boxplotO3CT, fig.align = "center", fig.cap="Boxplot of 2016 Ozone summer seasonal average of daily maximum 8-hour concentrations in air in parts per billion by state at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of PM2.5 by state for 2016
@@ -813,24 +826,37 @@ ct_blkgrp_sf %>%
   spread(key = Group, value = O3wMean) %>% 
   transmute(Minority = (minorityE/O3Mean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
-         `Lang Isol` = (eng_limitE/O3Mean - 1)*100,
+         `Limited English HH` = (eng_limitE/O3Mean - 1)*100,
          `Low Income` = (num2povE/O3Mean - 1)*100,
-         `No HS` = (lthsE/O3Mean - 1)*100,
+         `No HS Dip` = (lthsE/O3Mean - 1)*100,
          `Under 5` = (under5E/O3Mean - 1)*100,
          `Over 64` = (over64E/O3Mean - 1)*100,
          `CT Low Income` = (CT_LOWINC/O3Mean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
-  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
-  geom_bar(stat = "identity", position = "identity") +
-  theme_minimal() +
+  ggplot(aes(x = reorder(Group,Pct), 
+             y = Pct)) +
+  geom_segment(aes(x = reorder(Group,Pct), 
+                   xend = reorder(Group,Pct),
+                   y = 0, yend = Pct), 
+               color = "skyblue") +
+  geom_point(color = "blue", size = 4, alpha = 0.8) +
+  coord_flip() + 
   labs(x = "", y = "", title = expression(atop(paste("Population-Weighted Ozone (", O[3], ") Exposure"), "(relative to Connecticut average)"))) + 
-  theme(legend.position = 'none') +
+  theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
   geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
                 label = paste0(round(Pct,2),"%")), 
-            hjust = 0.5, size = 3, nudge_y = -0.1,
+            hjust = 1.15, vjust = -.8, size = 3,
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
-  geom_hline(yintercept = 0)
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_text(aes(x = "No HS Dip", y = .5, label = "Above state avg"),
+            color = "gray48") +
+  geom_segment(aes(x = "Low Income", xend = "Low Income", y = 0.2, yend = 0.6), 
+               arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-0.5,1))
 ```
 
 Like the region as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvgCT). All populations of concern have experienced an increase in population-weighted exposure to Ozone, with persons in language-isolated households and minorities experiencing the greatest increase in exposure. 
@@ -854,7 +880,7 @@ O319wAvgs_actual <- ct_blkgrp_sf %>%
                                       w = Pop, na.rm = TRUE)) %>% 
   mutate(Group = case_when(
     Group == "minorityE" ~ "Minority",
-    Group == "eng_limitE" ~ "Lang Isol",
+    Group == "eng_limitE" ~ "Limited English HH",
     Group == "num2povE" ~ "Low Income",
     Group == "lthsE" ~ "No HS Dip",
     Group == "under5E" ~ "Under 5",
@@ -877,18 +903,18 @@ O315wAvgs_actual <- ct_blkgrp_sf %>%
                                       w = Pop, na.rm = TRUE)) %>%  
   mutate(Group = case_when(
     Group == "mins_15" ~ "Minority",
-    Group == "lingiso_15" ~ "Lang Isol",
+    Group == "lingiso_15" ~ "Limited English HH",
     Group == "lowinc_15" ~ "Low Income",
     Group == "lths_15" ~ "No HS Dip",
     Group == "under5_15" ~ "Under 5",
     Group == "over64_15" ~ "Over 64")) %>% 
   mutate(Year = 2011)
 # Create regional average benchmark
-O315NEavg <- mean(ct_blkgrp_sf$o3_15, na.rm = TRUE)
-O319NEavg <- mean(ct_blkgrp_sf$OZONE_19, na.rm = TRUE)
+O315CTavg <- mean(ct_blkgrp_sf$o3_15, na.rm = TRUE)
+O319CTavg <- mean(ct_blkgrp_sf$OZONE_19, na.rm = TRUE)
 O3RegionalAvg_actual <- data.frame(
   Group = c("STATE AVG", "STATE AVG"),
-  O3wMean = c(O315NEavg,O319NEavg),
+  O3wMean = c(O315CTavg,O319CTavg),
   Year = c(2011,2016)
 )
 #rbind tables
@@ -896,7 +922,7 @@ O311_16wAvg_actual <- bind_rows(O315wAvgs_actual,
                                 O319wAvgs_actual,
                                 O3RegionalAvg_actual) %>% 
   mutate(Year = as.factor(Year),
-         O3wMean = round(O3wMean,1))
+         O3wMean = round(O3wMean,2))
 # make slope graph
 newggslopegraph(dataframe = O311_16wAvg_actual, 
                 Times = Year, 
@@ -907,7 +933,7 @@ newggslopegraph(dataframe = O311_16wAvg_actual,
                                       (O[3]," (ppb)", sep = "")),
                 Caption = NULL,
                 LineColor = c("STATE AVG" = "#000000",
-                              "Lang Isol" = "#E69F00",
+                              "Limited English HH" = "#E69F00",
                               "Minority" = "#56B4E9",
                               "No HS Dip" = "#009E73",
                               "Low Income" = "#F0E442",
@@ -962,7 +988,7 @@ m7 <- ct_blkgrp_sf %>%
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Annual CO2 Emissions\n2017", 
+  tm_layout(title = "Annual On-road\nCO2 Emissions\n2017", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1035,10 +1061,10 @@ m8 <- tm_shape(local_g, unit = "mi",) +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m8, "DATA/EJSCREEN/ct_O3hotspot.png",
+tmap_save(m8, "DATA/EJSCREEN/ct_CO2hotspot.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/EJSCREEN/ct_O3hotspot.png")
+knitr::include_graphics("DATA/EJSCREEN/ct_CO2hotspot.png")
 ```
 
 CO~2~ emissions vary across the state with significant outliers (see Table \@ref(tab:statsCO2CT).   
@@ -1411,7 +1437,7 @@ ct_town_minDPM <- ct_blkgrp_sf %>%
 
 The Block Group with highest Diesel Particulate Matter emissions value in the state is found in `r ct_town_maxDPM` and the lowest is found in `r ct_town_minDPM`.
 
-Figure \@ref(fig:boxplotDPMCT) is a boxplot of DPM concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median DPM concentration for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$PM25_19, na.rm = TRUE),2)`. Each dot represents an individual Block Group.  
+Figure \@ref(fig:boxplotDPMCT) is a boxplot of DPM concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median DPM concentration for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$PM25_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group.  
 
 ```{r boxplotDPMCT, fig.align = "center", fig.cap="Boxplot of 2017 Carbon Dioxoide on-road emissions in metric tons per square kilometer by state at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of CO2 by state for 2017
@@ -1468,27 +1494,39 @@ ct_blkgrp_sf %>%
   spread(key = Group, value = DPMwMean) %>% 
   transmute(Minority = (minorityE/DPMMean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
-         `Lang Isol` = (eng_limitE/DPMMean - 1)*100,
+         `Limited English HH` = (eng_limitE/DPMMean - 1)*100,
          `Low Income` = (num2povE/DPMMean - 1)*100,
-         `No HS` = (lthsE/DPMMean - 1)*100,
+         `No HS Dip` = (lthsE/DPMMean - 1)*100,
          `Under 5` = (under5E/DPMMean - 1)*100,
          `Over 64` = (over64E/DPMMean - 1)*100,
          `CT Low Income` = (CT_LOWINC/DPMMean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
-  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
-  geom_bar(stat = "identity", position = "identity") +
-  theme_minimal() +
-  labs(x = "", y = "", title = "Population-Weighted Exposure to DPM \n(relative to Connecticut average)") + 
-  theme(legend.position = 'none') +
+  ggplot(aes(x = reorder(Group,Pct), 
+             y = Pct)) +
+  geom_segment(aes(x = reorder(Group,Pct), 
+                   xend = reorder(Group,Pct),
+                   y = 0, yend = Pct), 
+               color = "skyblue") +
+  geom_point(color = "blue", size = 4, alpha = 0.8) +
+  coord_flip() + xlab("") + ylab("") + 
+  ggtitle("Population-Weighted Exposure to DPM \n(relative to Connecticut average)") + theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
   geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
                 label = paste0(round(Pct,1),"%")), 
-            hjust = 0.5, size = 3, nudge_y = 1,
+            hjust = 1.1, vjust = -.8, size = 3,
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
-  geom_hline(yintercept = 0)
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_text(aes(x = "Low Income", y = 15, label = "Above state avg"),
+            color = "gray48") +
+  geom_segment(aes(x = "Under 5", xend = "Under 5", y = 4, yend = 15), 
+               arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-8,23))
 ```
 
-There is a moderate positive correlation between the proportions of language isolated households and minorities and ambient concentrations of Diesel Particulate Matter (see Appendix).
+There is a moderate to strong positive correlation between the proportions of language isolated households and minorities and ambient concentrations of Diesel Particulate Matter (see Appendix).
 
 
 \pagebreak
@@ -1649,12 +1687,13 @@ ct_town_minCaner <- ct_blkgrp_sf %>%
 
 The Block Group with highest cancer risk value in the state is found in `r ct_town_maxCancer` and the lowest is found in `r ct_town_minCaner`.
 
-Figure \@ref(fig:boxplotATCNE) is a boxplot of cancer risk by Block Group . The box represents risk values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median lifetime cancer risk value for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$CANCER_19, na.rm = TRUE),2)`. Each dot represents an individual Block Group. The large dots represent outliers, or unusually high values.
+Figure \@ref(fig:boxplotATCNE) is a boxplot of cancer risk by Block Group . The box represents risk values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median lifetime cancer risk value for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$CANCER_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large dots represent outliers, or unusually high values.
 
 ```{r boxplotATCNE, fig.align = "center", fig.cap="Boxplot of lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Connecticut by state at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of lifetime cancer risk by state for 2014
 ct_blkgrp_sf %>% 
   as.data.frame() %>% 
+  drop_na(CANCER_19) %>% 
   ggplot(aes(x = STATE, y = CANCER_19, fill = STATE)) + 
   geom_boxplot() + 
   geom_jitter(color = "black", size = 0.4, alpha = 0.6) +
@@ -1706,27 +1745,39 @@ ct_blkgrp_sf %>%
   spread(key = Group, value = DPMwMean) %>% 
   transmute(Minority = (minorityE/DPMMean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
-         `Lang Isol` = (eng_limitE/DPMMean - 1)*100,
+         `Limited English HH` = (eng_limitE/DPMMean - 1)*100,
          `Low Income` = (num2povE/DPMMean - 1)*100,
-         `No HS` = (lthsE/DPMMean - 1)*100,
+         `No HS Dip` = (lthsE/DPMMean - 1)*100,
          `Under 5` = (under5E/DPMMean - 1)*100,
          `Over 64` = (over64E/DPMMean - 1)*100,
          `CT Low Income` = (CT_LOWINC/DPMMean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
-  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
-  geom_bar(stat = "identity", position = "identity") +
-  theme_minimal() +
-  labs(x = "", y = "", title = "Population-Weighted Average Lifetime Cancer Risk \n(relative to Connecticut average)") + 
-  theme(legend.position = 'none') +
+  ggplot(aes(x = reorder(Group,Pct), 
+             y = Pct)) +
+  geom_segment(aes(x = reorder(Group,Pct), 
+                   xend = reorder(Group,Pct),
+                   y = 0, yend = Pct), 
+               color = "skyblue") +
+  geom_point(color = "blue", size = 4, alpha = 0.8) +
+  coord_flip() + xlab("") + ylab("") + 
+  ggtitle("Population-Weighted Average Lifetime Cancer Risk \n(relative to Connecticut average)") + theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
   geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
                 label = paste0(round(Pct,1),"%")), 
-            hjust = 0.5, size = 3, nudge_y = 0.1,
+            hjust = 1.5, vjust = -.8, size = 3,
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
-  geom_hline(yintercept = 0)
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_text(aes(x = "Low Income", y = 3, label = "Above state avg"),
+            color = "gray48") +
+  geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1, yend = 4), 
+               arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-2,5))
 ```
 
-There is a moderately positive correlation between the proportions of minorities and cancer risk (see Appendix).
+There is a moderately positive correlation between the proportions of minorities and limited English households and cancer risk (see Appendix).
 
 
 \pagebreak
@@ -1886,12 +1937,13 @@ ct_town_minRESP <- ct_blkgrp_sf %>%
 
 The Block Group with highest respiratory hazard index value in the state is found in `r ct_town_maxRESP` and the lowest is found in `r ct_town_minRESP`.
 
-Figure \@ref(fig:boxplotRHICT) is a boxplot of respiratory hazard indices by Block Group . The box represents index values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median respiratory hazard index value for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$RESP_19, na.rm = TRUE),2)`. Each dot represents an individual Block Group.   
+Figure \@ref(fig:boxplotRHICT) is a boxplot of respiratory hazard indices by Block Group . The box represents index values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median respiratory hazard index value for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$RESP_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group.   
 
 ```{r boxplotRHICT, fig.align = "center", fig.cap="Boxplot of respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Connecticut by state at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of lifetime cancer risk by state for 2014
 ct_blkgrp_sf %>% 
   as.data.frame() %>% 
+  drop_na(RESP_19) %>% 
   ggplot(aes(x = STATE, y = RESP_19, fill = STATE)) + 
   geom_boxplot() + 
   geom_jitter(color = "black", size = 0.4, alpha = 0.6) +
@@ -1943,24 +1995,36 @@ ct_blkgrp_sf %>%
   spread(key = Group, value = RESPwMean) %>% 
   transmute(Minority = (minorityE/RESPMean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
-         `Lang Isol` = (eng_limitE/RESPMean - 1)*100,
+         `Limited English HH` = (eng_limitE/RESPMean - 1)*100,
          `Low Income` = (num2povE/RESPMean - 1)*100,
-         `No HS` = (lthsE/RESPMean - 1)*100,
+         `No HS Dip` = (lthsE/RESPMean - 1)*100,
          `Under 5` = (under5E/RESPMean - 1)*100,
          `Over 64` = (over64E/RESPMean - 1)*100,
          `CT Low Income` = (CT_LOWINC/RESPMean -1)*100) %>%
   gather(key = Group, value = Pct) %>% 
-  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
-  geom_bar(stat = "identity", position = "identity") +
-  theme_minimal() +
-  labs(x = "", y = "", title = "Population-Weighted Average Respiratory Hazard Index \n(relative to Connecticut average)") + 
-  theme(legend.position = 'none') +
+  ggplot(aes(x = reorder(Group,Pct), 
+             y = Pct)) +
+  geom_segment(aes(x = reorder(Group,Pct), 
+                   xend = reorder(Group,Pct),
+                   y = 0, yend = Pct), 
+               color = "skyblue") +
+  geom_point(color = "blue", size = 4, alpha = 0.8) +
+  coord_flip() + xlab("") + ylab("") + 
+  ggtitle("Population-Weighted Average Respiratory Hazard Index \n(relative to Connecticut average)") + theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
   geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
                 label = paste0(round(Pct,1),"%")), 
-            hjust = 0.5, size = 3, nudge_y = 0.1,
+            hjust = 1.4, vjust = -.8, size = 3,
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
-  geom_hline(yintercept = 0)
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_text(aes(x = "Low Income", y = 4, label = "Above state avg"),
+            color = "gray48") +
+  geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1.5, yend = 5), 
+               arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-3,8))
 ```
 
 There is a moderate to strong positive correlation between the proportions of minorities and respiratory hazard index (see Appendix).
@@ -2088,6 +2152,7 @@ Traffic Proximity and Volume exposure vary across the state (see Table \@ref(tab
 ```{r statsTPVCT, fig.align = "center", fig.cap="Annual 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Connecticut at Census Block Group level."}
 ct_blkgrp_sf %>%
   as.data.frame() %>% 
+  drop_na(PTRAF_19) %>% 
   # group_by(STATE) %>% 
   summarize(Mean = round(mean(PTRAF_19, na.rm = TRUE),0),
             Median = round(median(PTRAF_19, na.rm = TRUE),0),
@@ -2123,7 +2188,7 @@ ct_town_minTraffic <- ct_blkgrp_sf %>%
 
 The Block Group with highest Traffic Proximity and Volume value in the state is found in `r ct_town_maxTraffic` and the lowest is found in `r ct_town_minTraffic`.
 
-Figure \@ref(fig:boxplotTPVCT) is a boxplot of Traffic Proximity and Volume values by Block Group . The box represents values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median Traffic Proximity and Volume value for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$PTRAF_19, na.rm = TRUE),2)`. Each dot represents an individual Block Group. The large black dots represent outliers, or unusually high values.  
+Figure \@ref(fig:boxplotTPVCT) is a boxplot of Traffic Proximity and Volume values by Block Group . The box represents values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median Traffic Proximity and Volume value for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$PTRAF_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large black dots represent outliers, or unusually high values.  
 
 ```{r boxplotTPVCT, fig.align = "center", fig.cap="Boxplot of 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Connecticut at Census Block Group level."}
 # boxplot of traffic proximity and volume by state for 2017
@@ -2180,27 +2245,39 @@ ct_blkgrp_sf %>%
   spread(key = Group, value = DPMwMean) %>% 
   transmute(Minority = (minorityE/DPMMean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
-         `Lang Isol` = (eng_limitE/DPMMean - 1)*100,
+         `Limited English HH` = (eng_limitE/DPMMean - 1)*100,
          `Low Income` = (num2povE/DPMMean - 1)*100,
-         `No HS` = (lthsE/DPMMean - 1)*100,
+         `No HS Dip` = (lthsE/DPMMean - 1)*100,
          `Under 5` = (under5E/DPMMean - 1)*100,
          `Over 64` = (over64E/DPMMean - 1)*100,
          `CT Low Income` = (CT_LOWINC/DPMMean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
-  ggplot(aes(x = reorder(Group, -Pct), y = Pct, fill = Group)) + 
-  geom_bar(stat = "identity", position = "identity") +
-  theme_minimal() +
-  labs(x = "", y = "", title = "Population-Weighted Average Traffic Proximity and Volume \n(relative to Connecticut average)") + 
-  theme(legend.position = 'none') +
+  ggplot(aes(x = reorder(Group,Pct), 
+             y = Pct)) +
+  geom_segment(aes(x = reorder(Group,Pct), 
+                   xend = reorder(Group,Pct),
+                   y = 0, yend = Pct), 
+               color = "skyblue") +
+  geom_point(color = "blue", size = 4, alpha = 0.8) +
+  coord_flip() + xlab("") + ylab("") + 
+  ggtitle("Population-Weighted Average Traffic Proximity and\nVolume (relative to Connecticut average)") + theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
   geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
                 label = paste0(round(Pct,1),"%")), 
-            hjust = 0.5, size = 3, nudge_y = 3,
+            hjust = 1.1, vjust = -.8, size = 3,
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
-  geom_hline(yintercept = 0)
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_text(aes(x = "No HS Dip", y = 50, label = "Above state avg"),
+            color = "gray48") +
+  geom_segment(aes(x = "Under 5", xend = "Under 5", y = 10, yend = 50), 
+               arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-25,75))
 ```
 
-There is a moderate positive correlation between the proportions of minorities and traffic proximity and volume, and a moderate positive correlation with low income persons (see Appendix).
+There is a moderate positive correlation between the proportions of minorities, low income persons, limited English households, adults with less than a high school education, and traffic proximity and volume (see Appendix).
 
 [^EJSCREEN]: U.S. Environmental Protection Agency (EPA), 2019. EJSCREEN Technical Documentation. For more information see www.epa.gov/ejscreen
 
@@ -2487,7 +2564,7 @@ corrPM25 <- ct_blkgrp_sf %>%
   dplyr::transmute(PM25 = PM25_19, 
                 Minority = minority_pctE, 
                 `Low Income` = pct2povE, 
-                `Lang Isol` = eng_limit_pctE, 
+                `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E,
@@ -2509,7 +2586,7 @@ corrO3 <- ct_blkgrp_sf %>%
   dplyr::transmute(Ozone = OZONE_19, 
                 Minority = minority_pctE, 
                 `Low Income` = pct2povE, 
-                `Lang Isol` = eng_limit_pctE, 
+                `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E,
@@ -2547,7 +2624,7 @@ corrDPM <- ct_blkgrp_sf %>%
   dplyr::transmute(DPM = DSLPM_19, 
                 Minority = minority_pctE, 
                 `Low Income` = pct2povE, 
-                `Lang Isol` = eng_limit_pctE, 
+                `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E,
@@ -2570,7 +2647,7 @@ corrACT <- ct_blkgrp_sf %>%
   dplyr::transmute(`Cancer Risk` = CANCER_19, 
                 Minority = minority_pctE, 
                 `Low Income` = pct2povE, 
-                `Lang Isol` = eng_limit_pctE, 
+                `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E,
@@ -2593,7 +2670,7 @@ corrACT <- ct_blkgrp_sf %>%
   dplyr::transmute(`Resp Hazard Index` = RESP_19, 
                 Minority = minority_pctE, 
                 `Low Income` = pct2povE, 
-                `Lang Isol` = eng_limit_pctE, 
+                `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E,
@@ -2616,7 +2693,7 @@ corrTPV <- ct_blkgrp_sf %>%
   dplyr::transmute(`Traffic Exposure` = PTRAF_19, 
                 Minority = minority_pctE, 
                 `Low Income` = pct2povE, 
-                `Lang Isol` = eng_limit_pctE, 
+                `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E,
