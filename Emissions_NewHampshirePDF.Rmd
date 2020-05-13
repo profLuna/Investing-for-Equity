@@ -1,0 +1,2633 @@
+---
+title: "Transportation Emissions in New Hampshire"
+author: "Marcos Luna and Neenah Estrella-Luna"
+date: "5/7/2020"
+output: 
+  bookdown::pdf_document2:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    fig_caption: yes        
+    includes:  
+      in_header: my_header.tex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE)
+```
+\pagebreak
+# Analysis of transportation-related emissions in New Hampshire
+
+This is an analysis of transportation-related emissions and related externalities in New Hampshire.
+
+## PM~2.5~ in New Hampshire
+
+PM~2.5~ refers to particulate matter in the air that is 2.5 microns or less in diameter (about 30 times smaller than the width of a human hair). These small particulates pose a threat to human health because they can penetrate deeply into the lungs and even enter the bloodstream. The EPA has documented that exposure to PM~2.5~ is associated with health effects such as elevated risk of premature mortality from cardiovascular diseases or lung cancer, and increased health problems such as asthma attacks.[^EPAPM10] Moreover, the EPA has found that people with pre-existing heart or lung disease, children and older adults, and nonwhite populations are at particular risk.[^EPAPM10risk]
+
+Sources of PM~2.5~ emissions include power plants and industrial facilities that burn coal or petroleum-based fuels (i.e., oil or natural gas). However, most PM~2.5~ forms in the atmosphere as a result of chemical reactions between gases such as oxides of nitrogen (NO~x~) or sulfur dioxide (SO~2~), which are pollutants emitted from power plants, industries, and automobiles. PM~2.5~ has been regulated by the US EPA under the National Ambient Air Quality Standards (NAAQS) since 1997. As of April 2020, the EPA's primary (health-based) standard for PM~2.5~ is an annual average of 12$\mu$g/m^3^ (12 micrograms per cubic meter of air).[^EPAPM25standards] Research shows that PM~2.5~ continues to have a significant negative impact on mortality at concentrations below the EPA's standard.[^LOWPM25research] Former EPA officials and scientists in an Independent Particulate Matter Review Panel have found that the current standard is not protective of public health and recommend that the annual standard be revised to a range of 10$\mu$g/m^3^ to 8$\mu$g/m^3^. However, even at the lower end of the range, risk is not reduced to zero.[^IPMRP]
+
+The analysis of PM~2.5~ presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides PM~2.5~ annual concentrations at the Census Block Group level for the years 2011 to 2016 (as of December 2019). 
+
+PM~2.5~ levels vary significantly across New Hampshire, with highest concentrations in the southeast and southwest corners of New Hampshire (see Figure \@ref(fig:mapPM25RI) below). 
+
+```{r data, include=FALSE}
+library(tidyverse)
+library(sf)
+library(tmap)
+library(tmaptools)
+library(maptools)
+# library(raster)
+library(rgdal)
+library(RColorBrewer)
+library(sp)
+library(CGPfunctions) # for slope graphs
+library(ggcorrplot)
+library(spdep)
+# ne_blkgrp_sf %>% 
+#   as.data.frame() %>% 
+#   transmute(`PM2.5 2011` = pm_15, `PM2.5 2016` = PM25_19) %>% 
+#   summary()
+
+# Load data
+load("DATA/ne_layers.rds")
+
+# Create data subsets of New Hampshire
+nh_blkgrp_sf <- ne_blkgrp_sf %>% 
+  filter(STATE == "New Hampshire") %>% 
+  st_transform(., crs = 2823)
+nh_blkgrp_sf90 <- ne_blkgrp_sf90 %>% 
+  filter(STATE == "New Hampshire") %>% 
+  st_transform(., crs = 2823)
+
+# Create point layer of larger municipalities for context
+library(tigris)
+options(tigris_class = "sf")
+nh_towns_sf_pts <- county_subdivisions(state = "NH", cb = TRUE) %>% 
+  filter(NAME %in% c("Nashua",
+                     "Portsmouth",
+                     "Manchester",
+                     "Concord",
+                     "Laconia",
+                     "Lebanon",
+                     "Conway",
+                     "Woodstock",
+                     "Franconia",
+                     "Berlin",
+                     "Lancaster",
+                     "Pittsburg",
+                     "Keene",
+                     "Seabrook")) %>%
+  st_transform(., crs = 2823) %>% 
+  st_centroid(of_largest_polygon = TRUE)
+
+# Create road layer for context
+nh_highways <- primary_roads() %>% 
+  filter(FULLNAME %in% c("I- 89","I- 91","I- 93","I- 95")) %>%
+  tmaptools::crop_shape(., ne_states_sf_cb) %>% 
+  st_transform(., crs = 2823)
+
+# Extract highway segments for labeling
+I89roadSegment <- nh_highways %>% 
+  filter(LINEARID == "1105281262324")
+
+I91roadSegment <- nh_highways %>% 
+  filter(LINEARID == "110373954766")
+
+I95roadSegment <- nh_highways %>% 
+  filter(LINEARID == "1105578995804")
+
+I93roadSegment <- nh_highways %>% 
+  filter(LINEARID == "1105598909781")
+
+# Create custom icons of highway shields
+I89 <- tmap_icons(file = "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/I-89.svg/200px-I-89.svg.png")
+I91 <- tmap_icons("https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/I-91.svg/200px-I-91.svg.png")
+I95 <- tmap_icons(file = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/I-95.svg/200px-I-95.svg.png")
+I93 <- tmap_icons("https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/I-93.svg/200px-I-93.svg.png")
+```
+
+```{r mapPM25RI, fig.align = "center", fig.cap="Map of 2016 annual PM2.5 concentrations across New Hampshire at Census Block Group level."}
+# Map of PM2.5 across New Hampshire
+m1 <- tm_shape(nh_blkgrp_sf, unit = "mi") + 
+  tm_fill("PM25_19", style = "quantile", 
+          title = expression(paste
+                             (PM[2.5]," (", mu, "g/", m^3, ")", sep = "")),
+          legend.hist = FALSE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=2)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Annual PM2.5 \nConcentrations\n2016", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+
+tmap_save(m1, "DATA/EJSCREEN/nh_pm25.png",
+          height = 7, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/EJSCREEN/nh_pm25.png")
+```
+
+PM~2.5~ concentrations exhibit spatial clustering of both hot spots (i.e. geographic clusters of high values) and cold spots (i.e. geographic clusters of lower values). The map below (Figure \@ref(fig:hotspotPM25RI)) shows statistically significant PM~2.5~ hot spots.
+
+```{r hotspotPM25RI, fig.align = "center", fig.cap="Hot spot map of 2016 annual PM2.5 concentrations at Census Block Group level."}
+# Get rid of empty geometries and NAs, and convert to spdf
+empty_geo <- st_is_empty(nh_blkgrp_sf)
+ne_blkgrp_sp_DemoEJ <- nh_blkgrp_sf[!empty_geo,] %>% 
+  dplyr::select(GEOID,PM25_19) %>% 
+  # st_transform(., crs = 2163) %>% # convert to US National Atlas Equal Area
+  na.omit() %>% 
+  as_Spatial()
+# Calculate Queen's case neighbors
+neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
+# Compute neighbor weights
+# spdep::set.ZeroPolicyOption(TRUE)
+listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
+# compute Getis-Ord Gi statistic
+local_g <- localG(ne_blkgrp_sp_DemoEJ$PM25_19, listw)
+local_g <- cbind(ne_blkgrp_sp_DemoEJ, as.matrix(local_g))
+names(local_g)[3] <- "gstat"
+# map the results
+m2 <- tm_shape(local_g, unit = "mi",) + 
+  tm_fill("gstat",
+          palette = "-RdBu", 
+          style = "pretty",
+          title = expression(paste("Getis-Ord ", G[i]^"*")),
+          showNA = FALSE,
+          midpoint = NA,
+          labels = c("Significant Clusters","of Low Values","","No Significant Clusters","","Significant Clusters","of High Values"),
+          legend.show = FALSE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_add_legend(type = "fill", 
+                title = "Getis-Ord Hot Spot\nClassification",
+                labels = c("Significant Clusters","of High Values", "","No Significant Clusters", "","Significant Clusters","of Low Values"),
+                col = c("#B2182B","#EF8A62","#FDDBC7","#F7F7F7",
+                        "#D1E5F0","#67A9CF","#2166AC"),
+                border.col = "white", border.alpha = 0) +
+  tm_layout(title = "Hot Spot Map \nof PM2.5 for \nNew Hampshire", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m2, "DATA/EJSCREEN/nh_pm25hotspot.png",
+          height = 7, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/EJSCREEN/nh_pm25hotspot.png")
+```
+
+There is a statistically significant hot spot of PM~2.5~ around Nashua. Warm clusters extend across the southeastern corner of the state. 
+
+These PM~2.5~ levels vary significantly across the state, although the clusters of Block Groups with high PM~2.5~ values remains apparent. Figure \@ref(fig:boxplotPM25RI) is a boxplot of PM~2.5~ concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median PM~2.5~ concentration for all Block Groups, which in this case is `r round(median(nh_blkgrp_sf$PM25_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group.  
+
+```{r boxplotPM25RI, fig.align = "center", fig.cap="Boxplot of 2016 annual PM2.5 concentrations at Census Block Group level. 1 dot = 1 Block Group."}
+# boxplot of PM2.5 by state for 2016
+nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = STATE, y = PM25_19, fill = STATE)) + 
+  geom_boxplot() + 
+  geom_jitter(color = "black", size = 0.4, alpha = 0.6) +
+  ggtitle(expression(atop(paste(PM[2.5], " Annual Concentrations in New Hampshire,"), "2016"))) +
+  theme_minimal() +
+  theme(legend.position = "none", axis.text=element_text(size=8)) + 
+  xlab(NULL) + 
+  ylab(expression(paste(PM[2.5]," (", mu, "g/", m^3, ")", sep = ""))) +
+  coord_flip() 
+
+# nh_blkgrp_sf %>% 
+#   as.data.frame() %>% 
+#   ggplot(aes(x = PM25_19)) + geom_histogram()
+```
+
+
+Since 2011, PM~2.5~ levels have declined across the state, on average by `r {round(mean(nh_blkgrp_sf$PM25_pctChange, na.rm = TRUE),1)}`%. Unsurprisingly, this decline has not been uniform (see Figure \@ref(fig:mapPM25RIchange) below). The greatest declines, up to `r {round(min(nh_blkgrp_sf$PM25_pctChange, na.rm = TRUE),1)}`%, have been in the southwestern corner of the state, particularly around Manchester. 
+
+```{r mapPM25RIchange, fig.align = "center", fig.cap="Map of percent change in annual PM2.5 concentrations across New Hampshire between 2011 and 2016 at Census Block Group level."}
+# Map of PM2.5 change across New Hampshire
+m3 <- tm_shape(nh_blkgrp_sf, unit = "mi") + 
+  tm_fill("PM25_pctChange", palette = "Greens",
+          style = "quantile", 
+          title = "% Change",
+          legend.hist = FALSE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=1)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Change in\nannual PM2.5\nConcentrations \n2011-2016", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+
+tmap_save(m3, "DATA/EJSCREEN/nh_pm25change.png",
+          height = 7, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/EJSCREEN/nh_pm25change.png")
+```
+
+Figure \@ref(fig:slopegraphPM25RI) below compares the average annual PM~2.5~ concentrations for the state and the region between 2011 and 2016. The region and the state both showed significant declines since 2011. Concentrations in New Hampshire remain below the rest of the region. 
+
+```{r slopegraphPM25RI, fig.align = "center", fig.cap="Change in population-weighted exposure to PM2.5 between 2011 and 2016 for New Hampshire and New England."}
+# Slope graph of PM2.5 by state and region between 2011 and 2016
+# Create df of 2019 actual values
+PM19wSTAvgs_actual <- nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  group_by(STATE) %>% 
+  summarize(PM25Mean = mean(PM25_19, na.rm = TRUE),
+            PM25wMean = weighted.mean(x = PM25_19,
+                                      w = totalpopE, na.rm = TRUE)) %>% 
+  mutate(Year = 2016)
+# Create df of 2015 values
+PM15wSTAvgs_actual <- nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  group_by(STATE) %>% 
+  summarize(PM25Mean = mean(pm_15, na.rm = TRUE),
+            PM25wMean = weighted.mean(x = pm_15,
+                                      w = pop_15, na.rm = TRUE)) %>% 
+  mutate(Year = 2011)
+# Create regional average benchmark
+pm15NHavg <- ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  summarize(PM25Mean = mean(pm_15, na.rm = TRUE),
+            PM25wMean = weighted.mean(x = pm_15,
+                                      w = pop_15, na.rm = TRUE)) %>% 
+  transmute(STATE = "NEW ENGLAND", 
+            PM25Mean = PM25Mean, 
+            PM25wMean = PM25wMean,
+            Year = 2011)
+pm19NHavg <- ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  summarize(PM25Mean = mean(PM25_19, na.rm = TRUE),
+            PM25wMean = weighted.mean(x = PM25_19,
+                                      w = totalpopE, na.rm = TRUE)) %>% 
+  transmute(STATE = "NEW ENGLAND", 
+            PM25Mean = PM25Mean, 
+            PM25wMean = PM25wMean,
+            Year = 2016)
+#rbind tables
+PM11_16wSTAvg_actual <- bind_rows(PM15wSTAvgs_actual,
+                                PM19wSTAvgs_actual,
+                                pm15NHavg,pm19NHavg) %>% 
+  mutate(Year = as.factor(Year),
+         PM25Mean = round(PM25wMean,2),
+         PM25wMean = round(PM25wMean,2))
+# make slope graph
+newggslopegraph(dataframe = PM11_16wSTAvg_actual, 
+                Times = Year, 
+                Measurement = PM25Mean, 
+                Grouping = STATE,
+                Title = expression(paste("Annual Average ", PM[2.5], " Concentrations")),
+                SubTitle = expression(paste
+                                      (PM[2.5]," (", mu, "g/", m^3, ")", sep = "")),
+                Caption = NULL,
+                LineColor = c("NEW ENGLAND" = "#000000",
+                              "New Hampshire" = "#E69F00",
+                              "Massachusetts" = "#56B4E9",
+                              "New Hampshire" = "#009E73",
+                              "New Hampshire" = "#F0E442",
+                              "New Hampshire" = "#0072B2",
+                              "Maine" = "#D55E00"),
+                LineThickness = 1,
+                YTextSize = 3.5,
+                DataTextSize = 3,
+                WiderLabels = TRUE)
+```
+
+
+### PM~2.5~ in New Hampshire and Populations of Concern
+
+In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvgRI) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the state. For example, limited English households are exposed to PM~2.5~ concentrations that are over 2% above concentrations for the state as a whole. By contrast, low income persons are exposed to concentrations at or below the state average. 
+
+```{r barplotPM25PopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to PM2.5 for populations of concern in New Hampshire relative to the state average."}
+# Pop Weighted avg of PM2.5 for all Groups in New Hampshire relative to state average
+nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over64E,
+                PM25_19) %>% 
+  gather(key = Group, value = Pop, totalpopE:over64E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_19, w = Pop, na.rm = TRUE),
+            PM25Mean = mean(PM25_19, na.rm = TRUE)) %>% 
+  spread(key = Group, value = PM25wMean) %>% 
+  transmute(Minority = (minorityE/PM25Mean - 1)*100,
+         #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+         `Limited English HH` = (eng_limitE/PM25Mean - 1)*100,
+         `Low Income` = (num2povE/PM25Mean - 1)*100,
+         `No HS Dip` = (lthsE/PM25Mean - 1)*100,
+         `Under 5` = (under5E/PM25Mean - 1)*100,
+         `Over 64` = (over64E/PM25Mean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group,Pct), 
+             y = Pct)) +
+  geom_segment(aes(x = reorder(Group,Pct), 
+                   xend = reorder(Group,Pct),
+                   y = 0, yend = Pct), 
+               color = "skyblue") +
+  geom_point(color = "blue", size = 4, alpha = 0.8) +
+  coord_flip() + 
+  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted ", PM[2.5], " Exposure"), "(relative to New Hampshire average)"))) + 
+  theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0.5, vjust = -.8, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_text(aes(x = "Under 5", y = 1.2, label = "Above state avg"),
+            color = "gray48") +
+  geom_segment(aes(x = "No HS Dip", xend = "No HS Dip", y = 0.2, yend = 1.1), 
+               arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-0.5,2.5))
+```
+
+Like the region as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that all populations of concern now experience exposures greater than the regional average, with minorities and language isolated households leading on this measure. 
+
+```{r slopegraphPM25PopAvgNE, fig.align = "center", fig.cap="Change in population-weighted exposure to PM2.5 for populations of concern between 2011 and 2016."}
+# Pop Weighted avg of PM2.5 EXPOSURE CHANGE 2011 - 2016 for all Groups in New Hampshire relative to NE average. 
+# Create df of 2019 actual values
+PM19wAvgs_actual <- nh_blkgrp_sf %>% 
+  as.data.frame() %>%
+  drop_na(PM25_19) %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(minorityE,
+                num2povE,
+                eng_limitE,
+                lthsE,
+                under5E,
+                over64E,
+                PM25_19) %>% 
+  gather(key = Group, value = Pop, minorityE:over64E) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = PM25_19, 
+                                      w = Pop, na.rm = TRUE)) %>% 
+  mutate(Group = case_when(
+    Group == "minorityE" ~ "Minority",
+    Group == "eng_limitE" ~ "Limited English HH",
+    Group == "num2povE" ~ "Low Income",
+    Group == "lthsE" ~ "No HS Dip",
+    Group == "under5E" ~ "Under 5",
+    Group == "over64E" ~ "Over 64")) %>% 
+  mutate(Year = 2016)
+# Create df of 2015 values
+PM15wAvgs_actual <- nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  drop_na(pm_15) %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(mins_15,
+                lowinc_15,
+                lingiso_15,
+                lths_15,
+                under5_15,
+                over64_15,
+                pm_15) %>% 
+  gather(key = Group, value = Pop, mins_15:over64_15) %>% 
+  group_by(Group) %>% 
+  summarize(PM25wMean = weighted.mean(x = pm_15, 
+                                      w = Pop, na.rm = TRUE)) %>%  
+  mutate(Group = case_when(
+    Group == "mins_15" ~ "Minority",
+    Group == "lingiso_15" ~ "Limited English HH",
+    Group == "lowinc_15" ~ "Low Income",
+    Group == "lths_15" ~ "No HS Dip",
+    Group == "under5_15" ~ "Under 5",
+    Group == "over64_15" ~ "Over 64")) %>% 
+  mutate(Year = 2011)
+# Create regional average benchmark
+pm15NHavg <- mean(nh_blkgrp_sf$pm_15, na.rm = TRUE)
+pm19NHavg <- mean(nh_blkgrp_sf$PM25_19, na.rm = TRUE)
+pmRegionalAvg_actual <- data.frame(
+  Group = c("STATE AVG", "STATE AVG"),
+  PM25wMean = c(pm15NHavg,pm19NHavg),
+  Year = c(2011,2016)
+)
+#rbind tables
+PM11_16wAvg_actual <- bind_rows(PM15wAvgs_actual,
+                                PM19wAvgs_actual,
+                                pmRegionalAvg_actual) %>% 
+  mutate(Year = as.factor(Year),
+         PM25wMean = round(PM25wMean,3))
+# make slope graph
+newggslopegraph(dataframe = PM11_16wAvg_actual, 
+                Times = Year, 
+                Measurement = PM25wMean, 
+                Grouping = Group,
+                Title = "Population-Weighted PM2.5 Exposure",
+                SubTitle = expression(paste
+                                      (PM[2.5]," (", mu, "g/", m^3, ")", sep = "")),
+                Caption = NULL,
+                LineColor = c("STATE AVG" = "#000000",
+                              "Limited English HH" = "#E69F00",
+                              "Minority" = "#56B4E9",
+                              "No HS" = "#009E73",
+                              "Poverty" = "#F0E442",
+                              "Under 5" = "#0072B2",
+                              "Over 64" = "#D55E00"),
+                YTextSize = 3.5,
+                DataTextSize = 3,
+                WiderLabels = TRUE)
+```
+
+There is a weak positive relationship between the proportion of minority residents or language-isolated households and the concentration of PM~2.5~ (see Appendix).
+
+
+\pagebreak
+## Ozone (O~3~) in New Hampshire
+
+Ground-level ozone (O~3~) is the primary constituent of smog.[^NOTO3hole] However, ozone is not usually emitted directly into the air. It is created at ground level by a chemical reaction in the air between oxides of nitrogen (NO~x~) and volatile organic compounds (VOCs) in the presence of sunlight. These ozone precursor pollutants are emitted from automobile exhaust, gasoline vapors, industrial boilers, refineries, chemical plants, and other sources. Ozone concentrations tend to be highest during the summer months due to increased sunlight and heat. Ozone can also be carried long distances by wind, affecting areas far from the sources of precursor pollutants.
+
+The EPA has documented an association between exposure to ambient ozone and a variety of health outcomes, including reduction in lung function, increased inflammation and increased hospital admissions and mortality.[^EPAPM10risk] People most at risk from breathing air containing ozone include people with asthma, children, older adults, and people who are active outdoors, especially outdoor workers. Children are at greatest risk from exposure to ozone because their lungs are still developing and they are more likely to be active outdoors when ozone levels are high, which increases their exposure.  Children are also more likely than adults to have asthma.[^O3risks] 
+
+Ground level ozone has been regulated by the US EPA under the National Ambient Air Quality Standards (NAAQS) since 1971. As of April 2020, the EPA's primary (health-based) standard for ground level ozone is 70 parts per billion (ppb).[^EPAO3standards] However, the EPA has acknowledged that clinical and epidemiological evidence has been inconclusive about a possible threshold for ozone-induced health effects. EPA concluded that if a population threshold level exists, it is near the lower limit of ambient ozone concentrations in the United States.[^EPAO3lowerlimit]
+
+The analysis of ozone (O~3~) presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides ozone (O~3~) May–September (summer/ ozone season) average of daily-maximum 8-hour-average ozone concentrations, in parts per billion (ppb), at the Census Block Group level for the years 2011 to 2016 (as of December 2019).
+
+Ozone (O~3~) levels vary significantly across New Hampshire, with highest concentrations in around Nashua, and declining toward the north (see Figure \@ref(fig:mapO3RI) below).[^NONATTAINMENT] 
+
+```{r mapO3RI, fig.align = "center", fig.cap="Map of 2016 Ozone summer seasonal average of daily maximum 8-hour concentration in air in parts per billion across New Hampshire at Census Block Group level."}
+
+# Map of O3 across New Hampshire
+m4 <- tm_shape(nh_blkgrp_sf, unit = "mi") + 
+  tm_fill("OZONE_19", style = "quantile", 
+          title = expression(paste
+                             (O[3]," (ppb)", sep = "")),
+          legend.hist = FALSE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=1)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Summer Ozone \nConcentrations\n2016", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+
+tmap_save(m4, "DATA/EJSCREEN/nh_O3.png",
+          height = 7, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/EJSCREEN/nh_O3.png")
+```
+
+Ozone (O~3~) concentrations exhibit spatial clustering of both hot spots (i.e. geographic clusters of high values) and cold spots (i.e. geographic clusters of lower values). The map below (Figure \@ref(fig:hotspotO3RI))shows statistically significant Ozone (O~3~) hot spots.
+
+```{r hotspotO3RI, fig.align = "center", fig.cap="Hot spot map of 2016 Ozone concentrations at Census Block Group level."}
+# Get rid of empty geometries and NAs, and convert to spdf
+empty_geo <- st_is_empty(nh_blkgrp_sf)
+ne_blkgrp_sp_DemoEJ <- nh_blkgrp_sf[!empty_geo,] %>% 
+  dplyr::select(GEOID,OZONE_19) %>% 
+  # st_transform(., crs = 2163) %>% # convert to US National Atlas Equal Area
+  na.omit() %>% 
+  as_Spatial()
+# Calculate Queen's case neighbors
+neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
+# Compute neighbor weights
+# spdep::set.ZeroPolicyOption(TRUE)
+listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
+# compute Getis-Ord Gi statistic
+local_g <- localG(ne_blkgrp_sp_DemoEJ$OZONE_19, listw)
+local_g <- cbind(ne_blkgrp_sp_DemoEJ, as.matrix(local_g))
+names(local_g)[3] <- "gstat"
+# map the results
+m5 <- tm_shape(local_g, unit = "mi",) + 
+  tm_fill("gstat",
+          palette = "-RdBu", 
+          style = "pretty",
+          title = expression(paste("Getis-Ord ", G[i]^"*")),
+          showNA = FALSE,
+          midpoint = NA,
+          labels = c("Significant Clusters","of Low Values", "","","","", "Significant Clusters","of High Values"),
+          legend.show = FALSE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_add_legend(type = "fill", 
+                title = "Getis-Ord Hot Spot\nClassification",
+                labels = c("Significant Clusters","of High Values", "","No Significant Clusters", "","Significant Clusters","of Low Values"),
+                col = c("#B2182B","#EF8A62","#FDDBC7","#F7F7F7",
+                        "#D1E5F0","#67A9CF","#2166AC"),
+                border.col = "white", border.alpha = 0) +
+  tm_layout(title = "Hot Spot Map \nof Ozone for \nNew Hampshire", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m5, "DATA/EJSCREEN/nh_O3hotspot.png",
+          height = 7, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/EJSCREEN/nh_O3hotspot.png")
+```
+
+There is a statistically significant hot spot of Ozone (O~3~) centered on Nashua. A warm cluster extends northwest to Keene and northwest to Portsmouth. 
+
+These Ozone (O~3~) levels vary significantly across the state. Figure \@ref(fig:boxplotO3RI) is a boxplot of O~3~ concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median O~3~ concentration for all Block Groups, which in this case is `r round(median(nh_blkgrp_sf$OZONE_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group.    
+
+```{r boxplotO3RI, fig.align = "center", fig.cap="Boxplot of 2016 Ozone summer seasonal average of daily maximum 8-hour concentrations in air in parts per billion by state at Census Block Group level. 1 dot = 1 Block Group."}
+# boxplot of PM2.5 by state for 2016
+nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = STATE, y = OZONE_19, fill = STATE)) + 
+  geom_boxplot() + 
+  geom_jitter(color = "black", size = 0.4, alpha = 0.6) +
+  ggtitle(expression(atop(paste("Ozone (", O[3], ") Summer Concentration"), "2016"))) +
+  theme_minimal() +
+  theme(legend.position = "none", axis.text=element_text(size=8)) + 
+  xlab(NULL) + 
+  ylab(expression(paste(O[3]," (ppb)", sep = ""))) +
+  coord_flip()
+```
+
+Since 2011, Ozone (O~3~) levels have decreased slightly across the state, on average by `r {round(mean(nh_blkgrp_sf$OZONE_pctChange, na.rm = TRUE),1)}`%. These have changes not been uniform (see Figure \@ref(fig:mapO3RIchange) below). The greatest declines, up to `r round(min(nh_blkgrp_sf$OZONE_pctChange, na.rm = TRUE),1)`%, have been in the north central part of the state around Franconia. By contrast, increases in summer ozone concentrations of up to `r round(max(nh_blkgrp_sf$OZONE_pctChange, na.rm = TRUE),1)`% appear around Nashua and Manchester.
+
+```{r mapO3RIchange, fig.align = "center", fig.cap="Map of percent change in summer seasonal Ozone concentrations across New Hampshire between 2011 and 2016 at Census Block Group level."}
+# Map of O3 change across New Hampshire
+m6 <- tm_shape(nh_blkgrp_sf, unit = "mi") + 
+  tm_fill("OZONE_pctChange", palette = "-RdYlGn",
+          style = "pretty", 
+          title = "% Change",
+          legend.hist = FALSE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=1)),
+          legend.is.portrait = TRUE,
+          midpoint = 0) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Change in summer\nOzone Concentrations \n2011-2016", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+
+tmap_save(m6, "DATA/EJSCREEN/nh_O3change.png",
+          height = 7, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/EJSCREEN/nh_O3change.png")
+```
+
+Figure \@ref(fig:slopegraphO3RI) below compares the average summer Ozone (O~3~) concentrations for the state and for the region between 2011 and 2016. New Hampshire's average concentrations have decreased and remain lower than the region. 
+
+```{r slopegraphO3RI, fig.align = "center", fig.cap="Change in summer average ozone concentrations between 2011 and 2016 for New Hampshire and New England."}
+# Slope graph of O3 by state and region between 2011 and 2016
+# Create df of 2019 actual values
+O319wSTAvgs_actual <- nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  group_by(STATE) %>% 
+  summarize(O3Mean = mean(OZONE_19, na.rm = TRUE),
+            O3wMean = weighted.mean(x = OZONE_19,
+                                      w = totalpopE, na.rm = TRUE)) %>% 
+  mutate(Year = 2016)
+# Create df of 2015 values
+O315wSTAvgs_actual <- nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  group_by(STATE) %>% 
+  summarize(O3Mean = mean(o3_15, na.rm = TRUE),
+            O3wMean = weighted.mean(x = o3_15,
+                                      w = pop_15, na.rm = TRUE)) %>% 
+  mutate(Year = 2011)
+# Create regional average benchmark
+O315NEavg <- ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  summarize(O3Mean = mean(o3_15, na.rm = TRUE),
+            O3wMean = weighted.mean(x = o3_15,
+                                      w = pop_15, na.rm = TRUE)) %>% 
+  transmute(STATE = "NEW ENGLAND", 
+            O3Mean = O3Mean, 
+            O3wMean = O3wMean,
+            Year = 2011)
+O319NEavg <- ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  summarize(O3Mean = mean(OZONE_19, na.rm = TRUE),
+            O3wMean = weighted.mean(x = OZONE_19,
+                                      w = totalpopE, na.rm = TRUE)) %>% 
+  transmute(STATE = "NEW ENGLAND", 
+            O3Mean = O3Mean, 
+            O3wMean = O3wMean,
+            Year = 2016)
+#rbind tables
+O311_16wSTAvg_actual <- bind_rows(O315wSTAvgs_actual,
+                                O319wSTAvgs_actual,
+                                O315NEavg,
+                                O319NEavg) %>% 
+  mutate(Year = as.factor(Year),
+         O3Mean = round(O3wMean,2),
+         O3wMean = round(O3wMean,2))
+# make slope graph
+newggslopegraph(dataframe = O311_16wSTAvg_actual, 
+                Times = Year, 
+                Measurement = O3Mean, 
+                Grouping = STATE,
+                Title = expression(paste("Summer Average Ozone (", O[3], ") Concentrations")),
+                SubTitle = expression(paste
+                                      (O[3]," (ppb)", sep = "")),
+                Caption = NULL,
+                LineColor = c("NEW ENGLAND" = "#000000",
+                              "New Hampshire" = "#E69F00",
+                              "Massachusetts" = "#56B4E9",
+                              "New Hampshire" = "#009E73",
+                              "New Hampshire" = "#F0E442",
+                              "New Hampshire" = "#0072B2",
+                              "Maine" = "#D55E00"),
+                LineThickness = 1,
+                YTextSize = 3.5,
+                DataTextSize = 3,
+                WiderLabels = TRUE)
+```
+
+
+### Ozone (O~3~) in New Hampshire and Populations of Concern
+
+In addition to variations in the general geography of Ozone (O~3~) concentrations, exposure to this pollutant also varies demographically. Figure \@ref(fig:barplotO3PopAvgRI) below shows population-weighted exposures for populations of concern relative to average Ozone concentrations for the region. For example, limited English households in New Hampshire are exposed to summer Ozone concentrations that are approximately 2.7% above concentrations for the state as a whole. By contrast, low income persons are, on average, exposed to concentrations of Ozone at or below the state average. 
+
+```{r barplotO3PopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to Ozone for populations of concern in New Hampshire relative to the regional average."}
+# Pop Weighted avg of O3 for all Groups in New Hampshire relative to NE average
+nh_blkgrp_sf %>% 
+  as.data.frame() %>%
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over64E,
+                OZONE_19) %>% 
+  gather(key = Group, value = Pop, totalpopE:over64E) %>% 
+  group_by(Group) %>% 
+  summarize(O3wMean = weighted.mean(x = OZONE_19, w = Pop, na.rm = TRUE),
+            O3Mean = mean(OZONE_19, na.rm = TRUE)) %>% 
+  spread(key = Group, value = O3wMean) %>% 
+  transmute(Minority = (minorityE/O3Mean - 1)*100,
+         #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+         `Limited English HH` = (eng_limitE/O3Mean - 1)*100,
+         `Low Income` = (num2povE/O3Mean - 1)*100,
+         `No HS Dip` = (lthsE/O3Mean - 1)*100,
+         `Under 5` = (under5E/O3Mean - 1)*100,
+         `Over 64` = (over64E/O3Mean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group,Pct), 
+             y = Pct)) +
+  geom_segment(aes(x = reorder(Group,Pct), 
+                   xend = reorder(Group,Pct),
+                   y = 0, yend = Pct), 
+               color = "skyblue") +
+  geom_point(color = "blue", size = 4, alpha = 0.8) +
+  coord_flip() + 
+  labs(x = "", y = "", title = expression(atop(paste("Population-Weighted Ozone (", O[3], ") Exposure"), "(relative to New Hampshire average)"))) + 
+  theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,2),"%")), 
+            hjust = 0, vjust = -.8, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_text(aes(x = "Under 5", y = 1.8, label = "Above state avg"),
+            color = "gray48") +
+  geom_segment(aes(x = "No HS Dip", xend = "No HS Dip", y = 0.35, yend = 1.5), 
+               arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-0.5,3.5))
+```
+
+Like the region as a whole, these populations have also experienced changes in exposure since 2011, except for limited English households. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvgRI).  
+
+```{r slopegraphO3PopAvgRI, fig.align = "center", fig.cap="Change in population-weighted exposure to summer ozone for populations of concern between 2011 and 2016."}
+# Pop Weighted avg of O3 EXPOSURE CHANGE 2011 - 2016 for all Groups in New Hampshire relative to NE average. 
+# Create df of 2019 actual values
+O319wAvgs_actual <- nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(minorityE,
+                num2povE,
+                eng_limitE,
+                lthsE,
+                under5E,
+                over64E,
+                OZONE_19) %>% 
+  gather(key = Group, value = Pop, minorityE:over64E) %>% 
+  group_by(Group) %>% 
+  summarize(O3wMean = weighted.mean(x = OZONE_19, 
+                                      w = Pop, na.rm = TRUE)) %>% 
+  mutate(Group = case_when(
+    Group == "minorityE" ~ "Minority",
+    Group == "eng_limitE" ~ "Limited English HH",
+    Group == "num2povE" ~ "Low Income",
+    Group == "lthsE" ~ "No HS Dip",
+    Group == "under5E" ~ "Under 5",
+    Group == "over64E" ~ "Over 64")) %>% 
+  mutate(Year = 2016)
+# Create df of 2015 values
+O315wAvgs_actual <- nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  # filter(STATE == "Massachusetts") %>%
+  dplyr::select(mins_15,
+                lowinc_15,
+                lingiso_15,
+                lths_15,
+                under5_15,
+                over64_15,
+                o3_15) %>% 
+  gather(key = Group, value = Pop, mins_15:over64_15) %>% 
+  group_by(Group) %>% 
+  summarize(O3wMean = weighted.mean(x = o3_15, 
+                                      w = Pop, na.rm = TRUE)) %>%  
+  mutate(Group = case_when(
+    Group == "mins_15" ~ "Minority",
+    Group == "lingiso_15" ~ "Limited English HH",
+    Group == "lowinc_15" ~ "Low Income",
+    Group == "lths_15" ~ "No HS Dip",
+    Group == "under5_15" ~ "Under 5",
+    Group == "over64_15" ~ "Over 64")) %>% 
+  mutate(Year = 2011)
+# Create regional average benchmark
+O315NHavg <- mean(nh_blkgrp_sf$o3_15, na.rm = TRUE)
+O319NHavg <- mean(nh_blkgrp_sf$OZONE_19, na.rm = TRUE)
+O3RegionalAvg_actual <- data.frame(
+  Group = c("STATE AVG", "STATE AVG"),
+  O3wMean = c(O315NHavg,O319NHavg),
+  Year = c(2011,2016)
+)
+#rbind tables
+O311_16wAvg_actual <- bind_rows(O315wAvgs_actual,
+                                O319wAvgs_actual,
+                                O3RegionalAvg_actual) %>% 
+  mutate(Year = as.factor(Year),
+         O3wMean = round(O3wMean,2))
+# make slope graph
+newggslopegraph(dataframe = O311_16wAvg_actual, 
+                Times = Year, 
+                Measurement = O3wMean, 
+                Grouping = Group,
+                Title = "Population-Weighted Ozone Exposure",
+                SubTitle = expression(paste
+                                      (O[3]," (ppb)", sep = "")),
+                Caption = NULL,
+                LineColor = c("STATE AVG" = "#000000",
+                              "Limited English HH" = "#E69F00",
+                              "Minority" = "#56B4E9",
+                              "No HS Dip" = "#009E73",
+                              "Low Income" = "#F0E442",
+                              "Under 5" = "#0072B2",
+                              "Over 64" = "#D55E00"),
+                YTextSize = 3.5,
+                DataTextSize = 3,
+                WiderLabels = TRUE)
+```
+
+
+\pagebreak
+## Carbon Dioxide (CO~2~) in New Hampshire
+
+Carbon dioxide (CO~2~) emissions are the primary driver of human-induced climate change.[^GWFAQ] Direct exposure to CO~2~ is not a significant health concern, but its cumulative effects on the climate and global environment are. In addition to risks such as sea level rise, increasing frequency and intensity of extreme weather (e.g., flooding, storms, droughts, heat waves), and economic disruption, climate change is likely to degrade air quality by exacerbating smog formation and other airborne irritants.[^UCSO3] The single largest source of CO~2~ emissions is the transportation sector, especially automobiles. Other sources of CO~2~ emissions include the combustion of coal or petroleum-based fuels for  electricity production, industry, heating of commercial and residential buildings, agriculture, and land use and forestry.[^GHGInventory] 
+
+In 2007, the US Supreme Court ruled that CO~2~ is a pollutant under the terms of the Clean Air Act and therefore the EPA has statutory authority to regulate greenhouse gas (GHG) emissions. The EPA and National Highway Traffic Safety Administration (NHTSA) subsequently issued new fuel economy standards which included GHG standards for light-duty vehicles (passenger cars and trucks) for model years 2012 - 2016 and then model years 2017 - 2025. The latter required auto manufacturers to reduce average GHG emissions by approximately 23% by 2026.[^CAFECO2rule] The Intergovernmental Panel on Climate Change (IPCC), the global authority on climate change science and policy, has warned that the world must bring GHG emissions down to "net zero" as soon as possible in order to avoid catastrophic climate change.[^IPCC] 
+
+The analysis of carbon dioxide (CO~2~) presented here is based on data from the Database of Road Transportation Emissions (DARTE), a product of the NASA Carbon Monitoring System (CMS). DARTE provides CO~2~ emissions from on-road transportation annually for 1980-2017 as a continuous surface at a spatial resolution of 1 km and also aggregated at the Census Block Group level.[^DARTE]
+
+On-road CO~2~ emissions closely follow major roadways arcoss the region (see Figure \@ref(fig:mapCO2RI) below). 
+
+```{r mapCO2RI, fig.align = "center", fig.cap="Map of 2017 Carbon Dioxide (CO2) annual on-road emissions in metric tons per square kilometer across New Hampshire at Census Block Group level."}
+
+# Map of CO2 across New Hampshire
+m7 <- nh_blkgrp_sf %>% 
+  mutate(onroad_2017 = kgco2_2017/1000/(bg_area_m2/1000000)) %>% 
+  tm_shape(., unit = "mi") + 
+  tm_fill("onroad_2017", style = "quantile", 
+          title = expression(paste
+                             (CO[2]," (mtons/", km^2,")", sep = "")),
+          legend.hist = FALSE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=0)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Annual On-road\nCO2 Emissions\n2017", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+
+tmap_save(m7, "DATA/EJSCREEN/nh_CO2.png",
+          height = 7, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/EJSCREEN/nh_CO2.png")
+```
+
+Significant hot spots, or clusters of high CO~2~ emissions, appear in Manchester (see Figure \@ref(fig:hotspotCO2RI) below).
+
+```{r hotspotCO2RI, fig.align = "center", fig.cap="Hot spot map of 2017 CO2 emissions at Census Block Group level."}
+# Get rid of empty geometries and NAs, and convert to spdf
+empty_geo <- st_is_empty(nh_blkgrp_sf)
+ne_blkgrp_sp_DemoEJ <- nh_blkgrp_sf[!empty_geo,] %>% 
+  mutate(onroad_2017 = kgco2_2017/1000/(bg_area_m2/1000000)) %>%
+  dplyr::select(GEOID,onroad_2017) %>% 
+  # st_transform(., crs = 2163) %>% # convert to US National Atlas Equal Area
+  na.omit() %>% 
+  as_Spatial()
+# Calculate Queen's case neighbors
+neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
+# Compute neighbor weights
+# spdep::set.ZeroPolicyOption(TRUE)
+listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
+# compute Getis-Ord Gi statistic
+local_g <- localG(ne_blkgrp_sp_DemoEJ$onroad_2017, listw)
+local_g <- cbind(ne_blkgrp_sp_DemoEJ, as.matrix(local_g))
+names(local_g)[3] <- "gstat"
+# map the results
+m8 <- tm_shape(local_g, unit = "mi",) + 
+  tm_fill("gstat",
+          palette = "-RdBu", 
+          style = "pretty",
+          title = expression(paste("Getis-Ord ", G[i]^"*")),
+          showNA = FALSE,
+          midpoint = NA,
+          labels = c("Significant Clusters","of Low Values","","","Significant Clusters","of High Values"),
+          legend.show = FALSE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_add_legend(type = "fill", 
+                title = "Getis-Ord Hot Spot\nClassification",
+                labels = c("Significant Clusters","of High Values", "","No Significant Clusters", "","Significant Clusters","of Low Values"),
+                col = c("#B2182B","#EF8A62","#FDDBC7","#F7F7F7",
+                        "#D1E5F0","#67A9CF","#2166AC"),
+                border.col = "white", border.alpha = 0) +
+  tm_layout(title = "Hot Spot Map \nof CO2 for \nNew Hampshire", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m8, "DATA/EJSCREEN/nh_CO2hotspot.png",
+          height = 7, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/EJSCREEN/nh_CO2hotspot.png")
+```
+
+CO~2~ emissions vary across the state with significant outliers (see Table \@ref(tab:statsCO2RI).   
+
+```{r statsCO2RI, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 CO2 emissions (mtons) at Census Block Group level and by state."}
+nh_blkgrp_sf %>% 
+  mutate(onroad_2017 = kgco2_2017/1000) %>%
+  as.data.frame() %>% 
+  # group_by(STATE) %>% 
+  summarize(Mean = round(mean(onroad_2017, na.rm = TRUE),0),
+            Median = round(median(onroad_2017, na.rm = TRUE),0),
+            Min = round(min(onroad_2017, na.rm = TRUE),0),
+            Max = round(max(onroad_2017, na.rm = TRUE),0),
+            `State Total` = sum(onroad_2017, na.rm = TRUE)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    caption = "Annual 2017 On-road CO2 emissions (mtons) by Census block group by state", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
+```{r CO2outliers, include=FALSE}
+# download municipal polygons
+nh_towns_sf <- county_subdivisions("NH") %>% 
+  select(NAME) %>% 
+  st_transform(., crs = st_crs(nh_blkgrp_sf))
+
+# extract block groups centroid with highest and lowest CO2 values, intersect with town polygons, and pull out town name
+nh_town_maxCO2 <- nh_blkgrp_sf %>% 
+  filter(kgco2_2017 == max(kgco2_2017,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  filter(row_number() == 1) %>%
+  pull(., NAME)
+
+nh_town_minCO2 <- nh_blkgrp_sf %>% 
+  filter(kgco2_2017 == min(kgco2_2017,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  filter(row_number() == 1) %>%
+  pull(., NAME)
+```
+
+The Block Group with highest CO~2~ emissions value in the state is found in `r nh_town_maxCO2` and the lowest is found in `r nh_town_minCO2`.
+
+Since 1990, CO~2~ emissions increased across the state, on average by `r {round((sum(nh_blkgrp_sf$kgco2_2017, na.rm = TRUE)-sum(nh_blkgrp_sf$kgco2_1990, na.rm = TRUE))/sum(nh_blkgrp_sf$kgco2_1990, na.rm = TRUE)*100,1)}`%. These changes have not been uniform (see Figure \@ref(fig:mapCO2RIchange) below). Declines have occurred in the northeast and southwest corner of the state. Increased emissions have occurred in the southeast along the I-93 and I-95 corridors.
+
+```{r mapCO2RIchange, fig.align = "center", fig.cap="Map of percent change in annual CO2 emissions across New Hampshire between 1990 and 2017 at Census Block Group level."}
+# Map of CO2 change across New Hampshire
+m9 <- nh_blkgrp_sf %>% 
+  mutate(CO2_pctChange90_17 = (kgco2_2017 - kgco2_1990)/kgco2_1990*100) %>%
+  tm_shape(., unit = "mi") + 
+  tm_fill("CO2_pctChange90_17", palette = "-RdYlGn",
+          style = "pretty", 
+          title = "% Change",
+          legend.hist = FALSE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=1)),
+          legend.is.portrait = TRUE,
+          midpoint = 0) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Change in Annual \nOn-road CO2 \nEmissions \n1990-2017", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+
+tmap_save(m9, "DATA/EJSCREEN/nh_CO2change.png",
+          height = 7, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/EJSCREEN/nh_CO2change.png")
+```
+
+At the state level the differences in these changes are also apparent, although less extreme than at the Census block group level. Table \@ref(tab:changeCO2RI) shows summary statistics of CO~2~ emissions for the state as a whole. Figure \@ref(fig:linegraphCO2RI) shows annual CO~2~ emissions between 1990 and 2017. 
+
+```{r changeCO2RI, fig.align = "center", fig.cap="Annual 2017 CO2 emissions (mtons) and Percent Change by state at Census Block Group level."}
+# acquire table of 1990 state pop values
+library(tidycensus)
+census_api_key("f2776fbc29cf847505de9308a82c8d65290d16b3")
+ne_states_df90 <- map_df(ne_states, function(x) {
+    get_decennial(geography = "state", 
+            variables = c(pop90 = "P0010001"),
+            state = x, output = "wide", year = 1990)
+  }) %>% 
+  select(-GEOID)
+
+nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  mutate(onroad_2017 = kgco2_2017/1000,
+         onroad_1990 = kgco2_1990/1000) %>%
+  group_by(STATE) %>% 
+  summarize(`1990 CO2 (mtons)` = sum(onroad_1990, na.rm = TRUE),
+            `2017 CO2 (mtons)` = sum(onroad_2017, na.rm = TRUE),
+            `Pct Change` = 
+              paste0(
+                round(
+                  (`2017 CO2 (mtons)` - `1990 CO2 (mtons)`)/`1990 CO2 (mtons)`*100,0),"%")) %>% 
+  left_join(., ne_states_df, by = c("STATE" = "NAME")) %>% 
+  mutate(`2017 Per Capita (mtons/person)` = 
+              `2017 CO2 (mtons)`/totalpopE) %>% 
+  left_join(., ne_states_df90, by = c("STATE" = "NAME")) %>% 
+  mutate(`1990 Per Capita (mtons/person)` = `1990 CO2 (mtons)`/pop90,
+         `Per Capita Pct Change` = 
+           paste0(
+           round(
+             (`2017 Per Capita (mtons/person)` - `1990 Per Capita (mtons/person)`)/`1990 Per Capita (mtons/person)`*100,0),"%")) %>% 
+  transmute(`1990 CO2 (mtons)` = `1990 CO2 (mtons)`, 
+            `2017 CO2 (mtons)` = `2017 CO2 (mtons)`,
+            `Pct Change` = `Pct Change`,
+            `1990 Per Capita (mtons/person)` = 
+              as.character(round(`1990 Per Capita (mtons/person)`,2)),
+            `2017 Per Capita (mtons/person)` = 
+              as.character(round(`2017 Per Capita (mtons/person)`,2)),
+            `Per Capita Pct Change` = `Per Capita Pct Change`) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','),
+                    caption = "Annual On-road CO2 Emissions",
+                    digits = 0, align = "r") %>% 
+  kableExtra::column_spec(1:6, width = "2cm") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
+
+```{r linegraphCO2RI, fig.align = "center", fig.cap="Total CO2 emissions 1990 to 2017 for New Hampshire."}
+# Slope graph of CO2 by state and region between 1990 and 2017
+# Create df of 2017 actual values
+# CO217ST_actual <- nh_blkgrp_sf %>% 
+#   as.data.frame() %>% 
+#   group_by(STATE) %>% 
+#   summarize(CO2total = sum(kgco2_2017, na.rm = TRUE)/1000) %>% 
+#   mutate(Year = 2017)
+# # Create df of 1990 values
+# CO290ST_actual <- nh_blkgrp_sf %>% 
+#   as.data.frame() %>% 
+#   group_by(STATE) %>% 
+#   summarize(CO2total = sum(kgco2_1990, na.rm = TRUE)/1000) %>% 
+#   mutate(Year = 1990)
+# # Create regional average benchmark
+# CO290NE <- ne_blkgrp_sf %>% 
+#   as.data.frame() %>% 
+#   summarize(CO2total = sum(kgco2_1990, na.rm = TRUE)/1000) %>% 
+#   transmute(STATE = "NEW ENGLAND", 
+#             CO2total = CO2total,
+#             Year = 1990)
+# CO217NE <- ne_blkgrp_sf %>% 
+#   as.data.frame() %>% 
+#   summarize(CO2total = sum(kgco2_2017, na.rm = TRUE)/1000) %>% 
+#   transmute(STATE = "NEW ENGLAND", 
+#             CO2total = CO2total,
+#             Year = 2017)
+# #rbind tables
+# CO290_17ST_actual <- bind_rows(CO290ST_actual,
+#                                 CO217ST_actual,
+#                                 CO290NE,
+#                                 CO217NE) %>% 
+#   mutate(Year = as.factor(Year),
+#          CO2total = round(CO2total,0))
+# # make slope graph
+# newggslopegraph(dataframe = CO290_17ST_actual, 
+#                 Times = Year, 
+#                 Measurement = CO2total, 
+#                 Grouping = STATE,
+#                 Title = expression(paste("Annual On-road ", 
+#                                          CO[2], " Emissions")),
+#                 SubTitle = expression(paste
+#                                       (CO[2]," (mtons)",  sep = "")),
+#                 Caption = NULL,
+#                 LineColor = c("NEW ENGLAND" = "#000000",
+#                               "New Hampshire" = "#E69F00",
+#                               "Massachusetts" = "#56B4E9",
+#                               "New Hampshire" = "#009E73",
+#                               "New Hampshire" = "#F0E442",
+#                               "New Hampshire" = "#0072B2",
+#                               "Maine" = "#D55E00"),
+#                 LineThickness = 1,
+#                 YTextSize = 3.5,
+#                 DataTextSize = 3,
+#                 WiderLabels = TRUE)
+
+nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  select(kgco2_1990:kgco2_2017) %>% 
+  gather(key = Year, value = CO2) %>% 
+  group_by(Year) %>% 
+  summarize(CO2 = sum(CO2, na.rm = TRUE)/10^6) %>% 
+  mutate(Year = as.numeric(str_remove(Year,"kgco2_"))) %>% 
+  ggplot(aes(x = Year, y = CO2)) + geom_line() + 
+  scale_y_continuous(labels=function(x) format(x, big.mark = ",", scientific = FALSE)) +
+  xlab("") + 
+  ylab(expression(paste(CO[2], " (thousands of mtons)", sep = ""))) + 
+  ggtitle(expression(paste("Total New Hampshire ", CO[2], " Emissions by Year, 1990 - 2017", sep = ""))) +
+  theme_minimal()
+```
+
+New Hampshire saw dramatic growth in CO~2~ emissions between 1990 and 2004. Since 2004, total emissions have declined slightly. However, emissions growth has exceeded population growth. This is reflected in the increase in per capita emissions since 1990 (see last three columns in Table \@ref(tab:changeCO2RI)).  
+
+
+\pagebreak
+## Diesel Particulate Matter in New Hampshire
+
+Diesel Particulate Matter (DPM) refers to particulate matter generated from the combustion of diesel fuel. Diesel PM (DPM) mass (expressed as $\mu$gDPM/m^3^) has historically been used as a surrogate measure of exposure for diesel exhaust more generally. Diesel exhaust is a complex mixture of thousands of gases and fine particles that contains more than 40 toxic air contaminants.  These include many known or suspected cancer-causing substances, such as benzene, arsenic and formaldehyde.  It also contains other harmful pollutants, including nitrogen oxides (a component of smog). In addition to long term cancer risk, exposure to diesel exhaust can have immediate health effects.  It can irritate the eyes, nose, throat and lungs, and it can cause coughs, headaches, light-headedness and nausea. Exposure to diesel exhaust also causes inflammation in the lungs, which may aggravate chronic respiratory symptoms and increase the frequency or intensity of asthma attacks.[^DPMcalEPA] 
+
+Major sources of diesel exhaust include engines and motorized vehicles that use diesel fuel, such as trucks, buses, trains, ships, and diesel-powered generators. DPM is classified by the EPA as a Hazardous Air Pollutant (HAP). HAPs are pollutants that are known or suspected to cause cancer or other serious health effects, such as reproductive effects or birth defects, or adverse environmental effects. The EPA has not quantified the cancer risk from exposure to DPM. However, it has established a diesel exhaust reference concentration (RfC) for noncancer health effects. The RfC is 5 $\mu$g/m^3^ for diesel exhaust measured as diesel particulate matter (DPM). This RfC does not consider allergenic effects such as those associated with asthma, immunologic effects or the potential for cardiac effects.[^NATA2014]
+
+The analysis of Diesel Particulate Matter (DPM) presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides annual DPM concentrations, in micrograms per cubic meter of air ($\mu$g/m^3^), at the Census Block Group level for 2014, the latest year of data available from the National Air Toxics Assessment.
+
+Diesel Particulate Matter (DPM) emissions are concentrated in the southeast corner of the state, particuarly between Nashua and Concord, and also between Seabrook and Portsmouth (see Figure \@ref(fig:mapDPMRI) below). 
+
+```{r mapDPMRI, fig.align = "center", fig.cap="Map of 2014 annual average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter across New Hampshire at Census Block Group level."}
+
+# Map of DPM across New Hampshire
+m10 <- nh_blkgrp_sf %>% 
+  tm_shape(., unit = "mi") + 
+  tm_fill("DSLPM_19", style = "quantile", 
+          title = expression(paste
+                             ("DPM"," (", mu, "g/", m^3, ")", sep = "")),
+          legend.hist = FALSE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=3)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Annual Average \nDiesel PM\nEmissions\n2014", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+
+tmap_save(m10,"DATA/EJSCREEN/nh_DPM.png",
+          height = 7, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/EJSCREEN/nh_DPM.png")
+```
+
+There are significant spatial clusters of high Diesel Particulate Matter concentrations in Portsmouth (see Figure \@ref(fig:hotspotDPMRI) below).
+
+```{r hotspotDPMRI, fig.align = "center", fig.cap="Hot spot map of 2014 Diesel Particulate Matter emissions at Census Block Group level."}
+# Get rid of empty geometries and NAs, and convert to spdf
+empty_geo <- st_is_empty(nh_blkgrp_sf)
+ne_blkgrp_sp_DemoEJ <- nh_blkgrp_sf[!empty_geo,] %>%
+  dplyr::select(GEOID,DSLPM_19) %>% 
+  # st_transform(., crs = 2163) %>% # convert to US National Atlas Equal Area
+  na.omit() %>% 
+  as_Spatial()
+# Calculate Queen's case neighbors
+neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
+# Compute neighbor weights
+# spdep::set.ZeroPolicyOption(TRUE)
+listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
+# compute Getis-Ord Gi statistic
+local_g <- localG(ne_blkgrp_sp_DemoEJ$DSLPM_19, listw)
+local_g <- cbind(ne_blkgrp_sp_DemoEJ, as.matrix(local_g))
+names(local_g)[3] <- "gstat"
+# map the results
+m11 <- tm_shape(local_g, unit = "mi",) + 
+  tm_fill("gstat",
+          palette = "-RdBu", 
+          style = "pretty",
+          title = expression(paste("Getis-Ord ", G[i]^"*")),
+          showNA = FALSE,
+          midpoint = NA,
+          labels = c("Significant Clusters","of Low Values","","No Significant Clusters", "","Significant Clusters","of High Values"),
+          legend.show = FALSE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_add_legend(type = "fill", 
+                title = "Getis-Ord Hot Spot\nClassification",
+                labels = c("Significant Clusters","of High Values", "","No Significant Clusters", "","Significant Clusters","of Low Values"),
+                col = c("#B2182B","#EF8A62","#FDDBC7","#F7F7F7",
+                        "#D1E5F0","#67A9CF","#2166AC"),
+                border.col = "white", border.alpha = 0) +
+  tm_layout(title = "Hot Spot Map \nof DPM for \nNew Hampshire", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m11, "DATA/EJSCREEN/nh_DPMhotspot.png",
+          height = 7, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/EJSCREEN/nh_DPMhotspot.png")
+```
+
+Diesel Particulate Matter concentrations vary across the state (see Table \@ref(tab:statsDPMRI) and Figure \@ref(fig:boxplotDPMRI) below).  
+
+```{r statsDPMRI, fig.align = "center", fig.cap="Annual 2014 average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter across New Hampshire at Census Block Group level."}
+nh_blkgrp_sf %>%
+  as.data.frame() %>% 
+  # group_by(STATE) %>% 
+  summarize(Mean = round(mean(DSLPM_19, na.rm = TRUE),3),
+            Median = round(median(DSLPM_19, na.rm = TRUE),3),
+            Min = round(min(DSLPM_19, na.rm = TRUE),3),
+            Max = round(max(DSLPM_19, na.rm = TRUE),3)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    caption = "Annual 2014 DPM concentrations by Census block group", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
+```{r DPMoutliers, include=FALSE}
+# # download municipal polygons
+# nh_towns_sf <- county_subdivisions("NH") %>% 
+#   select(NAME) %>% 
+#   st_transform(., crs = st_crs(nh_blkgrp_maxCO2))
+
+# extract block groups centroid with highest and lowest DPM values, intersect with town polygons, and pull out town name
+nh_town_maxDPM <- nh_blkgrp_sf %>% 
+  filter(DSLPM_19 == max(DSLPM_19,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  filter(row_number() == 1) %>%
+  pull(., NAME)
+
+nh_town_minDPM <- nh_blkgrp_sf %>% 
+  filter(DSLPM_19 == min(DSLPM_19,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  filter(row_number() == 1) %>% 
+  pull(., NAME)
+```
+
+The Block Group with highest Diesel Particulate Matter emissions value in the state is found in `r nh_town_maxDPM` and the lowest is found in `r nh_town_minDPM`.
+
+Figure \@ref(fig:boxplotDPMRI) is a boxplot of DPM concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median DPM concentration for all Block Groups, which in this case is `r round(median(nh_blkgrp_sf$PM25_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. Larger black dots on right represent outliers, or Block Groups with unusually high values relative to the state.  
+
+```{r boxplotDPMRI, fig.align = "center", fig.cap="Boxplot of 2017 Carbon Dioxoide on-road emissions in metric tons per square kilometer by state at Census Block Group level. 1 dot = 1 Block Group."}
+# boxplot of CO2 by state for 2017
+nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  drop_na(DSLPM_19) %>% 
+  ggplot(aes(x = STATE, y = DSLPM_19, fill = STATE)) + 
+  geom_boxplot() +
+  geom_jitter(color = "black", size = 0.4, alpha = 0.6) +
+  ggtitle("Diesel Particulate Matter (DPM) concentrations \nby Census block group, 2017") +
+  theme_minimal() +
+  theme(legend.position = "none", axis.text=element_text(size=8)) + 
+  xlab(NULL) + 
+  ylab(expression(paste("DPM"," (", mu, "g/", m^3, ")", sep = ""))) +
+  coord_flip()
+```
+
+
+### Diesel Particulate Matter in New Hampshire and Populations of Concern
+
+In addition to variations in the general geography of Diesel Particulate Matter concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvgRI) below shows population-weighted exposures for populations of concern relative to average Diesel Particulate Matter concentraions for the state. For example, limited English households in New Hampshire are exposed to  Diesel Particulate Matter concentrations that are more than 47% above concentrations for the state as a whole. Similarly, minorities are exposed to concentrations more than 28% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of Diesel Particulate Matter below the state average. 
+
+```{r barplotDPMPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to annual average ambient concentrations of Diesel Particulate Matter across New Hampshire relative to the regional average."}
+# Pop Weighted avg of DPM for all Groups in New Hampshire relative to NE average
+nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over64E,
+                DSLPM_19) %>% 
+  gather(key = Group, value = Pop, totalpopE:over64E) %>% 
+  group_by(Group) %>% 
+  summarize(DPMwMean = weighted.mean(x = DSLPM_19, w = Pop, na.rm = TRUE),
+            DPMMean = mean(DSLPM_19, na.rm = TRUE)) %>% 
+  spread(key = Group, value = DPMwMean) %>% 
+  transmute(Minority = (minorityE/DPMMean - 1)*100,
+         #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+         `Limited English HH` = (eng_limitE/DPMMean - 1)*100,
+         `Low Income` = (num2povE/DPMMean - 1)*100,
+         `No HS Dip` = (lthsE/DPMMean - 1)*100,
+         `Under 5` = (under5E/DPMMean - 1)*100,
+         `Over 64` = (over64E/DPMMean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group,Pct), 
+             y = Pct)) +
+  geom_segment(aes(x = reorder(Group,Pct), 
+                   xend = reorder(Group,Pct),
+                   y = 0, yend = Pct), 
+               color = "skyblue") +
+  geom_point(color = "blue", size = 4, alpha = 0.8) +
+  coord_flip() + xlab("") + ylab("") + 
+  ggtitle("Population-Weighted Exposure to DPM \n(relative to New Hampshire average)") + theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,1),"%")), 
+            hjust = 1.1, vjust = -.8, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_text(aes(x = "Low Income", y = 15, label = "Above state avg"),
+            color = "gray48") +
+  geom_segment(aes(x = "Under 5", xend = "Under 5", y = 5, yend = 15), 
+               arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-10,50))
+```
+
+There is a moderate positive correlation between the proportions of minorities and ambient concentrations of Diesel Particulate Matter (see Appendix).
+
+
+\pagebreak
+## Air Toxics Cancer Risk in New Hampshire
+
+Air toxics, often referred to as hazardous air pollutants (HAPs), are pollutants that are known or suspected to cause cancer or other serious health effects, such as reproductive effects or birth defects, or adverse environmental effects.  
+
+Most air toxics originate from transportation and industry, including automobiles, industrial facilities, and power plants. EPA regulates 187 chemicals under its HAP program. Since 1996, the EPA's National Air Toxics Assessment (NATA) program has provided nationwide assessments of outdoor air quality with respect to emissions of air toxics. NATA uses emissions estimates from the National Emissions Inventory (NEI), which is updated every three years. The NEI includes all of the Toxics Release Inventory (TRI) reporting facilities that release hazardous air pollutants, along with many other sources of air pollutants, such as motor vehicles. NATA estimates the cancer risks from breathing these air toxics over a lifetime.[^NATAoverview] 
+
+The analysis of air toxics cancer risk presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides lifetime cancer risk from inhalation of air toxics, as risk-in-1 million, at the Census Block Group level for 2014, the latest year of data available from the National Air Toxics Assessment. 
+
+Air Toxics Cancer Risk are concentrated in the southeast, between Nashua and Lebanon, and between Seabrook and Portsmouth (see Figure \@ref(fig:mapATCNE) below).
+
+```{r mapATCNE, fig.align = "center", fig.cap="Map of 2014 lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across New Hampshire at Census Block Group level."}
+
+# Map of DPM across New Hampshire
+m12 <- nh_blkgrp_sf %>% 
+  tm_shape(., unit = "mi") + 
+  tm_fill("CANCER_19", style = "fisher", n = 5,
+          title = "Risk-in-1 million",
+          legend.hist = FALSE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=1)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Annual Lifetime \nCancer Risk from \nInhalation of Air Toxics\n2014", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+
+tmap_save(m12, "DATA/EJSCREEN/nh_Cancer.png",
+          height = 7, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/EJSCREEN/nh_Cancer.png")
+```
+
+There appear to be significant spatial clusters of high lifetime cancer risk from inhalation of air toxics centered on Nashua and Manchester (see Figure \@ref(fig:hotspotATCRI) below).
+
+```{r hotspotATCRI, fig.align = "center", fig.cap="Hot spot map of 2014 lifetime cancer risk from inhalation of air toxics at Census Block Group level."}
+# Get rid of empty geometries and NAs, and convert to spdf
+empty_geo <- st_is_empty(nh_blkgrp_sf)
+ne_blkgrp_sp_DemoEJ <- nh_blkgrp_sf[!empty_geo,] %>%
+  dplyr::select(GEOID,CANCER_19) %>% 
+  # st_transform(., crs = 2163) %>% # convert to US National Atlas Equal Area
+  na.omit() %>% 
+  as_Spatial()
+# Calculate Queen's case neighbors
+neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
+# Compute neighbor weights
+# spdep::set.ZeroPolicyOption(TRUE)
+listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
+# compute Getis-Ord Gi statistic
+local_g <- localG(ne_blkgrp_sp_DemoEJ$CANCER_19, listw)
+local_g <- cbind(ne_blkgrp_sp_DemoEJ, as.matrix(local_g))
+names(local_g)[3] <- "gstat"
+# map the results
+m13 <- tm_shape(local_g, unit = "mi",) + 
+  tm_fill("gstat",
+          palette = "-RdBu", 
+          style = "pretty",
+          title = expression(paste("Getis-Ord ", G[i]^"*")),
+          showNA = FALSE,
+          midpoint = NA,
+          labels = c("Significant Clusters","of Low Values", "", "","Significant Clusters","of High Values"),
+          legend.show = FALSE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_add_legend(type = "fill", 
+                title = "Getis-Ord Hot Spot\nClassification",
+                labels = c("Significant Clusters","of High Values", "","No Significant Clusters", "","Significant Clusters","of Low Values"),
+                col = c("#B2182B","#EF8A62","#FDDBC7","#F7F7F7",
+                        "#D1E5F0","#67A9CF","#2166AC"),
+                border.col = "white", border.alpha = 0) +
+  tm_layout(title = "Hot Spot Map \nof Air Toxics \nCancer Risk for \nNew Hampshire", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m13, "DATA/EJSCREEN/nh_CancerHotspot.png",
+          height = 7, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/EJSCREEN/nh_CancerHotspot.png")
+```
+\pagebreak
+Lifetime cancer risk from inhalation of air toxics varies across the state (see Table \@ref(tab:statsATCNE) and Figure \@ref(fig:boxplotATCNE) below).  
+
+```{r statsATCNE, fig.align = "center", fig.cap="Annual 2014 lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across New Hampshire at Census Block Group level."}
+nh_blkgrp_sf %>%
+  as.data.frame() %>% 
+  summarize(Mean = round(mean(CANCER_19, na.rm = TRUE),1),
+            Median = round(median(CANCER_19, na.rm = TRUE),1),
+            Min = round(min(CANCER_19, na.rm = TRUE),1),
+            Max = round(max(CANCER_19, na.rm = TRUE),1)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    caption = "Cancer Risk from Inhalation of Air Toxics by Census block group (risk-in-1 million)", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
+```{r CANCERoutliers, include=FALSE}
+# # download municipal polygons
+# nh_towns_sf <- county_subdivisions("NH") %>% 
+#   select(NAME) %>% 
+#   st_transform(., crs = st_crs(nh_blkgrp_maxCO2))
+
+# extract block groups centroid with highest and lowest CO2 values, intersect with town polygons, and pull out town name
+nh_town_maxCancer <- nh_blkgrp_sf %>% 
+  filter(CANCER_19 == max(CANCER_19,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  filter(row_number() == 1) %>% 
+  pull(., NAME)
+
+nh_town_minCaner <- nh_blkgrp_sf %>% 
+  filter(CANCER_19 == min(CANCER_19,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  filter(row_number() == 1) %>% 
+  pull(., NAME)
+```
+
+The Block Group with highest cancer risk value in the state is found in `r nh_town_maxCancer` and the lowest is found in `r nh_town_minCaner`.
+
+Figure \@ref(fig:boxplotATCNE) is a boxplot of cancer risk by Block Group . The box represents risk values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median lifetime cancer risk value for all Block Groups, which in this case is `r round(median(nh_blkgrp_sf$CANCER_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group.  
+
+```{r boxplotATCNE, fig.align = "center", fig.cap="Boxplot of lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across New Hampshire by state at Census Block Group level. 1 dot = 1 Block Group."}
+# boxplot of lifetime cancer risk by state for 2014
+nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  drop_na(CANCER_19) %>% 
+  ggplot(aes(x = STATE, y = CANCER_19, fill = STATE)) + 
+  geom_boxplot() + 
+  geom_jitter(color = "black", size = 0.4, alpha = 0.6) +
+  ggtitle("Lifetime Cancer Risk from \nInhalation of Air Toxics \nby Census block group, 2014") +
+  theme_minimal() +
+  theme(legend.position = "none", axis.text=element_text(size=8)) + 
+  xlab(NULL) + 
+  ylab("risk in-1 million") +
+  coord_flip()
+```
+
+
+### Lifetime Cancer Risk from Inhalation of Air Toxics in New Hampshire and Populations of Concern
+
+In addition to variations in the general geography of Lifetime Cancer Risk from Inhalation of Air Toxics, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvgRI) below shows population-weighted exposures for populations of concern relative to average Lifetime Cancer Risk from Inhalation of Air Toxics for the state. For example, limited English households in New Hampshire experience lifetime cancer risks from inhalation of air toxics that are more than 13% above the state as a whole. Similarly, minorities experience lifetime cancer risks more than 8% above the state average. By contrast, persons over age 64 are exposed to concentrations below the state average. 
+
+```{r barplotATCPopAvgRI, fig.align = "center", fig.cap="Population-weighted average lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across New Hampshire at Census Block Group level relative to the state average."}
+# Pop Weighted avg of DPM for all Groups in New Hampshire relative to NE average
+nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over64E,
+                CANCER_19) %>% 
+  gather(key = Group, value = Pop, totalpopE:over64E) %>% 
+  group_by(Group) %>% 
+  summarize(DPMwMean = weighted.mean(x = CANCER_19, w = Pop, na.rm = TRUE),
+            DPMMean = mean(CANCER_19, na.rm = TRUE)) %>% 
+  spread(key = Group, value = DPMwMean) %>% 
+  transmute(Minority = (minorityE/DPMMean - 1)*100,
+         #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+         `Limited English HH` = (eng_limitE/DPMMean - 1)*100,
+         `Low Income` = (num2povE/DPMMean - 1)*100,
+         `No HS Dip` = (lthsE/DPMMean - 1)*100,
+         `Under 5` = (under5E/DPMMean - 1)*100,
+         `Over 64` = (over64E/DPMMean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group,Pct), 
+             y = Pct)) +
+  geom_segment(aes(x = reorder(Group,Pct), 
+                   xend = reorder(Group,Pct),
+                   y = 0, yend = Pct), 
+               color = "skyblue") +
+  geom_point(color = "blue", size = 4, alpha = 0.8) +
+  coord_flip() + xlab("") + ylab("") + 
+  ggtitle("Population-Weighted Average Lifetime Cancer Risk \n(relative to New Hampshire average)") + theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,1),"%")), 
+            hjust = 1.2, vjust = -.8, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_text(aes(x = "Under 5", y = 5, label = "Above state avg"),
+            color = "gray48") +
+  geom_segment(aes(x = "Low Income", xend = "Low Income", y = 1, yend = 5), 
+               arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-3,15))
+```
+
+There is a moderately positive correlation between the proportions of minorities and cancer risk (see Appendix).
+
+
+\pagebreak
+## Respiratory Hazard Index in New Hampshire
+
+Respiratory hazard from air toxics refers to noncancer effects caused by a lifetime of exposure to air toxics listed as Hazardous Air Pollutants (HAPs).[^NATAoverview] EPA's National Air Toxics Assessment (NATA) program calculates a hazard quotient, which is the ratio of ambient air concentration to a chemical’s health-based reference concentration (RfC). No adverse health effects are expected from exposure if the hazard quotient is less than one. This hazard quotient represents the cumulative impacts of all the relevant air toxics for which respiratory effects were the key health effect.[^NATARfC]
+
+The analysis of respiratory hazard presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides respiratory hazard, as a ratio of exposure concentration to a health-based reference concentration (RfC), at the Census Block Group level for 2014, the latest year of data available from the National Air Toxics Assessment.
+
+Higher Respiratory Hazard Indices are concentrated in the southeast, between Nashua and Concoard, and between Seabrook and Portsmouth (see Figure \@ref(fig:mapRHIRI) below). 
+
+```{r mapRHIRI, fig.align = "center", fig.cap="Map of 2014 respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across New Hampshire at Census Block Group level."}
+
+# Map of RHI across New Hampshire
+m14 <- nh_blkgrp_sf %>% 
+  tm_shape(., unit = "mi") + 
+  tm_fill("RESP_19", style = "quantile", 
+          title = "Ratio of exposure to \nhealth-based reference \nconcentration",
+          legend.hist = FALSE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=2)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Annual Respiratory \nHazard Index from \nInhalation of\nAir Toxics\n2014", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+
+tmap_save(m14, "DATA/EJSCREEN/nh_RespHzrd.png",
+          height = 7, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/EJSCREEN/nh_RespHzrd.png")
+```
+
+There appear to be significant spatial clusters of high indices of respiratory hazard index from inhalation of air toxics between Nashua and Concord, and around Portsmouth (see Figure \@ref(fig:hotspotRHIRI) below).
+
+```{r hotspotRHIRI, fig.align = "center", fig.cap="Hot spot map of 2014 respiratory hazard index from inhalation of air toxics at Census Block Group level."}
+# Get rid of empty geometries and NAs, and convert to spdf
+empty_geo <- st_is_empty(nh_blkgrp_sf)
+ne_blkgrp_sp_DemoEJ <- nh_blkgrp_sf[!empty_geo,] %>%
+  dplyr::select(GEOID,RESP_19) %>% 
+  # st_transform(., crs = 2163) %>% # convert to US National Atlas Equal Area
+  na.omit() %>% 
+  as_Spatial()
+# Calculate Queen's case neighbors
+neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
+# Compute neighbor weights
+# spdep::set.ZeroPolicyOption(TRUE)
+listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
+# compute Getis-Ord Gi statistic
+local_g <- localG(ne_blkgrp_sp_DemoEJ$RESP_19, listw)
+local_g <- cbind(ne_blkgrp_sp_DemoEJ, as.matrix(local_g))
+names(local_g)[3] <- "gstat"
+# map the results
+m15 <- tm_shape(local_g, unit = "mi",) + 
+  tm_fill("gstat",
+          palette = "-RdBu", 
+          style = "pretty",
+          title = expression(paste("Getis-Ord ", G[i]^"*")),
+          showNA = FALSE,
+          midpoint = NA,
+          labels = c("Significant Clusters","of Low Values", "","","", "","Significant Clusters","of High Values"),
+          legend.show = FALSE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_add_legend(type = "fill", 
+                title = "Getis-Ord Hot Spot\nClassification",
+                labels = c("Significant Clusters","of High Values", "","No Significant Clusters", "","Significant Clusters","of Low Values"),
+                col = c("#B2182B","#EF8A62","#FDDBC7","#F7F7F7",
+                        "#D1E5F0","#67A9CF","#2166AC"),
+                border.col = "white", border.alpha = 0) +
+  tm_layout(title = "Hot Spot Map of \nRespiratory \nHazard Index \nfor New Hampshire", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m15, "DATA/EJSCREEN/nh_RespHzrdHotspot.png",
+          height = 7, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/EJSCREEN/nh_RespHzrdHotspot.png")
+```
+
+Respiratory hazard indices from inhalation of air toxics vary across the state (see Table \@ref(tab:statsRHIRI) and Figure \@ref(fig:boxplotRHIRI) below).   
+
+```{r statsRHIRI, fig.align = "center", fig.cap="Annual 2014 respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across New Hampshire at Census Block Group level."}
+nh_blkgrp_sf %>%
+  as.data.frame() %>% 
+  # group_by(STATE) %>% 
+  summarize(Mean = round(mean(RESP_19, na.rm = TRUE),2),
+            Median = round(median(RESP_19, na.rm = TRUE),2),
+            Min = round(min(RESP_19, na.rm = TRUE),2),
+            Max = round(max(RESP_19, na.rm = TRUE),2)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    caption = "Respiratory Hazard Index from Inhalation of Air Toxics by Census block group (ratio of exposure concentration to health-based reference concentration)", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
+```{r RespHazardoutliers, include=FALSE}
+# # download municipal polygons
+# nh_towns_sf <- county_subdivisions("NH") %>% 
+#   select(NAME) %>% 
+#   st_transform(., crs = st_crs(nh_blkgrp_maxCO2))
+
+# extract block groups centroid with highest and lowest values, intersect with town polygons, and pull out town name
+nh_town_maxRESP <- nh_blkgrp_sf %>% 
+  filter(RESP_19 == max(RESP_19,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  filter(row_number() == 1) %>% 
+  pull(., NAME)
+
+nh_town_minRESP <- nh_blkgrp_sf %>% 
+  filter(RESP_19 == min(RESP_19,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  filter(row_number() == 1) %>% 
+  pull(., NAME)
+```
+
+The Block Group with highest respiratory hazard index value in the state is found in `r nh_town_maxRESP` and the lowest is found in `r nh_town_minRESP`.
+
+Figure \@ref(fig:boxplotRHIRI) is a boxplot of respiratory hazard indices by Block Group . The box represents index values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median respiratory hazard index value for all Block Groups, which in this case is `r round(median(nh_blkgrp_sf$RESP_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group.    
+
+```{r boxplotRHIRI, fig.align = "center", fig.cap="Boxplot of respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across New Hampshire by state at Census Block Group level. 1 dot = 1 Block Group."}
+# boxplot of lifetime cancer risk by state for 2014
+nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  drop_na(RESP_19) %>% 
+  ggplot(aes(x = STATE, y = RESP_19, fill = STATE)) + 
+  geom_boxplot() + 
+  geom_jitter(color = "black", size = 0.4, alpha = 0.6) +
+  ggtitle("Respiratory Hazard Index from Inhalation of \nAir Toxics by Census block group, 2017") +
+  theme_minimal() +
+  theme(legend.position = "none", axis.text=element_text(size=8)) + 
+  xlab(NULL) + 
+  ylab("RfC") +
+  coord_flip()
+```
+
+
+### Respiratory Hazard Index from Inhalation of Air Toxics in New Hampshire and Populations of Concern
+
+In addition to variations in the general geography of the Respitory Hazard Index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvgRI) below shows population-weighted exposures for populations of concern relative to average Respiratory Hazard Index from Inhalation of Air Toxics for the state. For example, limited English households in New Hampshire experience respiratory hazard indices from inhalation of air toxics that are over 15% above the state as a whole. Similarly, minorities experience lifetime hazard index values more than 9% above the state average. By contrast, persons over age 64 are exposed to an avearge hazard index below the state average. 
+
+```{r barplotRHIPopAvgRI, fig.align = "center", fig.cap="Population-weighted average respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across New Hampshire at Census Block Group level relative to the regional average."}
+# Pop Weighted avg of RHI for all Groups in New Hampshire relative to NE average
+nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over64E,
+                RESP_19) %>% 
+  gather(key = Group, value = Pop, totalpopE:over64E) %>% 
+  group_by(Group) %>% 
+  summarize(RESPwMean = weighted.mean(x = RESP_19, w = Pop, na.rm = TRUE),
+            RESPMean = mean(RESP_19, na.rm = TRUE)) %>% 
+  spread(key = Group, value = RESPwMean) %>% 
+  transmute(Minority = (minorityE/RESPMean - 1)*100,
+         #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+         `Limited English HH` = (eng_limitE/RESPMean - 1)*100,
+         `Low Income` = (num2povE/RESPMean - 1)*100,
+         `No HS Dip` = (lthsE/RESPMean - 1)*100,
+         `Under 5` = (under5E/RESPMean - 1)*100,
+         `Over 64` = (over64E/RESPMean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group,Pct), 
+             y = Pct)) +
+  geom_segment(aes(x = reorder(Group,Pct), 
+                   xend = reorder(Group,Pct),
+                   y = 0, yend = Pct), 
+               color = "skyblue") +
+  geom_point(color = "blue", size = 4, alpha = 0.8) +
+  coord_flip() + xlab("") + ylab("") + 
+  ggtitle("Population-Weighted Average Respiratory Hazard Index \n(relative to New Hampshire average)") + theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,1),"%")), 
+            hjust = 1.4, vjust = -.8, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_text(aes(x = "Under 5", y = 5, label = "Above state avg"),
+            color = "gray48") +
+  geom_segment(aes(x = "Low Income", xend = "Low Income", y = 1, yend = 5), 
+               arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-5,16))
+```
+
+There is a moderate positive correlation between the proportions of minorities and respiratory hazard index (see Appendix).
+
+
+\pagebreak
+## Traffic Proximity and Volume in New Hampshire
+
+Proximity to motor vehicle traffic is associated with greater exposure to toxic gases and particulate matter, as well as increased noise. Vehicle-related emissions include ultrafine particulates and other components of PM~2.5~, lead and other metals, air toxics such as benzene, nitrogen oxides (NO~x~), hydrocarbons and carbon monoxide (CO), as well as precursors that add to the formation of ground level ozone (O~3~) and smog. Research has repeatedly shown that living near highly trafficked roads is related to increased risk of a variety of adverse health outcomes, including asthma, cardiovascular disease, hypertension, stroke, stress, and increased rates of mortality. EPA’s 2005 National Air Toxics Assessment (NATA) estimated that mobile emissions accounted for about 30% of average cancer risk from Hazardous Air Pollutants.[^EJSCREENTraffic]
+
+EPA's EJSCREEN provides an indicator of traffic exposure measured as residential proximity to roads weighted by traffic volume. More specifically, EJSCREEN's Traffic Proximity and Volume indicator is a count of vehicles (average annual daily traffic) at major roads within 500 meters of residential areas (i.e., Census Blocks) divided by distance in kilometers (km).[^EPATraffic] For example, a residential area at 100 meters distance from a single highway with 33,000 AADT (average annual daily traffic) would result in a score of 33,000/100=330, which is approximately the median person’s block group traffic proximity indicator value in New England. The Traffic Proximity and Volume indicator values are aggregated at the Census Block Group level. 
+
+Exposure to high annual daily traffic volume is concentrated along major traffic corridors, as well as within larger municipalities (see Figure \@ref(fig:mapTPVRI) below). 
+
+```{r mapTPVRI, fig.align = "center", fig.cap="Map of 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across New Hampshire at Census Block Group level."}
+
+# Map of TPV across New Hampshire
+m16 <- nh_blkgrp_sf %>% 
+  tm_shape(., unit = "mi") + 
+  tm_fill("PTRAF_19", style = "quantile", 
+          title = "AADT/Distance(km)",
+          legend.hist = FALSE,
+          colorNA = NULL,
+          textNA = NULL,
+          legend.format=list(list(digits=1)),
+          legend.is.portrait = TRUE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Annual Traffic \nProximity and Volume \n2017", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            legend.hist.width = 0.9)
+
+tmap_save(m16, "DATA/EJSCREEN/nh_Traffic.png",
+          height = 7, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/EJSCREEN/nh_Traffic.png")
+```
+
+There appear to be significant spatial clusters of traffic proximity and volume in Nashua and Manchester (see Figure \@ref(fig:hotspotTPVRI) below).
+
+```{r hotspotTPVRI, fig.align = "center", fig.cap="Hot spot map of 2017 traffic proximity and volume at Census Block Group level."}
+# Get rid of empty geometries and NAs, and convert to spdf
+empty_geo <- st_is_empty(nh_blkgrp_sf)
+ne_blkgrp_sp_DemoEJ <- nh_blkgrp_sf[!empty_geo,] %>%
+  dplyr::select(GEOID,PTRAF_19) %>% 
+  # st_transform(., crs = 2163) %>% # convert to US National Atlas Equal Area
+  na.omit() %>% 
+  as_Spatial()
+# Calculate Queen's case neighbors
+neighborsQC <- poly2nb(ne_blkgrp_sp_DemoEJ, queen = TRUE)
+# Compute neighbor weights
+# spdep::set.ZeroPolicyOption(TRUE)
+listw <- nb2listw(neighborsQC, style = "W", zero.policy = TRUE)
+# compute Getis-Ord Gi statistic
+local_g <- localG(ne_blkgrp_sp_DemoEJ$PTRAF_19, listw)
+local_g <- cbind(ne_blkgrp_sp_DemoEJ, as.matrix(local_g))
+names(local_g)[3] <- "gstat"
+# map the results
+m17 <- tm_shape(local_g, unit = "mi",) + 
+  tm_fill("gstat",
+          palette = "-RdBu", 
+          style = "pretty",
+          title = expression(paste("Getis-Ord ", G[i]^"*")),
+          showNA = FALSE,
+          midpoint = NA,
+          labels = c("Significant Clusters","of Low Values", "","","", "","Significant Clusters","of High Values"),
+          legend.show = FALSE) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.2) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_add_legend(type = "fill", 
+                title = "Getis-Ord Hot Spot\nClassification",
+                labels = c("Significant Clusters","of High Values", "","No Significant Clusters", "","Significant Clusters","of Low Values"),
+                col = c("#B2182B","#EF8A62","#FDDBC7","#F7F7F7",
+                        "#D1E5F0","#67A9CF","#2166AC"),
+                border.col = "white", border.alpha = 0) +
+  tm_layout(title = "Hot Spot Map of \nTraffic Proximity \nand Volume \nfor New Hampshire", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m17, "DATA/EJSCREEN/nh_TrafficHotspot.png",
+          height = 7, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/EJSCREEN/nh_TrafficHotspot.png")
+```
+
+Traffic Proximity and Volume exposure vary across the state (see Table \@ref(tab:statsTPVRI) and Figure \@ref(fig:boxplotTPVRI) below).   
+
+```{r statsTPVRI, fig.align = "center", fig.cap="Annual 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across New Hampshire at Census Block Group level."}
+nh_blkgrp_sf %>%
+  as.data.frame() %>% 
+  drop_na(PTRAF_19) %>% 
+  # group_by(STATE) %>% 
+  summarize(Mean = round(mean(PTRAF_19, na.rm = TRUE),0),
+            Median = round(median(PTRAF_19, na.rm = TRUE),0),
+            Min = round(min(PTRAF_19, na.rm = TRUE),0),
+            Max = round(max(PTRAF_19, na.rm = TRUE),0)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    caption = "Annual traffic proximity and volume (AADT/Distance(km))", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
+```{r Trafficoutliers, include=FALSE}
+# # download municipal polygons
+# nh_towns_sf <- county_subdivisions("NH") %>% 
+#   select(NAME) %>% 
+#   st_transform(., crs = st_crs(nh_blkgrp_maxCO2))
+
+# extract block groups centroid with highest and lowest values, intersect with town polygons, and pull out town name
+nh_town_maxTraffic <- nh_blkgrp_sf %>% 
+  filter(PTRAF_19 == max(PTRAF_19,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  filter(row_number() == 1) %>% 
+  pull(., NAME)
+
+nh_town_minTraffic <- nh_blkgrp_sf %>% 
+  filter(PTRAF_19 == min(PTRAF_19,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  filter(row_number() == 1) %>% 
+  pull(., NAME)
+```
+
+The Block Group with highest Traffic Proximity and Volume value in the state is found in `r nh_town_maxTraffic` and the lowest is found in `r nh_town_minTraffic`.
+
+Figure \@ref(fig:boxplotTPVRI) is a boxplot of Traffic Proximity and Volume values by Block Group . The box represents values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median Traffic Proximity and Volume value for all Block Groups, which in this case is `r round(median(nh_blkgrp_sf$PTRAF_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large black dots represent outliers, or unusually high values.  
+
+```{r boxplotTPVRI, fig.align = "center", fig.cap="Boxplot of 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across New Hampshire at Census Block Group level."}
+# boxplot of traffic proximity and volume by state for 2017
+nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = STATE, y = PTRAF_19, fill = STATE)) + 
+  geom_boxplot() + 
+  geom_jitter(color = "black", size = 0.4, alpha = 0.6) +
+  ggtitle("Traffic Proximity and Volume by Census block group, 2017") +
+  theme_minimal() +
+  theme(legend.position = "none", axis.text=element_text(size=8)) + 
+  xlab(NULL) + 
+  ylab("AADT/Distance(km)") +
+  coord_flip()
+```
+
+
+### Traffic Proximity and Volume Exposure in New Hampshire and Populations of Concern
+
+In addition to variations in the general geography of the Traffic Proximity and Volume exposure, this exposure also varies demographically. Figure \@ref(fig:barplotTPVPopAvgNE) below shows population-weighted exposures for populations of concern relative to average Traffic Proximity and Volume for the state. For example, minorities are exposed to Traffic Proximity and Volume more than 137% above the state average. By contrast, persons over age 64 are, on average, are exposed to Traffic Proximity and Volume of more than 22% below the state average. 
+
+```{r barplotTPVPopAvgNE, fig.align = "center", fig.cap="Population-weighted average Traffic Proximity and Volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across New Hampshire at Census Block Group level relative to the state average."}
+# Pop Weighted avg of TPV for all Groups in New Hampshire relative to NE average
+nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  dplyr::select(totalpopE,
+                nhwhitepopE,
+                minorityE,
+                nhblackpopE,
+                nhamerindpopE,
+                nhasianpopE,
+                nhnativhpopE,
+                nhotherpopE,
+                nh2morepopE,
+                hisppopE,
+                povknownE,
+                num2povE, 
+                eng_hhE,
+                eng_limitE,
+                age25upE,
+                lthsE, 
+                allAgesE, 
+                under5E, 
+                over64E,
+                PTRAF_19) %>% 
+  gather(key = Group, value = Pop, totalpopE:over64E) %>% 
+  group_by(Group) %>% 
+  summarize(DPMwMean = weighted.mean(x = PTRAF_19, w = Pop, na.rm = TRUE),
+            DPMMean = mean(PTRAF_19, na.rm = TRUE)) %>% 
+  spread(key = Group, value = DPMwMean) %>% 
+  transmute(Minority = (minorityE/DPMMean - 1)*100,
+         #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
+         `Limited English HH` = (eng_limitE/DPMMean - 1)*100,
+         `Low Income` = (num2povE/DPMMean - 1)*100,
+         `No HS Dip` = (lthsE/DPMMean - 1)*100,
+         `Under 5` = (under5E/DPMMean - 1)*100,
+         `Over 64` = (over64E/DPMMean - 1)*100) %>%
+  gather(key = Group, value = Pct) %>% 
+  ggplot(aes(x = reorder(Group,Pct), 
+             y = Pct)) +
+  geom_segment(aes(x = reorder(Group,Pct), 
+                   xend = reorder(Group,Pct),
+                   y = 0, yend = Pct), 
+               color = "skyblue") +
+  geom_point(color = "blue", size = 4, alpha = 0.8) +
+  coord_flip() + xlab("") + ylab("") + 
+  ggtitle("Population-Weighted Average Traffic Proximity and\nVolume (relative to New Hampshire average)") + theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
+  geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
+                label = paste0(round(Pct,1),"%")), 
+            hjust = 1.1, vjust = -.8, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_text(aes(x = "Low Income", y = 60, label = "Above state avg"),
+            color = "gray48") +
+  geom_segment(aes(x = "No HS Dip", xend = "No HS Dip", y = 30, yend = 60), 
+               arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-30,150))
+```
+
+There is a moderate positive correlation between the proportions of minorities and traffic proximity and volume (see Appendix).
+
+[^EJSCREEN]: U.S. Environmental Protection Agency (EPA), 2019. EJSCREEN Technical Documentation. For more information see www.epa.gov/ejscreen
+
+[^EPAPM10]: See EPA Particulate Matter (PM) Basics. https://www.epa.gov/pm-pollution/particulate-matter-pm-basics
+
+[^EPAPM25standards]: An area would meet the primary standard if the three-year average of its annual average PM~2.5~ concentration is less than or equal to the level of the standard. See EPA National Ambient Air Quality Standards (NAAQS) for PM. https://www.epa.gov/pm-pollution/national-ambient-air-quality-standards-naaqs-pm
+
+[^EPAPM10risk]: See EPA SUMMARY OF PROPOSAL TO RETAIN THE AIR QUALITY STANDARDS FOR PARTICLE POLLUTION. https://www.epa.gov/sites/production/files/2020-04/documents/fanh_sheet_pm_naaqs_proposal.pdf
+
+[^LOWPM25research]: See Liuhua Shi, Antonella Zanobetti, Itai Kloog, Brent A. Coull, Petros Koutrakis, Steven J. Melly, and Joel D. Schwartz. 2016. Low-Concentration PM2.5 and Mortality: Estimating Acute and Chronic Effects in a Population-Based Study. Environmental Health Perspectives 124:1 CID: https://doi.org/10.1289/ehp.1409111 
+
+[^NOTO3hole]: Tropospheric, or ground-level ozone, is not to be confused with the stratospheric ozone layer. The latter occurs naturally high in the atmosphere and protects us from ultraviolet radiation.
+
+[^O3risks]: See EPA Health Effects of Ozone Pollution. https://www.epa.gov/ground-level-ozone-pollution/health-effects-ozone-pollution
+
+[^IPMRP]: See Letter to US EPA Administrator regarding Advice from the Independent Particulate Matter Review Panel (formerly EPA CASAC Particulate Matter Review Panel) on EPA’s Policy Assessment for the Review of the National Ambient Air Quality Standards for Particulate Matter (External Review Draft –September 2019). https://ucs-documents.s3.amazonaws.com/science-and-democracy/IPMRP-FINAL-LETTER-ON-DRAFT-PA-191022.pdf
+
+[^EPAO3standards]: An area would meet the primary standard if the fourth-highest daily maximum 8-hour average of ozone, averaged across three consecutive years, is less than equal to the standard. See EPA 2015 National Ambient Air Quality Standards (NAAQS) for Ozone. https://www.epa.gov/ground-level-ozone-pollution/2015-national-ambient-air-quality-standards-naaqs-ozone
+
+[^EPAO3lowerlimit]: See U.S. EPA. (2006). Air Quality Criteria for Ozone and Related Photochemical Oxidants. Washington, DC. http://cfpub.epa.gov/ncea/cfm/recordisplay.cfm?deid=149923.
+
+[^NONATTAINMENT]: Note that the EJSCREEN values do not directly indicate nonattainment of the NAAQS standard because the EJSCREEN data is based on estimates from a combination of modeling and monitoring for a single year, while nonattainment is determined for a large area (often a county) based on three years of monitoring data. For example, five counties in New Hampshire have been designated as "nonattainment" status for NAAQS ozone standards as of March 2020. For a list of nonattainment counties see EPA 8-Hour Ozone Designated Area State/Area/County Report. https://www3.epa.gov/airquality/greenbook/jbcs.html#RI 
+
+[^UCSO3]: See Union of Concerned Scientists. Climate Change and Your Health: Rising temperatures worsening ozone pollution. https://www.nrcm.org/wp-content/uploads/2013/09/UCS_climate_health_impact6.1.11.pdf
+
+[^GHGInventory]: See EPA Inventory of U.S. Greenhouse Gas Emissions and Sinks. https://www.epa.gov/ghgemissions/inventory-us-greenhouse-gas-emissions-and-sinks
+
+[^GWFAQ]: See Union of Concerned Scientists. Global Warming FAQ. https://www.ucsusa.org/resources/global-warming-faq
+
+[^IPCC]: See IPCC. Summary for Policymakers of IPCC Special Report on Global Warming of 1.5°C approved by governments. https://www.ipcc.ch/2018/10/08/summary-for-policymakers-of-ipcc-special-report-on-global-warming-of-1-5c-approved-by-governments/
+
+[^DARTE]: Gately, C., L.R. Hutyra, and I.S. Wing. 2019. DARTE Annual On-road CO2 Emissions on a 1-km Grid, Conterminous USA, V2, 1980-2017. ORNL DAAC, Oak Ridge, Tennessee, USA. https://doi.org/10.3334/ORNLDAAC/1735
+
+[^DPMcalEPA]: See CalEPA Office of Environmental Health Hazard Assessment and the American Lung Association. Health Effects of Diesel Exhaust. https://oehha.ca.gov/media/downloads/calenviroscreen/indicators/diesel4-02.pdf
+
+[^NATA2014]: See 2014 NATA Technical Support Document. https://www.epa.gov/sites/production/files/2018-09/documents/2014_nata_technical_support_document.pdf
+
+[^CAFECO2rule]: See The Safer Affordable Fuel Efficient (SAFE) Vehicles Final Rule for Model Years 2021-2026. https://www.epa.gov/regulations-emissions-vehicles-and-engines/safer-affordable-fuel-efficient-safe-vehicles-final-rule
+
+[^NATAoverview]: National Air Toxics Assessment Overview. https://www.epa.gov/national-air-toxics-assessment/nata-overview
+
+[^NATARfC]: See "Characterizing Effects of Air Toxics" in Technical Support Document: EPA’s 2014 National Air Toxics Assessment. https://www.epa.gov/national-air-toxics-assessment/2014-nata-technical-support-document
+
+[^EPATraffic]: Measures of traffic proximity in EJSCREEN are based on average annual daily traffic (AADT) estimates in the Highway Performance Monitoring System (HPMS) dataset in the Department of Transportation (DOT) National Transportation Atlas Database (NTAD).
+
+[^EJSCREENTraffic]: See "Details on Environmental Indicators: Traffic Proximity" in  EJSCREEN Environmental Justice Mapping and Screening Tool: EJSCREEN Technical Documentation 2019. www.epa.gov/ejscreen
+
+\pagebreak
+# Appendix A: Data and Methodology {-}
+
+The analyses presented here are based on data from three sources:
+
+* U.S. EPA's EJSCREEN
+  + PM~2.5~
+  + Ozone (O~3~)
+  + Diesel Particulate Matter
+  + Air Toxics Cancer Risk
+  + Respiratory Hazard Index from Air Toxics
+  + Traffic Proximity and Volume
+* Database of Road Transportation Emissions (DARTE)
+  + On-road Carbon Dioxide (CO~2~) Emissions
+* American Community Survey 5-year Estimates
+  + Population demographics
+ 
+## EPA's EJSCREEN {-}
+
+The U.S. EPA's EJSCREEN is an online environmental justice mapping and screening tool that provides a "nationally consistent dataset and approach for combining environmental and demographic indicators."  EJSCREEN provides data on 11 environmental indicators, ranging across air, land, and water. The six indicators analyzed here were chosen based on their relationship to transportation sources, especially motor vehicles. Data for each indicator is available by Census Block Group across the U.S. The 2015 (earliest available) and 2019 (latest available) data sets were downloaded from https://www.epa.gov/ejscreen/download-ejscreen-data as CSV files and processed in R. 
+
+All data was analyzed or aggregated geographically by Census Tract and Block Group. A Census Tract is a small, relatively permanent statistical subdivision of a county that contains between 1,200 and 8,000 people. The entire area of a county is covered by Census Tracts, just as the entire area of a state is covered by counties and county equivalents. Census Tracts range in areal size depending on the population density; smaller in denser areas and larger in less densely populated areas. Census Block Groups are subdivisions of Census Tracts that contain between 600 and 3,000 people. Like Tracts, Block Groups range in areal size depending on the population density of the area. Block Groups are the smallest geographic unit at which detailed demographic and household data from the American Community Survey is made available by the Census.  
+
+Below is a summary of the measurement unit and source of each environmental indicator. For more detail on these data sources, see the EJSCREEN Environmental Justice Mapping and Screening Tool: EJSCREEN Technical Documentation 2019. www.epa.gov/ejscreen.
+
+### PM~2.5~ {-}
+
+PM~2.5~ refers to paticulate matter less than 2.5 microns (millionths of a meter) in diameter. PM~2.5~ ambient concentrations are measured as mass in micrograms (millionths of a gram) per cubic meter of air ($\mu$g/m^3^). Ambient concentrations are provided by Census Block Group across the U.S. These concentrations are estimated from a combination of monitoring data and air quality modeling. Ambient PM~2.5~ concentration is estimated by EPA’s Office of Research and Development using a Bayesian space–time downscaling fusion model approach. EPA’s Office of Air and Radiation originally estimated these concentrations at Census Tract level and then assigned the same values to all Block Groups within their respective Tracts. 
+
+PM~2.5~ data from EJSCREEN's 2019 data set is for 2016. PM~2.5~ data from EJSCREEN's 2015 data set is for 2011. 
+
+### Ozone (O~3~) {-}
+
+Ozone (O~3~) refers to ground level (i.e. Tropospheric) ozone formed as a result of chemical interactions between oxides of nitrogen (NO~x~) and volatile organic compounds (VOCs) in the presence of sunlight. Ambient concentrations of ozone are measured as a summer seasonal average (May to September) of daily maximum 8-hour concentration in air in parts per billion (ppb). Ambient concentrations are provided by Census Block Group across the U.S. These concentrations are estimated from a combination of monitoring data and air quality modeling. Ambient ozone concentration is estimated by EPA’s Office of Research and Development using a Bayesian space–time downscaling fusion model approach. EPA’s Office of Air and Radiation originally estimated these concentrations at Census Tract level and then assigned the same values to all Block Groups within their respective Tracts.
+
+Ozone data from EJSCREEN's 2019 data set is for 2016. Ozone data from EJSCREEN's 2015 data set is for 2011.
+
+### Diesel Particulate Matter {-}
+
+Diesel Particulate Matter (DPM) refers to particulate matter emitted in diesel exhaust and is typically used as a surrogate measure of diesel exhaust more generally. DPM ambient concentrations are measured as mass in micrograms (millionths of a gram) per cubic meter of air ($\mu$g/m^3^). Ambient concentrations are provided by Census Block Group across the U.S. These concentrations are estimated from EPA's National Air Toxics Assessment (NATA) program. NATA uses emissions estimates from the National Emissions Inventory (NEI), which is updated every three years. The NEI includes all of the Toxics Release Inventory (TRI) reporting facilities that release hazardous air pollutants, along with many other sources of air pollutants, such as motor vehicles. NATA estimates are at Tract resolution. Each Block Group was assigned the DPM score of the tract containing it.
+
+The 2019 version of EJSCREEN uses 2014 NATA data, which is based on NEI emissions estimates for 2014.
+
+### Air Toxics Cancer Risk {-}
+
+Air Toxics Cancer Risk refers to lifetime risk (i.e. over 70 years) of developing cancer as a result of breathing ambient levels of toxic or Hazardous Air Pollutants (HAPs). This risk is reported as the risk-in-1 million of developing cancer. EJSCREEN uses the most recent data from EPA’s National-Scale Air Toxics Assessment (NATA). NATA estimates cancer risk from the health implications of 138 air pollutants classified as HAPs. NATA uses emissions estimates from the National Emissions Inventory (NEI), which is updated every three years. The NEI includes all of the Toxics Release Inventory (TRI) reporting facilities that release hazardous air pollutants, along with many other sources of air pollutants, such as motor vehicles. NATA estimates are at Tract resolution. Each Block Group was assigned the hazard score of the tract containing it.
+
+The 2019 version of EJSCREEN uses 2014 NATA data, which is based on NEI emissions estimates for 2014. 
+
+### Respiratory Hazard Index {-}
+
+Respiratory Hazard Index refers to noncancer effects caused by a lifetime of exposure to air toxics listed as Hazardous Air Pollutants (HAPs). EPA's National Air Toxics Assessment (NATA) program calculates a hazard quotient, which is the ratio of ambient air concentration to a chemical’s health-based reference concentration (RfC). No adverse health effects are expected from exposure if the hazard quotient is less than one. This hazard quotient represents the cumulative impacts of all the relevant air toxics for which respiratory effects were the key health effect. NATA uses emissions estimates from the National Emissions Inventory (NEI), which is updated every three years. The NEI includes all of the Toxics Release Inventory (TRI) reporting facilities that release hazardous air pollutants, along with many other sources of air pollutants, such as motor vehicles. NATA estimates are at Tract resolution. Each Block Group was assigned the hazard score of the tract containing it.
+
+The 2019 version of EJSCREEN uses 2014 NATA data, which is based on NEI emissions estimates for 2014. 
+
+### Traffic Proimity and Volume {-}
+
+Traffic Proximity and Volume refers to an index of exposure to road traffic. This index is calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters of residential areas (i.e., Census
+Block centroids) divided by distance in kilometers (km). Traffic volume is based on average annual daily traffic (AADT) estimates in the Highway Performance Monitoring System (HPMS) dataset in the Department of Transportation (DOT) National Transportation Atlas Database (NTAD). Each Block Group was assigned a Traffic Proximity and Volume score based on a population-weighted average of the scores for the Census Blocks within the respective Block Group. 
+
+The 2019 version of EJSCREEN uses 2017 HPMS data.
+
+## Database of Road Transportation Emissions (DARTE) {-}
+
+The Database of Road Transportation Emissions (DARTE) is "the first nationally consistent inventory of US on-road CO2 emissions built from bottom-up source activity data and establishes a national benchmark for monitoring, reporting, and verification of emissions that are vital for regulating greenhouse gases." DARTE provides a 38-year, 1-km resolution inventory of annual on-road CO~2~ emissions for the conterminous United States based on roadway-level vehicle traffic data and state-specific emissions factors for multiple vehicle types on urban and rural roads as compiled in the Database of Road Transportation Emissions (DARTE). For more details about DARTE, see the User Guide for DARTE Annual On-road CO2 Emissions on a 1-km Grid, Conterminous USA, V2, 1980-2017 at https://daac.ornl.gov/cgi-bin/dsviewer.pl?ds_id=1735.
+
+### On-road Carbon Dioxide (CO~2~) Emissions {-}
+
+DARTE CO~2~ emissions data from the on-road transportation sector are provided annually for 1980-2017 as a continuous surface at a spatial resolution of 1km in the form of GeoTIFF files for each year. The same data is also provided  aggregated to U.S. 2010 Census Block Group polygons. Units of data are total emissions in kilograms CO~2~ per year for each Block Group. 
+
+For the purposes of this analysis, DARTE Block Group data for the years 1990 to 2017 was downloaded as a geodatabase and processed in R. 
+
+## American Community Survey 5-year Estimates {-}
+
+The American Community Survey (ACS) is an ongoing survey by the U.S. Census Bureau that provides information on a yearly basis about the U.S. and its people. The ACS provides detailed information on economic, housing, and demographic characteristics about the population that are not captured by the decennial Census. 
+
+The ACS provides greater demographic detail and temporal resolution than the decennial Census, but its geographic resolution is more limited. While the decennial Census is based on an enumeration (i.e., a total count) of everyone in the U.S. once every decade, the ACS is based on a statistical sample of approximately 3.5 million addresses across the country each year. As a result of this sampling approach, the ACS estimates must be pooled, or combined, across multiple years in order to provide reliable estimates for smaller areas (i.e. areas with less than 20,000 people), such as at the Tract or Block Group levels. While it is possible to know the number of low income households across the U.S. annually, one may only know this about a Tract or Block Group based on 5-year estimates. Since 2010, the ACS has published 5-year data (beginning with 2005–2009 estimates) for all geographic areas down to the census Tract and Block Group levels. For more detail on the ACS, see Understanding and Using American Community Survey Data: What All Data Users Need to Know at https://www.census.gov/programs-surveys/acs/guidance/handbooks/general.html.
+
+For the purposes of this analysis ACS 5-year estimates for the period 2013 - 2017 for Census Tracts and Block Groups in New England, as well as their associated TIGER/Line spatial files, were downloaded from the Census Bureau via API using the tigris package in R. Demographic variables consistent with those used by the EPA in EJSCREEN were chosen, as well as environmental justice population thresholds used by states where available. Table \@ref(tab:ACSvariables) below lists the demographic variables that were downloaded directly or computed from ACS variables:
+```{r ACSvariables}
+ACSvDF <- data.frame(Variable = c("Total Population",
+                                  "Minority",
+                                  "Low Income",
+                                  "Limited English Household",
+                                  "Less than High School Education",
+                                  "Under 5",
+                                  "Under 18",
+                                  "Over 64",
+                                  "Disabled",
+                                  "No Car Household",
+                                  "RI Income",
+                                  "MA Income",
+                                  "MA Limited English Household",
+                                  "MA Minority",
+                                  "RI Income",
+                                  "RI Minority"),
+                     Description = c("Total population",
+                                     "Persons of Hispanic or Latino origin or persons who are not White",
+                                     "People in households where the household income is less than or equal to twice the federal poverty level",
+                                     "People in households where all adults speak English less than \"very well\"",
+                                     "Adults 25 years+ with less than a high school education",
+                                     "Persons under 5 years of age",
+                                     "Persons under 18 years of age",
+                                     "Persons over 64 years of age",
+                                     "Persons 18 years+ with a disability",
+                                     "Households with no vehicle available",
+                                     "New Hampshire Low Income threshold: 30% or more people in households where the household income is less than or equal to twice the federal poverty level",
+                                     "Massachusetts Low Income threshold: 25% or more of households with median household incomes below 65% statewide median",
+                                     "Massachusetts Language Isolation threshold: 25% or more people in households where all adults speak English less than \"very well\"",
+                                     "Massachusetts Minority threshold: 25% or more are persons of Hispanic or Latino origin or persons who are not White",
+                                     "New Hampshire Low Income threshold: highest 15% of block groups with people in households where the household income is less than or equal to twice the federal poverty level",
+                                     "New Hampshire Minority threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
+                     'ACS Table ID' = c("B03002: Hispanic or Latino Origin by Race",
+                                "B03002: Hispanic or Latino Origin by Race",
+                                "C17002: Ratio of Income to Poverty Level",
+                                "C16002: Household Language by Household Limited English Speaking Status",
+                                "B15002: Sex by Educational Attainment",
+                                "B01001: Sex by Age",
+                                "B01001: Sex by Age",
+                                "B01001: Sex by Age",
+                                "B18101: Sex by Age by Disability Status",
+                                "B08201: Household Size by Vehicles Available",
+                                "C17002: Ratio of Income to Poverty Level",
+                                "B19001: Household Income",
+                                "C16002: Household Language by Household Limited English Speaking Status",
+                                "B03002: Hispanic or Latino Origin by Race",
+                                "C17002: Ratio of Income to Poverty Level",
+                                "B03002: Hispanic or Latino Origin by Race"),
+                     Geography = c("Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Tract",
+                                   "Tract",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group"))
+
+ACSvDF %>% 
+  kableExtra::kable(longtable = T, booktabs = T, 
+                    caption = "Demographic Variables", align = "l",
+                    col.names = c("Variable","Description","ACS Table ID","Geography")) %>% 
+  kableExtra::column_spec(2:3, width = "3cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+  
+```
+
+## Population-weighted averages {-}
+
+Wherever feasible, population exposure to pollutants or other risks is reported as a population-weighted average. A population weighted-average is equivalent to a weighted mean in which the raw values for which a mean (or average) is calculated are multiplied by a weight factor. For example, we are interested in knowing whether Minorities are exposed to higher average PM~2.5~ concentrations than the general or Total Population. Consider the table below.
+
+```{r wmean1}
+data.frame(BG = c("BG1","BG2","BG3","BG4"),
+           PM25 = c(2.5,6.2,10,5),
+           Minority = c(5,10,20,10),
+           NonMinority = c(20,12,5,10)) %>% 
+  mutate(TotalPop = Minority + NonMinority) %>% 
+  kableExtra::kable(longtable = T, booktabs = T, 
+                    caption = "Block Group Populations and PM2.5", align = "l") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
+Population numbers of minorities, as well as the total population, and PM~2.5~ concentrations, are each reported by Block Group. Since each Block Group is associated with one PM~2.5~ concentration value, we might assume (incorrectly) that everyone is equally exposed to the average PM~2.5~ values of all Block Groups - `r round(mean(c(2.5,6.2,10,5)),2)`. However, not all Block Groups have the same number of people, which means that each PM~2.5~ concentration value is associated with a different number of people. Do more Minorities occupy Block Groups with higher concentrations than the simple average would indicate?
+
+To calculate the population-weighted average PM~2.5~ exposure for Minorities, the number of Minorities in each Block Group is used as a 'weight'. The PM~2.5~ concentraions of each Block Group is multiplied by its respective number of Minorities. See the table below. The light gray column on the right is the product of PM~2.5~ values and Minority populations. 
+
+```{r wmean2}
+data.frame(BG = c("BG1","BG2","BG3","BG4"),
+           PM25 = c(2.5,6.2,10,5),
+           Minority = c(5,10,20,10),
+           NonMinority = c(20,12,5,10)) %>% 
+  mutate(TotalPop = Minority + NonMinority,
+         PM25xMinority = PM25*Minority) %>% 
+  bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
+  kableExtra::kable(longtable = T, booktabs = T, 
+                    caption = "Block Group Populations and PM2.5", align = "l") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header")) %>% 
+  kableExtra::row_spec(5, bold = TRUE) %>% 
+  kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
+```
+
+The total or sum of the products (i.e., Minority pop x PM~2.5~ concentrations) is then divided by the sum of the weights (i.e., total Minority), so that 324.5/45 = `r round(324.5/45,2)`. The result is a weighted average PM~2.5~ concentration that is influenced by the number of minorities. 
+
+This process is repeated for the Total Population so that the two population-weighted average PM~2.5~ concentrations can be compared. Below is the calculation of population-weighted calculation for the total population. 
+
+```{r wmean3}
+data.frame(BG = c("BG1","BG2","BG3","BG4"),
+           PM25 = c(2.5,6.2,10,5),
+           Minority = c(5,10,20,10),
+           NonMinority = c(20,12,5,10)) %>% 
+  mutate(TotalPop = Minority + NonMinority,
+         PM25xTotalPop = PM25*TotalPop) %>% 
+  bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
+  kableExtra::kable(longtable = T, booktabs = T, 
+                    caption = "Block Group Populations and PM2.5", align = "l") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header")) %>% 
+  kableExtra::row_spec(5, bold = TRUE) %>% 
+  kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
+```
+
+For the TotalPop, the population-weighted average of PM~2.5~ is 548.9/92 = `r round(548.9/92,2)`. Thus we can see that Minorities experience a higher population-weighted average PM~2.5~ concentration than the general or total population. 
+
+# Appendix B: Supplementary Figures {-}
+
+```{r cormatrixPollutants, fig.align = "center", fig.cap="Spearman's correlation matrix of pollutants by Census Block Group."}
+# Create a correlation matrix of PM25 and populations of concern
+corrPollutants <- nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  dplyr::transmute(PM2.5 = PM25_19, 
+                Ozone = OZONE_19, 
+                DPM = DSLPM_19, 
+                `CO2/km2` = kgco2_2017/bg_area_m2,
+                `Cancer Risk` = CANCER_19, 
+                `Resp Hazard Index` = RESP_19, 
+                `Traffic Exposure` = PTRAF_19) %>% 
+  drop_na() %>% 
+  cor(method = "spearman")
+# corr
+ggcorrplot(corrPollutants, hc.order = TRUE, type = "lower", lab = TRUE, 
+           title = "Pollutant Correlation Matrix for New Hampshire", 
+           legend.title = "Spearman's \nCorrelation\nCoefficient")
+```
+
+```{r cormatrixPM25PopAvg, fig.align = "center", fig.cap="Spearman's correlation matrix of annual PM2.5 concentrations and the proportions of populations of concern by Census Block Group."}
+# Create a correlation matrix of PM25 and populations of concern
+corrPM25 <- nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  dplyr::transmute(PM25 = PM25_19, 
+                Minority = minority_pctE, 
+                `Low Income` = pct2povE, 
+                `Limited English HH` = eng_limit_pctE, 
+                `No HS Dip` = pct_lthsE, 
+                `Under 5` = pct_under5E, 
+                `Over 64` = pct_over64E) %>% 
+  drop_na() %>% 
+  cor(method = "spearman")
+# corrPM25
+ggcorrplot(corrPM25, hc.order = TRUE, type = "lower", lab = TRUE, 
+           title = "PM2.5 Correlation Matrix for New Hampshire", 
+           legend.title = "Spearman's \nCorrelation\nCoefficient")
+```
+
+```{r cormatrixO3PopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of summer Ozone concentrations and the proportions of populations of concern by Census Block Group."}
+# Create a correlation matrix of PM25 and populations of concern
+corrO3 <- nh_blkgrp_sf %>% 
+  as.data.frame() %>%
+  dplyr::transmute(Ozone = OZONE_19, 
+                Minority = minority_pctE, 
+                `Low Income` = pct2povE, 
+                `Limited English HH` = eng_limit_pctE, 
+                `No HS Dip` = pct_lthsE, 
+                `Under 5` = pct_under5E, 
+                `Over 64` = pct_over64E) %>%  
+  drop_na() %>% 
+  cor(method = "spearman")
+# corrPM25
+ggcorrplot(corrO3, hc.order = TRUE, type = "lower", lab = TRUE, 
+           title = "Ozone Correlation Matrix for New Hampshire", 
+           legend.title = "Spearman's \nCorrelation\nCoefficient")
+```
+
+```{r boxplotCO2RI, fig.align = "center", fig.cap="Boxplot of 7 Carbon Dioxoide on-road emissions in metric tons per square kilometer by state at Census Block Group level. 1 dot = 1 Block Group."}
+# boxplot of CO2 by state for 2017
+nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  mutate(onroad_2017 = kgco2_2017/1000/(bg_area_m2/1000000)) %>%
+  ggplot(aes(x = STATE, y = onroad_2017, fill = STATE)) + 
+  geom_boxplot() + 
+  geom_jitter(color = "black", size = 0.4, alpha = 0.6) +
+  ggtitle(expression(atop(paste("Carbon Dioxide (", CO[2], ") Emissions"), "by Census block group, 2017"))) +
+  theme_minimal() +
+  theme(legend.position = "none", axis.text=element_text(size=8)) + 
+  xlab(NULL) + 
+  ylab(expression(paste(CO[2]," (mtons/", km^2, ")", sep = ""))) +
+  coord_flip()
+```
+
+```{r cormatrixDPMPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of annual average Diesel Particulate Matter concentrations and the proportions of populations of concern by Census Block Group."}
+# Create a correlation matrix of PM25 and populations of concern
+corrDPM <- nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  dplyr::transmute(DPM = DSLPM_19, 
+                Minority = minority_pctE, 
+                `Low Income` = pct2povE, 
+                `Limited English HH` = eng_limit_pctE, 
+                `No HS Dip` = pct_lthsE, 
+                `Under 5` = pct_under5E, 
+                `Over 64` = pct_over64E) %>%  
+  drop_na() %>% 
+  cor(method = "spearman")
+# corrPM25
+ggcorrplot(corrDPM, hc.order = TRUE, type = "lower", lab = TRUE, 
+           title = "DPM Correlation Matrix for New Hampshire", 
+           legend.title = "Spearman's \nCorrelation\nCoefficient",
+           ggtheme = ggplot2::theme_minimal())
+```
+
+```{r cormatrixATCPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group."}
+# Create a correlation matrix of cancer risk and populations of concern
+corrARI <- nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  dplyr::transmute(`Cancer Risk` = CANCER_19, 
+                Minority = minority_pctE, 
+                `Low Income` = pct2povE, 
+                `Limited English HH` = eng_limit_pctE, 
+                `No HS Dip` = pct_lthsE, 
+                `Under 5` = pct_under5E, 
+                `Over 64` = pct_over64E) %>%  
+  drop_na() %>% 
+  cor(method = "spearman")
+
+ggcorrplot(corrARI, hc.order = TRUE, type = "lower", lab = TRUE, 
+           title = "Cancer Risk Correlation Matrix for New Hampshire", 
+           legend.title = "Spearman's \nCorrelation\nCoefficient",
+           ggtheme = ggplot2::theme_minimal())
+```
+
+```{r cormatrixRHIPopAvg, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group."}
+# Create a correlation matrix of cancer risk and populations of concern
+corrARI <- nh_blkgrp_sf %>% 
+  as.data.frame() %>%
+  dplyr::transmute(`Resp Hazard Index` = RESP_19, 
+                Minority = minority_pctE, 
+                `Low Income` = pct2povE, 
+                `Limited English HH` = eng_limit_pctE, 
+                `No HS Dip` = pct_lthsE, 
+                `Under 5` = pct_under5E, 
+                `Over 64` = pct_over64E) %>%  
+  drop_na() %>% 
+  cor(method = "spearman")
+# corrPM25
+ggcorrplot(corrARI, hc.order = TRUE, type = "lower", lab = TRUE, 
+           title = "Respiratory Hazard Index \nCorrelation Matrix for New Hampshire", 
+           legend.title = "Spearman's \nCorrelation\nCoefficient",
+           ggtheme = ggplot2::theme_minimal())
+```
+
+```{r cormatrixTPVPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group."}
+# Create a correlation matrix of cancer risk and populations of concern
+corrTPV <- nh_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  dplyr::transmute(`Traffic Exposure` = PTRAF_19, 
+                Minority = minority_pctE, 
+                `Low Income` = pct2povE, 
+                `Limited English HH` = eng_limit_pctE, 
+                `No HS Dip` = pct_lthsE, 
+                `Under 5` = pct_under5E, 
+                `Over 64` = pct_over64E) %>%  
+  drop_na() %>% 
+  cor(method = "spearman")
+# corrPM25
+ggcorrplot(corrTPV, hc.order = TRUE, type = "lower", lab = TRUE, 
+           title = "Traffic Proximity and Volume \nCorrelation Matrix for New Hampshire", 
+           legend.title = "Spearman's \nCorrelation\nCoefficient",
+           ggtheme = ggplot2::theme_minimal())
+```
+
+\pagebreak
+```{r PollutantByTown, fig.cap="Pollutant values by municipality are a geographically weighted average of intersecting Block Groups."}
+ne_towns_sf %>% 
+  as.data.frame() %>% 
+  filter(STATE == "New Hampshire") %>% 
+  transmute(Municipality = str_remove(str_extract(NAME, "[^,]+")," town|city"),
+            PM2.5 = round(PM25_19,2),
+            Ozone = round(OZONE_19,2),
+            DPM = round(DSLPM_19,3),
+            CO2 = round(kgco2_2017/1000,1),
+            `Cancer Risk` = round(CANCER_19,1),
+            `Resp Hazard Index` = round(RESP_19,3),
+            `Traffic Exposure` = round(PTRAF_19,1)) %>% 
+  arrange(Municipality) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    caption = "Average Pollutant and Transportation Burden Values by Municipality in New Hampshire", align = "r") %>% 
+  kableExtra::column_spec(c(1,7:8), width = "2cm") %>% 
+  kableExtra::column_spec(2:6, width = "1.5cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped")) %>% 
+  kableExtra::footnote(general = "Pollutant values by municipality are a geographically weighted average of intersecting Block Groups. See Appendix A for definitions of pollutants and units of measure.", threeparttable = TRUE)
+```
