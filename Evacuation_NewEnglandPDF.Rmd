@@ -281,7 +281,7 @@ ne_FloodPops_df <- ne_blkgrp_sf %>%
 
 A significant portion of New England's land area and population are exposed to the risk of flooding from overbanking of inland water bodies (e.g., ponds and rivers) or from coastal storm surge and sea level rise. 
 
-The analysis of flood exposure presented here is based on the Federal Emergency Management Agency's (FEMA) National Flood Hazard Layer (NFHL), a digital version of FEMA's most recent flood maps.  FEMA identifies areas subject to varying levels of flood risk through its Flood Insurance Rate Maps (FIRMs), which are produced for most parts of the country to identify areas subject to flooding. FEMA's FIRMs are a national standard used by all federal agencies for the purposes of requiring and rating the purchase of flood insurance and regulating new development.  Population data comes from the American Community Survey (ACS) 2017 5-year estimates at the census tract and block group levels. 
+The analysis of flood exposure presented here is based on the Federal Emergency Management Agency's (FEMA) National Flood Hazard Layer (NFHL), a digital version of FEMA's most recent flood maps.[^NFHL]  FEMA identifies areas subject to varying levels of flood risk through its Flood Insurance Rate Maps (FIRMs), which are produced for most parts of the country to identify areas subject to flooding. FEMA's FIRMs are a national standard used by all federal agencies for the purposes of requiring and rating the purchase of flood insurance and regulating new development.  Population data comes from the American Community Survey (ACS) 2017 5-year estimates at the census tract and block group levels. 
 
 A significant proportion of New England's population lives near the coast or near inland water bodies. As a result, a significant proportion of the population lives near or within known flood zones. Figure \@ref(fig:mapNFHZAPop) below shows the population distribution and areas subject to floods with an Annual Exceedance Probability (AEP) of 1% (also known as a '100-year' flood) and areas subject to 0.2% AEP (also known as a '500-year' flood). Areas within the 1% AEP flood zone are designated by FEMA as Special Flood Hazard Areas, and development within those zones must be covered by flood insurance. Areas within the 0.2% AEP are not currently regulated, but these areas are nevertheless subject to flood risk under more extreme, albeit less frequent, flooding circumstances. Coastal areas within the 0.2% AEP zone are a reasonable proxy measure for the risks of sea level rise. Note that portions of northwest and northeast New England are not currently mapped for flooding risk by FEMA. 
 ```{r mapNFHZAdata, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
@@ -846,11 +846,11 @@ ne_HevacPops_df <- ne_blkgrp_sf %>%
   mutate(PctHevac = HevacPop/NEPop*100)
 ```
 
-New England is subject to hurricane risk. Since 1900, New England has been struck by hurricanes eight times. The most recent hurricane to hit New England directly was [Hurricane Bob in 1991](https://www.mass.gov/service-details/the-worst-New England-hurricanes-of-the-20th-century), a Category 2 storm when it made landfall on Block Island, Rhode Island, with hurricane-force winds extending to Groton, Connecticut. The storm did its worst damage as it move northward through Massachusetts as a Category 1 storm, causing over \$1 billion in damages, before moving offshore. [The storm resulted in 18 deaths, power outages, and over $1.5 billion in damage across the region](https://www.maine.gov/mema/hazards/natural-hazards/hurricanes). In 2011, Hurricane Irene was downgraded to a tropical storm by the time it arrived in New England, but nevertheless caused [more than $700 million in damage in Vermont alone](https://www.huffpost.com/entry/vermont-towns-battle-flood-irene_n_941207) due to flooding of streams and rivers from heavy precipitation. Hurricane Sandy in 2012 had also been downgraded to a tropical storm by the time it hit New England. Sandy caused [over $360 million in damage along the Connecticut coast](https://www.ctpost.com/news/article/Sandy-storm-damage-tops-360M-in-state-4037538.php), and it [left 90,000 people across Maine without power due to high winds](https://bangordailynews.com/2012/10/29/news/portland/hurricane-sandy-remains-unpredictable-for-maine-especially-islanders/). In general, New England is subject to a [hurricane return period of between 13 and 50 years, depending on the area](https://www.nhc.noaa.gov/climo/#returns). 
+New England is subject to hurricane risk. Since 1900, New England has been struck by hurricanes eight times. The most recent hurricane to hit New England directly was [Hurricane Bob in 1991](https://www.mass.gov/service-details/the-worst-New England-hurricanes-of-the-20th-century),[^HurricaneBob] a Category 2 storm when it made landfall on Block Island, Rhode Island, with hurricane-force winds extending to Groton, Connecticut. The storm did its worst damage as it move northward through Massachusetts as a Category 1 storm, causing over \$1 billion in damages, before moving offshore. [The storm resulted in 18 deaths, power outages, and over $1.5 billion in damage across the region](https://www.maine.gov/mema/hazards/natural-hazards/hurricanes).[^BobMaine] In 2011, Hurricane Irene was downgraded to a tropical storm by the time it arrived in New England, but nevertheless caused [more than $700 million in damage in Vermont alone](https://www.huffpost.com/entry/vermont-towns-battle-flood-irene_n_941207) due to flooding of streams and rivers from heavy precipitation.[^IreneVT] Hurricane Sandy in 2012 had also been downgraded to a tropical storm by the time it hit New England. Sandy caused [over $360 million in damage along the Connecticut coast](https://www.ctpost.com/news/article/Sandy-storm-damage-tops-360M-in-state-4037538.php),[^SandyCT] and it [left 90,000 people across Maine without power due to high winds](https://bangordailynews.com/2012/10/29/news/portland/hurricane-sandy-remains-unpredictable-for-maine-especially-islanders/).[^SandyME] In general, New England is subject to a [hurricane return period of between 13 and 50 years, depending on the area](https://www.nhc.noaa.gov/climo/#returns).[^HurricaneReturn] 
 
 Hurricane intensity is ranked from 1 to 5 on the Saffir-Simpson scale, which is based on sustained wind speeds. However the most destructive and deadly aspects of hurricanes are due to storm surge - ocean water pushed inland by the high winds. This coastal storm surge may be combined with intense rainfall which can exacerbate flooding. As a result, coastal evacuation may be necessary as a hurricane approaches.
 
-The analysis of hurricane evacuation risk presented here is based on [storm surge modeling by the National Weather Service's National Hurricane Center](https://www.nhc.noaa.gov/nationalsurge/) using the hydrodynamic Sea, Lake, and Overland Surges from Hurricanes (SLOSH) model to simulate storm surge from tropical cyclones. These data products are provided to federal, state, and local government agencies to assist in planning, risk assessment studies, and operational decision-making. Note that hurricane evacuation zones have only been produced for Rhode Island, Connecticut, and Massachusetts, and not for Maine or New Hampshire. The latter are instead represented by areas subject to storm surge inundation based on the SLOSH model, although this likely underrepresents the areas subject to evacuation in the event of an approaching hurricane. Population data comes from the American Community Survey (ACS) 2017 5-year estimates at the census tract and block group levels. 
+The analysis of hurricane evacuation risk presented here is based on [storm surge modeling by the National Weather Service's National Hurricane Center](https://www.nhc.noaa.gov/nationalsurge/) using the hydrodynamic Sea, Lake, and Overland Surges from Hurricanes (SLOSH) model to simulate storm surge from tropical cyclones.[^NHCsloshMaps] These data products are provided to federal, state, and local government agencies to assist in planning, risk assessment studies, and operational decision-making. Note that hurricane evacuation zones have only been produced for Rhode Island, Connecticut, and Massachusetts, and not for Maine or New Hampshire. The latter are instead represented by areas subject to storm surge inundation based on the SLOSH model, although this likely underrepresents the areas subject to evacuation in the event of an approaching hurricane. Population data comes from the American Community Survey (ACS) 2017 5-year estimates at the census tract and block group levels. 
 
 A significant proportion of New England's population lives near the coast and is therefore within areas subject to inundation due to hurricane storm surge. Figure \@ref(fig:mapHEVACPop) below shows the population distribution and areas subject to hurricane evacuation. Zone “A” is recommended to be evacuated prior to an expected category 1 or 2 hurricane.  Zone “B” is recommended to be evacuated prior to an expected category 3 or 4 hurricane.
 
@@ -1059,4 +1059,187 @@ ne_HevacPops_df %>%
 #           height = 9, width = 8, units = "in", dpi = 600)
 
 knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable.png")
+```
+
+[^NFHL]: See FEMA National Flood Hazard Layer (NFHL). https://www.fema.gov/national-flood-hazard-layer-nfhl.
+
+[^NHCsloshMaps]: The National Hurricane Center provides static and interactive maps of storm surge flooding vulnerability across the country based on SLOSH modeling. See NOAA National Hurricane Center and Central Pacific Hurricane Center. National Storm Surge Hazard Maps - Version 2. https://www.nhc.noaa.gov/nationalsurge/
+
+[^HurricaneBob]: See Mass.gov. "The Worst Massachusetts Hurricanes of the 20th Century." https://www.mass.gov/service-details/the-worst-massachusetts-hurricanes-of-the-20th-century. See also The Northeast States Emergency Consortium (NESEC). "Hurricanes." http://nesec.org/hurricanes/.
+
+[^BobMaine]: See Maine Emergency Management Agency. "Hurricanes." https://www.maine.gov/mema/hazards/natural-hazards/hurricanes.
+
+[^IreneVT]: See Wislon Ring and Jennifer Peltz. 2011. "Vermont Towns Battle Historic Floods From Irene As Death Toll Tops 40." *HuffPost*. Oct 29. https://www.huffpost.com/entry/vermont-towns-battle-flood-irene_n_941207.
+
+[^SandyCT]: See Ken Dixon. 2012. "Sandy storm damage tops $360M in state." *ctpost*. Nov 14. https://www.ctpost.com/news/article/Sandy-storm-damage-tops-360M-in-state-4037538.php.
+
+[^SandyME]: See Seth Koenig. 2012. "Sandy knocks out power for thousands of Mainers; flood watch inland." *BDN Portland*. Oct 29. https://bangordailynews.com/2012/10/29/news/portland/hurricane-sandy-remains-unpredictable-for-maine-especially-islanders/.
+
+[^HurricaneReturn]: See NOAA National Hurricane Center and Central Pacific Hurricane Center. "Tropical Cyclone Climatology - U.S. Hurricane Return Periods." https://www.nhc.noaa.gov/climo/#returns.
+
+[^SurgeModel]: See NOAA National Hurricane Center and Central Pacific Hurricane Center. "National Storm Surge Hazard Maps - Version 2." https://www.nhc.noaa.gov/nationalsurge/.
+
+[^Bruggers2018]: James Bruggers. Nov 1, 2018. "FEMA Flood Maps Ignore Climate Change, and Homeowners Are Paying the Price." *Insideclimatenews.* https://insideclimatenews.org/news/01112018/fema-flood-map-climate-change-hurricane-mexico-beach-florida-sea-level-rise 
+
+[^Dasymetric]: Areal apportionment of populations for mapping and analysis, also known as dasymetric mapping, is commonly used method to improve risk assessment of flooding. See for example Yi Qiang. 2019. "Disparities of population exposed to flood hazards in the United States." *Journal of Environmental Management* 232:295-304; Yi Qiang, Nina S. N. Lam, Heng Cai, and Lei Zou. 2017. "Changes in Exposure to Flood Hazards in the United States." *Annals of the American Association of Geographers* 107(6):1332-1350. https://doi.org/10.1080/24694452.2017.1320214
+
+[^NLCD2016]: See MRLC NLCD 2016 Land Cover (CONUS). https://www.mrlc.gov/data/nlcd-2016-land-cover-conus.
+
+[^NLCDdetails]: See Collin Homer, Jon Dewitz, Suming Jin, George Xian, Catherine Costello, Patrick Danielson, Leila Gass, Michelle Funk, James Wickham, Stephen Stehman, Roger Auch, and Kurt Riitters. 2020. "Conterminous United States land cover change patterns 2001–2016 from the 2016 National Land Cover Database." *ISPRS Journal of Photogrammetry and Remote Sensing* 162: 184-199. https://doi.org/10.1016/j.isprsjprs.2020.02.019.
+
+
+\pagebreak
+# Appendix A: Data and Methodology {-}
+
+The analyses presented here are based on data from five sources:
+
+* FEMA National Flood Hazard Layer (NFHL)
+* MRLC National Land Cover Database (NLCD)
+* State Hurricane Evacuation Zones (CT,MA,RI)
+* NOAA Sea, Lake, and Overland Surges from Hurricanes (SLOSH) model
+* American Community Survey 5-year Estimates
+  + Population demographics
+
+## FEMA National Flood Hazard Layer (NFHL) {-}
+
+As part of the National Flood Insurance Program, the U.S. Federal Emergency Management Agency (FEMA) produces maps of flood risk across the nation. These flood risk maps are based on . 
+
+The National Flood Hazard Layer (NFHL) is a digital geospatial database that contains current effective flood hazard mapping data from the U.S. Federal Emergency Management Agnecy's (FEMA) National Flood Insurance Program (NFIP). NFHL data is available for download at https://msc.fema.gov/portal/advanceSearch. This geodatabase identifies areas subject to various levels of flood risk as determined by FEMA, consistent with Flood Insurance Rate Maps (FIRMs), based upon hydrodynamic models as well as historic flooding. 
+
+This analysis focused on identifying populations at risk from floods with a 1% or 0.2% annual exceedance probability. The 1% annual exceedance probability flood, sometimes referred to as a '100-year' flood, is a flood with a 1% chance of being equaled or exceeded in a given year. Areas subject to the 1% flood risk are designated as Special Flood Hazard Areas. Properties within these these flood risk zones are required to carry flood insurance in order to participate in the National Flood Insurance Program. The 0.2% exceedance probability flood, sometimes referred to as a '500-year' flood, is a flood with a 0.2% chance of being equaled or exceeded in a given year. There is no federal regulatory requirement for properties within areas subject to 0.2% annual exceedance probability flood risk. While lower risk, these areas are frequently identified as areas subject to flooding under extreme or worst case scenarios. Note that FEMA flood risk designations do not take into consideration increasing or projected flood risk due to sea level rise, more extreme rainfall events, or other climate change-enhanced risks.[^Bruggers2018] 
+
+In order to identify populations at risk from floods with a 1% or 0.2% annual exceedance probability, NFHL polygons pertaining to the 1% flood risk (zones A, AE, AH, AO, and VE) and the 0.2% flood risk (zone X), and excluding water or areas of "minimal flood hazard," were extracted and intersected with the developed portions of Census Block Groups. Developed portions of Census Block Groups were identified based upon the National Land Cover Database (NLCD), using a process of areal apportionment (see below). The population at risk from flooding was calculated as the product of the  areal proportion of the intersecting flood and developed Block Group polygons:
+
+*Population at risk = Proportion of developed Block Group Intersection x Population of developed Block Group*
+
+For example, if 10% of the developed area of a Census Block Group intersected/overlapped with a flood polygon, it was assumed that 10% of the population is exposed to that flood risk. Assuming a population of 100 people in the developed portion of the Block Group, this would mean *100 x .10 = 10* people would be subject to flood risk. FEMA flood risk modeling was done in R.
+
+
+## MRLC National Land Cover Database (NLCD) {-}
+
+The National Land Cover Database (NLCD) provides nationwide data on land cover and land cover change at a 30m resolution with a 16-class legend based on a modified Anderson Level II classification system:
+
+```{r NLCDtab}
+gridCodes <- c(11,12,21,22,23,24,31,41,42,43,51,52,71,72,73,74,81,82,90,95)
+
+landUse <- c("Open Water", "Perennial Ice/Snow", "Developed, Open Space", "Developed, Low Intensity", "Developed, Medium Intensity", "Developed, High Intensity", "Barren Land (Rock/Sand/Clay)", "Deciduous Forest", "Evergreen Forest", "Mixed Forest", "Dwarf Scrub", "Shrub/Scrub", "Grassland/Herbaceous", "Sedge/Herbaceous", "Lichens", "Moss", "Pasture/Hay", "Cultivated Crops", "Woody Wetlands", "Emergent Herbaceous Wetlands")
+
+data.frame(gridCodes,landUse) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    col.names = c("GRID Code","Land Use Description"),
+                    caption = "NLCD 2016 Land Cover Codes and Classifications", align = "l") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
+The NLCD is produced by the US Geological Survey (USGS) in partnership with several federal agencies as part of the Multi-Resolution Land Characteristics Consortium (MRLC). NLCD identified land cover types based on semi-automated land use calssification algorithms applied to LANDSAT satellite imagery and supplemented with ancillary data.[^NLCDdetails] NLCD is distributed as a raster GeoTIFF at https://www.mrlc.gov/data. 
+
+NLCD data was used to identify developed areas of Census Block Groups in order to better estimate potential flood risk in areas where people are most likely to reside.[^Dasymetric] The NLCD 2016 was downloaded and converted to a vector polygon layer and clipped to New England states. Undeveloped polygon areas were extracted (all GRID codes excluding 22 - 24). These undeveloped areas of the NLCD polygon layer were then used to erase overlapping areas of Census Block Groups. The latter step served to eliminate areas of Census Block Groups that were classified as undeveloped and thus unlikely to be occupied by residences. The remaining developed areas of Census Block Groups were assumed to contain all populations assigned to that respective Block Group. Processing of NLCD and developed Census Block Groups was done in ArcGIS Desktop 10.7. These developed Census Block Group polygons were used for identifying populations at risk from flooding or hurricane storm surge.
+
+## State Hurricane Evacuation Zones (CT,MA,RI) {-}
+
+Connecticut, Massachusetts, and Rhode Island provide maps and geospatial layers identifying evacuation zones in their respective states in the event of a hurricane. These hurricane evaucation zone maps were developed in cooperation between state emergency management agencies and the U.S. Army Corps of Enginneers. Hurricane storm surge risk was based on the SLOSH (Sea, Lake, and Overland Surges from Hurricanes) model, which is a numerical model used by the National Weather Service to compute storm surge. Hurricane evaucation zones generally encompass an area larger than the specific areas subject to inundation. 
+Connecticut Hurricane Evacuation Zones: https://data.ct.gov/Public-Safety/Hurricane-Evacuation-Zones-2014-/kdsj-af66
+Massachusetts Hurricane Evacuation Zones: https://www.nae.usace.army.mil/Missions/Projects-Topics/Massachusetts-Hurricane-Studies/
+Rhode Island Hurricane Evacuation Zones: http://www.riema.ri.gov/resources/citizens/prepare/evacuation.php 
+
+In order to identify populations at risk from hurricane evacuation, hurricane evacuation zone polygons were intersected with the developed portions of Census Block Groups. Developed portions of Census Block Groups were identified based upon the National Land Cover Database (NLCD), using a process of areal apportionment (see above). The population at risk from hurricane evacuation risk was calculated as the product of the  areal proportion of the intersecting evacuation zone and developed Block Group polygons:
+
+*Population at risk = Proportion of developed Block Group Intersection x Population of developed Block Group*
+
+For example, if 10% of the developed area of a Census Block Group intersected/overlapped with a hurricane evacuation zone, it was assumed that 10% of the population is exposed to that evacuation risk. Assuming a population of 100 people in the developed portion of the Block Group, this would mean *100 x .10 = 10* people would be subject to hurricane evacuation risk. 
+
+## NOAA Sea, Lake, and Overland Surges from Hurricanes (SLOSH) model (ME,NH) {-}
+
+The National Oceanic and Atmospheric Administration (NOAA), specifically the National Weather Service's (NWS) National Hurricane Center (NHC), utilizes the hydrodynamic Sea, Lake, and Overland Surges from Hurricanes (SLOSH) model to simulate storm surge from tropical cyclones, including hurricanes. SLOSH models of coastal storm surge are based on tens of thousands of climatology-based hypothetical tropical cyclone simulations.[^SurgeModel]  The composite results of these simulations are used to assess and visualize storm surge risk under varying conditions. Maps and estimates of risk are provided to federal, state, and local partners to assist in a range of planning processes, risk assessment studies, and operational decision-making. SLOSH models and maps are the basis of state-level hurricane evacuation zone designations. However, only three of the six New England states (Connecticut, Massachusetts, and Rhode Island) have developed hurricane evacuation zone maps. Maine and New Hampshire, which are subject to hurricane risk, have not developed, or do not publicly offer, hurricane evacuation zone maps. In order to model hurricane evacuation risk in those states, SLOSH inundation zones were used instead. The use of storm surge inundation risk, rather than hurricane evacuation zones, likely underestimates the population that would be subject to evacuation in the event of an approaching hurricane.
+
+In order to identify populations at risk from hurricane evacuation in Maine and New Hampshire, SLOSH surge hazard maps were downloaded from the National Hurricane Center in the form of GeoTIFF raster files.[^SurgeModel] Specifically, scenarios for Category 2 and Category 4 hurricanes at high tide were used. The raster files were clipped to the land areas of Maine and New Hampshire and converted to a vector polygon layer and merged. Hurricane storm surge polygons were intersected with the developed portions of Census Block Groups. Developed portions of Census Block Groups were identified based upon the National Land Cover Database (NLCD), using a process of areal apportionment (see above). The population at risk from hurricane storm surge risk was calculated as the product of the areal proportion of the intersecting storm surge polygons and developed Block Group polygons:
+
+*Population at risk = Proportion of developed Block Group Intersection x Population of developed Block Group*
+
+For example, if 10% of the developed area of a Census Block Group intersected/overlapped with a hurricane storm surge polygon, it was assumed that 10% of the population is exposed to that flood risk. Assuming a population of 100 people in the developed portion of the Block Group, this would mean *100 x .10 = 10* people would be subject to hurricane storm surge risk. Processing of SLOSH GeoTIFF files and polygon intersection were performed in ArcGIS 10.7. 
+
+
+## American Community Survey 5-year Estimates {-}
+
+The American Community Survey (ACS) is an ongoing survey by the U.S. Census Bureau that provides information on a yearly basis about the U.S. and its people. The ACS provides detailed information on economic, housing, and demographic characteristics about the population that are not captured by the decennial Census. 
+
+The ACS provides greater demographic detail and temporal resolution than the decennial Census, but its geographic resolution is more limited. While the decennial Census is based on an enumeration (i.e., a total count) of everyone in the U.S. once every decade, the ACS is based on a statistical sample of approximately 3.5 million addresses across the country each year. As a result of this sampling approach, the ACS estimates must be pooled, or combined, across multiple years in order to provide reliable estimates for smaller areas (i.e. areas with less than 20,000 people), such as at the Tract or Block Group levels. While it is possible to know the number of low income households across the U.S. annually, one may only know this about a Tract or Block Group based on 5-year estimates. Since 2010, the ACS has published 5-year data (beginning with 2005–2009 estimates) for all geographic areas down to the census Tract and Block Group levels. For more detail on the ACS, see Understanding and Using American Community Survey Data: What All Data Users Need to Know at https://www.census.gov/programs-surveys/acs/guidance/handbooks/general.html.
+
+All data was analyzed or aggregated geographically by Census Tract and Block Group. A Census Tract is a small, relatively permanent statistical subdivision of a county that contains between 1,200 and 8,000 people. The entire area of a county is covered by Census Tracts, just as the entire area of a state is covered by counties or county equivalents. Census Tracts range in areal size depending on the population density; areal sizes are smaller in denser areas and larger in less densely populated areas. Census Block Groups are subdivisions of Census Tracts that contain between 600 and 3,000 people. Like Tracts, Block Groups range in areal size depending on the population density of the area. Block Groups are the smallest geographic unit at which detailed demographic and household data from the American Community Survey is made available by the U.S. Census Bureau. 
+
+For the purposes of this analysis ACS 5-year estimates for the period 2013 - 2017 for Census Tracts and Block Groups in New England, as well as their associated TIGER/Line spatial files, were downloaded from the Census Bureau via API using the `tigris` package in R. Demographic variables consistent with those used by the EPA in EJSCREEN were chosen, as well as environmental justice population thresholds used by states where available. Table \@ref(tab:ACSvariables) below lists the demographic variables that were downloaded directly or computed from ACS variables:
+
+```{r ACSvariables}
+ACSvDF <- data.frame(Variable = c("Total Population",
+                                  "Minority",
+                                  "Low Income",
+                                  "Limited English Household",
+                                  "Less than High School Education",
+                                  "Under 5",
+                                  "Under 18",
+                                  "Over 64",
+                                  "Disabled",
+                                  "No Car Household",
+                                  "CT Income",
+                                  "MA Income",
+                                  "MA Limited English Household",
+                                  "MA Minority",
+                                  "RI Income",
+                                  "RI Minority"),
+                     Description = c("Total population",
+                                     "Persons of Hispanic or Latino origin or persons who are not White",
+                                     "People in households where the household income is less than or equal to twice the federal poverty level",
+                                     "People in households where all adults speak English less than \"very well\"",
+                                     "Adults 25 years+ with less than a high school education",
+                                     "Persons under 5 years of age",
+                                     "Persons under 18 years of age",
+                                     "Persons over 64 years of age",
+                                     "Persons 18 years+ with a disability",
+                                     "Households with no vehicle available",
+                                     "Connecticut Low Income threshold: 30% or more people in households where the household income is less than or equal to twice the federal poverty level",
+                                     "Massachusetts Low Income threshold: 25% or more of households with median household incomes below 65% statewide median",
+                                     "Massachusetts Language Isolation threshold: 25% or more people in households where all adults speak English less than \"very well\"",
+                                     "Massachusetts Minority threshold: 25% or more are persons of Hispanic or Latino origin or persons who are not White",
+                                     "Rhode Island Low Income threshold: highest 15% of block groups with people in households where the household income is less than or equal to twice the federal poverty level",
+                                     "Rhode Island Minority threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
+                     'ACS Table ID' = c("B03002: Hispanic or Latino Origin by Race",
+                                "B03002: Hispanic or Latino Origin by Race",
+                                "C17002: Ratio of Income to Poverty Level",
+                                "C16002: Household Language by Household Limited English Speaking Status",
+                                "B15002: Sex by Educational Attainment",
+                                "B01001: Sex by Age",
+                                "B01001: Sex by Age",
+                                "B01001: Sex by Age",
+                                "B18101: Sex by Age by Disability Status",
+                                "B08201: Household Size by Vehicles Available",
+                                "C17002: Ratio of Income to Poverty Level",
+                                "B19001: Household Income",
+                                "C16002: Household Language by Household Limited English Speaking Status",
+                                "B03002: Hispanic or Latino Origin by Race",
+                                "C17002: Ratio of Income to Poverty Level",
+                                "B03002: Hispanic or Latino Origin by Race"),
+                     Geography = c("Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Tract",
+                                   "Tract",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group"))
+
+ACSvDF %>% 
+  kableExtra::kable(longtable = T, booktabs = T, 
+                    caption = "Demographic Variables", align = "l",
+                    col.names = c("Variable","Description","ACS Table ID","Geography")) %>% 
+  kableExtra::column_spec(2:3, width = "3cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+  
 ```
