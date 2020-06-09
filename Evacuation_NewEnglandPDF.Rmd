@@ -1,7 +1,7 @@
 ---
 title: "Evacuation Risks in New England"
 author: "Marcos Luna and Neenah Estrella-Luna"
-date: "4/11/2020"
+date: "6/8/2020"
 output: 
   bookdown::pdf_document2:
     toc: true
@@ -13,7 +13,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE)
 ```
 \pagebreak
 # Analysis of evacuation-related risks in New England
@@ -447,7 +447,7 @@ ne_nfhza_4269_land_simple <- ne_nfhza_land %>%
   select(Interval) %>% 
   st_cast(., "MULTIPOLYGON") %>% # homogenize type
   st_cast(., "POLYGON") %>% 
-  st_simplify(., dTolerance = 100) %>% # reduce vertices
+  st_simplify(., dTolerance = 1000) %>% # reduce vertices
   st_make_valid() %>%
   group_by(Interval) %>% 
   summarize() %>% 
@@ -544,7 +544,7 @@ canada <- st_read(dsn = "DATA/FEMA", layer = "lpr_000b16a_e") %>%
 #             asp = 10/15)
 # 
 # tmap_save(m, "DATA/FEMA/NE/ne_flood.png",
-#           height = 9, width = 8, units = "in", dpi = 600)
+#           height = 8, width = 8, units = "in", dpi = 600)
 
 knitr::include_graphics("DATA/FEMA/NE/ne_flood.png")
 ```
@@ -606,17 +606,20 @@ ne_FloodPops_df %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = ne_FloodPops_df[1,4], linetype = "dashed") +
-  geom_text(aes(x = "Under 5", y = 6.4, label = "Above regional avg"),
+  geom_text(aes(x = "Under 5", y = 6.5, label = "Above regional\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "Total Pop", xend = "Total Pop", y = 6.1, yend = 6.5), 
-               arrow = arrow(length = unit(0.3,"cm")))
+  geom_text(aes(x = "Under 5", y = 5.5, label = "Below regional\naverage"),
+            color = "gray48") +
+  expand_limits(y=c(5,7.5))
+  # geom_segment(aes(x = "Total Pop", xend = "Total Pop", y = 6.1, yend = 6.5), 
+  #              arrow = arrow(length = unit(0.3,"cm")))
 ```
 
-The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those disproportionately exposed to flood risk.
+The maps below (Figures \@ref(fig:mapNFHZAPopConcern1) and \@ref(fig:mapNFHZAPopConcern1)) show households without a car and limited English speaking households that are disproportionately exposed to flood risk. Maps for other populations of concern can be found in Figures \@ref(fig:mapNFHZAPopConcern3) to \@ref(fig:mapNFHZAPopConcern8) in Appendix B.
 
-```{r mapNFHZAPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Selected New England Populations of Concern Living within Flood Zones."}
-# # Create a dot density map of transit-dependent populations in flood zone
-# 
+```{r NFHZAPopConcern, include=FALSE}
+# Create a dot density map of transit-dependent populations in flood zone
+
 # pop2points <- function(sf, x, group){
 #   x <- enquo(x)
 #   sf %>%
@@ -661,71 +664,131 @@ The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those disproportionat
 # 
 # # save time by just loading file
 # saveRDS(ne_nfhza_vulnerable, file = "DATA/FEMA/NE/ne_nfhza_vulnerable.Rds")
-# # load vulnerable point file
-# ne_nfhza_vulnerable <- readRDS("DATA/FEMA/NE/ne_nfhza_vulnerable.Rds")
-# # 
-# # # Map over-represented pops and flood zones
-# m <- tm_layout(bg.color = "#e6f3f7") +
-#   # tm_shape(ne_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
-#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
-#   tm_shape(canada) + tm_fill(col = "white") +
-#   tm_shape(ny_state_sf) + tm_fill(col="white") +
-#   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
-#   tm_shape(ne_nfhza_vulnerable) +
-#   tm_dots(col = "darkgoldenrod3",
-#           labels = "1 dot = 10 people",
-#           alpha = 0.6) +
-#   tm_facets(by = "Group",
-#             ncol = 2,
-#             free.coords = FALSE) +
-#   tm_shape(ne_nfhza_4269_land_simple) +
-#   tm_fill(col = "Interval",
-#           palette = c("dodgerblue", "blueviolet"),
-#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
-#           title = "FEMA Flood Zones",
-#           alpha = 0.6,
-#           border.alpha = 0) +
-#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.6) +
-#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
-#   # tm_shape(ne_highways2nd) + tm_lines(col = "seashell4", lwd = 1) +
-#   # tm_shape(I295roadSegment) +
-#   # tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
-#   # tm_shape(I95roadSegment) +
-#   # tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-#   # tm_shape(I95roadSegment2) +
-#   # tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-#   tm_shape(ne_towns_sf_pts) + tm_dots() +
-#   tm_text("NAME", size = 0.5, col = "black",
-#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-#   tm_shape(nofemapolys) +
-#   tm_fill(col = "gray", alpha = 0.4) +
-#   tm_shape(me_nofemapoly) +
-#   tm_fill(col = "gray", alpha = 0.4) +
-#   # tm_text("LABEL", alpha = 0.5, size = 0.6) +
-#   tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5,
-#                position = c("right","bottom")) +
-#   tm_add_legend(type = "fill", col = "gray",
-#                 alpha = 0.4,
-#                 border.col = "white", border.alpha = 0,
-#                 labels = "No FEMA Flood Data") +
-#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
-#                 alpha = 0.6,
-#                 border.col = "white", border.alpha = 0,
-#                 labels = "1 dot = 10 people",
-#                 title = "Population Group") +
-#   tm_layout(title = "Selected\nPopulations\nof Concern\nLiving within\nFlood Zones",
-#             frame = TRUE, main.title.size = 0.8,
-#             legend.outside = TRUE,
-#             legend.title.size = 0.8,
-#             legend.outside.position = c("right", "top"),
-#             # legend.outside.position = "bottom",
-#             legend.outside.size = 0.15,
-#             asp = 10/15)
-# 
-# tmap_save(m, "DATA/FEMA/NE/NE_nhfza_vulnerable.png",
-#           height = 9, width = 8, units = "in", dpi = 600)
+# load vulnerable point file
+ne_nfhza_vulnerable <- readRDS("DATA/FEMA/NE/ne_nfhza_vulnerable.Rds")
+```
 
-knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable.png")
+```{r mapNFHZAPopConcern1, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Households without a Car Living within Flood Zones."}
+# create subset of selected population
+
+nfhza_sub1 <- ne_nfhza_vulnerable %>% 
+  filter(Group == "No Car HH")
+
+# # Map over-represented pops and flood zones
+m <- tm_layout(bg.color = "#e6f3f7") +
+  # tm_shape(ne_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+  tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+  tm_shape(canada) + tm_fill(col = "white") +
+  tm_shape(ny_state_sf) + tm_fill(col="white") +
+  tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
+  tm_shape(nfhza_sub1) +
+  tm_dots(col = "darkgoldenrod3",
+          labels = "1 dot = 10 people",
+          alpha = 0.6) +
+  # tm_facets(along = "Group",
+  #           free.coords = FALSE) +
+  tm_shape(ne_nfhza_4269_land_simple) +
+  tm_fill(col = "Interval",
+          palette = c("dodgerblue", "blueviolet"),
+          labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
+          title = "FEMA Flood Zones",
+          alpha = 0.6,
+          border.alpha = 0) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.6) +
+  tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
+  # tm_shape(ne_highways2nd) + tm_lines(col = "seashell4", lwd = 1) +
+  # tm_shape(I295roadSegment) +
+  # tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  # tm_shape(I95roadSegment) +
+  # tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  # tm_shape(I95roadSegment2) +
+  # tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black",
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_shape(nofemapolys) +
+  tm_fill(col = "gray", alpha = 0.4) +
+  tm_shape(me_nofemapoly) +
+  tm_fill(col = "gray", alpha = 0.4) +
+  # tm_text("LABEL", alpha = 0.5, size = 0.6) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5,
+               position = c("right","bottom")) +
+  tm_add_legend(type = "fill", col = "gray",
+                alpha = 0.4,
+                border.col = "white", border.alpha = 0,
+                labels = "No FEMA Flood Data") +
+  tm_add_legend(type = "fill", col = "darkgoldenrod3",
+                alpha = 0.6,
+                border.col = "white", border.alpha = 0,
+                labels = "1 dot = 10 people") +
+  tm_layout(title = "Households\nwithout\na Car\nLiving within\nFlood Zones",
+            frame = TRUE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/FEMA/NE/NE_nhfza_vulnerable1.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable1.png")
+```
+
+```{r mapNFHZAPopConcern2, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Limited English Speaking Households Living within Flood Zones."}
+# create subset of selected population
+
+nfhza_sub1 <- ne_nfhza_vulnerable %>% 
+  filter(Group == "Limited English HH")
+
+# # Map over-represented pops and flood zones
+m <- tm_layout(bg.color = "#e6f3f7") +
+  # tm_shape(ne_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+  tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+  tm_shape(canada) + tm_fill(col = "white") +
+  tm_shape(ny_state_sf) + tm_fill(col="white") +
+  tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
+  tm_shape(nfhza_sub1) +
+  tm_dots(col = "darkgoldenrod3",
+          labels = "1 dot = 10 people",
+          alpha = 0.6) +
+  # tm_facets(along = "Group",
+  #           free.coords = FALSE) +
+  tm_shape(ne_nfhza_4269_land_simple) +
+  tm_fill(col = "Interval",
+          palette = c("dodgerblue", "blueviolet"),
+          labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
+          title = "FEMA Flood Zones",
+          alpha = 0.6,
+          border.alpha = 0) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.6) +
+  tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black",
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_shape(nofemapolys) +
+  tm_fill(col = "gray", alpha = 0.4) +
+  tm_shape(me_nofemapoly) +
+  tm_fill(col = "gray", alpha = 0.4) +
+  # tm_text("LABEL", alpha = 0.5, size = 0.6) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5,
+               position = c("right","bottom")) +
+  tm_add_legend(type = "fill", col = "gray",
+                alpha = 0.4,
+                border.col = "white", border.alpha = 0,
+                labels = "No FEMA Flood Data") +
+  tm_add_legend(type = "fill", col = "darkgoldenrod3",
+                alpha = 0.6,
+                border.col = "white", border.alpha = 0,
+                labels = "1 dot = 10 people") +
+  tm_layout(title = "Limited English\nSpeaking\nHouseholds\nLiving within\nFlood Zones",
+            frame = TRUE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/FEMA/NE/NE_nhfza_vulnerable2.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable2.png")
 ```
 
 \pagebreak
@@ -906,7 +969,7 @@ A significant proportion of New England's population lives near the coast and is
 #             legend.outside.position = c("right", "top"))
 # 
 # tmap_save(m2, "DATA/FEMA/NE/ne_hevac.png",
-#           height = 9, width = 8, units = "in", dpi = 600)
+#           height = 8, width = 8, units = "in", dpi = 600)
 
 knitr::include_graphics("DATA/FEMA/NE/ne_hevac.png")
 ```
@@ -942,7 +1005,7 @@ ne_HevacPops_df %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Some groups are disproportionately exposed to these hurricane evacuation hazards. While approximately 10.1% of the general population are living within hurricane evacuation zones, households without access to a car, limited English speaking households, minorities, and other populations of concern exceed the population average living within hurricane evacuation zones. These populations of concern are disproportionately exposed to hurricane evacuation risk (see Figures \@ref(fig:chartHEVACpop) and \@ref(fig:mapHEVACPopConcern) below).
+Some groups are disproportionately exposed to these hurricane evacuation hazards. While approximately 10.1% of the general population are living within hurricane evacuation zones, households without access to a car, limited English speaking households, minorities, and other populations of concern exceed the population average living within hurricane evacuation zones. These populations of concern are disproportionately exposed to hurricane evacuation risk (see Figures \@ref(fig:chartHEVACpop)).
 
 ```{r chartHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="New England Populations within Hurricane Inundation Zones."}
 # Create lollipop plot of pops within flood zones
@@ -965,14 +1028,18 @@ ne_HevacPops_df %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = ne_HevacPops_df[1,4], linetype = "dashed") +
-  geom_text(aes(x = "Low Income", y = 15, label = "Above regional avg"),
+  geom_text(aes(x = "Low Income", y = 15, label = "Above regional\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "Total Pop", xend = "Total Pop", y = 10.5, yend = 14), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
-  expand_limits(y = c(7,24))
+  geom_text(aes(x = "Low Income", y = 7, label = "Below regional\naverage"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Total Pop", xend = "Total Pop", y = 10.5, yend = 14), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(5,24))
 ```
 
-```{r mapHEVACPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Select Populations of Concern Living Living within Hurricane Evacuation Zones."}
+The maps below (Figures \@ref(fig:mapHEVACPopConcern1) and \@ref(fig:mapHEVACPopConcern2)) show households without a car and limited English speaking households that are disproportionately exposed to hurricane evacuation risk. Maps for other populations of concern can be found in Figures \@ref(fig:mapHEVACPopConcern3) to \@ref(fig:mapHEVACPopConcern9) in Appendix B.
+
+```{r mapHEVACPopConcern, include=FALSE}
 # # Create a dot density map of over-represented populations in hurricane evacuation zones
 # NoCarHH_hevac_pts <- pop2points(ne_tracts_hevac,NewNoCar,"No Car HH")
 # 
@@ -1000,8 +1067,15 @@ ne_HevacPops_df %>%
 # # save time by just loading file
 # saveRDS(ne_hevac_vulnerable, file = "DATA/FEMA/NE/ne_hevac_vulnerable.Rds")
 # # load vulnerable point file
-# ne_hevac_vulnerable <- readRDS("DATA/FEMA/NE/ne_hevac_vulnerable.Rds")
-# # 
+ne_hevac_vulnerable <- readRDS("DATA/FEMA/NE/ne_hevac_vulnerable.Rds")
+```
+
+```{r mapHEVACPopConcern1, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Households without a Car Living Living within Hurricane Evacuation Zones."}
+
+# # create a population subset
+# hevac_sub1 <- ne_hevac_vulnerable %>% 
+#   filter(Group == "No Car HH")
+# 
 # # Map over-represented pops and hurricane evacuation zones
 # m2 <- tm_layout(bg.color = "#e6f3f7") +
 #   tm_shape(ne_hevac_simple, unit = "mi") + tm_fill(col = "white") +
@@ -1016,9 +1090,9 @@ ne_HevacPops_df %>%
 #   tm_dots(col = "springgreen3",
 #           labels = "1 dot = 10 people",
 #           alpha = 0.6) +
-#   tm_facets(by = "Group",
-#             ncol = 2,
-#             free.coords = FALSE) +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
 #   tm_shape(ne_hevac_simple) +
 #   tm_fill(col = "Zone",
 #           palette = c("deeppink", "purple3"),
@@ -1029,16 +1103,6 @@ ne_HevacPops_df %>%
 #           border.alpha = 0) +
 #   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
 #   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
-#   # tm_shape(ne_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
-#   # tm_shape(ne_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
-#   # tm_shape(I295roadSegment) +
-#   # tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
-#   # tm_shape(I95roadSegment) +
-#   # tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-#   # tm_shape(I95roadSegment2) +
-#   # tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-#   # tm_shape(I95roadSegment2) +
-#   # tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
 #   tm_shape(ne_towns_sf_pts) + tm_dots() +
 #   tm_text("NAME", size = 0.5, col = "black",
 #           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
@@ -1047,18 +1111,69 @@ ne_HevacPops_df %>%
 #   tm_add_legend(type = "fill", col = "springgreen3",
 #                 alpha = 0.6,
 #                 border.col = "white", border.alpha = 0,
-#                 labels = "1 dot = 10 people",
-#                 title = "Total Population") +
-#   tm_layout(title = "Select\nPopulations of\nConcern Living\nwithin Hurricane\nEvacuation Zones", frame = TRUE, main.title.size = 0.8,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Households\nwithout\na Car\nLiving within\nHurricane\nEvacuation\nZones", frame = TRUE, main.title.size = 0.8,
 #             legend.outside = TRUE,
 #             legend.title.size = 0.8,
-#             legend.outside.position = c("right", "top"),
-#             asp = 12/10)
+#             legend.outside.position = c("right", "top"))
 # 
-# tmap_save(m2, "DATA/FEMA/NE/NE_hevac_vulnerable.png",
-#           height = 9, width = 8, units = "in", dpi = 600)
+# tmap_save(m2, "DATA/FEMA/NE/NE_hevac_vulnerable1.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable.png")
+knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable1.png")
+```
+
+```{r mapHEVACPopConcern2, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Limited English Speaking Households Living within Hurricane Evacuation Zones."}
+
+# # create a population subset
+# hevac_sub1 <- ne_hevac_vulnerable %>% 
+#   filter(Group == "Limited English HH")
+# 
+# # Map over-represented pops and hurricane evacuation zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(ne_hevac_simple, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_blkgrp_sf, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
+#   # tm_shape(ne_states_sf_cb) + tm_borders() +
+#   # tm_shape(ny_state_sf) + tm_borders() +
+#   tm_shape(ne_hevac_vulnerable) +
+#   tm_dots(col = "springgreen3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.6) +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_hevac_simple) +
+#   tm_fill(col = "Zone",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
+#           title = "Evacuation Zone and\nHurricane Category",
+#           alpha = 0.8,
+#           border.alpha = 0) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ne_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5,
+#                position = c("right","bottom")) +
+#   tm_add_legend(type = "fill", col = "springgreen3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Limited English\nSpeaking\nHouseholds\nLiving within\nHurricane\nEvacuation\nZones", frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m2, "DATA/FEMA/NE/NE_hevac_vulnerable2.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable2.png")
 ```
 
 [^NFHL]: See FEMA National Flood Hazard Layer (NFHL). https://www.fema.gov/national-flood-hazard-layer-nfhl.
@@ -1131,7 +1246,7 @@ data.frame(gridCodes,landUse) %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-The NLCD is produced by the US Geological Survey (USGS) in partnership with several federal agencies as part of the Multi-Resolution Land Characteristics Consortium (MRLC). NLCD identified land cover types based on semi-automated land use calssification algorithms applied to LANDSAT satellite imagery and supplemented with ancillary data.[^NLCDdetails] NLCD is distributed as a raster GeoTIFF at https://www.mrlc.gov/data. 
+The NLCD is produced by the US Geological Survey (USGS) in partnership with several federal agencies as part of the Multi-Resolution Land Characteristics Consortium (MRLC).[^NLCD2016] NLCD identified land cover types based on semi-automated land use calssification algorithms applied to LANDSAT satellite imagery and supplemented with ancillary data.[^NLCDdetails] NLCD is distributed as a raster GeoTIFF at https://www.mrlc.gov/data. 
 
 NLCD data was used to identify developed areas of Census Block Groups in order to better estimate potential flood risk in areas where people are most likely to reside.[^Dasymetric] The NLCD 2016 was downloaded and converted to a vector polygon layer and clipped to New England states. Undeveloped polygon areas were extracted (all GRID codes excluding 22 - 24). These undeveloped areas of the NLCD polygon layer were then used to erase overlapping areas of Census Block Groups. The latter step served to eliminate areas of Census Block Groups that were classified as undeveloped and thus unlikely to be occupied by residences. The remaining developed areas of Census Block Groups were assumed to contain all populations assigned to that respective Block Group. Processing of NLCD and developed Census Block Groups was done in ArcGIS Desktop 10.7. These developed Census Block Group polygons were used for identifying populations at risk from flooding or hurricane storm surge.
 
@@ -1242,4 +1357,730 @@ ACSvDF %>%
   kableExtra::column_spec(2:3, width = "3cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
   
+```
+
+
+\pagebreak
+# Appendix B: Supplementary Figures {-}
+
+## Populations of Concern in FEMA Flood Zones {-}
+```{r mapNFHZAPopConcern3, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Disabled Persons Living within Flood Zones."}
+# # create subset of selected population
+# 
+# nfhza_sub1 <- ne_nfhza_vulnerable %>% 
+#   filter(Group == "Disabled")
+# 
+# # # Map over-represented pops and flood zones
+# m <- tm_layout(bg.color = "#e6f3f7") +
+#   # tm_shape(ne_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
+#   tm_shape(nfhza_sub1) +
+#   tm_dots(col = "darkgoldenrod3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.6) +
+#   # tm_facets(along = "Group",
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_nfhza_4269_land_simple) +
+#   tm_fill(col = "Interval",
+#           palette = c("dodgerblue", "blueviolet"),
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
+#           title = "FEMA Flood Zones",
+#           alpha = 0.6,
+#           border.alpha = 0) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.6) +
+#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
+#   tm_shape(ne_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_shape(nofemapolys) +
+#   tm_fill(col = "gray", alpha = 0.4) +
+#   tm_shape(me_nofemapoly) +
+#   tm_fill(col = "gray", alpha = 0.4) +
+#   # tm_text("LABEL", alpha = 0.5, size = 0.6) +
+#   tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5,
+#                position = c("right","bottom")) +
+#   tm_add_legend(type = "fill", col = "gray",
+#                 alpha = 0.4,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "No FEMA Flood Data") +
+#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Disabled\nPersons\nLiving within\nFlood Zones",
+#             frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m, "DATA/FEMA/NE/NE_nhfza_vulnerable3.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable3.png")
+```
+
+```{r mapNFHZAPopConcern4, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Adults without a High School Diploma Living within Flood Zones."}
+# # create subset of selected population
+# 
+# nfhza_sub1 <- ne_nfhza_vulnerable %>% 
+#   filter(Group == "No HS Dip")
+# 
+# # # Map over-represented pops and flood zones
+# m <- tm_layout(bg.color = "#e6f3f7") +
+#   # tm_shape(ne_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
+#   tm_shape(nfhza_sub1) +
+#   tm_dots(col = "darkgoldenrod3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.6) +
+#   # tm_facets(along = "Group",
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_nfhza_4269_land_simple) +
+#   tm_fill(col = "Interval",
+#           palette = c("dodgerblue", "blueviolet"),
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
+#           title = "FEMA Flood Zones",
+#           alpha = 0.6,
+#           border.alpha = 0) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.6) +
+#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
+#   tm_shape(ne_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_shape(nofemapolys) +
+#   tm_fill(col = "gray", alpha = 0.4) +
+#   tm_shape(me_nofemapoly) +
+#   tm_fill(col = "gray", alpha = 0.4) +
+#   # tm_text("LABEL", alpha = 0.5, size = 0.6) +
+#   tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5,
+#                position = c("right","bottom")) +
+#   tm_add_legend(type = "fill", col = "gray",
+#                 alpha = 0.4,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "No FEMA Flood Data") +
+#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Adults without\na High School\nDiploma\nLiving within\nFlood Zones",
+#             frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m, "DATA/FEMA/NE/NE_nhfza_vulnerable4.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable4.png")
+```
+
+```{r mapNFHZAPopConcern5, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Low Income Persons Living within Flood Zones."}
+# # create subset of selected population
+# 
+# nfhza_sub1 <- ne_nfhza_vulnerable %>% 
+#   filter(Group == "Low Income")
+# 
+# # # Map over-represented pops and flood zones
+# m <- tm_layout(bg.color = "#e6f3f7") +
+#   # tm_shape(ne_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
+#   tm_shape(nfhza_sub1) +
+#   tm_dots(col = "darkgoldenrod3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.6) +
+#   # tm_facets(along = "Group",
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_nfhza_4269_land_simple) +
+#   tm_fill(col = "Interval",
+#           palette = c("dodgerblue", "blueviolet"),
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
+#           title = "FEMA Flood Zones",
+#           alpha = 0.6,
+#           border.alpha = 0) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.6) +
+#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
+#   tm_shape(ne_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_shape(nofemapolys) +
+#   tm_fill(col = "gray", alpha = 0.4) +
+#   tm_shape(me_nofemapoly) +
+#   tm_fill(col = "gray", alpha = 0.4) +
+#   # tm_text("LABEL", alpha = 0.5, size = 0.6) +
+#   tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5,
+#                position = c("right","bottom")) +
+#   tm_add_legend(type = "fill", col = "gray",
+#                 alpha = 0.4,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "No FEMA Flood Data") +
+#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Low Income\nPersons\nLiving within\nFlood Zones",
+#             frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m, "DATA/FEMA/NE/NE_nhfza_vulnerable5.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable5.png")
+```
+
+```{r mapNFHZAPopConcern6, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Minority Persons Living within Flood Zones."}
+# # create subset of selected population
+# 
+# nfhza_sub1 <- ne_nfhza_vulnerable %>% 
+#   filter(Group == "Minority")
+# 
+# # # Map over-represented pops and flood zones
+# m <- tm_layout(bg.color = "#e6f3f7") +
+#   # tm_shape(ne_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
+#   tm_shape(nfhza_sub1) +
+#   tm_dots(col = "darkgoldenrod3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.6) +
+#   # tm_facets(along = "Group",
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_nfhza_4269_land_simple) +
+#   tm_fill(col = "Interval",
+#           palette = c("dodgerblue", "blueviolet"),
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
+#           title = "FEMA Flood Zones",
+#           alpha = 0.6,
+#           border.alpha = 0) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.6) +
+#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
+#   tm_shape(ne_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_shape(nofemapolys) +
+#   tm_fill(col = "gray", alpha = 0.4) +
+#   tm_shape(me_nofemapoly) +
+#   tm_fill(col = "gray", alpha = 0.4) +
+#   # tm_text("LABEL", alpha = 0.5, size = 0.6) +
+#   tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5,
+#                position = c("right","bottom")) +
+#   tm_add_legend(type = "fill", col = "gray",
+#                 alpha = 0.4,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "No FEMA Flood Data") +
+#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Minority\nPersons\nLiving within\nFlood Zones",
+#             frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m, "DATA/FEMA/NE/NE_nhfza_vulnerable6.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable6.png")
+```
+
+```{r mapNFHZAPopConcern7, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Persons Over 64 Living within Flood Zones."}
+# # create subset of selected population
+# 
+# nfhza_sub1 <- ne_nfhza_vulnerable %>% 
+#   filter(Group == "Over 64")
+# 
+# # # Map over-represented pops and flood zones
+# m <- tm_layout(bg.color = "#e6f3f7") +
+#   # tm_shape(ne_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
+#   tm_shape(nfhza_sub1) +
+#   tm_dots(col = "darkgoldenrod3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.6) +
+#   # tm_facets(along = "Group",
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_nfhza_4269_land_simple) +
+#   tm_fill(col = "Interval",
+#           palette = c("dodgerblue", "blueviolet"),
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
+#           title = "FEMA Flood Zones",
+#           alpha = 0.6,
+#           border.alpha = 0) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.6) +
+#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
+#   tm_shape(ne_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_shape(nofemapolys) +
+#   tm_fill(col = "gray", alpha = 0.4) +
+#   tm_shape(me_nofemapoly) +
+#   tm_fill(col = "gray", alpha = 0.4) +
+#   # tm_text("LABEL", alpha = 0.5, size = 0.6) +
+#   tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5,
+#                position = c("right","bottom")) +
+#   tm_add_legend(type = "fill", col = "gray",
+#                 alpha = 0.4,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "No FEMA Flood Data") +
+#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Persons\nOver 64\nLiving within\nFlood Zones",
+#             frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m, "DATA/FEMA/NE/NE_nhfza_vulnerable7.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable7.png")
+```
+
+```{r mapNFHZAPopConcern8, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Children Under 5 Living within Flood Zones."}
+# # create subset of selected population
+# 
+# nfhza_sub1 <- ne_nfhza_vulnerable %>% 
+#   filter(Group == "Under 5")
+# 
+# # # Map over-represented pops and flood zones
+# m <- tm_layout(bg.color = "#e6f3f7") +
+#   # tm_shape(ne_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
+#   tm_shape(nfhza_sub1) +
+#   tm_dots(col = "darkgoldenrod3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.6) +
+#   # tm_facets(along = "Group",
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_nfhza_4269_land_simple) +
+#   tm_fill(col = "Interval",
+#           palette = c("dodgerblue", "blueviolet"),
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
+#           title = "FEMA Flood Zones",
+#           alpha = 0.6,
+#           border.alpha = 0) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.6) +
+#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
+#   tm_shape(ne_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_shape(nofemapolys) +
+#   tm_fill(col = "gray", alpha = 0.4) +
+#   tm_shape(me_nofemapoly) +
+#   tm_fill(col = "gray", alpha = 0.4) +
+#   # tm_text("LABEL", alpha = 0.5, size = 0.6) +
+#   tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5,
+#                position = c("right","bottom")) +
+#   tm_add_legend(type = "fill", col = "gray",
+#                 alpha = 0.4,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "No FEMA Flood Data") +
+#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Children\nUnder 5\nLiving within\nFlood Zones",
+#             frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m, "DATA/FEMA/NE/NE_nhfza_vulnerable8.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable8.png")
+```
+
+
+## Populations of Concern in Hurricane Evacuation Zones {-}
+```{r mapHEVACPopConcern3, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Disabled Persons Living within Hurricane Evacuation Zones."}
+
+# # create a population subset
+# hevac_sub1 <- ne_hevac_vulnerable %>% 
+#   filter(Group == "Disabled")
+# 
+# # Map over-represented pops and hurricane evacuation zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(ne_hevac_simple, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_blkgrp_sf, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
+#   # tm_shape(ne_states_sf_cb) + tm_borders() +
+#   # tm_shape(ny_state_sf) + tm_borders() +
+#   tm_shape(ne_hevac_vulnerable) +
+#   tm_dots(col = "springgreen3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.6) +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_hevac_simple) +
+#   tm_fill(col = "Zone",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
+#           title = "Evacuation Zone and\nHurricane Category",
+#           alpha = 0.8,
+#           border.alpha = 0) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ne_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5,
+#                position = c("right","bottom")) +
+#   tm_add_legend(type = "fill", col = "springgreen3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Disabled Persons\nLiving within\nHurricane\nEvacuation\nZones", frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m2, "DATA/FEMA/NE/NE_hevac_vulnerable3.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable3.png")
+```
+
+```{r mapHEVACPopConcern4, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Adults without a High School Diploma Living within Hurricane Evacuation Zones."}
+
+# # create a population subset
+# hevac_sub1 <- ne_hevac_vulnerable %>% 
+#   filter(Group == "No HS Dip")
+# 
+# # Map over-represented pops and hurricane evacuation zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(ne_hevac_simple, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_blkgrp_sf, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
+#   # tm_shape(ne_states_sf_cb) + tm_borders() +
+#   # tm_shape(ny_state_sf) + tm_borders() +
+#   tm_shape(ne_hevac_vulnerable) +
+#   tm_dots(col = "springgreen3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.6) +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_hevac_simple) +
+#   tm_fill(col = "Zone",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
+#           title = "Evacuation Zone and\nHurricane Category",
+#           alpha = 0.8,
+#           border.alpha = 0) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ne_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5,
+#                position = c("right","bottom")) +
+#   tm_add_legend(type = "fill", col = "springgreen3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Adults without\na High School\nDiploma\nLiving within\nHurricane\nEvacuation\nZones", frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m2, "DATA/FEMA/NE/NE_hevac_vulnerable4.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable4.png")
+```
+
+```{r mapHEVACPopConcern5, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Low Income Persons Living within Hurricane Evacuation Zones."}
+
+# # create a population subset
+# hevac_sub1 <- ne_hevac_vulnerable %>% 
+#   filter(Group == "Low Income")
+# 
+# # Map over-represented pops and hurricane evacuation zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(ne_hevac_simple, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_blkgrp_sf, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
+#   # tm_shape(ne_states_sf_cb) + tm_borders() +
+#   # tm_shape(ny_state_sf) + tm_borders() +
+#   tm_shape(ne_hevac_vulnerable) +
+#   tm_dots(col = "springgreen3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.6) +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_hevac_simple) +
+#   tm_fill(col = "Zone",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
+#           title = "Evacuation Zone and\nHurricane Category",
+#           alpha = 0.8,
+#           border.alpha = 0) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ne_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5,
+#                position = c("right","bottom")) +
+#   tm_add_legend(type = "fill", col = "springgreen3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Low Income\nPersons\nLiving within\nHurricane\nEvacuation\nZones", frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m2, "DATA/FEMA/NE/NE_hevac_vulnerable5.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable5.png")
+```
+
+```{r mapHEVACPopConcern6, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Minority Persons Living within Hurricane Evacuation Zones."}
+
+# # create a population subset
+# hevac_sub1 <- ne_hevac_vulnerable %>% 
+#   filter(Group == "Minority")
+# 
+# # Map over-represented pops and hurricane evacuation zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(ne_hevac_simple, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_blkgrp_sf, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
+#   # tm_shape(ne_states_sf_cb) + tm_borders() +
+#   # tm_shape(ny_state_sf) + tm_borders() +
+#   tm_shape(ne_hevac_vulnerable) +
+#   tm_dots(col = "springgreen3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.6) +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_hevac_simple) +
+#   tm_fill(col = "Zone",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
+#           title = "Evacuation Zone and\nHurricane Category",
+#           alpha = 0.8,
+#           border.alpha = 0) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ne_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5,
+#                position = c("right","bottom")) +
+#   tm_add_legend(type = "fill", col = "springgreen3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Minority\nPersons\nLiving within\nHurricane\nEvacuation\nZones", frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m2, "DATA/FEMA/NE/NE_hevac_vulnerable6.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable6.png")
+```
+
+```{r mapHEVACPopConcern7, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Persons Over 64 Living within Hurricane Evacuation Zones."}
+
+# # create a population subset
+# hevac_sub1 <- ne_hevac_vulnerable %>% 
+#   filter(Group == "Over 64")
+# 
+# # Map over-represented pops and hurricane evacuation zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(ne_hevac_simple, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_blkgrp_sf, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
+#   # tm_shape(ne_states_sf_cb) + tm_borders() +
+#   # tm_shape(ny_state_sf) + tm_borders() +
+#   tm_shape(ne_hevac_vulnerable) +
+#   tm_dots(col = "springgreen3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.6) +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_hevac_simple) +
+#   tm_fill(col = "Zone",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
+#           title = "Evacuation Zone and\nHurricane Category",
+#           alpha = 0.8,
+#           border.alpha = 0) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ne_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5,
+#                position = c("right","bottom")) +
+#   tm_add_legend(type = "fill", col = "springgreen3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Persons\nOver 64\nLiving within\nHurricane\nEvacuation\nZones", frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m2, "DATA/FEMA/NE/NE_hevac_vulnerable7.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable7.png")
+```
+
+```{r mapHEVACPopConcern8, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Children Under 5 Living within Hurricane Evacuation Zones."}
+
+# # create a population subset
+# hevac_sub1 <- ne_hevac_vulnerable %>% 
+#   filter(Group == "Under 5")
+# 
+# # Map over-represented pops and hurricane evacuation zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(ne_hevac_simple, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_blkgrp_sf, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
+#   # tm_shape(ne_states_sf_cb) + tm_borders() +
+#   # tm_shape(ny_state_sf) + tm_borders() +
+#   tm_shape(ne_hevac_vulnerable) +
+#   tm_dots(col = "springgreen3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.6) +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_hevac_simple) +
+#   tm_fill(col = "Zone",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
+#           title = "Evacuation Zone and\nHurricane Category",
+#           alpha = 0.8,
+#           border.alpha = 0) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ne_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5,
+#                position = c("right","bottom")) +
+#   tm_add_legend(type = "fill", col = "springgreen3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Children\nUnder 5\nLiving within\nHurricane\nEvacuation\nZones", frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m2, "DATA/FEMA/NE/NE_hevac_vulnerable8.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable8.png")
+```
+
+```{r mapHEVACPopConcern9, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Persons Under 18 Living within Hurricane Evacuation Zones."}
+
+# # create a population subset
+# hevac_sub1 <- ne_hevac_vulnerable %>% 
+#   filter(Group == "Under 18")
+# 
+# # Map over-represented pops and hurricane evacuation zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(ne_hevac_simple, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_blkgrp_sf, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
+#   # tm_shape(ne_states_sf_cb) + tm_borders() +
+#   # tm_shape(ny_state_sf) + tm_borders() +
+#   tm_shape(ne_hevac_vulnerable) +
+#   tm_dots(col = "springgreen3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.6) +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_hevac_simple) +
+#   tm_fill(col = "Zone",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
+#           title = "Evacuation Zone and\nHurricane Category",
+#           alpha = 0.8,
+#           border.alpha = 0) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_shape(ne_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5,
+#                position = c("right","bottom")) +
+#   tm_add_legend(type = "fill", col = "springgreen3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Persons\nUnder 18\nLiving within\nHurricane\nEvacuation\nZones", frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m2, "DATA/FEMA/NE/NE_hevac_vulnerable9.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable9.png")
 ```
