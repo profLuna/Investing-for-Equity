@@ -277,6 +277,25 @@ ne_FloodPops_df <- ne_blkgrp_sf %>%
   left_join(., ne_flood_blkgrp_df, by = "Group") %>%
   rbind(.,ne_tract_flood_pops_df) %>%
   mutate(PctFlood = FloodPop/NEPop*100)
+
+# Calculate totals of populations of concern for use in computing percentages in later tables
+state_tract_popsdf <- ne_tracts_sf %>% 
+  group_by(STATE) %>%
+  summarize(TotalDisabled = sum(disabledOver18E, na.rm = TRUE),
+            TotalOver18 = sum(Over18E, na.rm = TRUE),
+            TotalNoCar = sum(HHnoCarE, na.rm = TRUE))
+
+statepopsdf <- ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  group_by(STATE) %>% 
+  summarize(TotalLEH = sum(eng_limitE, na.rm = TRUE),
+            TotalMin = sum(minorityE, na.rm = TRUE),
+            TotalLowInc = sum(num2povE, na.rm = TRUE),
+            TotalNoHS = sum(lthsE, na.rm = TRUE),
+            TotalOver64 = sum(over64E, na.rm = TRUE),
+            TotalUnder5 = sum(under5E, na.rm = TRUE),
+            TotalUnder18 = sum(under18E, na.rm = TRUE)) %>% 
+  left_join(., state_tract_popsdf,by="STATE")
 ```
 
 A significant portion of New England's land area and population are exposed to the risk of flooding from overbanking of inland water bodies (e.g., ponds and rivers) or from coastal storm surge and sea level rise. 
@@ -615,7 +634,7 @@ ne_FloodPops_df %>%
   #              arrow = arrow(length = unit(0.3,"cm")))
 ```
 
-The maps below (Figures \@ref(fig:mapNFHZAPopConcern1) and \@ref(fig:mapNFHZAPopConcern1)) show households without a car and limited English speaking households that are disproportionately exposed to flood risk. Maps for other populations of concern can be found in Figures \@ref(fig:mapNFHZAPopConcern3) to \@ref(fig:mapNFHZAPopConcern8) in Appendix B.
+The maps below (Figures \@ref(fig:mapNFHZAPopConcern1) and \@ref(fig:mapNFHZAPopConcern2)) show households without a car and limited English speaking households that are disproportionately exposed to flood risk. Maps for other populations of concern can be found in Figures \@ref(fig:mapNFHZAPopConcern3) to \@ref(fig:mapNFHZAPopConcern8) in Appendix B.
 
 ```{r NFHZAPopConcern, include=FALSE}
 # Create a dot density map of transit-dependent populations in flood zone
@@ -646,6 +665,8 @@ The maps below (Figures \@ref(fig:mapNFHZAPopConcern1) and \@ref(fig:mapNFHZAPop
 # 
 # Under5_nfhza_pts <- pop2points(ne_blkgrps_nfhza,NewUnder5,"Under 5")
 # 
+# Under18_nfhza_pts <- pop2points(ne_blkgrps_nfhza,NewUnder18,"Under 18")
+# 
 # # Bring them together
 # ne_nfhza_vulnerable <- rbind(NoCarHH_nfhza_pts,
 #                              LimitEngHH_nfhza_pts,
@@ -654,14 +675,15 @@ The maps below (Figures \@ref(fig:mapNFHZAPopConcern1) and \@ref(fig:mapNFHZAPop
 #                              LowInc_nfhza_pts,
 #                              Minor_nfhza_pts,
 #                              Over64_nfhza_pts,
-#                              Under5_nfhza_pts) %>%
+#                              Under5_nfhza_pts,
+#                              Under18_nfhza_pts) %>%
 #   # slice(sample(1:n())) %>% # randomise order to avoid bias in plotting order
 #   group_by(Group) %>%
 #   summarize()
 # 
 # # clean up pts layers
 # rm(list = ls(pattern = "_nfhza_pts"))
-# 
+
 # # save time by just loading file
 # saveRDS(ne_nfhza_vulnerable, file = "DATA/FEMA/NE/ne_nfhza_vulnerable.Rds")
 # load vulnerable point file
@@ -733,6 +755,22 @@ tmap_save(m, "DATA/FEMA/NE/NE_nhfza_vulnerable1.png",
 knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable1.png")
 ```
 
+```{r tabNFHZANoCar, fig.align = "center", fig.cap="Households without a Car Living within FEMA Flood Zones."}
+ne_tracts_nfhza %>%
+  as.data.frame() %>%
+  left_join(., statepopsdf,by="STATE") %>%
+  group_by(STATE) %>%
+  summarize(`No Car Households` = sum(NewNoCar),
+            `Pct of No Car Households` = round(sum(NewNoCar)/max(TotalNoCar)*100,1)) %>% 
+  mutate(`No Car Households` = as.integer(`No Car Households`),
+         `Pct of No Car Households` = paste0(`Pct of No Car Households`,"%")) %>% 
+  kableExtra::kable(longtable = F, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Households without a Car Living in FEMA Flood Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
 ```{r mapNFHZAPopConcern2, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Limited English Speaking Households Living within Flood Zones."}
 # create subset of selected population
 
@@ -789,6 +827,22 @@ tmap_save(m, "DATA/FEMA/NE/NE_nhfza_vulnerable2.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
 knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable2.png")
+```
+
+```{r tabNFHZALEH, fig.align = "center", fig.cap="Limited English Speaking Households Living within FEMA Flood Zones."}
+ne_blkgrps_nfhza %>%
+  as.data.frame() %>%
+  left_join(., statepopsdf,by="STATE") %>%
+  group_by(STATE) %>%
+  summarize(`Limited English Households` = sum(NewEng_limit),
+            `Pct of Limited English Households` = round(sum(NewEng_limit)/max(TotalLEH)*100,1)) %>% 
+  mutate(`Limited English Households` = as.integer(`Limited English Households`),
+         `Pct of Limited English Households` = paste0(`Pct of Limited English Households`,"%")) %>% 
+  kableExtra::kable(longtable = F, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Limited English Speaking Households Living in FEMA Flood Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
 \pagebreak
@@ -1051,12 +1105,24 @@ The maps below (Figures \@ref(fig:mapHEVACPopConcern1) and \@ref(fig:mapHEVACPop
 # 
 # LowInc_hevac_pts <- pop2points(ne_blkgrps_hevac,NewPov,"Low Income")
 # 
+# Disabled_hevac_pts <- pop2points(ne_tracts_hevac,NewDisabled,"Disabled")
+# 
+# Under5_hevac_pts <- pop2points(ne_blkgrps_hevac,NewUnder5,"Under 5")
+# 
+# Over64_hevac_pts <- pop2points(ne_blkgrps_hevac,NewOver64,"Over 64")
+# 
+# Under18_hevac_pts <- pop2points(ne_blkgrps_hevac,NewUnder18,"Under 18")
+# 
 # # Bring them together
 # ne_hevac_vulnerable <- rbind(LimitEngHH_hevac_pts,
 #                              Minor_hevac_pts,
 #                              NoCarHH_hevac_pts,
 #                              NoHSdip_hevac_pts,
-#                              LowInc_hevac_pts) %>%
+#                              LowInc_hevac_pts,
+#                              Disabled_hevac_pts,
+#                              Under5_hevac_pts,
+#                              Over64_hevac_pts,
+#                              Under18_hevac_pts) %>%
 #   # slice(sample(1:n())) %>% # randomise order to avoid bias in plotting order
 #   group_by(Group) %>%
 #   summarize()
@@ -1066,14 +1132,14 @@ The maps below (Figures \@ref(fig:mapHEVACPopConcern1) and \@ref(fig:mapHEVACPop
 # 
 # # save time by just loading file
 # saveRDS(ne_hevac_vulnerable, file = "DATA/FEMA/NE/ne_hevac_vulnerable.Rds")
-# # load vulnerable point file
+# load vulnerable point file
 ne_hevac_vulnerable <- readRDS("DATA/FEMA/NE/ne_hevac_vulnerable.Rds")
 ```
 
 ```{r mapHEVACPopConcern1, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Households without a Car Living Living within Hurricane Evacuation Zones."}
 
 # # create a population subset
-# hevac_sub1 <- ne_hevac_vulnerable %>% 
+# hevac_sub1 <- ne_hevac_vulnerable %>%
 #   filter(Group == "No Car HH")
 # 
 # # Map over-represented pops and hurricane evacuation zones
@@ -1086,7 +1152,7 @@ ne_hevac_vulnerable <- readRDS("DATA/FEMA/NE/ne_hevac_vulnerable.Rds")
 #   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
 #   # tm_shape(ne_states_sf_cb) + tm_borders() +
 #   # tm_shape(ny_state_sf) + tm_borders() +
-#   tm_shape(ne_hevac_vulnerable) +
+#   tm_shape(hevac_sub1) +
 #   tm_dots(col = "springgreen3",
 #           labels = "1 dot = 10 people",
 #           alpha = 0.6) +
@@ -1123,10 +1189,26 @@ ne_hevac_vulnerable <- readRDS("DATA/FEMA/NE/ne_hevac_vulnerable.Rds")
 knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable1.png")
 ```
 
+```{r tabHEVACNoCar, fig.align = "center", fig.cap="Households without a Car Living within Hurricane Evacuation Zones."}
+ne_tracts_hevac %>%
+  as.data.frame() %>%
+  left_join(., statepopsdf,by="STATE") %>%
+  group_by(STATE) %>%
+  summarize(`No Car Households` = sum(NewNoCar),
+            `Pct of No Car Households` = round(sum(NewNoCar)/max(TotalNoCar)*100,1)) %>% 
+  mutate(`No Car Households` = as.integer(`No Car Households`),
+         `Pct of No Car Households` = paste0(`Pct of No Car Households`,"%")) %>% 
+  kableExtra::kable(longtable = F, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Households without a Car Living in Hurricane Evacuation Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
 ```{r mapHEVACPopConcern2, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Limited English Speaking Households Living within Hurricane Evacuation Zones."}
 
 # # create a population subset
-# hevac_sub1 <- ne_hevac_vulnerable %>% 
+# hevac_sub1 <- ne_hevac_vulnerable %>%
 #   filter(Group == "Limited English HH")
 # 
 # # Map over-represented pops and hurricane evacuation zones
@@ -1139,7 +1221,7 @@ knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable1.png")
 #   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
 #   # tm_shape(ne_states_sf_cb) + tm_borders() +
 #   # tm_shape(ny_state_sf) + tm_borders() +
-#   tm_shape(ne_hevac_vulnerable) +
+#   tm_shape(hevac_sub1) +
 #   tm_dots(col = "springgreen3",
 #           labels = "1 dot = 10 people",
 #           alpha = 0.6) +
@@ -1174,6 +1256,22 @@ knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable1.png")
 #           height = 8, width = 8, units = "in", dpi = 600)
 
 knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable2.png")
+```
+
+```{r tabHEVACLEH, fig.align = "center", fig.cap="Limited English Speaking Households Living within FEMA Flood Zones."}
+ne_blkgrps_hevac %>%
+  as.data.frame() %>%
+  left_join(., statepopsdf,by="STATE") %>%
+  group_by(STATE) %>%
+  summarize(`Limited English Households` = sum(NewEng_limit),
+            `Pct of Limited English Households` = round(sum(NewEng_limit)/max(TotalLEH)*100,1)) %>% 
+  mutate(`Limited English Households` = as.integer(`Limited English Households`),
+         `Pct of Limited English Households` = paste0(`Pct of Limited English Households`,"%")) %>% 
+  kableExtra::kable(longtable = F, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Limited English Speaking Households Living in Hurricane Evacuation Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
 [^NFHL]: See FEMA National Flood Hazard Layer (NFHL). https://www.fema.gov/national-flood-hazard-layer-nfhl.
@@ -1422,6 +1520,22 @@ ACSvDF %>%
 knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable3.png")
 ```
 
+```{r tabNFHZADIS, fig.align = "center", fig.cap="Disabled Persons Living within FEMA Flood Zones."}
+ne_tracts_nfhza %>%
+  as.data.frame() %>%
+  left_join(., statepopsdf,by="STATE") %>%
+  group_by(STATE) %>%
+  summarize(`Disabled` = sum(NewDisabled),
+            `Pct of Disabled` = round(sum(NewDisabled)/max(TotalDisabled)*100,1)) %>% 
+  mutate(`Disabled` = as.integer(`Disabled`),
+         `Pct of Disabled` = paste0(`Pct of Disabled`,"%")) %>% 
+  kableExtra::kable(longtable = F, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Disabled Persons Living in FEMA Flood Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
 ```{r mapNFHZAPopConcern4, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Adults without a High School Diploma Living within Flood Zones."}
 # # create subset of selected population
 # 
@@ -1478,6 +1592,22 @@ knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable3.png")
 #           height = 8, width = 8, units = "in", dpi = 600)
 
 knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable4.png")
+```
+
+```{r tabNFHZALTHS, fig.align = "center", fig.cap="Adults without a High School Diploma Living within FEMA Flood Zones."}
+ne_blkgrps_nfhza %>%
+  as.data.frame() %>%
+  left_join(., statepopsdf,by="STATE") %>%
+  group_by(STATE) %>%
+  summarize(`No HS Dip` = sum(NewLths),
+            `Pct of No HS Dip` = round(sum(NewLths)/max(TotalNoHS)*100,1)) %>% 
+  mutate(`No HS Dip` = as.integer(`No HS Dip`),
+         `Pct of No HS Dip` = paste0(`Pct of No HS Dip`,"%")) %>% 
+  kableExtra::kable(longtable = F, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Adults without a High School Diploma Living in FEMA Flood Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
 ```{r mapNFHZAPopConcern5, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Low Income Persons Living within Flood Zones."}
@@ -1538,6 +1668,22 @@ knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable4.png")
 knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable5.png")
 ```
 
+```{r tabNFHZALINC, fig.align = "center", fig.cap="Low Income Persons Living within FEMA Flood Zones."}
+ne_blkgrps_nfhza %>%
+  as.data.frame() %>%
+  left_join(., statepopsdf,by="STATE") %>%
+  group_by(STATE) %>%
+  summarize(`Low Income` = sum(NewPov),
+            `Pct of Low Income` = round(sum(NewPov)/max(TotalLowInc)*100,1)) %>% 
+  mutate(`Low Income` = as.integer(`Low Income`),
+         `Pct of Low Income` = paste0(`Pct of Low Income`,"%")) %>% 
+  kableExtra::kable(longtable = F, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Low Income Persons Living in FEMA Flood Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
 ```{r mapNFHZAPopConcern6, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Minority Persons Living within Flood Zones."}
 # # create subset of selected population
 # 
@@ -1594,6 +1740,22 @@ knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable5.png")
 #           height = 8, width = 8, units = "in", dpi = 600)
 
 knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable6.png")
+```
+
+```{r tabNFHZAMIN, fig.align = "center", fig.cap="Minority Persons Living within FEMA Flood Zones."}
+ne_blkgrps_nfhza %>%
+  as.data.frame() %>%
+  left_join(., statepopsdf,by="STATE") %>%
+  group_by(STATE) %>%
+  summarize(`Minority` = sum(NewMinority),
+            `Pct of Minority` = round(sum(NewMinority)/max(TotalMin)*100,1)) %>% 
+  mutate(`Minority` = as.integer(`Minority`),
+         `Pct of Minority` = paste0(`Pct of Minority`,"%")) %>% 
+  kableExtra::kable(longtable = F, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Minority Persons Living in FEMA Flood Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
 ```{r mapNFHZAPopConcern7, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Persons Over 64 Living within Flood Zones."}
@@ -1654,6 +1816,22 @@ knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable6.png")
 knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable7.png")
 ```
 
+```{r tabNFHZAO64, fig.align = "center", fig.cap="Persons Over 64 Living within FEMA Flood Zones."}
+ne_blkgrps_nfhza %>%
+  as.data.frame() %>%
+  left_join(., statepopsdf,by="STATE") %>%
+  group_by(STATE) %>%
+  summarize(`Over 64` = sum(NewOver64),
+            `Pct of Over 64` = round(sum(NewOver64)/max(TotalOver64)*100,1)) %>% 
+  mutate(`Over 64` = as.integer(`Over 64`),
+         `Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
+  kableExtra::kable(longtable = F, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Persons Over 64 Living in FEMA Flood Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
 ```{r mapNFHZAPopConcern8, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Children Under 5 Living within Flood Zones."}
 # # create subset of selected population
 # 
@@ -1712,12 +1890,102 @@ knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable7.png")
 knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable8.png")
 ```
 
+```{r tabNFHZAU5, fig.align = "center", fig.cap="Children Under 5 Living within FEMA Flood Zones."}
+ne_blkgrps_nfhza %>%
+  as.data.frame() %>%
+  left_join(., statepopsdf,by="STATE") %>%
+  group_by(STATE) %>%
+  summarize(`Under 5` = sum(NewUnder5),
+            `Pct of Under 5` = round(sum(NewUnder5)/max(TotalUnder5)*100,1)) %>% 
+  mutate(`Under 5` = as.integer(`Under 5`),
+         `Pct of Under 5` = paste0(`Pct of Under 5`,"%")) %>% 
+  kableExtra::kable(longtable = F, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Children Under 5 Living in FEMA Flood Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
+```{r mapNFHZAPopConcern9, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Persons Under 18 Living within Flood Zones."}
+# create subset of selected population
+
+nfhza_sub1 <- ne_nfhza_vulnerable %>%
+  filter(Group == "Under 18")
+
+# # Map over-represented pops and flood zones
+m <- tm_layout(bg.color = "#e6f3f7") +
+  # tm_shape(ne_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+  tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+  tm_shape(canada) + tm_fill(col = "white") +
+  tm_shape(ny_state_sf) + tm_fill(col="white") +
+  tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
+  tm_shape(nfhza_sub1) +
+  tm_dots(col = "darkgoldenrod3",
+          labels = "1 dot = 10 people",
+          alpha = 0.6) +
+  # tm_facets(along = "Group",
+  #           free.coords = FALSE) +
+  tm_shape(ne_nfhza_4269_land_simple) +
+  tm_fill(col = "Interval",
+          palette = c("dodgerblue", "blueviolet"),
+          labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
+          title = "FEMA Flood Zones",
+          alpha = 0.6,
+          border.alpha = 0) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.6) +
+  tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
+  tm_shape(ne_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black",
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_shape(nofemapolys) +
+  tm_fill(col = "gray", alpha = 0.4) +
+  tm_shape(me_nofemapoly) +
+  tm_fill(col = "gray", alpha = 0.4) +
+  # tm_text("LABEL", alpha = 0.5, size = 0.6) +
+  tm_scale_bar(breaks = c(0, 50, 100), text.size = 0.5,
+               position = c("right","bottom")) +
+  tm_add_legend(type = "fill", col = "gray",
+                alpha = 0.4,
+                border.col = "white", border.alpha = 0,
+                labels = "No FEMA Flood Data") +
+  tm_add_legend(type = "fill", col = "darkgoldenrod3",
+                alpha = 0.6,
+                border.col = "white", border.alpha = 0,
+                labels = "1 dot = 10 people") +
+  tm_layout(title = "Persons\nUnder 18\nLiving within\nFlood Zones",
+            frame = TRUE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/FEMA/NE/NE_nhfza_vulnerable9.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable9.png")
+```
+
+```{r tabNFHZAU18, fig.align = "center", fig.cap="Persons Under 18 Living within FEMA Flood Zones."}
+ne_blkgrps_nfhza %>%
+  as.data.frame() %>%
+  left_join(., statepopsdf,by="STATE") %>%
+  group_by(STATE) %>%
+  summarize(`Under 18` = sum(NewUnder18),
+            `Pct of Under 18` = round(sum(NewUnder18)/max(TotalUnder18)*100,1)) %>% 
+  mutate(`Under 18` = as.integer(`Under 18`),
+         `Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
+  kableExtra::kable(longtable = F, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Persons Under 18 Living in FEMA Flood Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
 
 ## Populations of Concern in Hurricane Evacuation Zones {-}
 ```{r mapHEVACPopConcern3, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Disabled Persons Living within Hurricane Evacuation Zones."}
 
 # # create a population subset
-# hevac_sub1 <- ne_hevac_vulnerable %>% 
+# hevac_sub1 <- ne_hevac_vulnerable %>%
 #   filter(Group == "Disabled")
 # 
 # # Map over-represented pops and hurricane evacuation zones
@@ -1730,7 +1998,7 @@ knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable8.png")
 #   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
 #   # tm_shape(ne_states_sf_cb) + tm_borders() +
 #   # tm_shape(ny_state_sf) + tm_borders() +
-#   tm_shape(ne_hevac_vulnerable) +
+#   tm_shape(hevac_sub1) +
 #   tm_dots(col = "springgreen3",
 #           labels = "1 dot = 10 people",
 #           alpha = 0.6) +
@@ -1767,10 +2035,26 @@ knitr::include_graphics("DATA/FEMA/NE/NE_nhfza_vulnerable8.png")
 knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable3.png")
 ```
 
+```{r tabHEVACDIS, fig.align = "center", fig.cap="Disabled Persons Living within Hurricane Evacuation Zones."}
+ne_tracts_hevac %>%
+  as.data.frame() %>%
+  left_join(., statepopsdf,by="STATE") %>%
+  group_by(STATE) %>%
+  summarize(`Disabled` = sum(NewDisabled),
+            `Pct of Disabled` = round(sum(NewDisabled)/max(TotalDisabled)*100,1)) %>% 
+  mutate(`Disabled` = as.integer(`Disabled`),
+         `Pct of Disabled` = paste0(`Pct of Disabled`,"%")) %>% 
+  kableExtra::kable(longtable = F, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Disabled Persons Living in Hurricane Evacuation Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
 ```{r mapHEVACPopConcern4, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Adults without a High School Diploma Living within Hurricane Evacuation Zones."}
 
 # # create a population subset
-# hevac_sub1 <- ne_hevac_vulnerable %>% 
+# hevac_sub1 <- ne_hevac_vulnerable %>%
 #   filter(Group == "No HS Dip")
 # 
 # # Map over-represented pops and hurricane evacuation zones
@@ -1783,7 +2067,7 @@ knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable3.png")
 #   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
 #   # tm_shape(ne_states_sf_cb) + tm_borders() +
 #   # tm_shape(ny_state_sf) + tm_borders() +
-#   tm_shape(ne_hevac_vulnerable) +
+#   tm_shape(hevac_sub1) +
 #   tm_dots(col = "springgreen3",
 #           labels = "1 dot = 10 people",
 #           alpha = 0.6) +
@@ -1820,10 +2104,26 @@ knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable3.png")
 knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable4.png")
 ```
 
+```{r tabHEVACLTHS, fig.align = "center", fig.cap="Adults without a High School Diploma Living within Hurricane Evacuation Zones."}
+ne_blkgrps_hevac %>%
+  as.data.frame() %>%
+  left_join(., statepopsdf,by="STATE") %>%
+  group_by(STATE) %>%
+  summarize(`No HS Dip` = sum(NewLths),
+            `Pct of No HS Dip` = round(sum(NewLths)/max(TotalNoHS)*100,1)) %>% 
+  mutate(`No HS Dip` = as.integer(`No HS Dip`),
+         `Pct of No HS Dip` = paste0(`Pct of No HS Dip`,"%")) %>% 
+  kableExtra::kable(longtable = F, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Adults without a High School Diploma Living in Hurricane Evacuation Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
 ```{r mapHEVACPopConcern5, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Low Income Persons Living within Hurricane Evacuation Zones."}
 
 # # create a population subset
-# hevac_sub1 <- ne_hevac_vulnerable %>% 
+# hevac_sub1 <- ne_hevac_vulnerable %>%
 #   filter(Group == "Low Income")
 # 
 # # Map over-represented pops and hurricane evacuation zones
@@ -1836,7 +2136,7 @@ knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable4.png")
 #   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
 #   # tm_shape(ne_states_sf_cb) + tm_borders() +
 #   # tm_shape(ny_state_sf) + tm_borders() +
-#   tm_shape(ne_hevac_vulnerable) +
+#   tm_shape(hevac_sub1) +
 #   tm_dots(col = "springgreen3",
 #           labels = "1 dot = 10 people",
 #           alpha = 0.6) +
@@ -1873,10 +2173,26 @@ knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable4.png")
 knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable5.png")
 ```
 
+```{r tabHEVACLINC, fig.align = "center", fig.cap="Low Income Persons Living within Hurricane Evacuation Zones."}
+ne_blkgrps_hevac %>%
+  as.data.frame() %>%
+  left_join(., statepopsdf,by="STATE") %>%
+  group_by(STATE) %>%
+  summarize(`Low Income` = sum(NewPov),
+            `Pct of Low Income` = round(sum(NewPov)/max(TotalLowInc)*100,1)) %>% 
+  mutate(`Low Income` = as.integer(`Low Income`),
+         `Pct of Low Income` = paste0(`Pct of Low Income`,"%")) %>% 
+  kableExtra::kable(longtable = F, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Low Income Persons Living in Hurricane Evacuation Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
 ```{r mapHEVACPopConcern6, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Minority Persons Living within Hurricane Evacuation Zones."}
 
 # # create a population subset
-# hevac_sub1 <- ne_hevac_vulnerable %>% 
+# hevac_sub1 <- ne_hevac_vulnerable %>%
 #   filter(Group == "Minority")
 # 
 # # Map over-represented pops and hurricane evacuation zones
@@ -1889,7 +2205,7 @@ knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable5.png")
 #   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
 #   # tm_shape(ne_states_sf_cb) + tm_borders() +
 #   # tm_shape(ny_state_sf) + tm_borders() +
-#   tm_shape(ne_hevac_vulnerable) +
+#   tm_shape(hevac_sub1) +
 #   tm_dots(col = "springgreen3",
 #           labels = "1 dot = 10 people",
 #           alpha = 0.6) +
@@ -1926,10 +2242,26 @@ knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable5.png")
 knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable6.png")
 ```
 
+```{r tabHEVACMIN, fig.align = "center", fig.cap="Minority Persons Living within Hurricane Evacuation Zones."}
+ne_blkgrps_hevac %>%
+  as.data.frame() %>%
+  left_join(., statepopsdf,by="STATE") %>%
+  group_by(STATE) %>%
+  summarize(`Minority` = sum(NewMinority),
+            `Pct of Minority` = round(sum(NewMinority)/max(TotalMin)*100,1)) %>% 
+  mutate(`Minority` = as.integer(`Minority`),
+         `Pct of Minority` = paste0(`Pct of Minority`,"%")) %>% 
+  kableExtra::kable(longtable = F, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Minority Persons Living in Hurricane Evacuation Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
 ```{r mapHEVACPopConcern7, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Persons Over 64 Living within Hurricane Evacuation Zones."}
 
 # # create a population subset
-# hevac_sub1 <- ne_hevac_vulnerable %>% 
+# hevac_sub1 <- ne_hevac_vulnerable %>%
 #   filter(Group == "Over 64")
 # 
 # # Map over-represented pops and hurricane evacuation zones
@@ -1942,7 +2274,7 @@ knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable6.png")
 #   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
 #   # tm_shape(ne_states_sf_cb) + tm_borders() +
 #   # tm_shape(ny_state_sf) + tm_borders() +
-#   tm_shape(ne_hevac_vulnerable) +
+#   tm_shape(hevac_sub1) +
 #   tm_dots(col = "springgreen3",
 #           labels = "1 dot = 10 people",
 #           alpha = 0.6) +
@@ -1979,10 +2311,26 @@ knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable6.png")
 knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable7.png")
 ```
 
+```{r tabHEVACO64, fig.align = "center", fig.cap="Persons Over 64 Living within Hurricane Evacuation Zones."}
+ne_blkgrps_hevac %>%
+  as.data.frame() %>%
+  left_join(., statepopsdf,by="STATE") %>%
+  group_by(STATE) %>%
+  summarize(`Over 64` = sum(NewOver64),
+            `Pct of Over 64` = round(sum(NewOver64)/max(TotalOver64)*100,1)) %>% 
+  mutate(`Over 64` = as.integer(`Over 64`),
+         `Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
+  kableExtra::kable(longtable = F, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Persons Over 64 Living in Hurricane Evacuation Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
 ```{r mapHEVACPopConcern8, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Children Under 5 Living within Hurricane Evacuation Zones."}
 
 # # create a population subset
-# hevac_sub1 <- ne_hevac_vulnerable %>% 
+# hevac_sub1 <- ne_hevac_vulnerable %>%
 #   filter(Group == "Under 5")
 # 
 # # Map over-represented pops and hurricane evacuation zones
@@ -1995,7 +2343,7 @@ knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable7.png")
 #   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
 #   # tm_shape(ne_states_sf_cb) + tm_borders() +
 #   # tm_shape(ny_state_sf) + tm_borders() +
-#   tm_shape(ne_hevac_vulnerable) +
+#   tm_shape(hevac_sub1) +
 #   tm_dots(col = "springgreen3",
 #           labels = "1 dot = 10 people",
 #           alpha = 0.6) +
@@ -2032,10 +2380,26 @@ knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable7.png")
 knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable8.png")
 ```
 
+```{r tabHEVACU5, fig.align = "center", fig.cap="Children Under 5 Living within Hurricane Evacuation Zones."}
+ne_blkgrps_hevac %>%
+  as.data.frame() %>%
+  left_join(., statepopsdf,by="STATE") %>%
+  group_by(STATE) %>%
+  summarize(`Under 5` = sum(NewUnder5),
+            `Pct of Under 5` = round(sum(NewUnder5)/max(TotalUnder5)*100,1)) %>% 
+  mutate(`Under 5` = as.integer(`Under 5`),
+         `Pct of Under 5` = paste0(`Pct of Under 5`,"%")) %>% 
+  kableExtra::kable(longtable = F, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Children Under 5 Living in Hurricane Evacuation Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
 ```{r mapHEVACPopConcern9, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Persons Under 18 Living within Hurricane Evacuation Zones."}
 
 # # create a population subset
-# hevac_sub1 <- ne_hevac_vulnerable %>% 
+# hevac_sub1 <- ne_hevac_vulnerable %>%
 #   filter(Group == "Under 18")
 # 
 # # Map over-represented pops and hurricane evacuation zones
@@ -2048,7 +2412,7 @@ knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable8.png")
 #   tm_shape(ne_awater) + tm_fill(col = "#e6f3f7") +
 #   # tm_shape(ne_states_sf_cb) + tm_borders() +
 #   # tm_shape(ny_state_sf) + tm_borders() +
-#   tm_shape(ne_hevac_vulnerable) +
+#   tm_shape(hevac_sub1) +
 #   tm_dots(col = "springgreen3",
 #           labels = "1 dot = 10 people",
 #           alpha = 0.6) +
@@ -2083,4 +2447,20 @@ knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable8.png")
 #           height = 8, width = 8, units = "in", dpi = 600)
 
 knitr::include_graphics("DATA/FEMA/NE/NE_hevac_vulnerable9.png")
+```
+
+```{r tabHEVACU18, fig.align = "center", fig.cap="Persons Under 18 Living within Hurricane Evacuation Zones."}
+ne_blkgrps_hevac %>%
+  as.data.frame() %>%
+  left_join(., statepopsdf,by="STATE") %>%
+  group_by(STATE) %>%
+  summarize(`Under 18` = sum(NewUnder18),
+            `Pct of Under 18` = round(sum(NewUnder18)/max(TotalUnder18)*100,1)) %>% 
+  mutate(`Under 18` = as.integer(`Under 18`),
+         `Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
+  kableExtra::kable(longtable = F, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Persons Under 18 Living in Hurricane Evacuation Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
