@@ -15,6 +15,14 @@ output:
 ```{r setup, include=FALSE}
 # TAKES ABOUT 37 mins TO KNIT
 knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE)
+
+library(tidyverse)
+library(sf)
+library(tmap)
+library(tmaptools)
+library(lwgeom)
+library(tigris)
+options(tigris_use_cache = TRUE, tigris_class = "sf")
 ```
 \pagebreak
 # Analysis of evacuation-related risks in Connecticut
@@ -23,16 +31,8 @@ This is an analysis of flood or storm surge-related evacuation risks for populat
 
 ## Analysis of Flood Hazard Exposure in Connecticut
 
-```{r NFHZAdata, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+```{r NFHZAdata, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 # Analysis of flooding and hurricane evacuation risks for populations of concern in Connecticut
-library(tidyverse)
-library(sf)
-library(tmap)
-library(tmaptools)
-library(lwgeom)
-library(tigris)
-options(tigris_use_cache = TRUE, tigris_class = "sf")
-
 load("DATA/ne_layers.rds")
 
 # Extract state census units and convert to projected local CRS EPSG:2775: NAD83(HARN) / Connecticut. See https://spatialreference.org/ref/epsg/2775/
@@ -231,7 +231,7 @@ As a humid, coastal state, a significant portion of Connecticut's land area and 
 The analysis of flood exposure presented here is based on the Federal Emergency Management Agency's (FEMA) National Flood Hazard Layer (NFHL), a digital version of FEMA's most recent flood maps.[^NFHL]  FEMA identifies areas subject to varying levels of flood risk through its Flood Insurance Rate Maps (FIRMs), which are produced for most parts of the country to identify areas subject to flooding. FEMA's FIRMs are a national standard used by all federal agencies for the purposes of requiring and rating the purchase of flood insurance and regulating new development.  Population data comes from the American Community Survey (ACS) 2017 5-year estimates at the census tract and block group levels. 
 
 A significant proportion of Connecticut's population lives near the coast or near inland water bodies. As a result, a significant proportion of the population lives near or within known flood zones. Figure \@ref(fig:mapNFHZAPop) below shows the population distribution and areas subject to floods with an Annual Exceedance Probability (AEP) of 1% (also known as a '100-year' flood) and areas subject to 0.2% AEP (also known as a '500-year' flood). Areas within the 1% AEP flood zone are designated by FEMA as Special Flood Hazard Areas, and development within those zones must be covered by flood insurance. Areas within the 0.2% AEP are not currently regulated, but these areas are nevertheless subject to flood risk under more extreme, albeit less frequent, flooding circumstances. Coastal areas within the 0.2% AEP zone are a reasonable proxy measure for the risks of sea level rise. Note that portions of northwest and northeast Connecticut are not currently mapped for flooding risk by FEMA. 
-```{r mapNFHZAdata, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+```{r mapNFHZAdata, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 # Process data for mapping 
 # Create point layer of major cities for context
 # Note cb=FALSE is necessary for extracting centroids from town polygons. Otherwise, if cb=TRUE, cannot extract centroids from multipolygon features.
@@ -501,7 +501,7 @@ ct_FloodPops_df %>%
   #              arrow = arrow(length = unit(0.3,"cm")))
 ```
 
-The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those populations that are disproportionately exposed to flood risk.
+The maps below (Figures \@ref(fig:mapNFHZAPopConcern1) and \@ref(fig:mapNFHZAPopConcern2)) show households without a car and low income persons who are disproportionately exposed to flood risk. Maps for other populations of concern can be found in Figures \@ref(fig:mapNFHZAPopConcern3) to \@ref(fig:mapNFHZAPopConcern10) and breakdowns by municipality in Tables \@ref(tab:tabNFHZANoCar) to \@ref(tab:tabNFHZAU18) in Appendix B.
 
 ```{r mapNFHZAPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut Populations Living within Flood Zones."}
 # Create a dot density map of transit-dependent populations in flood zone
@@ -560,7 +560,7 @@ The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show those populations tha
 ct_nfhza_vulnerable <- readRDS("DATA/FEMA/CT/ct_nfhza_vulnerable.Rds")
 ```
 
-```{r mapNFHZAPopConcern1, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Households without a Car Living within Flood Zones."}
+```{r mapNFHZAPopConcern1, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Households without a Car Living within Flood Zones."}
 nfhza_sub <- ct_nfhza_vulnerable %>% 
   filter(Group == "No Car HH")
 
@@ -621,7 +621,7 @@ tmap_save(m, "DATA/FEMA/CT/CT_nhfza_vulnerable1.png",
 knitr::include_graphics("DATA/FEMA/CT/CT_nhfza_vulnerable1.png")
 ```
 
-```{r mapNFHZAPopConcern2, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Low Income Persons, as Defined by the Connecticut Environmental Justice Policy, Living within Flood Zones."}
+```{r mapNFHZAPopConcern2, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Low Income Persons, as Defined by the Connecticut Environmental Justice Policy, Living within Flood Zones."}
 nfhza_sub <- ct_nfhza_vulnerable %>% 
   filter(Group == "CT Low Income")
 
@@ -684,7 +684,7 @@ knitr::include_graphics("DATA/FEMA/CT/CT_nhfza_vulnerable2.png")
 
 \pagebreak
 ## Analysis of Hurricane Evacuation Risk
-```{r HEVACdata, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+```{r HEVACdata, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 # read in hurricane evacuation zone layer
 ct_hea_sf <- st_read(dsn = "DATA/FEMA/CT/Hurricane Evacuation Zones (2014)", 
                      layer = "geo_export_ca0640ec-4b94-4f5e-b1be-5a02638d3722") %>% 
@@ -883,7 +883,7 @@ ct_HevacPops_df %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Some groups are disproportionately exposed to these hurricane evacuation hazards. While approximately 9.5% of the general population are living within hurricane evacuation zones, households without access to a car, people in low income households, people in limited English speaking households, the elderly (persons over age 64), adults with less than a high school education, individuals with serious disability, and other popultions of concern exceed the population average living within hurricane evacuation zones. These populations of concern are disproportionately exposed hurricane evacuation risk (see Figures \@ref(fig:chartHEVACpop) and \@ref(fig:mapHEVACPopConcern)) below).
+Some groups are disproportionately exposed to these hurricane evacuation hazards. While approximately 9.5% of the general population are living within hurricane evacuation zones, households without access to a car, people in low income households, people in limited English speaking households, the elderly (persons over age 64), adults with less than a high school education, individuals with serious disability, and other popultions of concern exceed the population average living within hurricane evacuation zones. These populations of concern are disproportionately exposed hurricane evacuation risk (see Figure \@ref(fig:chartHEVACpop) below).
 
 ```{r chartHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut Populations Living within Hurricane Evacuation Zones."}
 # Create lollipop plot of pops within flood zones
@@ -914,6 +914,8 @@ ct_HevacPops_df %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(7.5,14.5))
 ```
+
+The maps below (Figures \@ref(fig:mapHEVACPopConcern1) and \@ref(fig:mapHEVACPopConcern2)) show households without a car and low income persons who are disproportionately exposed to hurricane evacuation risk. Maps for other populations of concern can be found in Figures \@ref(fig:mapHEVACPopConcern3) to \@ref(fig:mapHEVACPopConcern10) as well as breakdowns by municipality in Tables \@ref(tab:tabHEVACNoCar) to \@ref(tab:tabHEVACU18) in Appendix B.
 
 ```{r mapHEVACPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut Populations Living within Hurricane Evacuation Zones."}
 # # Create a dot density map of over-represented populations in hurricane evacuation zones
@@ -962,7 +964,7 @@ ct_HevacPops_df %>%
 ct_hevac_vulnerable <- readRDS("DATA/FEMA/CT/ct_hevac_vulnerable.Rds")
 ```
 
-```{r mapHEVACPopConcern1, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Households without a Car Living within Hurricane Evacuation Zones."}
+```{r mapHEVACPopConcern1, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Households without a Car Living within Hurricane Evacuation Zones."}
 # Create data subset
 hevac_sub <- ct_hevac_vulnerable %>% 
   filter(Group == "No Car HH")
@@ -1025,7 +1027,7 @@ tmap_save(m2, "DATA/FEMA/CT/CT_hevac_vulnerable1.png",
 knitr::include_graphics("DATA/FEMA/CT/CT_hevac_vulnerable1.png")
 ```
 
-```{r mapHEVACPopConcern2, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Low Income Persons, as Defined by the Connecticut Environmental Justice Policy, Living within Hurricane Evacuation Zones."}
+```{r mapHEVACPopConcern2, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Low Income Persons, as Defined by the Connecticut Environmental Justice Policy, Living within Hurricane Evacuation Zones."}
 # Create data subset
 hevac_sub <- ct_hevac_vulnerable %>% 
   filter(Group == "CT Low Income")
@@ -1159,7 +1161,7 @@ data.frame(gridCodes,landUse) %>%
 
 The NLCD is produced by the US Geological Survey (USGS) in partnership with several federal agencies as part of the Multi-Resolution Land Characteristics Consortium (MRLC).[^NLCD2016] NLCD identified land cover types based on semi-automated land use calssification algorithms applied to LANDSAT satellite imagery and supplemented with ancillary data.[^NLCDdetails] NLCD is distributed as a raster GeoTIFF at https://www.mrlc.gov/data. 
 
-NLCD data was used to identify developed areas of Census Block Groups in order to better estimate potential flood risk in areas where people are most likely to reside.[^Dasymetric] The NLCD 2016 was downloaded and converted to a vector polygon layer and clipped to New England states. Undeveloped polygon areas were extracted (all GRID codes excluding 22 - 24). These undeveloped areas of the NLCD polygon layer were then used to erase overlapping areas of Census Block Groups. The latter step served to eliminate areas of Census Block Groups that were classified as undeveloped and thus unlikely to be occupied by residences. The remaining developed areas of Census Block Groups were assumed to contain all populations assigned to that respective Block Group. Processing of NLCD and developed Census Block Groups was done in ArcGIS Desktop 10.7. These developed Census Block Group polygons were used for identifying populations at risk from flooding or hurricane storm surge.
+NLCD data was used to identify developed areas of Census Block Groups in order to better estimate potential flood risk in areas where people are most likely to reside.[^Dasymetric] The NLCD 2016 was downloaded and converted to a vector polygon layer and clipped to New England states. Undeveloped polygon areas were extracted (all GRID codes excluding 22 - 24; see Table \@ref(tab:NLCDtab)). These undeveloped areas of the NLCD polygon layer were then used to erase overlapping areas of Census Block Groups. The latter step served to eliminate areas of Census Block Groups that were classified as undeveloped and thus unlikely to be occupied by residences. The remaining developed areas of Census Block Groups were assumed to contain all populations assigned to that respective Block Group. Processing of NLCD and developed Census Block Groups was done in ArcGIS Desktop 10.7. These developed Census Block Group polygons were used for identifying populations at risk from flooding or hurricane storm surge.
 
 ## State Hurricane Evacuation Zones (CT,MA,RI) {-}
 
@@ -1317,7 +1319,7 @@ ct_blkgrps_nfhza %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapNFHZAPopConcern3, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Limited English Speaking Households Living within Flood Zones."}
+```{r mapNFHZAPopConcern3, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Limited English Speaking Households Living within Flood Zones."}
 # Create data subset
 nfhza_sub <- ct_nfhza_vulnerable %>% 
   filter(Group == "Limited English HH")
@@ -1400,7 +1402,7 @@ ct_blkgrps_nfhza %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapNFHZAPopConcern4, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Adults without a High School Diploma Living within Flood Zones."}
+```{r mapNFHZAPopConcern4, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Adults without a High School Diploma Living within Flood Zones."}
 # Create data subset
 nfhza_sub <- ct_nfhza_vulnerable %>% 
   filter(Group == "No HS Dip")
@@ -1483,7 +1485,7 @@ ct_blkgrps_nfhza %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapNFHZAPopConcern5, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Disabled Persons Living within Flood Zones."}
+```{r mapNFHZAPopConcern5, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Disabled Persons Living within Flood Zones."}
 # Create data subset
 nfhza_sub <- ct_nfhza_vulnerable %>% 
   filter(Group == "Disabled")
@@ -1566,7 +1568,7 @@ ct_tracts_nfhza %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapNFHZAPopConcern6, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Low Income Persons Living within Flood Zones."}
+```{r mapNFHZAPopConcern6, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Low Income Persons Living within Flood Zones."}
 # Create data subset
 nfhza_sub <- ct_nfhza_vulnerable %>% 
   filter(Group == "Low Income")
@@ -1649,7 +1651,7 @@ ct_blkgrps_nfhza %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapNFHZAPopConcern7, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Minority Persons Living within Flood Zones."}
+```{r mapNFHZAPopConcern7, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Minority Persons Living within Flood Zones."}
 # Create data subset
 nfhza_sub <- ct_nfhza_vulnerable %>% 
   filter(Group == "Minority")
@@ -1732,7 +1734,7 @@ ct_blkgrps_nfhza %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapNFHZAPopConcern8, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Children Under 5 Living within Flood Zones."}
+```{r mapNFHZAPopConcern8, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Children Under 5 Living within Flood Zones."}
 # Create data subset
 nfhza_sub <- ct_nfhza_vulnerable %>% 
   filter(Group == "Under 5")
@@ -1815,7 +1817,7 @@ ct_blkgrps_nfhza %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapNFHZAPopConcern9, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Persons Over 64 Living within Flood Zones."}
+```{r mapNFHZAPopConcern9, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Persons Over 64 Living within Flood Zones."}
 # Create data subset
 nfhza_sub <- ct_nfhza_vulnerable %>% 
   filter(Group == "Over 64")
@@ -1898,7 +1900,7 @@ ct_blkgrps_nfhza %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapNFHZAPopConcern10, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Persons Under 18 Living within Flood Zones."}
+```{r mapNFHZAPopConcern10, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Persons Under 18 Living within Flood Zones."}
 # Create data subset
 nfhza_sub <- ct_nfhza_vulnerable %>% 
   filter(Group == "Under 18")
@@ -2025,7 +2027,7 @@ ct_blkgrps_hevac %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapHEVACPopConcern3, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Limited English Speaking Households Living within Hurricane Evacuation Zones."}
+```{r mapHEVACPopConcern3, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Limited English Speaking Households Living within Hurricane Evacuation Zones."}
 # Create data subset
 hevac_sub <- ct_hevac_vulnerable %>% 
   filter(Group == "Limited English HH")
@@ -2105,7 +2107,7 @@ ct_blkgrps_hevac %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapHEVACPopConcern4, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Adults without a High School Diploma Living within Hurricane Evacuation Zones."}
+```{r mapHEVACPopConcern4, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Adults without a High School Diploma Living within Hurricane Evacuation Zones."}
 # Create data subset
 hevac_sub <- ct_hevac_vulnerable %>% 
   filter(Group == "No HS Dip")
@@ -2185,7 +2187,7 @@ ct_blkgrps_hevac %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapHEVACPopConcern5, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Disabled Persons Living within Hurricane Evacuation Zones."}
+```{r mapHEVACPopConcern5, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Disabled Persons Living within Hurricane Evacuation Zones."}
 # Create data subset
 hevac_sub <- ct_hevac_vulnerable %>% 
   filter(Group == "Disabled")
@@ -2265,7 +2267,7 @@ ct_tracts_hevac %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapHEVACPopConcern6, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Low Income Persons Living within Hurricane Evacuation Zones."}
+```{r mapHEVACPopConcern6, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Low Income Persons Living within Hurricane Evacuation Zones."}
 # Create data subset
 hevac_sub <- ct_hevac_vulnerable %>% 
   filter(Group == "Low Income")
@@ -2345,7 +2347,7 @@ ct_blkgrps_hevac %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapHEVACPopConcern7, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Minority Persons Living within Hurricane Evacuation Zones."}
+```{r mapHEVACPopConcern7, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Minority Persons Living within Hurricane Evacuation Zones."}
 # Create data subset
 hevac_sub <- ct_hevac_vulnerable %>% 
   filter(Group == "Minority")
@@ -2425,7 +2427,7 @@ ct_blkgrps_hevac %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapHEVACPopConcern8, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Children Under 5 Living within Hurricane Evacuation Zones."}
+```{r mapHEVACPopConcern8, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Children Under 5 Living within Hurricane Evacuation Zones."}
 # Create data subset
 hevac_sub <- ct_hevac_vulnerable %>% 
   filter(Group == "Under 5")
@@ -2505,7 +2507,7 @@ ct_blkgrps_hevac %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapHEVACPopConcern9, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Persons Over 64 Living within Hurricane Evacuation Zones."}
+```{r mapHEVACPopConcern9, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Persons Over 64 Living within Hurricane Evacuation Zones."}
 # Create data subset
 hevac_sub <- ct_hevac_vulnerable %>% 
   filter(Group == "Over 64")
@@ -2585,7 +2587,7 @@ ct_blkgrps_hevac %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapHEVACPopConcern10, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Persons Under 18 Living within Hurricane Evacuation Zones."}
+```{r mapHEVACPopConcern10, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Persons Under 18 Living within Hurricane Evacuation Zones."}
 # Create data subset
 hevac_sub <- ct_hevac_vulnerable %>% 
   filter(Group == "Under 18")
