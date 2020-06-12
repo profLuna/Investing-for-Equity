@@ -1052,6 +1052,8 @@ knitr::include_graphics("DATA/FEMA/RI/RI_hevac_vulnerable2.png")
 
 [^BobMaine]: See Maine Emergency Management Agency. "Hurricanes." https://www.maine.gov/mema/hazards/natural-hazards/hurricanes.
 
+[^BobRI]: See https://www.nhc.noaa.gov/archive/storm_wallets/atlantic/atl1991/bob/preloc/fema02.gif
+
 [^IreneVT]: See Wislon Ring and Jennifer Peltz. 2011. "Vermont Towns Battle Historic Floods From Irene As Death Toll Tops 40." *HuffPost*. Oct 29. https://www.huffpost.com/entry/vermont-towns-battle-flood-irene_n_941207.
 
 [^SandyCT]: See Ken Dixon. 2012. "Sandy storm damage tops $360M in state." *ctpost*. Nov 14. https://www.ctpost.com/news/article/Sandy-storm-damage-tops-360M-in-state-4037538.php.
