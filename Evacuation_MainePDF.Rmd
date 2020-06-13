@@ -1,7 +1,7 @@
 ---
 title: "Evacuation Risks in Maine"
 author: "Marcos Luna and Neenah Estrella-Luna"
-date: "4/8/2020"
+date: "6/12/2020"
 output: 
   bookdown::pdf_document2:
     toc: true
@@ -13,7 +13,15 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE)
+
+library(tidyverse)
+library(sf)
+library(tmap)
+library(tmaptools)
+library(lwgeom)
+library(tigris)
+options(tigris_use_cache = TRUE, tigris_class = "sf")
 ```
 \pagebreak
 # Analysis of evacuation-related risks in Maine
@@ -24,14 +32,6 @@ This is an analysis of flood or storm surge-related evacuation risks for populat
 
 ```{r NFHZAdata, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 # Analysis of flooding and hurricane evacuation risks for populations of concern in Maine
-library(tidyverse)
-library(sf)
-library(tmap)
-library(tmaptools)
-library(lwgeom)
-library(tigris)
-options(tigris_use_cache = TRUE, tigris_class = "sf")
-
 load("DATA/ne_layers.rds")
 
 # Extract state census units and convert to projected local CRS EPSG:2802: NAD83(HARN) / Maine See https://spatialreference.org/ref/epsg/2802/
@@ -177,14 +177,54 @@ me_FloodPops_df <- me_blkgrp_2802 %>%
   left_join(., me_flood_blkgrp_df, by = "Group") %>%
   rbind(.,me_tract_flood_pops_df) %>%
   mutate(PctFlood = FloodPop/MEPop*100)
+
+me_towns_sf <- county_subdivisions(state = "ME", cb = TRUE) %>% 
+  st_transform(., crs = 2802)
+
+town_tracts_df <- me_tracts_2802 %>% 
+  dplyr::select(-GEOID) %>% 
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  group_by(NAME) %>%
+  summarize(TotalDisabled = sum(disabledOver18E, na.rm = TRUE),
+            TotalOver18 = sum(Over18E, na.rm = TRUE),
+            TotalNoCar = sum(HHnoCarE, na.rm = TRUE))
+
+townpopsdf <- me_blkgrp_2802 %>% 
+  dplyr::select(-GEOID) %>% 
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>%
+  mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>% 
+  mutate(RI_MINORITIES = if_else(RI_MINORITY == "M",totalpopE,0)) %>%
+  mutate(RI_MINORITIES = replace_na(RI_MINORITIES,0)) %>%
+  group_by(NAME) %>% 
+  summarize(GEOID = unique(GEOID),
+            TotalPop = sum(totalpopE, na.rm = TRUE),
+            TotalHH = sum(householdsE, na.rm = TRUE),
+            TotalLEH = sum(eng_limitE, na.rm = TRUE),
+            TotalMin = sum(minorityE, na.rm = TRUE),
+            TotalLowInc = sum(num2povE, na.rm = TRUE),
+            TotalNoHS = sum(lthsE, na.rm = TRUE),
+            TotalOver64 = sum(over64E, na.rm = TRUE),
+            TotalUnder5 = sum(under5E, na.rm = TRUE),
+            TotalUnder18 = sum(under18E, na.rm = TRUE)) %>% 
+  left_join(., town_tracts_df, by = "NAME")
+
+
+
+me_state_sf_cb <- ne_states_sf_cb %>% 
+  filter(NAME == "Maine") %>% 
+  st_transform(., crs = st_crs(me_blkgrp_2802))
 ```
 
 As a humid, coastal state, a significant portion of Maine's land area and population are exposed to the risk of flooding from overbanking of inland water bodies (e.g., ponds and rivers) or from coastal storm surge and sea level rise. 
-
-The analysis of flood exposure presented here is based on the Federal Emergency Management Agency's (FEMA) National Flood Hazard Layer (NFHL), a digital version of FEMA's most recent flood maps.  FEMA identifies areas subject to varying levels of flood risk through its Flood Insurance Rate Maps (FIRMs), which are produced for most parts of the country to identify areas subject to flooding. FEMA's FIRMs are a national standard used by all federal agencies for the purposes of requiring and rating the purchase of flood insurance and regulating new development.  Population data comes from the American Community Survey (ACS) 2017 5-year estimates at the census tract and block group levels. 
+The analysis of flood exposure presented here is based on the Federal Emergency Management Agency's (FEMA) National Flood Hazard Layer (NFHL), a digital version of FEMA's most recent flood maps.[^NFHL]  FEMA identifies areas subject to varying levels of flood risk through its Flood Insurance Rate Maps (FIRMs), which are produced for most parts of the country to identify areas subject to flooding. FEMA's FIRMs are a national standard used by all federal agencies for the purposes of requiring and rating the purchase of flood insurance and regulating new development.  Population data comes from the American Community Survey (ACS) 2017 5-year estimates at the census tract and block group levels. 
 
 A significant proportion of Maine's population lives near the coast or near inland water bodies. As a result, a significant proportion of the population lives near or within known flood zones. Figure \@ref(fig:mapNFHZAPop) below shows the population distribution and areas subject to floods with an Annual Exceedance Probability (AEP) of 1% (also known as a '100-year' flood) and areas subject to 0.2% AEP (also known as a '500-year' flood). Areas within the 1% AEP flood zone are designated by FEMA as Special Flood Hazard Areas, and development within those zones must be covered by flood insurance. Areas within the 0.2% AEP are not currently regulated, but these areas are nevertheless subject to flood risk under more extreme, albeit less frequent, flooding circumstances. Coastal areas within the 0.2% AEP zone are a reasonable proxy measure for the risks of sea level rise. Note that portions of northwest and northeast Maine are not currently mapped for flooding risk by FEMA. 
-```{r mapNFHZAdata, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+```{r mapNFHZAdata, include=FALSE}
 # Process data for mapping 
 # Create point layer of major cities for context
 # Note cb=FALSE is necessary for extracting centroids from town polygons. Otherwise, if cb=TRUE, cannot extract centroids from multipolygon features.
@@ -518,17 +558,19 @@ me_FloodPops_df %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = me_FloodPops_df[1,4], linetype = "dashed") +
-  geom_text(aes(x = "No HS Dip", y = 2.9, label = "Above state avg"),
+  geom_text(aes(x = "No HS Dip", y = 2.9, label = "Above state\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "Total Pop", xend = "Total Pop", y = 2.6, yend = 3), 
-               arrow = arrow(length = unit(0.3,"cm")))
+  geom_text(aes(x = "No HS Dip", y = 2.2, label = "Below state\naverage"),
+            color = "gray48")
+  # geom_segment(aes(x = "Total Pop", xend = "Total Pop", y = 2.6, yend = 3), 
+  #              arrow = arrow(length = unit(0.3,"cm")))
 ```
 
-The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show populations disproportionately exposed to flood risk.
+The maps below (Figures \@ref(fig:mapNFHZAPopConcern1) and \@ref(fig:mapNFHZAPopConcern2)) show households without a car and persons over 64 who are disproportionately exposed to flood risk. Maps for other populations of concern can be found in Figures \@ref(fig:mapNFHZAPopConcern3) to \@ref(fig:mapNFHZAPopConcern8) and breakdowns by municipality in Tables \@ref(tab:tabNFHZANoCar) to \@ref(tab:tabNFHZALEH) in Appendix B.
 
-```{r mapNFHZAPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Maine Populations Living within Flood Zones."}
+```{r mapNFHZAPopConcern, include=FALSE}
 # Create a dot density map of transit-dependent populations in flood zone
-
+# # create function to generate random points
 # pop2points <- function(sf, x, group){
 #   x <- enquo(x)
 #   sf %>%
@@ -539,6 +581,8 @@ The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show populations dispropor
 #     mutate(Group = group)
 # }
 # 
+# # LimitEngHH_nfhza_pts <- pop2points(me_blkgrps_nfhza,NewEng_limit,"Limited English HH") # no blkgrps with 10 or more 
+# 
 # NoCarHH_nfhza_pts <- pop2points(me_tracts_nfhza,NewNoCar,"No Car HH")
 # 
 # NoHSdip_nfhza_pts <- pop2points(me_blkgrps_nfhza,NewLths,"No HS Dip")
@@ -547,13 +591,22 @@ The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show populations dispropor
 # 
 # Disabled_nfhza_pts <- pop2points(me_tracts_nfhza,NewDisabled,"Disabled")
 # 
+# Minor_nfhza_pts <- pop2points(me_blkgrps_nfhza,NewMinority,"Minority")
+# 
+# Under5_nfhza_pts <- pop2points(me_blkgrps_nfhza,NewUnder5,"Under 5")
+# 
 # Over64_nfhza_pts <- pop2points(me_blkgrps_nfhza,NewOver64,"Over 64")
+# 
+# Under18_nfhza_pts <- pop2points(me_blkgrps_nfhza,NewUnder18,"Under 18")
 # 
 # # Bring them together
 # me_nfhza_vulnerable <- rbind(NoCarHH_nfhza_pts,
 #                              Disabled_nfhza_pts,
 #                              LowInc_nfhza_pts,
+#                              Minor_nfhza_pts,
 #                              Over64_nfhza_pts,
+#                              Under5_nfhza_pts,
+#                              Under18_nfhza_pts,
 #                              NoHSdip_nfhza_pts) %>%
 #   # slice(sample(1:n())) %>% # randomise order to avoid bias in plotting order
 #   group_by(Group) %>%
@@ -564,8 +617,15 @@ The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show populations dispropor
 # 
 # # save time by just loading file
 # saveRDS(me_nfhza_vulnerable, file = "DATA/FEMA/ME/me_nfhza_vulnerable.Rds")
+
 # load vulnerable point file
-# me_nfhza_vulnerable <- readRDS("DATA/FEMA/ME/me_nfhza_vulnerable.Rds")
+me_nfhza_vulnerable <- readRDS("DATA/FEMA/ME/me_nfhza_vulnerable.Rds")
+```
+
+```{r mapNFHZAPopConcern1, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Households without a Car Living within Flood Zones."}
+# # create pop subset
+# nfhza_sub <- me_nfhza_vulnerable %>% 
+#   filter(Group == "No Car HH")
 # 
 # # # Map over-represented pops and flood zones
 # m2 <- tm_layout(bg.color = "#e6f3f7") +
@@ -574,13 +634,9 @@ The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show populations dispropor
 #   tm_shape(canada) + tm_fill(col = "white") +
 #   # tm_shape(ny_state_sf) + tm_fill(col="white") +
 #   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
-#   tm_shape(me_nfhza_vulnerable) +
-#   tm_dots(col = "darkgoldenrod3",
-#           labels = "1 dot = 10 people",
-#           alpha = 0.8) +
-#   tm_facets(by = "Group",
-#             ncol = 2,
-#             free.coords = FALSE) +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
 #   tm_shape(me_nfhza_2802_land_simple) +
 #   tm_fill(col = "Interval",
 #           palette = c("dodgerblue", "blueviolet"),
@@ -588,9 +644,13 @@ The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show populations dispropor
 #           title = "FEMA Flood Zones",
 #           alpha = 0.6,
 #           border.alpha = 0) +
+#   tm_shape(nfhza_sub) +
+#   tm_dots(col = "darkgoldenrod3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.8) +
 #   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2) +
 #   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
-#   tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 1) +
+#   tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 0.5) +
 #   tm_shape(I295roadSegment) +
 #   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
 #   tm_shape(I95roadSegment) +
@@ -608,21 +668,76 @@ The maps below (Figure \@ref(fig:mapNFHZAPopConcern)) show populations dispropor
 #   tm_add_legend(type = "fill", col = "darkgoldenrod3",
 #                 alpha = 0.6,
 #                 border.col = "white", border.alpha = 0,
-#                 labels = "1 dot = 10 people",
-#                 title = "Population Group") +
-#   tm_layout(title = "Selected\nPopulations\nLiving within\nFlood Zones",
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Households\nwithout a Car\nLiving within\nFlood Zones",
 #             frame = TRUE, main.title.size = 0.8,
 #             legend.outside = TRUE,
 #             legend.title.size = 0.8,
-#             legend.outside.position = c("right", "top"),
-#             # legend.outside.position = "bottom",
-#             legend.outside.size = 0.15,
-#             asp = 10/15)
+#             legend.outside.position = c("right", "top"))
 # 
-# tmap_save(m2, "DATA/FEMA/ME/ME_nhfza_vulnerable.png",
-#           height = 9, width = 8, units = "in", dpi = 600)
+# tmap_save(m2, "DATA/FEMA/ME/ME_nhfza_vulnerable1.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/FEMA/ME/ME_nhfza_vulnerable.png")
+knitr::include_graphics("DATA/FEMA/ME/ME_nhfza_vulnerable1.png")
+```
+
+```{r mapNFHZAPopConcern2, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Persons Over 64 Living within Flood Zones."}
+# # create pop subset
+# nfhza_sub <- me_nfhza_vulnerable %>% 
+#   filter(Group == "Over 64")
+# 
+# # # Map over-represented pops and flood zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(me_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   # tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(me_nfhza_2802_land_simple) +
+#   tm_fill(col = "Interval",
+#           palette = c("dodgerblue", "blueviolet"),
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
+#           title = "FEMA Flood Zones",
+#           alpha = 0.6,
+#           border.alpha = 0) +
+#   tm_shape(nfhza_sub) +
+#   tm_dots(col = "darkgoldenrod3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.8) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2) +
+#   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
+#   tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 0.5) +
+#   tm_shape(I295roadSegment) +
+#   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(me_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_shape(nofemapolys) +
+#   tm_fill(col = "gray", alpha = 0.4) +
+#   tm_text("LABEL", alpha = 0.5, size = 0.6) +
+#   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5,
+#                position = c("right","BOTTOM")) +
+#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Persons\nOver 64\nLiving within\nFlood Zones",
+#             frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m2, "DATA/FEMA/ME/ME_nhfza_vulnerable2.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/ME/ME_nhfza_vulnerable2.png")
 ```
 
 \pagebreak
@@ -710,17 +825,7 @@ me_HevacPops_df <- me_blkgrp_2802 %>%
   left_join(., me_hevac_blkgrp_df, by = "Group") %>%
   rbind(.,me_trame_hevac_pops_df) %>%
   mutate(PctHevac = HevacPop/MEPop*100)
-```
 
-Maine is subject to hurricane risk. Since 1900, Maine has been struck by hurricanes four times. The most recent hurricane to hit Maine directly was [Hurricane Bob in 1991](https://www.mass.gov/service-details/the-worst-Maine-hurricanes-of-the-20th-century), a Category 2 storm that affected six counties in the southern and central part of the state. [The storm resulted in 3 deaths, power outages, and over $5 million in damages as well as a presidential disaster declaration](https://www.maine.gov/mema/hazards/natural-hazards/hurricanes). Hurricane Sandy in 2012 had been downgraded to a tropical storm by the time it hit Maine, but nevertheless [left 90,000 people across the state without power due to high winds](https://bangordailynews.com/2012/10/29/news/portland/hurricane-sandy-remains-unpredictable-for-maine-especially-islanders/). In general, Maine is subject to a [hurricane return period of between 29 and 59 years, depending on the area](https://www.nhc.noaa.gov/climo/#returns). 
-
-Hurricane intensity is ranked from 1 to 5 on the Saffir-Simpson scale, which is based on sustained wind speeds. However the most destructive and deadly aspects of hurricanes are due to storm surge - ocean water pushed inland by the high winds. This coastal storm surge may be combined with intense rainfall which can exacerbate flooding. As a result, coastal evacuation may be necessary as a hurricane approaches.
-
-The analysis of hurricane evacuation risk presented here is based on [storm surge modeling by the National Weather Service's National Hurricane Center](https://www.nhc.noaa.gov/nationalsurge/) using the hydrodynamic Sea, Lake, and Overland Surges from Hurricanes (SLOSH) model to simulate storm surge from tropical cyclones. These data products are provided to federal, state, and local government agencies to assist in planning, risk assessment studies, and operational decision-making. Population data comes from the American Community Survey (ACS) 2017 5-year estimates at the census tract and block group levels. 
-
-A significant proportion of Maine's population lives near the coast and is therefore within areas subject to inundation due to hurricane storm surge. Figure \@ref(fig:mapHEVACPop) below shows the population distribution and areas subject to hurricane inundation. Zone “A” is recommended to be evacuated prior to an expected category 1 or 2 hurricane.  Zone “B” is recommended to be evacuated prior to an expected category 3 or 4 hurricane.
-
-```{r mapHEVACPop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hurricane inundation zones and population distribution across Maine at Census Block Group level."}
 # Create a simplified version of hea polygons to speed up mapping
 empty_geo <- st_is_empty(me_hea_sf)
 me_hea_sf <- me_hea_sf[!empty_geo,]
@@ -736,77 +841,92 @@ me_hea_sf_simple <- me_hea_sf %>%
   summarize() %>% 
   st_make_valid() %>%
   mutate(Area = st_area(.))
+```
 
-# # create tailored labels for close-up of hurricane areas
-# I95roadSegment2 <- me_highways %>% 
-#   filter(LINEARID == "1105569136123")
+Maine is subject to hurricane risk. Since 1900, Maine has been struck by hurricanes four times. The most recent hurricane to hit Maine directly was [Hurricane Bob in 1991](https://www.mass.gov/service-details/the-worst-Maine-hurricanes-of-the-20th-century),[^HurricaneBob] a Category 2 storm that affected six counties in the southern and central part of the state. [The storm resulted in 3 deaths, power outages, and over $5 million in damages as well as a presidential disaster declaration](https://www.maine.gov/mema/hazards/natural-hazards/hurricanes).[^BobMaine] Hurricane Sandy in 2012 had been downgraded to a tropical storm by the time it hit Maine, but nevertheless [left 90,000 people across the state without power due to high winds](https://bangordailynews.com/2012/10/29/news/portland/hurricane-sandy-remains-unpredictable-for-maine-especially-islanders/).[^SandyME] In general, Maine is subject to a [hurricane return period of between 29 and 59 years, depending on the area](https://www.nhc.noaa.gov/climo/#returns).[^HurricaneReturn] 
+
+Hurricane intensity is ranked from 1 to 5 on the Saffir-Simpson scale, which is based on sustained wind speeds. However the most destructive and deadly aspects of hurricanes are due to storm surge - ocean water pushed inland by the high winds. This coastal storm surge may be combined with intense rainfall which can exacerbate flooding. As a result, coastal evacuation may be necessary as a hurricane approaches.
+
+The analysis of hurricane evacuation risk presented here is based on [storm surge modeling by the National Weather Service's National Hurricane Center](https://www.nhc.noaa.gov/nationalsurge/) using the hydrodynamic Sea, Lake, and Overland Surges from Hurricanes (SLOSH) model to simulate storm surge from tropical cyclones. These data products are provided to federal, state, and local government agencies to assist in planning, risk assessment studies, and operational decision-making.[^SurgeModel] Population data comes from the American Community Survey (ACS) 2017 5-year estimates at the census tract and block group levels. 
+
+A significant proportion of Maine's population lives near the coast and is therefore within areas subject to inundation due to hurricane storm surge. Figure \@ref(fig:mapHEVACPop) below shows the population distribution and areas subject to hurricane inundation. Zone “A” is recommended to be evacuated prior to an expected category 1 or 2 hurricane.  Zone “B” is recommended to be evacuated prior to an expected category 3 or 4 hurricane.
+
+```{r mapHEVACPop, fig.align = "center", fig.cap="Hurricane inundation zones and population distribution across Maine at Census Block Group level."}
+# # # create tailored labels for close-up of hurricane areas
+# # I95roadSegment2 <- me_highways %>% 
+# #   filter(LINEARID == "1105569136123")
+# # 
+# # # add labels for towns for close-up of hurricane areas
+# # me_towns_sf_pts2 <- county_subdivisions(state = "ME", cb = TRUE) %>% 
+# #   filter(NAME %in% c("Seabrook",
+# #                      "Hampton",
+# #                      "Hampton Falls",
+# #                      "North Hampton",
+# #                      "Rye",
+# #                      "Portsmouth",
+# #                      "Newington",
+# #                      "Greenland",
+# #                      "Durham",
+# #                      "Dover")) %>% 
+# #   st_transform(., crs = 2802) %>% 
+# #   st_centroid(of_largest_polygon = TRUE)
 # 
-# # add labels for towns for close-up of hurricane areas
-# me_towns_sf_pts2 <- county_subdivisions(state = "ME", cb = TRUE) %>% 
-#   filter(NAME %in% c("Seabrook",
-#                      "Hampton",
-#                      "Hampton Falls",
-#                      "North Hampton",
-#                      "Rye",
-#                      "Portsmouth",
-#                      "Newington",
-#                      "Greenland",
-#                      "Durham",
-#                      "Dover")) %>% 
-#   st_transform(., crs = 2802) %>% 
-#   st_centroid(of_largest_polygon = TRUE)
+# # # clip water to area of focus for faster mapping
+# # coastalWater <- me_counties_sf %>% 
+# #   filter(NAME %in% c("Rockingham","Strafford")) %>% 
+# #   crop_shape(me_awater_sf,.,polygon = TRUE)
+# 
+# # Map totalpop and hurricane inundation zones
+# m <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(me_hea_sf_simple, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(me_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   # tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") + 
+#   # tm_shape(ne_states_sf_cb) + tm_borders() +
+#   # tm_shape(ny_state_sf) + tm_borders() +
+#   tm_shape(me_hea_sf) + 
+#   tm_fill(col = "Zone", 
+#           palette = c("deeppink", "purple3"), 
+#           labels = c("A: Category 1 - 2", 
+#                      "B: Category 3 - 4"), 
+#           title = "Inundation Zone and\nHurricane Category",
+#           alpha = 0.6,
+#           border.alpha = 0) +
+#   tm_shape(me_totalpop_pts) + 
+#   tm_dots(col = "springgreen3",
+#           labels = "1 dot = 500 people",
+#           alpha = 0.8) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.8) +
+#   # tm_shape(me_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 1) +
+#   tm_shape(I295roadSegment) + 
+#   tm_symbols(shape = I295, border.lwd = NA, size = 0.15) +
+#   tm_shape(I95roadSegment) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+#   tm_shape(I95roadSegment2) + 
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+#   tm_shape(me_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black", 
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
+#                position = c("right","bottom")) +
+#   tm_add_legend(type = "fill", col = "springgreen3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 500 people",
+#                 title = "Total Population") +
+#   tm_layout(title = "Total Population\nDistribution\nand Hurricane\nInundation Zones", 
+#             frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m, "DATA/FEMA/ME/ME_hevac.png",
+#           height = 4, width = 8, units = "in", dpi = 600)
 
-# # clip water to area of focus for faster mapping
-# coastalWater <- me_counties_sf %>% 
-#   filter(NAME %in% c("Rockingham","Strafford")) %>% 
-#   crop_shape(me_awater_sf,.,polygon = TRUE)
-
-# Map totalpop and hurricane inundation zones
-tm_layout(bg.color = "#e6f3f7") +
-  tm_shape(me_hea_sf_simple, unit = "mi") + tm_fill(col = "white") +
-  tm_shape(me_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
-  tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
-  # tm_shape(ny_state_sf) + tm_fill(col="white") +
-  tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") + 
-  # tm_shape(ne_states_sf_cb) + tm_borders() +
-  # tm_shape(ny_state_sf) + tm_borders() +
-  tm_shape(me_hea_sf) + 
-  tm_fill(col = "Zone", 
-          palette = c("deeppink", "purple3"), 
-          labels = c("A: Category 1 - 2", 
-                     "B: Category 3 - 4"), 
-          title = "Inundation Zone and\nHurricane Category",
-          alpha = 0.6,
-          border.alpha = 0) +
-  tm_shape(me_totalpop_pts) + 
-  tm_dots(col = "springgreen3",
-          labels = "1 dot = 500 people",
-          alpha = 0.8) +
-  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
-  # tm_shape(ny_state_sf) + tm_borders(lwd = 0.8) +
-  # tm_shape(me_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
-  tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 1) +
-  tm_shape(I295roadSegment) + 
-  tm_symbols(shape = I295, border.lwd = NA, size = 0.15) +
-  tm_shape(I95roadSegment) +
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
-  tm_shape(I95roadSegment2) + 
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
-  tm_shape(me_towns_sf_pts) + tm_dots() +
-  tm_text("NAME", size = 0.5, col = "black", 
-          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
-               position = c("right","bottom")) +
-  tm_add_legend(type = "fill", col = "springgreen3",
-                alpha = 0.6,
-                border.col = "white", border.alpha = 0,
-                labels = "1 dot = 500 people",
-                title = "Total Population") +
-  tm_layout(title = "Total Population\nDistribution \nand Hurricane\nInundation Zones", 
-            frame = TRUE, main.title.size = 0.8,
-            legend.outside = TRUE,
-            legend.title.size = 0.8,
-            legend.outside.position = c("right", "top"))
+knitr::include_graphics("DATA/FEMA/ME/ME_hevac.png")
 ```
 
 Approximately 0.8% of Maine's land area falls within areas subject to hurricane inundation. The breakdown by hurricane inundation zone is presented in Table \@ref(tab:tabHEVACarea) below.
@@ -863,30 +983,47 @@ me_HevacPops_df %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = me_HevacPops_df[1,4], linetype = "dashed") +
-  geom_text(aes(x = "Disabled", y = 6, label = "Above state avg"),
+  geom_text(aes(x = "Disabled", y = 6, label = "Above state\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "Total Pop", xend = "Total Pop", y = 5, yend = 7), 
-               arrow = arrow(length = unit(0.3,"cm")))
+  geom_text(aes(x = "Disabled", y = 3.5, label = "Below state\naverage"),
+            color = "gray48") +
+  expand_limits(y=c(3,10))
+  # geom_segment(aes(x = "Total Pop", xend = "Total Pop", y = 5, yend = 7), 
+  #              arrow = arrow(length = unit(0.3,"cm")))
 ```
 
-```{r mapHEVACPopConcern, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Maine Populations Living within Hurricane Inundation Zones."}
+The maps below (Figures \@ref(fig:mapHEVACPopConcern1) and \@ref(fig:mapHEVACPopConcern2)) show limited English speaking households and households without a car which are disproportionately exposed to hurricane evacuation risk. Maps for other populations of concern can be found in Figures \@ref(fig:mapHEVACPopConcern3) to \@ref(fig:mapHEVACPopConcern9) and breakdowns by municipality in Tables \@ref(tab:tabHEVACLEH) to \@ref(tab:tabHEVACU18) in Appendix B.
+
+```{r mapHEVACPopConcern, include=FALSE}
 # # Create a dot density map of over-represented populations in hurricane evacuation zones
 # LimitEngHH_hevac_pts <- pop2points(me_blkgrps_hevac,NewEng_limit,"Limited English HH")
 # 
+# NoCarHH_hevac_pts <- pop2points(me_tracts_hevac,NewNoCar,"No Car HH")
+# 
+# NoHSdip_hevac_pts <- pop2points(me_blkgrps_hevac,NewLths,"No HS Dip")
+# 
+# LowInc_hevac_pts <- pop2points(me_blkgrps_hevac,NewPov,"Low Income")
+# 
+# Disabled_hevac_pts <- pop2points(me_tracts_hevac,NewDisabled,"Disabled")
+# 
 # Minor_hevac_pts <- pop2points(me_blkgrps_hevac,NewMinority,"Minority")
+# 
+# Under5_hevac_pts <- pop2points(me_blkgrps_hevac,NewUnder5,"Under 5")
 # 
 # Over64_hevac_pts <- pop2points(me_blkgrps_hevac,NewOver64,"Over 64")
 # 
-# NoCarHH_hevac_pts <- pop2points(me_tracts_hevac,NewNoCar,"No Car HH")
-# 
-# Disabled_hevac_pts <- pop2points(me_tracts_hevac,NewNoCar,"Disabled")
+# Under18_hevac_pts <- pop2points(me_blkgrps_hevac,NewUnder18,"Under 18")
 # 
 # # Bring them together
-# me_hevac_vulnerable <- rbind(LimitEngHH_hevac_pts,
+# me_hevac_vulnerable <- rbind(NoCarHH_hevac_pts,
+#                              LimitEngHH_hevac_pts,
+#                              Disabled_hevac_pts,
+#                              LowInc_hevac_pts,
 #                              Minor_hevac_pts,
-#                              NoCarHH_hevac_pts,
 #                              Over64_hevac_pts,
-#                              Disabled_hevac_pts) %>%
+#                              Under5_hevac_pts,
+#                              Under18_hevac_pts,
+#                              NoHSdip_hevac_pts) %>%
 #   # slice(sample(1:n())) %>% # randomise order to avoid bias in plotting order
 #   group_by(Group) %>%
 #   summarize()
@@ -896,8 +1033,15 @@ me_HevacPops_df %>%
 # 
 # # save time by just loading file
 # saveRDS(me_hevac_vulnerable, file = "DATA/FEMA/ME/me_hevac_vulnerable.Rds")
+
 # load vulnerable point file
-# me_hevac_vulnerable <- readRDS("DATA/FEMA/ME/me_hevac_vulnerable.Rds")
+me_hevac_vulnerable <- readRDS("DATA/FEMA/ME/me_hevac_vulnerable.Rds")
+```
+
+```{r mapHEVACPopConcern1, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Limited English Speaking Households Living within Hurricane Inundation Zones."}
+# # Create data subset
+# hevac_sub <- me_hevac_vulnerable %>% 
+#   filter(Group == "Limited English HH")
 # 
 # # Map over-represented pops and hurricane evacuation zones
 # m2 <- tm_layout(bg.color = "#e6f3f7") +
@@ -920,9 +1064,9 @@ me_HevacPops_df %>%
 #   tm_dots(col = "springgreen3",
 #           labels = "1 dot = 10 people",
 #           alpha = 1) +
-#   tm_facets(by = "Group",
-#             ncol = 2,
-#             free.coords = FALSE) +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
 #   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.5) +
 #   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.8) +
 #   # tm_shape(me_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
@@ -943,17 +1087,1440 @@ me_HevacPops_df %>%
 #   tm_add_legend(type = "fill", col = "springgreen3",
 #                 alpha = 0.6,
 #                 border.col = "white", border.alpha = 0,
-#                 labels = "1 dot = 10 people",
-#                 title = "Total Population") +
-#   tm_layout(title = "Selected\nPopulations Living\nwithin Hurricane\nInundation Zones", frame = TRUE, main.title.size = 0.8,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Limited\nEnglish\nSpeaking\nHouseholds\nwithin Hurricane\nInundation Zones", frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8)
+# 
+# tmap_save(m2, "DATA/FEMA/ME/ME_hevac_vulnerable1.png",
+#           height = 4, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/ME/ME_hevac_vulnerable1.png")
+```
+
+```{r mapHEVACPopConcern2, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Households without a Car Living within Hurricane Inundation Zones."}
+# # Create data subset
+# hevac_sub <- me_hevac_vulnerable %>% 
+#   filter(Group == "No Car HH")
+# 
+# # Map over-represented pops and hurricane evacuation zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(me_hea_sf_simple, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(me_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   # tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
+#   tm_shape(ne_states_sf_cb) + tm_borders() +
+#   # tm_shape(ny_state_sf) + tm_borders() +
+#   tm_shape(me_hea_sf_simple) +
+#   tm_fill(col = "Zone",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
+#           title = "Inundation Zone and\nHurricane Category",
+#           alpha = 0.8,
+#           border.alpha = 0) +
+#   tm_shape(me_hevac_vulnerable) +
+#   tm_dots(col = "springgreen3",
+#           labels = "1 dot = 10 people",
+#           alpha = 1) +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.5) +
+#   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.8) +
+#   # tm_shape(me_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   tm_shape(I295roadSegment) +
+#   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(me_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5,
+#                position = c("right","BOTTOM")) +
+#   tm_add_legend(type = "fill", col = "springgreen3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Households\nwithout a Car\nwithin Hurricane\nInundation Zones", frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8)
+# 
+# tmap_save(m2, "DATA/FEMA/ME/ME_hevac_vulnerable2.png",
+#           height = 4, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/ME/ME_hevac_vulnerable2.png")
+```
+
+
+
+[^NFHL]: See FEMA National Flood Hazard Layer (NFHL). https://www.fema.gov/national-flood-hazard-layer-nfhl.
+
+[^NHCsloshMaps]: The National Hurricane Center provides static and interactive maps of storm surge flooding vulnerability across the country based on SLOSH modeling. See NOAA National Hurricane Center and Central Pacific Hurricane Center. National Storm Surge Hazard Maps - Version 2. https://www.nhc.noaa.gov/nationalsurge/
+
+[^HurricaneBob]: See Mass.gov. "The Worst Massachusetts Hurricanes of the 20th Century." https://www.mass.gov/service-details/the-worst-massachusetts-hurricanes-of-the-20th-century. See also The Northeast States Emergency Consortium (NESEC). "Hurricanes." http://nesec.org/hurricanes/.
+
+[^BobMaine]: See Maine Emergency Management Agency. "Hurricanes." https://www.maine.gov/mema/hazards/natural-hazards/hurricanes.
+
+[^BobRI]: See https://www.nhc.noaa.gov/archive/storm_wallets/atlantic/atl1991/bob/preloc/fema02.gif
+
+[^IreneVT]: See Wislon Ring and Jennifer Peltz. 2011. "Vermont Towns Battle Historic Floods From Irene As Death Toll Tops 40." *HuffPost*. Oct 29. https://www.huffpost.com/entry/vermont-towns-battle-flood-irene_n_941207.
+
+[^SandyCT]: See Ken Dixon. 2012. "Sandy storm damage tops $360M in state." *ctpost*. Nov 14. https://www.ctpost.com/news/article/Sandy-storm-damage-tops-360M-in-state-4037538.php.
+
+[^SandyME]: See Seth Koenig. 2012. "Sandy knocks out power for thousands of Mainers; flood watch inland." *BDN Portland*. Oct 29. https://bangordailynews.com/2012/10/29/news/portland/hurricane-sandy-remains-unpredictable-for-maine-especially-islanders/.
+
+[^HurricaneReturn]: See NOAA National Hurricane Center and Central Pacific Hurricane Center. "Tropical Cyclone Climatology - U.S. Hurricane Return Periods." https://www.nhc.noaa.gov/climo/#returns.
+
+[^SurgeModel]: See NOAA National Hurricane Center and Central Pacific Hurricane Center. "National Storm Surge Hazard Maps - Version 2." https://www.nhc.noaa.gov/nationalsurge/.
+
+[^Bruggers2018]: James Bruggers. Nov 1, 2018. "FEMA Flood Maps Ignore Climate Change, and Homeowners Are Paying the Price." *Insideclimatenews.* https://insideclimatenews.org/news/01112018/fema-flood-map-climate-change-hurricane-mexico-beach-florida-sea-level-rise 
+
+[^Dasymetric]: Areal apportionment of populations for mapping and analysis, also known as dasymetric mapping, is commonly used method to improve risk assessment of flooding. See for example Yi Qiang. 2019. "Disparities of population exposed to flood hazards in the United States." *Journal of Environmental Management* 232:295-304; Yi Qiang, Nina S. N. Lam, Heng Cai, and Lei Zou. 2017. "Changes in Exposure to Flood Hazards in the United States." *Annals of the American Association of Geographers* 107(6):1332-1350. https://doi.org/10.1080/24694452.2017.1320214
+
+[^NLCD2016]: See MRLC NLCD 2016 Land Cover (CONUS). https://www.mrlc.gov/data/nlcd-2016-land-cover-conus.
+
+[^NLCDdetails]: See Collin Homer, Jon Dewitz, Suming Jin, George Xian, Catherine Costello, Patrick Danielson, Leila Gass, Michelle Funk, James Wickham, Stephen Stehman, Roger Auch, and Kurt Riitters. 2020. "Conterminous United States land cover change patterns 2001–2016 from the 2016 National Land Cover Database." *ISPRS Journal of Photogrammetry and Remote Sensing* 162: 184-199. https://doi.org/10.1016/j.isprsjprs.2020.02.019.
+
+
+\pagebreak
+# Appendix A: Data and Methodology {-}
+
+The analyses presented here are based on data from five sources:
+
+* FEMA National Flood Hazard Layer (NFHL)
+* MRLC National Land Cover Database (NLCD)
+* State Hurricane Evacuation Zones (CT,MA,RI)
+* NOAA Sea, Lake, and Overland Surges from Hurricanes (SLOSH) model
+* American Community Survey 5-year Estimates
+  + Population demographics
+
+## FEMA National Flood Hazard Layer (NFHL) {-}
+
+As part of the National Flood Insurance Program, the U.S. Federal Emergency Management Agency (FEMA) produces maps of flood risk across the nation. These flood risk maps are based on . 
+
+The National Flood Hazard Layer (NFHL) is a digital geospatial database that contains current effective flood hazard mapping data from the U.S. Federal Emergency Management Agnecy's (FEMA) National Flood Insurance Program (NFIP). NFHL data is available for download at https://msc.fema.gov/portal/advanceSearch. This geodatabase identifies areas subject to various levels of flood risk as determined by FEMA, consistent with Flood Insurance Rate Maps (FIRMs), based upon hydrodynamic models as well as historic flooding. 
+
+This analysis focused on identifying populations at risk from floods with a 1% or 0.2% annual exceedance probability. The 1% annual exceedance probability flood, sometimes referred to as a '100-year' flood, is a flood with a 1% chance of being equaled or exceeded in a given year. Areas subject to the 1% flood risk are designated as Special Flood Hazard Areas. Properties within these these flood risk zones are required to carry flood insurance in order to participate in the National Flood Insurance Program. The 0.2% exceedance probability flood, sometimes referred to as a '500-year' flood, is a flood with a 0.2% chance of being equaled or exceeded in a given year. There is no federal regulatory requirement for properties within areas subject to 0.2% annual exceedance probability flood risk. While lower risk, these areas are frequently identified as areas subject to flooding under extreme or worst case scenarios. Note that FEMA flood risk designations do not take into consideration increasing or projected flood risk due to sea level rise, more extreme rainfall events, or other climate change-enhanced risks.[^Bruggers2018] 
+
+In order to identify populations at risk from floods with a 1% or 0.2% annual exceedance probability, NFHL polygons pertaining to the 1% flood risk (zones A, AE, AH, AO, and VE) and the 0.2% flood risk (zone X), and excluding water or areas of "minimal flood hazard," were extracted and intersected with the developed portions of Census Block Groups. Developed portions of Census Block Groups were identified based upon the National Land Cover Database (NLCD), using a process of areal apportionment (see below). The population at risk from flooding was calculated as the product of the  areal proportion of the intersecting flood and developed Block Group polygons:
+
+*Population at risk = Proportion of developed Block Group Intersection x Population of developed Block Group*
+
+For example, if 10% of the developed area of a Census Block Group intersected/overlapped with a flood polygon, it was assumed that 10% of the population is exposed to that flood risk. Assuming a population of 100 people in the developed portion of the Block Group, this would mean *100 x .10 = 10* people would be subject to flood risk. FEMA flood risk modeling was done in R.
+
+
+## MRLC National Land Cover Database (NLCD) {-}
+
+The National Land Cover Database (NLCD) provides nationwide data on land cover and land cover change at a 30m resolution with a 16-class legend based on a modified Anderson Level II classification system:
+
+```{r NLCDtab}
+gridCodes <- c(11,12,21,22,23,24,31,41,42,43,51,52,71,72,73,74,81,82,90,95)
+
+landUse <- c("Open Water", "Perennial Ice/Snow", "Developed, Open Space", "Developed, Low Intensity", "Developed, Medium Intensity", "Developed, High Intensity", "Barren Land (Rock/Sand/Clay)", "Deciduous Forest", "Evergreen Forest", "Mixed Forest", "Dwarf Scrub", "Shrub/Scrub", "Grassland/Herbaceous", "Sedge/Herbaceous", "Lichens", "Moss", "Pasture/Hay", "Cultivated Crops", "Woody Wetlands", "Emergent Herbaceous Wetlands")
+
+data.frame(gridCodes,landUse) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    col.names = c("GRID Code","Land Use Description"),
+                    caption = "NLCD 2016 Land Cover Codes and Classifications", align = "l") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
+The NLCD is produced by the US Geological Survey (USGS) in partnership with several federal agencies as part of the Multi-Resolution Land Characteristics Consortium (MRLC).[^NLCD2016] NLCD identified land cover types based on semi-automated land use calssification algorithms applied to LANDSAT satellite imagery and supplemented with ancillary data.[^NLCDdetails] NLCD is distributed as a raster GeoTIFF at https://www.mrlc.gov/data. 
+
+NLCD data was used to identify developed areas of Census Block Groups in order to better estimate potential flood risk in areas where people are most likely to reside.[^Dasymetric] The NLCD 2016 was downloaded and converted to a vector polygon layer and clipped to New England states. Undeveloped polygon areas were extracted (all GRID codes excluding 22 - 24; see Table \@ref(tab:NLCDtab)). These undeveloped areas of the NLCD polygon layer were then used to erase overlapping areas of Census Block Groups. The latter step served to eliminate areas of Census Block Groups that were classified as undeveloped and thus unlikely to be occupied by residences. The remaining developed areas of Census Block Groups were assumed to contain all populations assigned to that respective Block Group. Processing of NLCD and developed Census Block Groups was done in ArcGIS Desktop 10.7. These developed Census Block Group polygons were used for identifying populations at risk from flooding or hurricane storm surge.
+
+## State Hurricane Evacuation Zones (CT,MA,RI) {-}
+
+Connecticut, Massachusetts, and Rhode Island provide maps and geospatial layers identifying evacuation zones in their respective states in the event of a hurricane. These hurricane evaucation zone maps were developed in cooperation between state emergency management agencies and the U.S. Army Corps of Enginneers. Hurricane storm surge risk was based on the SLOSH (Sea, Lake, and Overland Surges from Hurricanes) model, which is a numerical model used by the National Weather Service to compute storm surge. Hurricane evaucation zones generally encompass an area larger than the specific areas subject to inundation. 
+Connecticut Hurricane Evacuation Zones: https://data.ct.gov/Public-Safety/Hurricane-Evacuation-Zones-2014-/kdsj-af66
+Massachusetts Hurricane Evacuation Zones: https://www.nae.usace.army.mil/Missions/Projects-Topics/Massachusetts-Hurricane-Studies/
+Rhode Island Hurricane Evacuation Zones: http://www.riema.ri.gov/resources/citizens/prepare/evacuation.php 
+
+In order to identify populations at risk from hurricane evacuation, hurricane evacuation zone polygons were intersected with the developed portions of Census Block Groups. Developed portions of Census Block Groups were identified based upon the National Land Cover Database (NLCD), using a process of areal apportionment (see above). The population at risk from hurricane evacuation risk was calculated as the product of the  areal proportion of the intersecting evacuation zone and developed Block Group polygons:
+
+*Population at risk = Proportion of developed Block Group Intersection x Population of developed Block Group*
+
+For example, if 10% of the developed area of a Census Block Group intersected/overlapped with a hurricane evacuation zone, it was assumed that 10% of the population is exposed to that evacuation risk. Assuming a population of 100 people in the developed portion of the Block Group, this would mean *100 x .10 = 10* people would be subject to hurricane evacuation risk. 
+
+## NOAA Sea, Lake, and Overland Surges from Hurricanes (SLOSH) model (ME,NH) {-}
+
+The National Oceanic and Atmospheric Administration (NOAA), specifically the National Weather Service's (NWS) National Hurricane Center (NHC), utilizes the hydrodynamic Sea, Lake, and Overland Surges from Hurricanes (SLOSH) model to simulate storm surge from tropical cyclones, including hurricanes. SLOSH models of coastal storm surge are based on tens of thousands of climatology-based hypothetical tropical cyclone simulations.[^SurgeModel]  The composite results of these simulations are used to assess and visualize storm surge risk under varying conditions. Maps and estimates of risk are provided to federal, state, and local partners to assist in a range of planning processes, risk assessment studies, and operational decision-making. SLOSH models and maps are the basis of state-level hurricane evacuation zone designations. However, only three of the six New England states (Connecticut, Massachusetts, and Rhode Island) have developed hurricane evacuation zone maps. Maine and New Hampshire, which are subject to hurricane risk, have not developed, or do not publicly offer, hurricane evacuation zone maps. In order to model hurricane evacuation risk in those states, SLOSH inundation zones were used instead. The use of storm surge inundation risk, rather than hurricane evacuation zones, likely underestimates the population that would be subject to evacuation in the event of an approaching hurricane.
+
+In order to identify populations at risk from hurricane evacuation in Maine and New Hampshire, SLOSH surge hazard maps were downloaded from the National Hurricane Center in the form of GeoTIFF raster files.[^SurgeModel] Specifically, scenarios for Category 2 and Category 4 hurricanes at high tide were used. The raster files were clipped to the land areas of Maine and New Hampshire and converted to a vector polygon layer and merged. Hurricane storm surge polygons were intersected with the developed portions of Census Block Groups. Developed portions of Census Block Groups were identified based upon the National Land Cover Database (NLCD), using a process of areal apportionment (see above). The population at risk from hurricane storm surge risk was calculated as the product of the areal proportion of the intersecting storm surge polygons and developed Block Group polygons:
+
+*Population at risk = Proportion of developed Block Group Intersection x Population of developed Block Group*
+
+For example, if 10% of the developed area of a Census Block Group intersected/overlapped with a hurricane storm surge polygon, it was assumed that 10% of the population is exposed to that flood risk. Assuming a population of 100 people in the developed portion of the Block Group, this would mean *100 x .10 = 10* people would be subject to hurricane storm surge risk. Processing of SLOSH GeoTIFF files and polygon intersection were performed in ArcGIS 10.7. 
+
+
+## American Community Survey 5-year Estimates {-}
+
+The American Community Survey (ACS) is an ongoing survey by the U.S. Census Bureau that provides information on a yearly basis about the U.S. and its people. The ACS provides detailed information on economic, housing, and demographic characteristics about the population that are not captured by the decennial Census. 
+
+The ACS provides greater demographic detail and temporal resolution than the decennial Census, but its geographic resolution is more limited. While the decennial Census is based on an enumeration (i.e., a total count) of everyone in the U.S. once every decade, the ACS is based on a statistical sample of approximately 3.5 million addresses across the country each year. As a result of this sampling approach, the ACS estimates must be pooled, or combined, across multiple years in order to provide reliable estimates for smaller areas (i.e. areas with less than 20,000 people), such as at the Tract or Block Group levels. While it is possible to know the number of low income households across the U.S. annually, one may only know this about a Tract or Block Group based on 5-year estimates. Since 2010, the ACS has published 5-year data (beginning with 2005–2009 estimates) for all geographic areas down to the census Tract and Block Group levels. For more detail on the ACS, see Understanding and Using American Community Survey Data: What All Data Users Need to Know at https://www.census.gov/programs-surveys/acs/guidance/handbooks/general.html.
+
+All data was analyzed or aggregated geographically by Census Tract and Block Group. A Census Tract is a small, relatively permanent statistical subdivision of a county that contains between 1,200 and 8,000 people. The entire area of a county is covered by Census Tracts, just as the entire area of a state is covered by counties or county equivalents. Census Tracts range in areal size depending on the population density; areal sizes are smaller in denser areas and larger in less densely populated areas. Census Block Groups are subdivisions of Census Tracts that contain between 600 and 3,000 people. Like Tracts, Block Groups range in areal size depending on the population density of the area. Block Groups are the smallest geographic unit at which detailed demographic and household data from the American Community Survey is made available by the U.S. Census Bureau. 
+
+For the purposes of this analysis ACS 5-year estimates for the period 2013 - 2017 for Census Tracts and Block Groups in New England, as well as their associated TIGER/Line spatial files, were downloaded from the Census Bureau via API using the `tigris` package in R. Demographic variables consistent with those used by the EPA in EJSCREEN were chosen, as well as environmental justice population thresholds used by states where available. Table \@ref(tab:ACSvariables) below lists the demographic variables that were downloaded directly or computed from ACS variables:
+
+```{r ACSvariables}
+ACSvDF <- data.frame(Variable = c("Total Population",
+                                  "Minority",
+                                  "Low Income",
+                                  "Limited English Household",
+                                  "Less than High School Education",
+                                  "Under 5",
+                                  "Under 18",
+                                  "Over 64",
+                                  "Disabled",
+                                  "No Car Household",
+                                  "CT Income",
+                                  "MA Income",
+                                  "MA Limited English Household",
+                                  "MA Minority",
+                                  "RI Income",
+                                  "RI Minority"),
+                     Description = c("Total population",
+                                     "Persons of Hispanic or Latino origin or persons who are not White",
+                                     "People in households where the household income is less than or equal to twice the federal poverty level",
+                                     "People in households where all adults speak English less than \"very well\"",
+                                     "Adults 25 years+ with less than a high school education",
+                                     "Persons under 5 years of age",
+                                     "Persons under 18 years of age",
+                                     "Persons over 64 years of age",
+                                     "Persons 18 years+ with a disability",
+                                     "Households with no vehicle available",
+                                     "Connecticut Low Income threshold: 30% or more people in households where the household income is less than or equal to twice the federal poverty level",
+                                     "Massachusetts Low Income threshold: 25% or more of households with median household incomes below 65% statewide median",
+                                     "Massachusetts Language Isolation threshold: 25% or more people in households where all adults speak English less than \"very well\"",
+                                     "Massachusetts Minority threshold: 25% or more are persons of Hispanic or Latino origin or persons who are not White",
+                                     "Rhode Island Low Income threshold: highest 15% of block groups with people in households where the household income is less than or equal to twice the federal poverty level",
+                                     "Rhode Island Minority threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
+                     'ACS Table ID' = c("B03002: Hispanic or Latino Origin by Race",
+                                "B03002: Hispanic or Latino Origin by Race",
+                                "C17002: Ratio of Income to Poverty Level",
+                                "C16002: Household Language by Household Limited English Speaking Status",
+                                "B15002: Sex by Educational Attainment",
+                                "B01001: Sex by Age",
+                                "B01001: Sex by Age",
+                                "B01001: Sex by Age",
+                                "B18101: Sex by Age by Disability Status",
+                                "B08201: Household Size by Vehicles Available",
+                                "C17002: Ratio of Income to Poverty Level",
+                                "B19001: Household Income",
+                                "C16002: Household Language by Household Limited English Speaking Status",
+                                "B03002: Hispanic or Latino Origin by Race",
+                                "C17002: Ratio of Income to Poverty Level",
+                                "B03002: Hispanic or Latino Origin by Race"),
+                     Geography = c("Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Tract",
+                                   "Tract",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group"))
+
+ACSvDF %>% 
+  kableExtra::kable(longtable = T, booktabs = T, 
+                    caption = "Demographic Variables", align = "l",
+                    col.names = c("Variable","Description","ACS Table ID","Geography")) %>% 
+  kableExtra::column_spec(2:3, width = "3cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+  
+```
+
+
+\pagebreak
+# Appendix B: Supplementary Figures {-}
+
+## Populations of Concern in FEMA Flood Zones {-}
+```{r tabNFHZANoCar, fig.align = "center", fig.cap="Households without a car living within FEMA Flood Zones."}
+me_tracts_nfhza %>% 
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  filter(TotalNoCar > 0) %>% 
+  group_by(NAME) %>%
+  summarize(`No Car HH` = sum(NewNoCar,na.rm = TRUE),
+            `Pct of No Car HH` = round(sum(NewNoCar)/max(TotalNoCar)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`No Car HH` = as.integer(`No Car HH`),
+         `Pct of No Car HH` = paste0(`Pct of No Car HH`,"%")) %>% 
+  filter(`No Car HH` > 0) %>% 
+  arrange(desc(`No Car HH`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Households without a Car Living in FEMA Flood Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r tabNFHZAO64, fig.align = "center", fig.cap="Persons over 64 living within FEMA Flood Zones."}
+me_blkgrps_nfhza %>% 
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  filter(TotalOver64 > 0) %>% 
+  group_by(NAME) %>%
+  summarize(`Over 64` = sum(NewOver64,na.rm = TRUE),
+            `Pct of Over 64` = round(sum(NewOver64)/max(TotalOver64)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Over 64` = as.integer(`Over 64`),
+         `Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
+  filter(`Over 64` > 0) %>% 
+  arrange(desc(`Over 64`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Persons Over 64 Living in FEMA Flood Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapNFHZAPopConcern3, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Disabled Persons Living within Flood Zones."}
+# # create pop subset
+# nfhza_sub <- me_nfhza_vulnerable %>% 
+#   filter(Group == "Disabled")
+# 
+# # # Map over-represented pops and flood zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(me_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   # tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(me_nfhza_2802_land_simple) +
+#   tm_fill(col = "Interval",
+#           palette = c("dodgerblue", "blueviolet"),
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
+#           title = "FEMA Flood Zones",
+#           alpha = 0.6,
+#           border.alpha = 0) +
+#   tm_shape(nfhza_sub) +
+#   tm_dots(col = "darkgoldenrod3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.8) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2) +
+#   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
+#   tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 0.5) +
+#   tm_shape(I295roadSegment) +
+#   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(me_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_shape(nofemapolys) +
+#   tm_fill(col = "gray", alpha = 0.4) +
+#   tm_text("LABEL", alpha = 0.5, size = 0.6) +
+#   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5,
+#                position = c("right","BOTTOM")) +
+#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Disabled\nPersons\nLiving within\nFlood Zones",
+#             frame = TRUE, main.title.size = 0.8,
 #             legend.outside = TRUE,
 #             legend.title.size = 0.8,
-#             legend.outside.position = c("right", "top"),
-#             asp = 12/10)
+#             legend.outside.position = c("right", "top"))
 # 
-# tmap_save(m2, "DATA/FEMA/ME/ME_hevac_vulnerable.png",
-#           height = 9, width = 8, units = "in", dpi = 600)
+# tmap_save(m2, "DATA/FEMA/ME/ME_nhfza_vulnerable3.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/FEMA/ME/ME_hevac_vulnerable.png")
+knitr::include_graphics("DATA/FEMA/ME/ME_nhfza_vulnerable3.png")
+```
+
+```{r tabNFHZADIS, fig.align = "center", fig.cap="Disabled persons living within FEMA Flood Zones."}
+me_tracts_nfhza %>% 
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  filter(TotalDisabled > 0) %>% 
+  group_by(NAME) %>%
+  summarize(`Disabled` = sum(NewDisabled,na.rm = TRUE),
+            `Pct of Disabled` = round(sum(NewDisabled)/max(TotalDisabled)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Disabled` = as.integer(`Disabled`),
+         `Pct of Disabled` = paste0(`Pct of Disabled`,"%")) %>% 
+  filter(`Disabled` > 0) %>% 
+  arrange(desc(`Disabled`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Disabled Persons Living in FEMA Flood Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapNFHZAPopConcern4, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Low Income Persons Living within Flood Zones."}
+# # create pop subset
+# nfhza_sub <- me_nfhza_vulnerable %>% 
+#   filter(Group == "Low Income")
+# 
+# # # Map over-represented pops and flood zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(me_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   # tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(me_nfhza_2802_land_simple) +
+#   tm_fill(col = "Interval",
+#           palette = c("dodgerblue", "blueviolet"),
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
+#           title = "FEMA Flood Zones",
+#           alpha = 0.6,
+#           border.alpha = 0) +
+#   tm_shape(nfhza_sub) +
+#   tm_dots(col = "darkgoldenrod3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.8) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2) +
+#   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
+#   tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 0.5) +
+#   tm_shape(I295roadSegment) +
+#   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(me_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_shape(nofemapolys) +
+#   tm_fill(col = "gray", alpha = 0.4) +
+#   tm_text("LABEL", alpha = 0.5, size = 0.6) +
+#   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5,
+#                position = c("right","BOTTOM")) +
+#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Low Income\nPersons\nLiving within\nFlood Zones",
+#             frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m2, "DATA/FEMA/ME/ME_nhfza_vulnerable4.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/ME/ME_nhfza_vulnerable4.png")
+```
+
+```{r tabNFHZALINC, fig.align = "center", fig.cap="Low income persons living within FEMA Flood Zones."}
+me_blkgrps_nfhza %>% 
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  filter(TotalLowInc > 0) %>% 
+  group_by(NAME) %>%
+  summarize(`Low Income` = sum(NewPov,na.rm = TRUE),
+            `Pct of Low Income` = round(sum(NewPov)/max(TotalLowInc)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Low Income` = as.integer(`Low Income`),
+         `Pct of Low Income` = paste0(`Pct of Low Income`,"%")) %>% 
+  filter(`Low Income` > 0) %>% 
+  arrange(desc(`Low Income`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Low Income Persons Living in FEMA Flood Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapNFHZAPopConcern5, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Adults without a High School Diploma Living within Flood Zones."}
+# # create pop subset
+# nfhza_sub <- me_nfhza_vulnerable %>% 
+#   filter(Group == "No HS Dip")
+# 
+# # # Map over-represented pops and flood zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(me_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   # tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(me_nfhza_2802_land_simple) +
+#   tm_fill(col = "Interval",
+#           palette = c("dodgerblue", "blueviolet"),
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
+#           title = "FEMA Flood Zones",
+#           alpha = 0.6,
+#           border.alpha = 0) +
+#   tm_shape(nfhza_sub) +
+#   tm_dots(col = "darkgoldenrod3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.8) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2) +
+#   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
+#   tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 0.5) +
+#   tm_shape(I295roadSegment) +
+#   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(me_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_shape(nofemapolys) +
+#   tm_fill(col = "gray", alpha = 0.4) +
+#   tm_text("LABEL", alpha = 0.5, size = 0.6) +
+#   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5,
+#                position = c("right","BOTTOM")) +
+#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Adults without a\nHigh School\nDiploma\nLiving within\nFlood Zones",
+#             frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m2, "DATA/FEMA/ME/ME_nhfza_vulnerable5.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/ME/ME_nhfza_vulnerable5.png")
+```
+
+```{r tabNFHZALTHS, fig.align = "center", fig.cap="Adults without a high school diploma living within FEMA Flood Zones."}
+me_blkgrps_nfhza %>% 
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  filter(TotalNoHS > 0) %>% 
+  group_by(NAME) %>%
+  summarize(`No HS Dip` = sum(NewLths,na.rm = TRUE),
+            `Pct of No HS Dip` = round(sum(NewLths)/max(TotalNoHS)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`No HS Dip` = as.integer(`No HS Dip`),
+         `Pct of No HS Dip` = paste0(`Pct of No HS Dip`,"%")) %>% 
+  filter(`No HS Dip` > 0) %>% 
+  arrange(desc(`No HS Dip`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Adults wihtout a High School Diploma Living in FEMA Flood Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapNFHZAPopConcern6, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Persons Under 18 Living within Flood Zones."}
+# # create pop subset
+# nfhza_sub <- me_nfhza_vulnerable %>% 
+#   filter(Group == "Under 18")
+# 
+# # # Map over-represented pops and flood zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(me_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   # tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(me_nfhza_2802_land_simple) +
+#   tm_fill(col = "Interval",
+#           palette = c("dodgerblue", "blueviolet"),
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
+#           title = "FEMA Flood Zones",
+#           alpha = 0.6,
+#           border.alpha = 0) +
+#   tm_shape(nfhza_sub) +
+#   tm_dots(col = "darkgoldenrod3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.8) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2) +
+#   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
+#   tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 0.5) +
+#   tm_shape(I295roadSegment) +
+#   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(me_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_shape(nofemapolys) +
+#   tm_fill(col = "gray", alpha = 0.4) +
+#   tm_text("LABEL", alpha = 0.5, size = 0.6) +
+#   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5,
+#                position = c("right","BOTTOM")) +
+#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Persons\nUnder 18\nLiving within\nFlood Zones",
+#             frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m2, "DATA/FEMA/ME/ME_nhfza_vulnerable6.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/ME/ME_nhfza_vulnerable6.png")
+```
+
+```{r tabNFHZAU18, fig.align = "center", fig.cap="Persons under 18 living within FEMA Flood Zones."}
+me_blkgrps_nfhza %>% 
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  filter(TotalUnder18 > 0) %>% 
+  group_by(NAME) %>%
+  summarize(`Under 18` = sum(NewUnder18,na.rm = TRUE),
+            `Pct of Under 18` = round(sum(NewUnder18)/max(TotalUnder18)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Under 18` = as.integer(`Under 18`),
+         `Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
+  filter(`Under 18` > 0) %>% 
+  arrange(desc(`Under 18`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Persons Under 18 Living in FEMA Flood Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapNFHZAPopConcern7, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Minority Persons Living within Flood Zones."}
+# # create pop subset
+# nfhza_sub <- me_nfhza_vulnerable %>% 
+#   filter(Group == "Minority")
+# 
+# # # Map over-represented pops and flood zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(me_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   # tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(me_nfhza_2802_land_simple) +
+#   tm_fill(col = "Interval",
+#           palette = c("dodgerblue", "blueviolet"),
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
+#           title = "FEMA Flood Zones",
+#           alpha = 0.6,
+#           border.alpha = 0) +
+#   tm_shape(nfhza_sub) +
+#   tm_dots(col = "darkgoldenrod3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.8) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2) +
+#   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
+#   tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 0.5) +
+#   tm_shape(I295roadSegment) +
+#   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(me_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_shape(nofemapolys) +
+#   tm_fill(col = "gray", alpha = 0.4) +
+#   tm_text("LABEL", alpha = 0.5, size = 0.6) +
+#   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5,
+#                position = c("right","BOTTOM")) +
+#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Minority\nPersons\nLiving within\nFlood Zones",
+#             frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m2, "DATA/FEMA/ME/ME_nhfza_vulnerable7.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/ME/ME_nhfza_vulnerable7.png")
+```
+
+```{r tabNFHZAMIN, fig.align = "center", fig.cap="Minority persons living within FEMA Flood Zones."}
+me_blkgrps_nfhza %>% 
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  filter(TotalMin > 0) %>% 
+  group_by(NAME) %>%
+  summarize(`Minority` = sum(NewMinority,na.rm = TRUE),
+            `Pct of Minority` = round(sum(NewMinority)/max(TotalMin)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Minority` = as.integer(`Minority`),
+         `Pct of Minority` = paste0(`Pct of Minority`,"%")) %>% 
+  filter(`Minority` > 0) %>% 
+  arrange(desc(`Minority`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Minority Persons Living in FEMA Flood Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
+```
+
+```{r mapNFHZAPopConcern8, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Children Under 5 Living within Flood Zones."}
+# # create pop subset
+# nfhza_sub <- me_nfhza_vulnerable %>% 
+#   filter(Group == "Under 5")
+# 
+# # # Map over-represented pops and flood zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(me_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   tm_shape(canada) + tm_fill(col = "white") +
+#   # tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(me_nfhza_2802_land_simple) +
+#   tm_fill(col = "Interval",
+#           palette = c("dodgerblue", "blueviolet"),
+#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
+#           title = "FEMA Flood Zones",
+#           alpha = 0.6,
+#           border.alpha = 0) +
+#   tm_shape(nfhza_sub) +
+#   tm_dots(col = "darkgoldenrod3",
+#           labels = "1 dot = 10 people",
+#           alpha = 0.8) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2) +
+#   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.6) +
+#   tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 0.5) +
+#   tm_shape(I295roadSegment) +
+#   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(me_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_shape(nofemapolys) +
+#   tm_fill(col = "gray", alpha = 0.4) +
+#   tm_text("LABEL", alpha = 0.5, size = 0.6) +
+#   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5,
+#                position = c("right","BOTTOM")) +
+#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Children\nUnder 5\nLiving within\nFlood Zones",
+#             frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m2, "DATA/FEMA/ME/ME_nhfza_vulnerable8.png",
+#           height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/ME/ME_nhfza_vulnerable8.png")
+```
+
+```{r tabNFHZAU5, fig.align = "center", fig.cap="Children under 5 living within FEMA Flood Zones."}
+me_blkgrps_nfhza %>% 
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  filter(TotalUnder5 > 0) %>% 
+  group_by(NAME) %>%
+  summarize(`Under 5` = sum(NewUnder5,na.rm = TRUE),
+            `Pct of Under 5` = round(sum(NewUnder5)/max(TotalUnder5)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Under 5` = as.integer(`Under 5`),
+         `Pct of Under 5` = paste0(`Pct of Under 5`,"%")) %>% 
+  filter(`Under 5` > 0) %>% 
+  arrange(desc(`Under 5`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Children Under 5 Living in FEMA Flood Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r tabNFHZALEH, fig.align = "center", fig.cap="Limited English speaking households living within FEMA Flood Zones."}
+me_blkgrps_nfhza %>% 
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  filter(TotalLEH > 0) %>% 
+  group_by(NAME) %>%
+  summarize(`Limited English HH` = sum(NewEng_limit,na.rm = TRUE),
+            `Pct of Limited English HH` = round(sum(NewEng_limit)/max(TotalLEH)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Limited English HH` = as.integer(`Limited English HH`),
+         `Pct of Limited English HH` = paste0(`Pct of Limited English HH`,"%")) %>% 
+  filter(`Limited English HH` > 0) %>% 
+  arrange(desc(`Limited English HH`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Limited English Speaking Households Living in FEMA Flood Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
+```
+
+
+\pagebreak
+## Populations of Concern in Hurricane Evacuation Zones {-}
+
+```{r tabHEVACLEH, fig.align = "center", fig.cap="Limited English speaking households living within Hurricane Inundation Zones."}
+me_blkgrps_hevac %>% 
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  filter(TotalLEH > 0) %>% 
+  group_by(NAME) %>%
+  summarize(`Limited English HH` = sum(NewEng_limit,na.rm = TRUE),
+            `Pct of Limited English HH` = round(sum(NewEng_limit)/max(TotalLEH)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Limited English HH` = as.integer(`Limited English HH`),
+         `Pct of Limited English HH` = paste0(`Pct of Limited English HH`,"%")) %>% 
+  filter(`Limited English HH` > 0) %>% 
+  arrange(desc(`Limited English HH`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Limited English Speaking Households Living in Hurricane Inundation Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
+```
+
+```{r tabHEVACNoCar, fig.align = "center", fig.cap="Households without a car living within Hurricane Inundation Zones."}
+me_tracts_hevac %>% 
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  filter(TotalNoCar > 0) %>% 
+  group_by(NAME) %>%
+  summarize(`No Car HH` = sum(NewNoCar,na.rm = TRUE),
+            `Pct of No Car HH` = round(sum(NewNoCar)/max(TotalNoCar)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`No Car HH` = as.integer(`No Car HH`),
+         `Pct of No Car HH` = paste0(`Pct of No Car HH`,"%")) %>% 
+  filter(`No Car HH` > 0) %>% 
+  arrange(desc(`No Car HH`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Households without a Car Living in Hurricane Inundation Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHEVACPopConcern3, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Minority Persons Living within Hurricane Inundation Zones."}
+# # Create data subset
+# hevac_sub <- me_hevac_vulnerable %>% 
+#   filter(Group == "Minority")
+# 
+# # Map over-represented pops and hurricane evacuation zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(me_hea_sf_simple, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(me_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   # tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
+#   tm_shape(ne_states_sf_cb) + tm_borders() +
+#   # tm_shape(ny_state_sf) + tm_borders() +
+#   tm_shape(me_hea_sf_simple) +
+#   tm_fill(col = "Zone",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
+#           title = "Inundation Zone and\nHurricane Category",
+#           alpha = 0.8,
+#           border.alpha = 0) +
+#   tm_shape(me_hevac_vulnerable) +
+#   tm_dots(col = "springgreen3",
+#           labels = "1 dot = 10 people",
+#           alpha = 1) +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.5) +
+#   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.8) +
+#   # tm_shape(me_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   tm_shape(I295roadSegment) +
+#   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(me_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5,
+#                position = c("right","BOTTOM")) +
+#   tm_add_legend(type = "fill", col = "springgreen3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Minority\nPersons\nwithin Hurricane\nInundation Zones", frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8)
+# 
+# tmap_save(m2, "DATA/FEMA/ME/ME_hevac_vulnerable3.png",
+#           height = 4, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/ME/ME_hevac_vulnerable3.png")
+```
+
+```{r tabHEVACMIN, fig.align = "center", fig.cap="Minority persons living within Hurricane Inundation Zones."}
+me_blkgrps_hevac %>% 
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  filter(TotalMin > 0) %>% 
+  group_by(NAME) %>%
+  summarize(`Minority` = sum(NewMinority,na.rm = TRUE),
+            `Pct of Minority` = round(sum(NewMinority)/max(TotalMin)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Minority` = as.integer(`Minority`),
+         `Pct of Minority` = paste0(`Pct of Minority`,"%")) %>% 
+  filter(`Minority` > 0) %>% 
+  arrange(desc(`Minority`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Minority Persons Living in Hurricane Inundation Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
+```
+
+```{r mapHEVACPopConcern4, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Persons Over 64 Living within Hurricane Inundation Zones."}
+# # Create data subset
+# hevac_sub <- me_hevac_vulnerable %>% 
+#   filter(Group == "Over 64")
+# 
+# # Map over-represented pops and hurricane evacuation zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(me_hea_sf_simple, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(me_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   # tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
+#   tm_shape(ne_states_sf_cb) + tm_borders() +
+#   # tm_shape(ny_state_sf) + tm_borders() +
+#   tm_shape(me_hea_sf_simple) +
+#   tm_fill(col = "Zone",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
+#           title = "Inundation Zone and\nHurricane Category",
+#           alpha = 0.8,
+#           border.alpha = 0) +
+#   tm_shape(me_hevac_vulnerable) +
+#   tm_dots(col = "springgreen3",
+#           labels = "1 dot = 10 people",
+#           alpha = 1) +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.5) +
+#   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.8) +
+#   # tm_shape(me_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   tm_shape(I295roadSegment) +
+#   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(me_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5,
+#                position = c("right","BOTTOM")) +
+#   tm_add_legend(type = "fill", col = "springgreen3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Persons\nOver 64\nwithin Hurricane\nInundation Zones", frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8)
+# 
+# tmap_save(m2, "DATA/FEMA/ME/ME_hevac_vulnerable4.png",
+#           height = 4, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/ME/ME_hevac_vulnerable4.png")
+```
+
+```{r tabHEVACO64, fig.align = "center", fig.cap="Persons over 64 living within Hurricane Inundation Zones."}
+me_blkgrps_hevac %>% 
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  filter(TotalOver64 > 0) %>% 
+  group_by(NAME) %>%
+  summarize(`Over 64` = sum(NewOver64,na.rm = TRUE),
+            `Pct of Over 64` = round(sum(NewOver64)/max(TotalOver64)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Over 64` = as.integer(`Over 64`),
+         `Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
+  filter(`Over 64` > 0) %>% 
+  arrange(desc(`Over 64`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Persons Over 64 Living in Hurricane Inundation Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHEVACPopConcern5, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Disabled Persons Living within Hurricane Inundation Zones."}
+# # Create data subset
+# hevac_sub <- me_hevac_vulnerable %>% 
+#   filter(Group == "Disabled")
+# 
+# # Map over-represented pops and hurricane evacuation zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(me_hea_sf_simple, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(me_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   # tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
+#   tm_shape(ne_states_sf_cb) + tm_borders() +
+#   # tm_shape(ny_state_sf) + tm_borders() +
+#   tm_shape(me_hea_sf_simple) +
+#   tm_fill(col = "Zone",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
+#           title = "Inundation Zone and\nHurricane Category",
+#           alpha = 0.8,
+#           border.alpha = 0) +
+#   tm_shape(me_hevac_vulnerable) +
+#   tm_dots(col = "springgreen3",
+#           labels = "1 dot = 10 people",
+#           alpha = 1) +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.5) +
+#   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.8) +
+#   # tm_shape(me_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   tm_shape(I295roadSegment) +
+#   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(me_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5,
+#                position = c("right","BOTTOM")) +
+#   tm_add_legend(type = "fill", col = "springgreen3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Disabled\nPersons\nwithin Hurricane\nInundation Zones", frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8)
+# 
+# tmap_save(m2, "DATA/FEMA/ME/ME_hevac_vulnerable5.png",
+#           height = 4, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/ME/ME_hevac_vulnerable5.png")
+```
+
+```{r tabHEVACDIS, fig.align = "center", fig.cap="Disabled persons living within Hurricane Inundation Zones."}
+me_tracts_hevac %>% 
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  filter(TotalDisabled > 0) %>% 
+  group_by(NAME) %>%
+  summarize(`Disabled` = sum(NewDisabled,na.rm = TRUE),
+            `Pct of Disabled` = round(sum(NewDisabled)/max(TotalDisabled)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Disabled` = as.integer(`Disabled`),
+         `Pct of Disabled` = paste0(`Pct of Disabled`,"%")) %>% 
+  filter(`Disabled` > 0) %>% 
+  arrange(desc(`Disabled`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Disabled Persons Living in Hurricane Inundation Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHEVACPopConcern6, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Low Income Persons Living within Hurricane Inundation Zones."}
+# # Create data subset
+# hevac_sub <- me_hevac_vulnerable %>% 
+#   filter(Group == "Low Income")
+# 
+# # Map over-represented pops and hurricane evacuation zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(me_hea_sf_simple, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(me_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   # tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
+#   tm_shape(ne_states_sf_cb) + tm_borders() +
+#   # tm_shape(ny_state_sf) + tm_borders() +
+#   tm_shape(me_hea_sf_simple) +
+#   tm_fill(col = "Zone",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
+#           title = "Inundation Zone and\nHurricane Category",
+#           alpha = 0.8,
+#           border.alpha = 0) +
+#   tm_shape(me_hevac_vulnerable) +
+#   tm_dots(col = "springgreen3",
+#           labels = "1 dot = 10 people",
+#           alpha = 1) +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.5) +
+#   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.8) +
+#   # tm_shape(me_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   tm_shape(I295roadSegment) +
+#   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(me_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5,
+#                position = c("right","BOTTOM")) +
+#   tm_add_legend(type = "fill", col = "springgreen3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Low Income\nPersons\nwithin Hurricane\nInundation Zones", frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8)
+# 
+# tmap_save(m2, "DATA/FEMA/ME/ME_hevac_vulnerable6.png",
+#           height = 4, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/ME/ME_hevac_vulnerable6.png")
+```
+
+```{r tabHEVACLINC, fig.align = "center", fig.cap="Low income persons living within Hurricane Inundation Zones."}
+me_blkgrps_hevac %>% 
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  filter(TotalLowInc > 0) %>% 
+  group_by(NAME) %>%
+  summarize(`Low Income` = sum(NewPov,na.rm = TRUE),
+            `Pct of Low Income` = round(sum(NewPov)/max(TotalLowInc)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Low Income` = as.integer(`Low Income`),
+         `Pct of Low Income` = paste0(`Pct of Low Income`,"%")) %>% 
+  filter(`Low Income` > 0) %>% 
+  arrange(desc(`Low Income`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Low Income Persons Living in Hurricane Inundation Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHEVACPopConcern7, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Children Under 5 Living within Hurricane Inundation Zones."}
+# # Create data subset
+# hevac_sub <- me_hevac_vulnerable %>% 
+#   filter(Group == "Under 5")
+# 
+# # Map over-represented pops and hurricane evacuation zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(me_hea_sf_simple, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(me_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   # tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
+#   tm_shape(ne_states_sf_cb) + tm_borders() +
+#   # tm_shape(ny_state_sf) + tm_borders() +
+#   tm_shape(me_hea_sf_simple) +
+#   tm_fill(col = "Zone",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
+#           title = "Inundation Zone and\nHurricane Category",
+#           alpha = 0.8,
+#           border.alpha = 0) +
+#   tm_shape(me_hevac_vulnerable) +
+#   tm_dots(col = "springgreen3",
+#           labels = "1 dot = 10 people",
+#           alpha = 1) +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.5) +
+#   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.8) +
+#   # tm_shape(me_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   tm_shape(I295roadSegment) +
+#   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(me_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5,
+#                position = c("right","BOTTOM")) +
+#   tm_add_legend(type = "fill", col = "springgreen3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Children\nUnder 5\nwithin Hurricane\nInundation Zones", frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8)
+# 
+# tmap_save(m2, "DATA/FEMA/ME/ME_hevac_vulnerable7.png",
+#           height = 4, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/ME/ME_hevac_vulnerable7.png")
+```
+
+```{r tabHEVACU5, fig.align = "center", fig.cap="Children under 5 living within Hurricane Inundation Zones."}
+me_blkgrps_hevac %>% 
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  filter(TotalUnder5 > 0) %>% 
+  group_by(NAME) %>%
+  summarize(`Under 5` = sum(NewUnder5,na.rm = TRUE),
+            `Pct of Under 5` = round(sum(NewUnder5)/max(TotalUnder5)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Under 5` = as.integer(`Under 5`),
+         `Pct of Under 5` = paste0(`Pct of Under 5`,"%")) %>% 
+  filter(`Under 5` > 0) %>% 
+  arrange(desc(`Under 5`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Children Under 5 Living in Hurricane Inundation Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHEVACPopConcern8, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Adults without a High School Diploma Living within Hurricane Inundation Zones."}
+# Create data subset
+# hevac_sub <- me_hevac_vulnerable %>% 
+#   filter(Group == "No HS Dip")
+# 
+# # Map over-represented pops and hurricane evacuation zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(me_hea_sf_simple, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(me_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   # tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
+#   tm_shape(ne_states_sf_cb) + tm_borders() +
+#   # tm_shape(ny_state_sf) + tm_borders() +
+#   tm_shape(me_hea_sf_simple) +
+#   tm_fill(col = "Zone",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
+#           title = "Inundation Zone and\nHurricane Category",
+#           alpha = 0.8,
+#           border.alpha = 0) +
+#   tm_shape(me_hevac_vulnerable) +
+#   tm_dots(col = "springgreen3",
+#           labels = "1 dot = 10 people",
+#           alpha = 1) +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.5) +
+#   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.8) +
+#   # tm_shape(me_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   tm_shape(I295roadSegment) +
+#   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(me_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5,
+#                position = c("right","BOTTOM")) +
+#   tm_add_legend(type = "fill", col = "springgreen3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Adults without a\nHigh School\nDiploma\nwithin Hurricane\nInundation Zones", frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8)
+# 
+# tmap_save(m2, "DATA/FEMA/ME/ME_hevac_vulnerable8.png",
+#           height = 4, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/ME/ME_hevac_vulnerable8.png")
+```
+
+```{r tabHEVACLTHS, fig.align = "center", fig.cap="Adults without a high school diploma living within Hurricane Inundation Zones."}
+me_blkgrps_hevac %>% 
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  filter(TotalNoHS > 0) %>% 
+  group_by(NAME) %>%
+  summarize(`No HS Dip` = sum(NewLths,na.rm = TRUE),
+            `Pct of No HS Dip` = round(sum(NewLths)/max(TotalNoHS)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`No HS Dip` = as.integer(`No HS Dip`),
+         `Pct of No HS Dip` = paste0(`Pct of No HS Dip`,"%")) %>% 
+  filter(`No HS Dip` > 0) %>% 
+  arrange(desc(`No HS Dip`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Adults wihtout a High School Diploma Living in Hurricane Inundation Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHEVACPopConcern9, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Persons Under 18 Living within Hurricane Inundation Zones."}
+# # Create data subset
+# hevac_sub <- me_hevac_vulnerable %>% 
+#   filter(Group == "Under 18")
+# 
+# # Map over-represented pops and hurricane evacuation zones
+# m2 <- tm_layout(bg.color = "#e6f3f7") +
+#   tm_shape(me_hea_sf_simple, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(me_blkgrp_2802, unit = "mi") + tm_fill(col = "white") +
+#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+#   # tm_shape(ny_state_sf) + tm_fill(col="white") +
+#   tm_shape(me_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
+#   tm_shape(ne_states_sf_cb) + tm_borders() +
+#   # tm_shape(ny_state_sf) + tm_borders() +
+#   tm_shape(me_hea_sf_simple) +
+#   tm_fill(col = "Zone",
+#           palette = c("deeppink", "purple3"),
+#           labels = c("A: Category 1 - 2",
+#                      "B: Category 3 - 4"),
+#           title = "Inundation Zone and\nHurricane Category",
+#           alpha = 0.8,
+#           border.alpha = 0) +
+#   tm_shape(me_hevac_vulnerable) +
+#   tm_dots(col = "springgreen3",
+#           labels = "1 dot = 10 people",
+#           alpha = 1) +
+#   # tm_facets(by = "Group",
+#   #           ncol = 2,
+#   #           free.coords = FALSE) +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.5) +
+#   # tm_shape(ny_state_sf) + tm_borders(lwd = 0.8) +
+#   # tm_shape(me_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+#   tm_shape(I295roadSegment) +
+#   tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(me_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5,
+#                position = c("right","BOTTOM")) +
+#   tm_add_legend(type = "fill", col = "springgreen3",
+#                 alpha = 0.6,
+#                 border.col = "white", border.alpha = 0,
+#                 labels = "1 dot = 10 people") +
+#   tm_layout(title = "Persons\nUnder 18\nwithin Hurricane\nInundation Zones", frame = TRUE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8)
+# 
+# tmap_save(m2, "DATA/FEMA/ME/ME_hevac_vulnerable9.png",
+#           height = 4, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/FEMA/ME/ME_hevac_vulnerable9.png")
+```
+
+```{r tabHEVACU18, fig.align = "center", fig.cap="Persons under 18 living within Hurricane Inundation Zones."}
+me_blkgrps_hevac %>% 
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  filter(TotalUnder18 > 0) %>% 
+  group_by(NAME) %>%
+  summarize(`Under 18` = sum(NewUnder18,na.rm = TRUE),
+            `Pct of Under 18` = round(sum(NewUnder18)/max(TotalUnder18)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Under 18` = as.integer(`Under 18`),
+         `Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
+  filter(`Under 18` > 0) %>% 
+  arrange(desc(`Under 18`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Persons Under 18 Living in Hurricane Inundation Zones", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
