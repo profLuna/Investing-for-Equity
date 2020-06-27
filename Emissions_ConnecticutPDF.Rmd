@@ -1,7 +1,7 @@
 ---
-title: "Transportation Emissions in Connecticut"
+title: "Transportation Burdens and Emissions in Connecticut"
 author: "Marcos Luna and Neenah Estrella-Luna"
-date: "5/5/2020"
+date: "6/27/2020"
 output: 
   bookdown::pdf_document2:
     toc: true
@@ -92,7 +92,8 @@ ct_towns_sf_pts <- county_subdivisions(state = "CT", cb = TRUE) %>%
                      "New London",
                      "Norwich",
                      "North Canaan",
-                     "Old Saybrook")) %>% 
+                     "Old Saybrook",
+                     "Greenwich")) %>% 
   st_transform(., crs = 2775) %>% 
   st_centroid(of_largest_polygon = TRUE)
 
@@ -237,7 +238,45 @@ knitr::include_graphics("DATA/EJSCREEN/ct_pm25hotspot.png")
 
 There is a statistically significant hot spot of PM~2.5~ around Stamford to Danbury and Milford. Warm clusters extend to just south of New Britain. 
 
-These PM~2.5~ levels vary significantly across the state, although the clusters of Block Groups with high PM~2.5~ values remains apparent. Figure \@ref(fig:boxplotPM25CT) is a boxplot of PM~2.5~ concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median PM~2.5~ concentration for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$PM25_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. Note that a large cluster of dots is concentrated on the far right, at the upper end of concentration values. Most of these are in southwest Connecticut. 
+These PM~2.5~ levels vary significantly across the state (see Table \@ref(tab:statsPMCT) and Figure \@ref(fig:boxplotPM25CT)). See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality. 
+
+```{r statsPMCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual PM2.5 concentrations at Census Block Group level for the state."}
+ct_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  # group_by(STATE) %>% 
+  summarize(Mean = round(mean(PM25_19, na.rm = TRUE),2),
+            Median = round(median(PM25_19, na.rm = TRUE),2),
+            Min = round(min(PM25_19, na.rm = TRUE),2),
+            Max = round(max(PM25_19, na.rm = TRUE),2)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    caption = "Annual 2016 PM2.5 concentrations (micrograms per cubic meter) by Census block group for the state.", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+```{r CO2outliers, include=FALSE}
+# download municipal polygons
+ct_towns_sf <- county_subdivisions("CT") %>% 
+  select(NAME) %>% 
+  st_transform(., crs = st_crs(ct_blkgrp_sf))
+
+# extract block groups centroid with highest and lowest values, intersect with town polygons, and pull out town name
+ct_town_maxPM <- ct_blkgrp_sf %>% 
+  filter(PM25_19 == max(PM25_19,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(ct_towns_sf,.) %>% 
+  slice(.,1) %>%
+  pull(., NAME)
+
+ct_town_minPM <- ct_blkgrp_sf %>% 
+  filter(PM25_19 == min(PM25_19,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(ct_towns_sf,.) %>% 
+  slice(.,1) %>% 
+  pull(., NAME)
+```
+The Block Group with highest PM~2.5~ concentration value in the state is found in `r ct_town_maxPM` and the lowest is found in `r ct_town_minPM`.
+
+Clusters of Block Groups with high PM~2.5~ values remains apparent. Figure \@ref(fig:boxplotPM25CT) is a boxplot of PM~2.5~ concentrations by Block Group. The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median PM~2.5~ concentration for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$PM25_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. Note that a large cluster of dots is concentrated on the far right, at the upper end of concentration values. Most of these are in southwest Connecticut. 
 
 ```{r boxplotPM25CT, fig.align = "center", fig.cap="Boxplot of 2016 annual PM2.5 concentrations at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of PM2.5 by state for 2016
@@ -259,7 +298,7 @@ ct_blkgrp_sf %>%
 ```
 
 
-Since 2011, PM~2.5~ levels have declined across the state, on average by `r {round(mean(ct_blkgrp_sf$PM25_pctChange, na.rm = TRUE),1)}`%. Unsurprisingly, this decline has not been uniform (see Figure \@ref(fig:mapPM25CTchange) below). The greatest declines, up to 32%, have been in the eastern half of the state. 
+Since 2011, PM~2.5~ levels have declined across the state, on average by `r {abs(round(mean(ct_blkgrp_sf$PM25_pctChange, na.rm = TRUE),1))}`%. Unsurprisingly, this decline has not been uniform (see Figure \@ref(fig:mapPM25CTchange) below). The greatest declines, up to `r abs(round(min(ct_blkgrp_sf$PM25_pctChange, na.rm = TRUE),1))`%, have been in the eastern half of the state. 
 
 ```{r mapPM25CTchange, fig.align = "center", fig.cap="Map of percent change in annual PM2.5 concentrations across Connecticut between 2011 and 2016 at Census Block Group level."}
 # Map of PM2.5 change across Connecticut
@@ -305,7 +344,7 @@ knitr::include_graphics("DATA/EJSCREEN/ct_pm25change.png")
 
 Figure \@ref(fig:slopegraphPM25CT) below compares the average annual PM~2.5~ concentrations for the state and the region between 2011 and 2016. The region and the state both showed significant declines since 2011, although note that concentrations in Connecticut have remained consistently well above the rest of the region. 
 
-```{r slopegraphPM25CT, fig.align = "center", fig.cap="Change in population-weighted exposure to PM2.5 between 2011 and 2016 for Connecticut and New England."}
+```{r slopegraphPM25CT, fig.align = "center", fig.cap="Change in population-weighted concentrations of PM2.5 between 2011 and 2016 for Connecticut and New England."}
 # Slope graph of PM2.5 by state and region between 2011 and 2016
 # Create df of 2019 actual values
 PM19wSTAvgs_actual <- ct_blkgrp_sf %>% 
@@ -437,10 +476,12 @@ ct_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "Under 5", y = 1.7, label = "Above state avg"),
+  geom_text(aes(x = "Under 5", y = 1.7, label = "Above state\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "Low Income", xend = "Low Income", y = 0.6, yend = 2), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
+  geom_text(aes(x = "Under 5", y = -0.5, label = "Below state\naverage"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Low Income", xend = "Low Income", y = 0.6, yend = 2), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-1,3))
 ```
 
@@ -529,7 +570,7 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
                 WiderLabels = TRUE)
 ```
 
-There is a weak positive relationship between the proportion of minority residents or language-isolated households and the concentration of PM~2.5~ (see Appendix).
+There is a weak positive relationship between the proportion of minority residents or language-isolated households and the concentration of PM~2.5~ (see Figure \@ref(fig:cormatrixPM25PopAvg) in Appendix B).
 
 
 \pagebreak
@@ -541,7 +582,7 @@ The EPA has documented an association between exposure to ambient ozone and a va
 
 Ground level ozone has been regulated by the US EPA under the National Ambient Air Quality Standards (NAAQS) since 1971. As of April 2020, the EPA's primary (health-based) standard for ground level ozone is 70 parts per billion (ppb).[^EPAO3standards] However, the EPA has acknowledged that clinical and epidemiological evidence has been inconclusive about a possible threshold for ozone-induced health effects. EPA concluded that if a population threshold level exists, it is near the lower limit of ambient ozone concentrations in the United States.[^EPAO3lowerlimit]
 
-The analysis of ozone (O~3~) presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides ozone (O~3~) May–September (summer/ ozone season) average of daily-maximum 8-hour-average ozone concentrations, in parts per billion (ppb), at the Census Block Group level for the years 2011 to 2016 (as of December 2019).
+The analysis of ozone (O~3~) presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides ozone (O~3~) May–September (summer/ ozone season) average of daily-maximum 8-hour-average ozone concentrations, in parts per billion (ppb) at the Census Block Group level for the years 2011 to 2016 (as of December 2019).
 
 Ozone (O~3~) levels vary significantly across Connecticut, with highest concentrations in southwest Connecticut, and declining toward the north and east (see Figure \@ref(fig:mapO3CT) below).[^NONATTAINMENT] 
 
@@ -655,7 +696,45 @@ knitr::include_graphics("DATA/EJSCREEN/ct_O3hotspot.png")
 
 There are statistically significant hot spots of Ozone (O~3~) primarily between Stamford and Milford. A warm cluster extends as north as New Britain. 
 
-These Ozone (O~3~) levels vary significantly across the state. Figure \@ref(fig:boxplotO3CT) is a boxplot of O~3~ concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median O~3~ concentration for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$OZONE_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group.   
+These Ozone (O~3~) levels vary significantly across the state (see Table \@ref(tab:statsO3CT) and Figure \@ref(fig:boxplotO3CT)). See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality. 
+
+```{r statsO3CT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual ozone concentrations at Census Block Group level for the state."}
+ct_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  # group_by(STATE) %>% 
+  summarize(Mean = round(mean(OZONE_19, na.rm = TRUE),2),
+            Median = round(median(OZONE_19, na.rm = TRUE),2),
+            Min = round(min(OZONE_19, na.rm = TRUE),2),
+            Max = round(max(OZONE_19, na.rm = TRUE),2)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    caption = "Annual 2016 ozone concentrations (parts per billion) by Census block group for the state.", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+```{r CO2outliers, include=FALSE}
+# # download municipal polygons
+# ct_towns_sf <- county_subdivisions("CT") %>% 
+#   select(NAME) %>% 
+#   st_transform(., crs = st_crs(ct_blkgrp_sf))
+
+# extract block groups centroid with highest and lowest values, intersect with town polygons, and pull out town name
+ct_town_maxO3 <- ct_blkgrp_sf %>% 
+  filter(OZONE_19 == max(OZONE_19,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(ct_towns_sf,.) %>% 
+  slice(.,1) %>%
+  pull(., NAME)
+
+ct_town_minO3 <- ct_blkgrp_sf %>% 
+  filter(OZONE_19 == min(OZONE_19,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(ct_towns_sf,.) %>% 
+  slice(.,1) %>% 
+  pull(., NAME)
+```
+The Block Group with highest O~3~ concentration value in the state is found in `r ct_town_maxO3` and the lowest is found in `r ct_town_minO3`.
+
+Figure \@ref(fig:boxplotO3CT) is a boxplot of O~3~ concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median O~3~ concentration for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$OZONE_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group.   
 
 ```{r boxplotO3CT, fig.align = "center", fig.cap="Boxplot of 2016 Ozone summer seasonal average of daily maximum 8-hour concentrations in air in parts per billion by state at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of PM2.5 by state for 2016
@@ -704,7 +783,7 @@ m6 <- tm_shape(ct_blkgrp_sf, unit = "mi") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Change in summer\nOzone Concentrations \n2011-2016", 
+  tm_layout(title = "Change in\nsummer Ozone\nConcentrations\n2011-2016", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -848,15 +927,16 @@ ct_blkgrp_sf %>%
         axis.ticks.y = element_blank()) +
   geom_text(aes(x = Group, y = Pct + 0.2 * sign(Pct), 
                 label = paste0(round(Pct,2),"%")), 
-            hjust = 1.15, vjust = -.8, size = 3,
+            hjust = 0.001, vjust = -.8, size = 3,
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "No HS Dip", y = .5, label = "Above state avg"),
+  geom_text(aes(x = "No HS Dip", y = .6, label = "Above state\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "Low Income", xend = "Low Income", y = 0.2, yend = 0.6), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
-  expand_limits(y = c(-0.5,1))
+  geom_text(aes(x = "No HS Dip", y = -.2, label = "Below state\naverage"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Low Income", xend = "Low Income", y = 0.2, yend = 0.6), arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-0.3,1))
 ```
 
 Like the region as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvgCT). All populations of concern have experienced an increase in population-weighted exposure to Ozone, with persons in language-isolated households and minorities experiencing the greatest increase in exposure. 
@@ -954,7 +1034,7 @@ In 2007, the US Supreme Court ruled that CO~2~ is a pollutant under the terms of
 
 The analysis of carbon dioxide (CO~2~) presented here is based on data from the Database of Road Transportation Emissions (DARTE), a product of the NASA Carbon Monitoring System (CMS). DARTE provides CO~2~ emissions from on-road transportation annually for 1980-2017 as a continuous surface at a spatial resolution of 1 km and also aggregated at the Census Block Group level.[^DARTE]
 
-On-road CO~2~ emissions closely follow major roadways arcoss the region (see Figure \@ref(fig:mapCO2CT) below). 
+On-road CO~2~ emissions closely follow major roadways across the state (see Figure \@ref(fig:mapCO2CT) below). 
 
 ```{r mapCO2CT, fig.align = "center", fig.cap="Map of 2017 Carbon Dioxide (CO2) annual on-road emissions in metric tons per square kilometer across Connecticut at Census Block Group level."}
 
@@ -1001,7 +1081,7 @@ tmap_save(m7, "DATA/EJSCREEN/ct_CO2.png",
 knitr::include_graphics("DATA/EJSCREEN/ct_CO2.png")
 ```
 
-Significant hot spots, or clusters of high CO~2~ emissions, appear around Hartford, Danbury and Newtown, and along I-95 between New Haven and Fenwick (see Figure \@ref(fig:hotspotCO2CT) below).
+Significant hot spots, or clusters of high CO~2~ emissions, appear around along I-84 in Danbury and Hartford, and along I-95 in Greenwich, Bridgeport, and New Haven (see Figure \@ref(fig:hotspotCO2CT) below).
 
 ```{r hotspotCO2CT, fig.align = "center", fig.cap="Hot spot map of 2017 CO2 emissions at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
@@ -1067,7 +1147,7 @@ tmap_save(m8, "DATA/EJSCREEN/ct_CO2hotspot.png",
 knitr::include_graphics("DATA/EJSCREEN/ct_CO2hotspot.png")
 ```
 
-CO~2~ emissions vary across the state with significant outliers (see Table \@ref(tab:statsCO2CT).   
+CO~2~ emissions vary across the state with significant outliers (see Table \@ref(tab:statsCO2CT)). See Table \@ref(tab:PollutantByTown) in Appendix B for on-road emissions by municipality.   
 
 ```{r statsCO2CT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 CO2 emissions (mtons) at Census Block Group level and by state."}
 ct_blkgrp_sf %>% 
@@ -1086,10 +1166,10 @@ ct_blkgrp_sf %>%
 ```
 
 ```{r CO2outliers, include=FALSE}
-# download municipal polygons
-ct_towns_sf <- county_subdivisions("CT") %>% 
-  select(NAME) %>% 
-  st_transform(., crs = st_crs(ct_blkgrp_sf))
+# # download municipal polygons
+# ct_towns_sf <- county_subdivisions("CT") %>% 
+#   select(NAME) %>% 
+#   st_transform(., crs = st_crs(ct_blkgrp_sf))
 
 # extract block groups centroid with highest and lowest CO2 values, intersect with town polygons, and pull out town name
 ct_town_maxCO2 <- ct_blkgrp_sf %>% 
@@ -1103,11 +1183,18 @@ ct_town_minCO2 <- ct_blkgrp_sf %>%
   st_centroid() %>% 
   st_intersection(ct_towns_sf,.) %>% 
   pull(., NAME)
+
+ct_town_maxCO2change <- ct_blkgrp_sf %>% 
+  mutate(CO2_pctChange90_17 = (kgco2_2017 - kgco2_1990)/kgco2_1990*100) %>%
+  filter(CO2_pctChange90_17 == min(CO2_pctChange90_17, na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(ct_towns_sf,.) %>% 
+  pull(., NAME)
 ```
 
 The Block Group with highest CO~2~ emissions value in the state is found in `r ct_town_maxCO2` and the lowest is found in `r ct_town_minCO2`.
 
-Since 1990, CO~2~ emissions increased significantly across the state, on average by `r {round((sum(ct_blkgrp_sf$kgco2_2017, na.rm = TRUE)-sum(ct_blkgrp_sf$kgco2_1990, na.rm = TRUE))/sum(ct_blkgrp_sf$kgco2_1990, na.rm = TRUE)*100,1)}`%. These changes have not been uniform (see Figure \@ref(fig:mapCO2CTchange) below). The greatest declines have been in northwest Connecticut and in the eastern third of the state. By contrast, the south central and southern edges of the state have seen increased emissions.
+Since 1990, CO~2~ emissions increased significantly across the state, on average by `r {round((sum(ct_blkgrp_sf$kgco2_2017, na.rm = TRUE)-sum(ct_blkgrp_sf$kgco2_1990, na.rm = TRUE))/sum(ct_blkgrp_sf$kgco2_1990, na.rm = TRUE)*100,1)}`%. These changes have not been uniform (see Figure \@ref(fig:mapCO2CTchange) below). The greatest declines have been in northwest Connecticut and in the eastern third of the state. By contrast, the south central and southern edges of the state have seen increased emissions, with the greatest increase occurring in `r ct_town_maxCO2change`.
 
 ```{r mapCO2CTchange, fig.align = "center", fig.cap="Map of percent change in annual CO2 emissions across Connecticut between 1990 and 2017 at Census Block Group level."}
 # Map of CO2 change across Connecticut
@@ -1281,13 +1368,13 @@ The growth in CO~2~ emissions since 1990 exceeds population growth in the state 
 \pagebreak
 ## Diesel Particulate Matter in Connecticut
 
-Diesel Particulate Matter (DPM) refers to particulate matter generated from the combustion of diesel fuel. Diesel PM (DPM) mass (expressed as $\mu$gDPM/m^3^) has historically been used as a surrogate measure of exposure for diesel exhaust more generally. Diesel exhaust is a complex mixture of thousands of gases and fine particles that contains more than 40 toxic air contaminants.  These include many known or suspected cancer-causing substances, such as benzene, arsenic and formaldehyde.  It also contains other harmful pollutants, including nitrogen oxides (a component of smog). In addition to long term cancer risk, exposure to diesel exhaust can have immediate health effects.  It can irritate the eyes, nose, throat and lungs, and it can cause coughs, headaches, light-headedness and nausea. Exposure to diesel exhaust also causes inflammation in the lungs, which may aggravate chronic respiratory symptoms and increase the frequency or intensity of asthma attacks.[^DPMcalEPA] 
+Diesel particulate matter (DPM) refers to particulate matter generated from the combustion of diesel fuel. DPM mass (expressed as $\mu$gDPM/m^3^) has historically been used as a surrogate measure of exposure for diesel exhaust more generally. Diesel exhaust is a complex mixture of thousands of gases and fine particles that contains more than 40 toxic air contaminants.  These include many known or suspected cancer-causing substances, such as benzene, arsenic and formaldehyde.  It also contains other harmful pollutants, including nitrogen oxides (a component of smog). In addition to long term cancer risk, exposure to diesel exhaust can have immediate health effects.  It can irritate the eyes, nose, throat and lungs, and it can cause coughs, headaches, light-headedness and nausea. Exposure to diesel exhaust also causes inflammation in the lungs, which may aggravate chronic respiratory symptoms and increase the frequency or intensity of asthma attacks.[^DPMcalEPA] 
 
-Major sources of diesel exhaust include engines and motorized vehicles that use diesel fuel, such as trucks, buses, trains, ships, and diesel-powered generators. DPM is classified by the EPA as a Hazardous Air Pollutant (HAP). HAPs are pollutants that are known or suspected to cause cancer or other serious health effects, such as reproductive effects or birth defects, or adverse environmental effects. The EPA has not quantified the cancer risk from exposure to DPM. However, it has established a diesel exhaust reference concentration (RfC) for noncancer health effects. The RfC is 5 $\mu$g/m^3^ for diesel exhaust measured as diesel particulate matter (DPM). This RfC does not consider allergenic effects such as those associated with asthma, immunologic effects or the potential for cardiac effects.[^NATA2014]
+Major sources of diesel exhaust include engines and motorized vehicles that use diesel fuel, such as trucks, buses, trains, ships, and diesel-powered generators. DPM is classified by the EPA as a Hazardous Air Pollutant (HAP). HAPs are pollutants that are known or suspected to cause cancer or other serious health effects, such as reproductive effects or birth defects, or adverse environmental effects. The EPA has not quantified the cancer risk from exposure to DPM. However, it has established a diesel exhaust reference concentration (RfC) for noncancer health effects. The RfC is 5$\mu$g/m^3^ for diesel exhaust measured as diesel particulate matter (DPM). This RfC does not consider allergenic effects such as those associated with asthma, immunologic effects or the potential for cardiac effects.[^NATA2014]
 
-The analysis of Diesel Particulate Matter (DPM) presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides annual DPM concentrations, in micrograms per cubic meter of air ($\mu$g/m^3^), at the Census Block Group level for 2014, the latest year of data available from the National Air Toxics Assessment.
+The analysis of DPM presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides annual DPM concentrations, in micrograms per cubic meter of air ($\mu$g/m^3^), at the Census Block Group level for 2014, the latest year of data available from the National Air Toxics Assessment.
 
-Diesel Particulate Matter (DPM) emissions are concentrated along the highway traffic corridor from Stamford to Hartford along I-95 to I-91 (see Figure \@ref(fig:mapDPMCT) below). 
+DPM emissions are concentrated along the I-95 highway traffic corridor from Stamford to New Haven, and north to Hartford along I-91 (see Figure \@ref(fig:mapDPMCT) below). 
 
 ```{r mapDPMCT, fig.align = "center", fig.cap="Map of 2014 annual average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter across Connecticut at Census Block Group level."}
 
@@ -1435,11 +1522,11 @@ ct_town_minDPM <- ct_blkgrp_sf %>%
   pull(., NAME)
 ```
 
-The Block Group with highest Diesel Particulate Matter emissions value in the state is found in `r ct_town_maxDPM` and the lowest is found in `r ct_town_minDPM`.
+The Block Group with highest Diesel Particulate Matter emissions value in the state is found in `r ct_town_maxDPM` and the lowest is found in `r ct_town_minDPM`. See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality.
 
-Figure \@ref(fig:boxplotDPMCT) is a boxplot of DPM concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median DPM concentration for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$PM25_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group.  
+Figure \@ref(fig:boxplotDPMCT) is a boxplot of DPM concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median DPM concentration for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$DSLPM_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group.  
 
-```{r boxplotDPMCT, fig.align = "center", fig.cap="Boxplot of 2017 Carbon Dioxoide on-road emissions in metric tons per square kilometer by state at Census Block Group level. 1 dot = 1 Block Group."}
+```{r boxplotDPMCT, fig.align = "center", fig.cap="Boxplot of 2014 diesel particulate matter (DPM) concentrations in micrograms per cubic meter by state at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of CO2 by state for 2017
 ct_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -1519,14 +1606,16 @@ ct_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "Low Income", y = 15, label = "Above state avg"),
+  geom_text(aes(x = "Low Income", y = 15, label = "Above state\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "Under 5", xend = "Under 5", y = 4, yend = 15), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
+  geom_text(aes(x = "Low Income", y = -4, label = "Below state\naverage"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 4, yend = 15), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-8,23))
 ```
 
-There is a moderate to strong positive correlation between the proportions of language isolated households and minorities and ambient concentrations of Diesel Particulate Matter (see Appendix).
+There is a moderate to strong positive correlation between the proportions of limited English speaking households and minorities and ambient concentrations of Diesel Particulate Matter (see Figure \@ref(fig:cormatrixDPMPopAvg) in Appendix B).
 
 
 \pagebreak
@@ -1538,7 +1627,7 @@ Most air toxics originate from transportation and industry, including automobile
 
 The analysis of air toxics cancer risk presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides lifetime cancer risk from inhalation of air toxics, as risk-in-1 million, at the Census Block Group level for 2014, the latest year of data available from the National Air Toxics Assessment. 
 
-Air Toxics Cancer Risk are concentrated along the highway traffic corridor from Stamford to Hartford along I-95 to I-91 (see Figure \@ref(fig:mapATCNE) below).
+Air toxics cancer risks are concentrated along the highway traffic corridor from Stamford to New Haven along I-95 and from New Haven to Hartford along I-91 (see Figure \@ref(fig:mapATCNE) below).
 
 ```{r mapATCNE, fig.align = "center", fig.cap="Map of 2014 lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Connecticut at Census Block Group level."}
 
@@ -1570,7 +1659,7 @@ m12 <- ct_blkgrp_sf %>%
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Annual Lifetime \nCancer Risk from \nInhalation of Air Toxics\n2014", 
+  tm_layout(title = "Annual Lifetime \nCancer Risk from \nInhalation of Air\nToxics, 2014", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1677,17 +1766,30 @@ ct_town_maxCancer <- ct_blkgrp_sf %>%
   filter(row_number() == 1) %>% 
   pull(., NAME)
 
-ct_town_minCaner <- ct_blkgrp_sf %>% 
+ct_town_minCancer <- ct_blkgrp_sf %>% 
   filter(CANCER_19 == min(CANCER_19,na.rm = TRUE)) %>% 
   st_centroid() %>% 
   st_intersection(ct_towns_sf,.) %>% 
   filter(row_number() == 1) %>% 
   pull(., NAME)
+
+# identify threshold for outliers using IQR method
+CancerOutlier <- quantile(ct_blkgrp_sf$CANCER_19,.75, na.rm = TRUE) + 1.5*(quantile(ct_blkgrp_sf$CANCER_19,.75, na.rm = TRUE) - quantile(ct_blkgrp_sf$CANCER_19,.25, na.rm = TRUE))
+
+# identify outliers
+ct_town_outlierCancer <- ct_blkgrp_sf %>% 
+  filter(CANCER_19 > CancerOutlier) %>% 
+  st_centroid() %>% 
+  st_intersection(ct_towns_sf,.) %>% 
+  # filter(row_number() == 1) %>% 
+  as.data.frame() %>% 
+  distinct(NAME) %>% 
+  pull(., NAME)
 ```
 
-The Block Group with highest cancer risk value in the state is found in `r ct_town_maxCancer` and the lowest is found in `r ct_town_minCaner`.
+The Block Group with highest cancer risk value in the state is found in `r ct_town_maxCancer` and the lowest is found in `r ct_town_minCancer`.
 
-Figure \@ref(fig:boxplotATCNE) is a boxplot of cancer risk by Block Group . The box represents risk values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median lifetime cancer risk value for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$CANCER_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large dots represent outliers, or unusually high values.
+Figure \@ref(fig:boxplotATCNE) is a boxplot of cancer risk by Block Group . The box represents risk values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median lifetime cancer risk value for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$CANCER_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large dots represent outliers, or unusually high values. In this case, outliers would be represented by cancer risk values greater than `r CancerOutlier`, which occur in Block Groups in `r paste(ct_town_outlierCancer, collapse=" and ")`. See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality.
 
 ```{r boxplotATCNE, fig.align = "center", fig.cap="Boxplot of lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Connecticut by state at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of lifetime cancer risk by state for 2014
@@ -1708,7 +1810,7 @@ ct_blkgrp_sf %>%
 
 ### Lifetime Cancer Risk from Inhalation of Air Toxics in Connecticut and Populations of Concern
 
-In addition to variations in the general geography of Lifetime Cancer Risk from Inhalation of Air Toxics, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvgCT) below shows population-weighted exposures for populations of concern relative to average Lifetime Cancer Risk from Inhalation of Air Toxics for the state. For example, linguistically isolated households in Connecticut experience lifetime cancer risks from inhalation of air toxics that are 4.6% above the region as a whole. Similarly, minorities are experience lifetime cancer risks of 4% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of Diesel Particulate Matter 1% below the state average. 
+In addition to variations in the general geography of lifetime cancer risk from inhalation of air toxics, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvgCT) below shows population-weighted exposures for populations of concern relative to average cancer risk for the state. For example, limited English speaking households in Connecticut experience lifetime cancer risks from inhalation of air toxics that are 4.6% above the region as a whole. Similarly, minorities experience lifetime cancer risks of 4% above the state average. By contrast, persons over age 64 are, on average, exposed to lifetime cancer risks 1% below the state average. 
 
 ```{r barplotATCPopAvgCT, fig.align = "center", fig.cap="Population-weighted average lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Connecticut at Census Block Group level relative to the state average."}
 # Pop Weighted avg of DPM for all Groups in Connecticut relative to NE average
@@ -1770,14 +1872,16 @@ ct_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "Low Income", y = 3, label = "Above state avg"),
+  geom_text(aes(x = "Low Income", y = 3, label = "Above state\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1, yend = 4), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
+  geom_text(aes(x = "Low Income", y = -1, label = "Below state\naverage"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1, yend = 4), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-2,5))
 ```
 
-There is a moderately positive correlation between the proportions of minorities and limited English households and cancer risk (see Appendix).
+There is a moderately positive correlation between the proportions of minorities and limited English households and cancer risk (see Figure \@ref(fig:cormatrixATCPopAvg) in Appendix B).
 
 
 \pagebreak
@@ -1787,9 +1891,9 @@ Respiratory hazard from air toxics refers to noncancer effects caused by a lifet
 
 The analysis of respiratory hazard presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides respiratory hazard, as a ratio of exposure concentration to a health-based reference concentration (RfC), at the Census Block Group level for 2014, the latest year of data available from the National Air Toxics Assessment.
 
-Higher Respiratory Hazard Indices are concentrated along the I-91 to I-95 highway traffic corridor from Stamford to Hartford (see Figure \@ref(fig:mapRHICT) below). 
+Higher respiratory hazard indices are concentrated along the I-95 to I-91 highway traffic corridor from Stamford to Hartford (see Figure \@ref(fig:mapRHICT) below). 
 
-```{r mapRHICT, fig.align = "center", fig.cap="Map of 2014 respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Connecticut at Census Block Group level."}
+```{r mapRHICT, fig.align = "center", fig.cap="Map of 2014 respiratory hazard index from inhalation of air toxics across Connecticut at Census Block Group level."}
 
 # Map of RHI across Connecticut
 m14 <- ct_blkgrp_sf %>% 
@@ -1832,7 +1936,7 @@ tmap_save(m14, "DATA/EJSCREEN/ct_RespHzrd.png",
 knitr::include_graphics("DATA/EJSCREEN/ct_RespHzrd.png")
 ```
 
-There appear to be significant spatial clusters of high indices of respiratory hazard index from inhalation of air toxics along the I-91 to I-95 highway traffic corridor from Stamford to Hartford (see Figure \@ref(fig:hotspotRHICT) below).
+There appear to be significant spatial clusters of high indices of respiratory hazard index from inhalation of air toxics along the I-95 to I-91 highway traffic corridor from Stamford to Hartford (see Figure \@ref(fig:hotspotRHICT) below).
 
 ```{r hotspotRHICT, fig.align = "center", fig.cap="Hot spot map of 2014 respiratory hazard index from inhalation of air toxics at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
@@ -1935,11 +2039,11 @@ ct_town_minRESP <- ct_blkgrp_sf %>%
   pull(., NAME)
 ```
 
-The Block Group with highest respiratory hazard index value in the state is found in `r ct_town_maxRESP` and the lowest is found in `r ct_town_minRESP`.
+The Block Group with highest respiratory hazard index value in the state is found in `r ct_town_maxRESP` and the lowest is found in `r ct_town_minRESP`. See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality.
 
 Figure \@ref(fig:boxplotRHICT) is a boxplot of respiratory hazard indices by Block Group . The box represents index values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median respiratory hazard index value for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$RESP_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group.   
 
-```{r boxplotRHICT, fig.align = "center", fig.cap="Boxplot of respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Connecticut by state at Census Block Group level. 1 dot = 1 Block Group."}
+```{r boxplotRHICT, fig.align = "center", fig.cap="Boxplot of respiratory hazard index from inhalation of air toxics across Connecticut by state at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of lifetime cancer risk by state for 2014
 ct_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -1958,7 +2062,7 @@ ct_blkgrp_sf %>%
 
 ### Respiratory Hazard Index from Inhalation of Air Toxics in Connecticut and Populations of Concern
 
-In addition to variations in the general geography of the Respitory Hazard Index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvgCT) below shows population-weighted exposures for populations of concern relative to average Respiratory Hazard Index from Inhalation of Air Toxics for the state. For example, linguistically isolated households in Connecticut experience respiratory hazard indices from inhalation of air toxics that are 6.1% above the region as a whole. Similarly, minorities are experience lifetime hazard index values more than 5% above the regional average. By contrast, persons over age 64 are, on average, exposed to respiratory hazard indices over 1% below the regional average. 
+In addition to variations in the general geography of the respiratory hazard index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvgCT) below shows population-weighted exposures for populations of concern relative to average respiratory hazard index for the state. For example, limited English speaking households in Connecticut experience respiratory hazard indices that are 6.1% above the region as a whole. Similarly, minorities are experience hazard index values more than 5% above the regional average. By contrast, persons over age 64 are, on average, exposed to respiratory hazard indices over 1% below the regional average. 
 
 ```{r barplotRHIPopAvgCT, fig.align = "center", fig.cap="Population-weighted average respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Connecticut at Census Block Group level relative to the regional average."}
 # Pop Weighted avg of RHI for all Groups in Connecticut relative to NE average
@@ -2020,14 +2124,16 @@ ct_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "Low Income", y = 4, label = "Above state avg"),
+  geom_text(aes(x = "Low Income", y = 4, label = "Above state\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1.5, yend = 5), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
+  geom_text(aes(x = "Low Income", y = -1.5, label = "Below state\naverage"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1.5, yend = 5), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-3,8))
 ```
 
-There is a moderate to strong positive correlation between the proportions of minorities and respiratory hazard index (see Appendix).
+There is a moderate to strong positive correlation between the proportions of minorities and respiratory hazard index (see Figure \@ref(fig:cormatrixRHIPopAvg) in Appendix B).
 
 
 \pagebreak
@@ -2035,11 +2141,11 @@ There is a moderate to strong positive correlation between the proportions of mi
 
 Proximity to motor vehicle traffic is associated with greater exposure to toxic gases and particulate matter, as well as increased noise. Vehicle-related emissions include ultrafine particulates and other components of PM~2.5~, lead and other metals, air toxics such as benzene, nitrogen oxides (NO~x~), hydrocarbons and carbon monoxide (CO), as well as precursors that add to the formation of ground level ozone (O~3~) and smog. Research has repeatedly shown that living near highly trafficked roads is related to increased risk of a variety of adverse health outcomes, including asthma, cardiovascular disease, hypertension, stroke, stress, and increased rates of mortality. EPA’s 2005 National Air Toxics Assessment (NATA) estimated that mobile emissions accounted for about 30% of average cancer risk from Hazardous Air Pollutants.[^EJSCREENTraffic]
 
-EPA's EJSCREEN provides an indicator of traffic exposure measured as residential proximity to roads weighted by traffic volume. More specifically, EJSCREEN's Traffic Proximity and Volume indicator is a count of vehicles (average annual daily traffic) at major roads within 500 meters of residential areas (i.e., Census Blocks) divided by distance in kilometers (km).[^EPATraffic] For example, a residential area at 100 meters distance from a single highway with 33,000 AADT (average annual daily traffic) would result in a score of 33,000/100=330, which is approximately the median person’s block group traffic proximity indicator value in New England. The Traffic Proximity and Volume indicator values are aggregated at the Census Block Group level. 
+EPA's EJSCREEN provides an indicator of traffic exposure measured as residential proximity to roads weighted by traffic volume. More specifically, EJSCREEN's Traffic Proximity and Volume indicator is a count of vehicles (average annual daily traffic) at major roads within 500 meters of residential areas (i.e., Census Blocks) divided by distance in kilometers (km).[^EPATraffic] For example, a residential area at 100 meters distance from a single highway with 33,000 AADT (average annual daily traffic) would result in a score of 33,000/100=330, which is approximately the median block group traffic proximity indicator value in New England. The Traffic Proximity and Volume indicator values are aggregated at the Census Block Group level. 
 
 Exposure to high annual daily traffic volume is concentrated along the I-95 to I-91 highway traffic corridor from Stamford to Hartford (see Figure \@ref(fig:mapTPVCT) below). 
 
-```{r mapTPVCT, fig.align = "center", fig.cap="Map of 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Connecticut at Census Block Group level."}
+```{r mapTPVCT, fig.align = "center", fig.cap="Map of 2017 traffic proximity and volume at major roads within 500 meters, divided by distance in kilometers (km)) across Connecticut at Census Block Group level."}
 
 # Map of TPV across Connecticut
 m16 <- ct_blkgrp_sf %>% 
@@ -2186,11 +2292,11 @@ ct_town_minTraffic <- ct_blkgrp_sf %>%
   pull(., NAME)
 ```
 
-The Block Group with highest Traffic Proximity and Volume value in the state is found in `r ct_town_maxTraffic` and the lowest is found in `r ct_town_minTraffic`.
+The Block Group with highest Traffic Proximity and Volume value in the state is found in `r ct_town_maxTraffic` and the lowest is found in `r ct_town_minTraffic`. See Table \@ref(tab:PollutantByTown) in Appendix B for values by municipality.
 
-Figure \@ref(fig:boxplotTPVCT) is a boxplot of Traffic Proximity and Volume values by Block Group . The box represents values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median Traffic Proximity and Volume value for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$PTRAF_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large black dots represent outliers, or unusually high values.  
+Figure \@ref(fig:boxplotTPVCT) is a boxplot of Traffic Proximity and Volume values by Block Group . The box represents values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median Traffic Proximity and Volume value for all Block Groups, which in this case is `r round(median(ct_blkgrp_sf$PTRAF_19, na.rm = TRUE),0)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large black dots represent outliers, or unusually high values.  
 
-```{r boxplotTPVCT, fig.align = "center", fig.cap="Boxplot of 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Connecticut at Census Block Group level."}
+```{r boxplotTPVCT, fig.align = "center", fig.cap="Boxplot of 2017 traffic proximity and volume at major roads within 500 meters, divided by distance in kilometers (km)) across Connecticut at Census Block Group level."}
 # boxplot of traffic proximity and volume by state for 2017
 ct_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -2270,14 +2376,16 @@ ct_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "No HS Dip", y = 50, label = "Above state avg"),
+  geom_text(aes(x = "No HS Dip", y = 50, label = "Above state\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "Under 5", xend = "Under 5", y = 10, yend = 50), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
+  geom_text(aes(x = "No HS Dip", y = -12, label = "Below state\naverage"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 10, yend = 50), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-25,75))
 ```
 
-There is a moderate positive correlation between the proportions of minorities, low income persons, limited English households, adults with less than a high school education, and traffic proximity and volume (see Appendix).
+There is a moderate positive correlation between the proportions of minorities, low income persons, limited English households, adults with less than a high school education, and traffic proximity and volume (see Figure \@ref(fig:cormatrixTPVPopAvg) in Appendix B).
 
 [^EJSCREEN]: U.S. Environmental Protection Agency (EPA), 2019. EJSCREEN Technical Documentation. For more information see www.epa.gov/ejscreen
 
@@ -2346,7 +2454,7 @@ The analyses presented here are based on data from three sources:
 
 The U.S. EPA's EJSCREEN is an online environmental justice mapping and screening tool that provides a "nationally consistent dataset and approach for combining environmental and demographic indicators."  EJSCREEN provides data on 11 environmental indicators, ranging across air, land, and water. The six indicators analyzed here were chosen based on their relationship to transportation sources, especially motor vehicles. Data for each indicator is available by Census Block Group across the U.S. The 2015 (earliest available) and 2019 (latest available) data sets were downloaded from https://www.epa.gov/ejscreen/download-ejscreen-data as CSV files and processed in R. 
 
-All data was analyzed or aggregated geographically by Census Tract and Block Group. A Census Tract is a small, relatively permanent statistical subdivision of a county that contains between 1,200 and 8,000 people. The entire area of a county is covered by Census Tracts, just as the entire area of a state is covered by counties and county equivalents. Census Tracts range in areal size depending on the population density; smaller in denser areas and larger in less densely populated areas. Census Block Groups are subdivisions of Census Tracts that contain between 600 and 3,000 people. Like Tracts, Block Groups range in areal size depending on the population density of the area. Block Groups are the smallest geographic unit at which detailed demographic and household data from the American Community Survey is made available by the Census.  
+All data was analyzed or aggregated geographically by Census Tract and Block Group. A Census Tract is a small, relatively permanent statistical subdivision of a county that contains between 1,200 and 8,000 people. The entire area of a county is covered by Census Tracts, just as the entire area of a state is covered by counties or county equivalents. Census Tracts range in areal size depending on the population density; smaller areas in denser areas and larger areas in less densely populated areas. Census Block Groups are subdivisions of Census Tracts that contain between 600 and 3,000 people. Like Tracts, Block Groups range in areal size depending on the population density of the area. Block Groups are the smallest geographic unit at which detailed demographic and household data from the American Community Survey is made available by the U.S. Census Bureau.  
 
 Below is a summary of the measurement unit and source of each environmental indicator. For more detail on these data sources, see the EJSCREEN Environmental Justice Mapping and Screening Tool: EJSCREEN Technical Documentation 2019. www.epa.gov/ejscreen.
 
@@ -2380,7 +2488,7 @@ Respiratory Hazard Index refers to noncancer effects caused by a lifetime of exp
 
 The 2019 version of EJSCREEN uses 2014 NATA data, which is based on NEI emissions estimates for 2014. 
 
-### Traffic Proimity and Volume {-}
+### Traffic Proximity and Volume {-}
 
 Traffic Proximity and Volume refers to an index of exposure to road traffic. This index is calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters of residential areas (i.e., Census
 Block centroids) divided by distance in kilometers (km). Traffic volume is based on average annual daily traffic (AADT) estimates in the Highway Performance Monitoring System (HPMS) dataset in the Department of Transportation (DOT) National Transportation Atlas Database (NTAD). Each Block Group was assigned a Traffic Proximity and Volume score based on a population-weighted average of the scores for the Census Blocks within the respective Block Group. 
@@ -2389,11 +2497,11 @@ The 2019 version of EJSCREEN uses 2017 HPMS data.
 
 ## Database of Road Transportation Emissions (DARTE) {-}
 
-The Database of Road Transportation Emissions (DARTE) is "the first nationally consistent inventory of US on-road CO2 emissions built from bottom-up source activity data and establishes a national benchmark for monitoring, reporting, and verification of emissions that are vital for regulating greenhouse gases." DARTE provides a 38-year, 1-km resolution inventory of annual on-road CO~2~ emissions for the conterminous United States based on roadway-level vehicle traffic data and state-specific emissions factors for multiple vehicle types on urban and rural roads as compiled in the Database of Road Transportation Emissions (DARTE). For more details about DARTE, see the User Guide for DARTE Annual On-road CO2 Emissions on a 1-km Grid, Conterminous USA, V2, 1980-2017 at https://daac.ornl.gov/cgi-bin/dsviewer.pl?ds_id=1735.
+The Database of Road Transportation Emissions (DARTE) provides a 38-year, 1-km resolution inventory of annual on-road CO~2~ emissions for the conterminous United States based on roadway-level vehicle traffic data and state-specific emissions factors for multiple vehicle types on urban and rural roads as compiled in the Database of Road Transportation Emissions (DARTE). For more details about DARTE, see the User Guide for DARTE Annual On-road CO2 Emissions on a 1-km Grid, Conterminous USA, V2, 1980-2017 at https://daac.ornl.gov/cgi-bin/dsviewer.pl?ds_id=1735.
 
 ### On-road Carbon Dioxide (CO~2~) Emissions {-}
 
-DARTE CO~2~ emissions data from the on-road transportation sector are provided annually for 1980-2017 as a continuous surface at a spatial resolution of 1km in the form of GeoTIFF files for each year. The same data is also provided  aggregated to U.S. 2010 Census Block Group polygons. Units of data are total emissions in kilograms CO~2~ per year for each Block Group. 
+DARTE CO~2~ emissions data from the on-road transportation sector are provided annually for 1980-2017 as a continuous surface at a spatial resolution of 1km in the form of GeoTIFF files for each year. The same data is also provided  aggregated to U.S. 2010 Census Block Group polygons. Units of data are total emissions in kilograms of CO~2~ per year for each Block Group. 
 
 For the purposes of this analysis, DARTE Block Group data for the years 1990 to 2017 was downloaded as a geodatabase and processed in R. 
 
@@ -2411,32 +2519,16 @@ ACSvDF <- data.frame(Variable = c("Total Population",
                                   "Limited English Household",
                                   "Less than High School Education",
                                   "Under 5",
-                                  "Under 18",
                                   "Over 64",
-                                  "Disabled",
-                                  "No Car Household",
-                                  "CT Income",
-                                  "MA Income",
-                                  "MA Limited English Household",
-                                  "MA Minority",
-                                  "RI Income",
-                                  "RI Minority"),
+                                  "CT Income"),
                      Description = c("Total population",
                                      "Persons of Hispanic or Latino origin or persons who are not White",
                                      "People in households where the household income is less than or equal to twice the federal poverty level",
                                      "People in households where all adults speak English less than \"very well\"",
                                      "Adults 25 years+ with less than a high school education",
                                      "Persons under 5 years of age",
-                                     "Persons under 18 years of age",
                                      "Persons over 64 years of age",
-                                     "Persons 18 years+ with a disability",
-                                     "Households with no vehicle available",
-                                     "Connecticut Low Income threshold: 30% or more people in households where the household income is less than or equal to twice the federal poverty level",
-                                     "Massachusetts Low Income threshold: 25% or more of households with median household incomes below 65% statewide median",
-                                     "Massachusetts Language Isolation threshold: 25% or more people in households where all adults speak English less than \"very well\"",
-                                     "Massachusetts Minority threshold: 25% or more are persons of Hispanic or Latino origin or persons who are not White",
-                                     "Rhode Island Low Income threshold: highest 15% of block groups with people in households where the household income is less than or equal to twice the federal poverty level",
-                                     "Rhode Island Minority threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
+                                     "Connecticut Low Income threshold: 30% or more people in households where the household income is less than or equal to twice the federal poverty level"),
                      'ACS Table ID' = c("B03002: Hispanic or Latino Origin by Race",
                                 "B03002: Hispanic or Latino Origin by Race",
                                 "C17002: Ratio of Income to Poverty Level",
@@ -2444,25 +2536,9 @@ ACSvDF <- data.frame(Variable = c("Total Population",
                                 "B15002: Sex by Educational Attainment",
                                 "B01001: Sex by Age",
                                 "B01001: Sex by Age",
-                                "B01001: Sex by Age",
-                                "B18101: Sex by Age by Disability Status",
-                                "B08201: Household Size by Vehicles Available",
-                                "C17002: Ratio of Income to Poverty Level",
-                                "B19001: Household Income",
-                                "C16002: Household Language by Household Limited English Speaking Status",
-                                "B03002: Hispanic or Latino Origin by Race",
-                                "C17002: Ratio of Income to Poverty Level",
-                                "B03002: Hispanic or Latino Origin by Race"),
+                                "B01001: Sex by Age"),
                      Geography = c("Block Group",
                                    "Block Group",
-                                   "Block Group",
-                                   "Block Group",
-                                   "Block Group",
-                                   "Block Group",
-                                   "Block Group",
-                                   "Block Group",
-                                   "Tract",
-                                   "Tract",
                                    "Block Group",
                                    "Block Group",
                                    "Block Group",
@@ -2494,7 +2570,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Population numbers of minorities, as well as the total population, and PM~2.5~ concentrations, are each reported by Block Group. Since each Block Group is associated with one PM~2.5~ concentration value, we might assume (incorrectly) that everyone is equally exposed to the average PM~2.5~ values of all Block Groups - `r round(mean(c(2.5,6.2,10,5)),2)`. However, not all Block Groups have the same number of people, which means that each PM~2.5~ concentration value is associated with a different number of people. Do more Minorities occupy Block Groups with higher concentrations than the simple average would indicate?
+Population numbers of minorities, as well as the total population, and PM~2.5~ concentrations, are each reported by Block Group. Since each Block Group is associated with one PM~2.5~ concentration value, we might assume (incorrectly) that everyone is equally exposed to the average PM~2.5~ values of all Block Groups (`r round(mean(c(2.5,6.2,10,5)),2)`). However, not all Block Groups have the same number of people or categories, which means that each PM~2.5~ concentration value is associated with different categories and numbers of people. Do more Minorities occupy Block Groups with higher concentrations than the simple average would indicate?
 
 To calculate the population-weighted average PM~2.5~ exposure for Minorities, the number of Minorities in each Block Group is used as a 'weight'. The PM~2.5~ concentraions of each Block Group is multiplied by its respective number of Minorities. See the table below. The light gray column on the right is the product of PM~2.5~ values and Minority populations. 
 
@@ -2661,7 +2737,7 @@ ggcorrplot(corrACT, hc.order = TRUE, type = "lower", lab = TRUE,
            ggtheme = ggplot2::theme_minimal())
 ```
 
-```{r cormatrixRHIPopAvg, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group."}
+```{r cormatrixRHIPopAvg, fig.align = "center", fig.cap="Spearman's correlation matrix of respiratory hazard index and the proportions of populations of concern by Census Block Group."}
 # Create a correlation matrix of cancer risk and populations of concern
 corrACT <- ct_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -2684,7 +2760,7 @@ ggcorrplot(corrACT, hc.order = TRUE, type = "lower", lab = TRUE,
            ggtheme = ggplot2::theme_minimal())
 ```
 
-```{r cormatrixTPVPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group."}
+```{r cormatrixTPVPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of traffic proximity and volume and the proportions of populations of concern by Census Block Group."}
 # Create a correlation matrix of cancer risk and populations of concern
 corrTPV <- ct_blkgrp_sf %>% 
   as.data.frame() %>% 
