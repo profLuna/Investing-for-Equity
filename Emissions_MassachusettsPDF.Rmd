@@ -1,7 +1,7 @@
 ---
-title: "Transportation Emissions in Massachusetts"
+title: "Transportation Burdens and Emissions in Massachusetts"
 author: "Marcos Luna and Neenah Estrella-Luna"
-date: "5/5/2020"
+date: "6/27/2020"
 output: 
   bookdown::pdf_document2:
     toc: true
@@ -29,7 +29,7 @@ Sources of PM~2.5~ emissions include power plants and industrial facilities that
 
 The analysis of PM~2.5~ presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides PM~2.5~ annual concentrations at the Census Block Group level for the years 2011 to 2016 (as of December 2019). 
 
-PM~2.5~ levels vary significantly across Massachusetts, with highest concentrations in southwest Massachusetts, with concentration declining from Stamford to Hartford (see Figure \@ref(fig:mapPM25MA) below). 
+PM~2.5~ levels vary significantly across Massachusetts, with highest concentrations in southwest Massachusetts centered between I-95 and I-90, and inside of I-495, as well as around Springfield (see Figure \@ref(fig:mapPM25MA) below). 
 
 ```{r data, include=FALSE}
 library(tidyverse)
@@ -85,7 +85,7 @@ ma_towns_sf_pts <- county_subdivisions(state = "MA", cb = TRUE) %>%
                      "Lawrence",
                      "Lowell",
                      "Newburyport",
-                     "Rockport",
+                     "Gloucester",
                      "Brockton",
                      "New Bedford",
                      "Plymouth",
@@ -95,7 +95,8 @@ ma_towns_sf_pts <- county_subdivisions(state = "MA", cb = TRUE) %>%
                      "Athol",
                      "Wrentham,",
                      "Great Barrington",
-                     "Holyoke")) %>% 
+                     "Holyoke",
+                     "Attleboro")) %>% 
   st_transform(., crs = 2805) %>% 
   st_centroid(of_largest_polygon = TRUE)
 
@@ -207,7 +208,7 @@ tmap_save(m1, "DATA/EJSCREEN/ma_pm25.png",
 knitr::include_graphics("DATA/EJSCREEN/ma_pm25.png")
 ```
 
-PM~2.5~ concentrations exhibit spatial clustering of both hot spots (i.e. geographic clusters of high values) and cold spots (i.e. geographic clusters of lower values). The map below (Figure \@ref(fig:hotspotPM25MA)) shows statistically significant PM~2.5~ hot spots.
+PM~2.5~ concentrations exhibit spatial clustering of both hot spots (i.e. geographic clusters of high values) and cold spots (i.e. geographic clusters of lower values). The map below (Figure \@ref(fig:hotspotPM25MA)) shows statistically significant PM~2.5~ hot spots. Hotspots are concentrated along I-95 and centered around I-495 to I-90 in the Boston area. 
 
 ```{r hotspotPM25MA, fig.align = "center", fig.cap="Hot spot map of 2016 annual PM2.5 concentrations at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
@@ -283,9 +284,48 @@ knitr::include_graphics("DATA/EJSCREEN/ma_pm25hotspot.png")
 
 There is a statistically significant hot spot of PM~2.5~ around Springfiel and also from Wrentham to Boston. 
 
-These PM~2.5~ levels vary significantly across the state, although the clusters of Block Groups with high PM~2.5~ values remains apparent. Figure \@ref(fig:boxplotPM25MA) is a boxplot of PM~2.5~ concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median PM~2.5~ concentration for all Block Groups, which in this case is `r round(median(ma_blkgrp_sf$PM25_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. Note that a large cluster of dots is concentrated on the far right, at the upper end of concentration values. Most of these are in southwest Massachusetts. 
+These PM~2.5~ levels vary significantly across the state, although the clusters of Block Groups with high PM~2.5~ values remains apparent (see Table \@ref(tab:statsPM) and Figure \@ref(fig:boxplotPM)). See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality. 
 
-```{r boxplotPM25MA, fig.align = "center", fig.cap="Boxplot of 2016 annual PM2.5 concentrations at Census Block Group level. 1 dot = 1 Block Group."}
+```{r statsPM, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual PM2.5 concentrations at Census Block Group level for the state."}
+ma_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  # group_by(STATE) %>% 
+  summarize(Mean = round(mean(PM25_19, na.rm = TRUE),2),
+            Median = round(median(PM25_19, na.rm = TRUE),2),
+            Min = round(min(PM25_19, na.rm = TRUE),2),
+            Max = round(max(PM25_19, na.rm = TRUE),2)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    caption = "Annual 2016 PM2.5 concentrations (micrograms per cubic meter) by Census block group for the state.", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+```{r PMoutliers, include=FALSE}
+# download municipal polygons
+ma_towns_sf <- county_subdivisions("MA") %>% 
+  select(NAME) %>% 
+  st_transform(., crs = st_crs(ma_blkgrp_sf))
+
+# extract block groups centroid with highest and lowest values, intersect with town polygons, and pull out town name
+ma_town_maxPM <- ma_blkgrp_sf %>% 
+  filter(PM25_19 == max(PM25_19,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(ma_towns_sf,.) %>% 
+  slice(.,1) %>%
+  pull(., NAME)
+
+ma_town_minPM <- ma_blkgrp_sf %>% 
+  filter(PM25_19 == min(PM25_19,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(ma_towns_sf,.) %>% 
+  slice(.,1) %>% 
+  pull(., NAME)
+```
+
+The Block Group with highest PM~2.5~ concentration value in the state is found in `r ma_town_maxPM` and the lowest is found in `r ma_town_minPM`.
+
+Figure \@ref(fig:boxplotPM) is a boxplot of PM~2.5~ concentrations by Block Group. The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median PM~2.5~ concentration for all Block Groups, which in this case is `r round(median(ma_blkgrp_sf$PM25_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. Note that a large cluster of dots is concentrated on the far right, at the upper end of concentration values. Most of these run southwest from Boston to the Rhode Island border. 
+
+```{r boxplotPM, fig.align = "center", fig.cap="Boxplot of 2016 annual PM2.5 concentrations at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of PM2.5 by state for 2016
 ma_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -304,8 +344,7 @@ ma_blkgrp_sf %>%
 #   ggplot(aes(x = PM25_19)) + geom_histogram()
 ```
 
-
-Since 2011, PM~2.5~ levels have declined across the state, on average by `r {round(mean(ma_blkgrp_sf$PM25_pctChange, na.rm = TRUE),1)}`%. Unsurprisingly, this decline has not been uniform (see Figure \@ref(fig:mapPM25MAchange) below). The greatest declines, up to 38%, have been in western Massachusetts north of Springfield, and in the northeast north of Boston. 
+Since 2011, PM~2.5~ levels have declined across the state, on average by `r {round(mean(ma_blkgrp_sf$PM25_pctChange, na.rm = TRUE),1)}`%. Unsurprisingly, this decline has not been uniform (see Figure \@ref(fig:mapPM25MAchange) below). The greatest declines, `r abs(round(min(ma_blkgrp_sf$PM25_pctChange, na.rm = TRUE),1))`%, have been in western Massachusetts north of Springfield, and in the northeast north of Boston. 
 
 ```{r mapPM25MAchange, fig.align = "center", fig.cap="Map of percent change in annual PM2.5 concentrations across Massachusetts between 2011 and 2016 at Census Block Group level."}
 # Map of PM2.5 change across Massachusetts
@@ -345,7 +384,7 @@ m3 <- tm_shape(ma_blkgrp_sf, unit = "mi") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Change in annual\nPM2.5 Concentrations \n2011-2016", 
+  tm_layout(title = "Change in\nannual PM2.5\nConcentrations\n2011-2016", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -360,7 +399,7 @@ knitr::include_graphics("DATA/EJSCREEN/ma_pm25change.png")
 
 Figure \@ref(fig:slopegraphPM25MA) below compares the average annual PM~2.5~ concentrations for the state and the region between 2011 and 2016. The region and the state both showed significant declines since 2011. Massachusetts is now slightly below the rest of the region. 
 
-```{r slopegraphPM25MA, fig.align = "center", fig.cap="Change in population-weighted exposure to PM2.5 between 2011 and 2016 for Massachusetts and New England."}
+```{r slopegraphPM25MA, fig.align = "center", fig.cap="Change in population-weighted concentration of PM2.5 between 2011 and 2016 for Massachusetts and New England."}
 # Slope graph of PM2.5 by state and region between 2011 and 2016
 # Create df of 2019 actual values
 PM19wSTAvgs_actual <- ma_blkgrp_sf %>% 
@@ -429,7 +468,7 @@ newggslopegraph(dataframe = PM11_16wSTAvg_actual,
 
 ### PM~2.5~ in Massachusetts and Populations of Concern
 
-In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvgMA) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the state. For example, minorities in Massachusetts are exposed to PM~2.5~ concentrations that are approximately 2.3% above concentrations for the state as a whole. Similarly, limited English households are exposed to concentrations over 2% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of PM~2.5~ at or below the state average. 
+In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvgMA) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the state. For example, minorities in Massachusetts are exposed to PM~2.5~ concentrations that are approximately 2.3% above concentrations for the state as a whole. Similarly, limited English households are exposed to concentrations over 2% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of PM~2.5~ almost 1% below the state average. 
 
 ```{r barplotPM25PopAvgMA, fig.align = "center", fig.cap="Population-weighted average exposures to PM2.5 for populations of concern in Massachusetts relative to the state average."}
 # Pop Weighted avg of PM2.5 for all Groups in Massachusetts relative to state average
@@ -498,14 +537,15 @@ ma_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "Under 5", y = 1.1, label = "Above state avg"),
+  geom_text(aes(x = "Under 5", y = 1.1, label = "Above state\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "Low Income", xend = "Low Income", y = 0.1, yend = 1.2), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
+  geom_text(aes(x = "Under 5", y = -0.5, label = "Below state\naverage"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Low Income", xend = "Low Income", y = 0.1, yend = 1.2), arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-1,2.5))
 ```
 
-Like the region as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that minorities and language isolated households continue to experience exposures greater than the regional average, with language isolated households leading on this measure. 
+Like the state as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that all populations of concern, except for persons over 64, continue to experience exposures greater than the state average, with minorities and children under 5 leading on this measure. 
 
 ```{r slopegraphPM25PopAvgNE, fig.align = "center", fig.cap="Change in population-weighted exposure to PM2.5 for populations of concern between 2011 and 2016."}
 # Pop Weighted avg of PM2.5 EXPOSURE CHANGE 2011 - 2016 for all Groups in Massachusetts relative to NE average. 
@@ -590,7 +630,7 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
                 WiderLabels = TRUE)
 ```
 
-There is a weak positive relationship between the proportion of minority residents or language-isolated households and the concentration of PM~2.5~ (see Appendix).
+There is a weak positive relationship between the proportion of minority residents or language-isolated households and the concentration of PM~2.5~ (see Figure \@ref(fig:cormatrixPM25PopAvg) in Appendix B).
 
 
 \pagebreak
@@ -604,7 +644,7 @@ Ground level ozone has been regulated by the US EPA under the National Ambient A
 
 The analysis of ozone (O~3~) presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides ozone (O~3~) May–September (summer/ ozone season) average of daily-maximum 8-hour-average ozone concentrations, in parts per billion (ppb), at the Census Block Group level for the years 2011 to 2016 (as of December 2019).
 
-Ozone (O~3~) levels vary significantly across Massachusetts, with highest concentrations in southwest Massachusetts, and declining toward the north and east (see Figure \@ref(fig:mapO3MA) below).[^NONATTAINMENT] 
+Ozone (O~3~) levels vary significantly across Massachusetts, with highest concentrations in the southern and western parts of Massachusetts, and declining toward the north and east (see Figure \@ref(fig:mapO3MA) below).[^NONATTAINMENT] 
 
 ```{r mapO3MA, fig.align = "center", fig.cap="Map of 2016 Ozone summer seasonal average of daily maximum 8-hour concentration in air in parts per billion across Massachusetts at Census Block Group level."}
 
@@ -658,7 +698,7 @@ tmap_save(m4, "DATA/EJSCREEN/ma_O3.png",
 knitr::include_graphics("DATA/EJSCREEN/ma_O3.png")
 ```
 
-Ozone (O~3~) concentrations exhibit spatial clustering of both hot spots (i.e. geographic clusters of high values) and cold spots (i.e. geographic clusters of lower values). The map below (Figure \@ref(fig:hotspotO3MA))shows statistically significant Ozone (O~3~) hot spots.
+Ozone (O~3~) concentrations exhibit spatial clustering of both hot spots (i.e. geographic clusters of high values) and cold spots (i.e. geographic clusters of lower values). The map below (Figure \@ref(fig:hotspotO3MA)) shows statistically significant Ozone (O~3~) hot spots. These hot spots are concentrated along I-90 west of I-84 and around Springfield and Holyoke.
 
 ```{r hotspotO3MA, fig.align = "center", fig.cap="Hot spot map of 2016 Ozone concentrations at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
@@ -734,9 +774,62 @@ knitr::include_graphics("DATA/EJSCREEN/ma_O3hotspot.png")
 
 There are statistically significant hot spots of Ozone (O~3~) south of Springfield. A warm cluster extends from Great Barrington to Sturbridge. 
 
-These Ozone (O~3~) levels vary significantly across the state. Figure \@ref(fig:boxplotO3MA) is a boxplot of O~3~ concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median O~3~ concentration for all Block Groups, which in this case is `r round(median(ma_blkgrp_sf$OZONE_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large dots on the far right represent outliers or unusually high values.   
+These Ozone (O~3~) levels vary significantly across the state (see Table \@ref(tab:statsO3) and Figure \@ref(fig:boxplotO3). See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality. 
 
-```{r boxplotO3MA, fig.align = "center", fig.cap="Boxplot of 2016 Ozone summer seasonal average of daily maximum 8-hour concentrations in air in parts per billion by state at Census Block Group level. 1 dot = 1 Block Group."}
+```{r statsO3, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual PM2.5 concentrations at Census Block Group level for the state."}
+ma_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  # group_by(STATE) %>% 
+  summarize(Mean = round(mean(OZONE_19, na.rm = TRUE),2),
+            Median = round(median(OZONE_19, na.rm = TRUE),2),
+            Min = round(min(OZONE_19, na.rm = TRUE),2),
+            Max = round(max(OZONE_19, na.rm = TRUE),2)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    caption = "Annual 2016 ozone concentrations (micrograms per cubic meter) by Census block group for the state.", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+```{r O3outliers, include=FALSE}
+# # download municipal polygons
+# ma_towns_sf <- county_subdivisions("MA") %>% 
+#   select(NAME) %>% 
+#   st_transform(., crs = st_crs(ma_blkgrp_sf))
+
+# extract block groups centroid with highest and lowest values, intersect with town polygons, and pull out town name
+ma_town_maxO3 <- ma_blkgrp_sf %>% 
+  filter(OZONE_19 == max(OZONE_19,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(ma_towns_sf,.) %>% 
+  slice(.,1) %>%
+  pull(., NAME)
+
+ma_town_minO3 <- ma_blkgrp_sf %>% 
+  filter(OZONE_19 == min(OZONE_19,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(ma_towns_sf,.) %>% 
+  slice(.,1) %>% 
+  pull(., NAME)
+
+# identify threshold for outliers using IQR method
+O3Outlier <- quantile(ma_blkgrp_sf$OZONE_19,.75, na.rm = TRUE) + 1.5*(quantile(ma_blkgrp_sf$OZONE_19,.75, na.rm = TRUE) - quantile(ma_blkgrp_sf$OZONE_19,.25, na.rm = TRUE))
+
+# identify outliers
+ma_town_outlierO3 <- ma_blkgrp_sf %>% 
+  filter(OZONE_19 > O3Outlier) %>% 
+  st_centroid() %>% 
+  st_intersection(ma_towns_sf,.) %>% 
+  # filter(row_number() == 1) %>% 
+  as.data.frame() %>% 
+  distinct(NAME) %>% 
+  arrange(NAME) %>% 
+  pull(., NAME)
+```
+
+The Block Group with the highest O~3~ concentration value in the state is found in `r ma_town_maxO3` and the lowest is found in `r ma_town_minO3`.
+
+Figure \@ref(fig:boxplotO3MA) is a boxplot of O~3~ concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median O~3~ concentration for all Block Groups, which in this case is `r round(median(ma_blkgrp_sf$OZONE_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large dots on the far right represent outliers or unusually high values. In this case, outliers would be represented by ozone values greater than `r O3Outlier`, which occur in `r glue::glue_collapse(ma_town_outlierO3,", ", last = ", and ")`.   
+
+```{r boxplotO3, fig.align = "center", fig.cap="Boxplot of 2016 Ozone summer seasonal average of daily maximum 8-hour concentrations in air in parts per billion by state at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of PM2.5 by state for 2016
 ma_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -751,7 +844,7 @@ ma_blkgrp_sf %>%
   coord_flip()
 ```
 
-Since 2011, Ozone (O~3~) levels have increased slightly across the state, on average by `r {round(mean(ma_blkgrp_sf$OZONE_pctChange, na.rm = TRUE),1)}`%. These have changes not been uniform (see Figure \@ref(fig:mapO3MAchange) below). The greatest declines, up to `r round(min(ma_blkgrp_sf$OZONE_pctChange, na.rm = TRUE),1)`%, have been on Nantucket and Martha's Vineyard. By contrast, increases in summer ozone concentrations of up to `r round(max(ma_blkgrp_sf$OZONE_pctChange, na.rm = TRUE),1)`% appear in the  center of the state north of Holyoke, around South Hadley.
+Since 2011, Ozone (O~3~) levels have increased slightly across the state, on average by `r {round(mean(ma_blkgrp_sf$OZONE_pctChange, na.rm = TRUE),1)}`%. These have changes not been uniform (see Figure \@ref(fig:mapO3MAchange) below). The greatest declines, up to `r round(min(ma_blkgrp_sf$OZONE_pctChange, na.rm = TRUE),1)`%, have been on Nantucket and Martha's Vineyard. By contrast, increases in summer ozone concentrations of up to `r round(max(ma_blkgrp_sf$OZONE_pctChange, na.rm = TRUE),1)`% appear in the  center of the state north of Holyoke and around South Hadley.
 
 ```{r mapO3MAchange, fig.align = "center", fig.cap="Map of percent change in summer seasonal Ozone concentrations across Massachusetts between 2011 and 2016 at Census Block Group level."}
 # Map of O3 change across Massachusetts
@@ -792,7 +885,7 @@ m6 <- tm_shape(ma_blkgrp_sf, unit = "mi") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Change in summer\nOzone Concentrations \n2011-2016", 
+  tm_layout(title = "Change in\nsummer Ozone\nConcentrations\n2011-2016", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -877,9 +970,9 @@ newggslopegraph(dataframe = O311_16wSTAvg_actual,
 
 ### Ozone (O~3~) in Massachusetts and Populations of Concern
 
-In addition to variations in the general geography of Ozone (O~3~) concentrations, exposure to this pollutant also varies demographically. Figure \@ref(fig:barplotO3PopAvgMA) below shows population-weighted exposures for populations of concern relative to average Ozone concentrations for the region. For example, Massachusetts Low Income households and people over age 64 in Massachusetts are exposed to summer Ozone concentrations that are 0.22% above concentrations for the region as a whole. Similarly, low income households and adults without a high school education are exposed to concentrations 0.15% above the regional average. By contrast, language isolated households are, on average, exposed to concentrations of Ozone at or below the regional average. 
+In addition to variations in the general geography of Ozone (O~3~) concentrations, exposure to this pollutant also varies demographically. Figure \@ref(fig:barplotO3PopAvgMA) below shows population-weighted exposures for populations of concern relative to average Ozone concentrations for the region. For example, low income persons, as identified by Massachusetts Environmental Justice policy, and people over age 64 in Massachusetts are exposed to summer Ozone concentrations that are 0.22% above concentrations for the region as a whole. Similarly, low income households and adults without a high school education are exposed to concentrations 0.15% above the regional average. By contrast, limited English speaking households are, on average, exposed to concentrations of Ozone at or below the regional average. 
 
-```{r barplotO3PopAvgMA, fig.align = "center", fig.cap="Population-weighted average exposures to Ozone for populations of concern in Massachusetts relative to the regional average."}
+```{r barplotO3PopAvgMA, fig.align = "center", fig.cap="Population-weighted average exposures to Ozone for populations of concern in Massachusetts relative to the state average."}
 # Pop Weighted avg of O3 for all Groups in Massachusetts relative to NE average
 ma_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -947,10 +1040,12 @@ ma_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "Under 5", y = 0.6, label = "Above state avg"),
+  geom_text(aes(x = "No HS Dip", y = 0.7, label = "Above state\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "Minority", xend = "Minority", y = 0.1, yend = 0.75), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
+  geom_text(aes(x = "No HS Dip", y = -0.7, label = "Below state\naverage"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Minority", xend = "Minority", y = 0.1, yend = 0.75), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-1.5,1))
 ```
 
@@ -1049,7 +1144,7 @@ In 2007, the US Supreme Court ruled that CO~2~ is a pollutant under the terms of
 
 The analysis of carbon dioxide (CO~2~) presented here is based on data from the Database of Road Transportation Emissions (DARTE), a product of the NASA Carbon Monitoring System (CMS). DARTE provides CO~2~ emissions from on-road transportation annually for 1980-2017 as a continuous surface at a spatial resolution of 1 km and also aggregated at the Census Block Group level.[^DARTE]
 
-On-road CO~2~ emissions closely follow major roadways arcoss the region (see Figure \@ref(fig:mapCO2MA) below). 
+On-road CO~2~ emissions closely follow major roadways across the state (see Figure \@ref(fig:mapCO2MA) below). 
 
 ```{r mapCO2MA, fig.align = "center", fig.cap="Map of 2017 Carbon Dioxide (CO2) annual on-road emissions in metric tons per square kilometer across Massachusetts at Census Block Group level."}
 
@@ -1220,7 +1315,7 @@ ma_town_minCO2 <- ma_blkgrp_sf %>%
   pull(., NAME)
 ```
 
-The Block Group with highest CO~2~ emissions value in the state is found in `r ma_town_maxCO2` and the lowest is found in `r ma_town_minCO2`.
+The Block Group with highest CO~2~ emissions value in the state is found in `r ma_town_maxCO2` and the lowest is found in `r ma_town_minCO2`. See Table \@ref(tab:PollutantByTown) in Appendix B for emissions by municipality.
 
 Since 1990, CO~2~ emissions increased significantly across the state, on average by `r {round((sum(ma_blkgrp_sf$kgco2_2017, na.rm = TRUE)-sum(ma_blkgrp_sf$kgco2_1990, na.rm = TRUE))/sum(ma_blkgrp_sf$kgco2_1990, na.rm = TRUE)*100,1)}`%. These changes have not been uniform (see Figure \@ref(fig:mapCO2MAchange) below). The greatest declines have been in western Massachusetts. By contrast, Cape Code has seen increased emissions.
 
@@ -1405,13 +1500,13 @@ The growth in CO~2~ emissions since 1990 exceeds population growth in the state 
 \pagebreak
 ## Diesel Particulate Matter in Massachusetts
 
-Diesel Particulate Matter (DPM) refers to particulate matter generated from the combustion of diesel fuel. Diesel PM (DPM) mass (expressed as $\mu$gDPM/m^3^) has historically been used as a surrogate measure of exposure for diesel exhaust more generally. Diesel exhaust is a complex mixture of thousands of gases and fine particles that contains more than 40 toxic air contaminants.  These include many known or suspected cancer-causing substances, such as benzene, arsenic and formaldehyde.  It also contains other harmful pollutants, including nitrogen oxides (a component of smog). In addition to long term cancer risk, exposure to diesel exhaust can have immediate health effects.  It can irritate the eyes, nose, throat and lungs, and it can cause coughs, headaches, light-headedness and nausea. Exposure to diesel exhaust also causes inflammation in the lungs, which may aggravate chronic respiratory symptoms and increase the frequency or intensity of asthma attacks.[^DPMcalEPA] 
+Diesel Particulate Matter (DPM) refers to particulate matter generated from the combustion of diesel fuel. DPM mass (expressed as $\mu$gDPM/m^3^) has historically been used as a surrogate measure of exposure for diesel exhaust more generally. Diesel exhaust is a complex mixture of thousands of gases and fine particles that contains more than 40 toxic air contaminants.  These include many known or suspected cancer-causing substances, such as benzene, arsenic and formaldehyde.  It also contains other harmful pollutants, including nitrogen oxides (a component of smog). In addition to long term cancer risk, exposure to diesel exhaust can have immediate health effects.  It can irritate the eyes, nose, throat and lungs, and it can cause coughs, headaches, light-headedness and nausea. Exposure to diesel exhaust also causes inflammation in the lungs, which may aggravate chronic respiratory symptoms and increase the frequency or intensity of asthma attacks.[^DPMcalEPA] 
 
-Major sources of diesel exhaust include engines and motorized vehicles that use diesel fuel, such as trucks, buses, trains, ships, and diesel-powered generators. DPM is classified by the EPA as a Hazardous Air Pollutant (HAP). HAPs are pollutants that are known or suspected to cause cancer or other serious health effects, such as reproductive effects or birth defects, or adverse environmental effects. The EPA has not quantified the cancer risk from exposure to DPM. However, it has established a diesel exhaust reference concentration (RfC) for noncancer health effects. The RfC is 5 $\mu$g/m^3^ for diesel exhaust measured as diesel particulate matter (DPM). This RfC does not consider allergenic effects such as those associated with asthma, immunologic effects or the potential for cardiac effects.[^NATA2014]
+Major sources of diesel exhaust include engines and motorized vehicles that use diesel fuel, such as trucks, buses, trains, ships, and diesel-powered generators. DPM is classified by the EPA as a Hazardous Air Pollutant (HAP). HAPs are pollutants that are known or suspected to cause cancer or other serious health effects, such as reproductive effects or birth defects, or adverse environmental effects. The EPA has not quantified the cancer risk from exposure to DPM. However, it has established a diesel exhaust reference concentration (RfC) for noncancer health effects. The RfC is 5$\mu$g/m^3^ for diesel exhaust measured as diesel particulate matter (DPM). This RfC does not consider allergenic effects such as those associated with asthma, immunologic effects or the potential for cardiac effects.[^NATA2014]
 
-The analysis of Diesel Particulate Matter (DPM) presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides annual DPM concentrations, in micrograms per cubic meter of air ($\mu$g/m^3^), at the Census Block Group level for 2014, the latest year of data available from the National Air Toxics Assessment.
+The analysis of DPM presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides annual DPM concentrations, in micrograms per cubic meter of air ($\mu$g/m^3^), at the Census Block Group level for 2014, the latest year of data available from the National Air Toxics Assessment.
 
-Diesel Particulate Matter (DPM) emissions are concentrated along the highway traffic corridor from Stamford to Hartford along I-95 to I-91 (see Figure \@ref(fig:mapDPMMA) below). 
+DPM emissions are concentrated in the Boston area inside of Rt 128, and around New Bedford, Springfield, Gloucester, and Lowell (see Figure \@ref(fig:mapDPMMA) below). 
 
 ```{r mapDPMMA, fig.align = "center", fig.cap="Map of 2014 annual average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter across Massachusetts at Census Block Group level."}
 
@@ -1466,7 +1561,7 @@ tmap_save(m10,"DATA/EJSCREEN/ma_DPM.png",
 knitr::include_graphics("DATA/EJSCREEN/ma_DPM.png")
 ```
 
-There are significant spatial clusters of high Diesel Particulate Matter concentrations in New Bedford (see Figure \@ref(fig:hotspotDPMMA) below).
+There are significant spatial clusters of high DPM concentrations in New Bedford (see Figure \@ref(fig:hotspotDPMMA) below).
 
 ```{r hotspotDPMMA, fig.align = "center", fig.cap="Hot spot map of 2014 Diesel Particulate Matter emissions at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
@@ -1576,11 +1671,25 @@ ma_town_minDPM <- ma_blkgrp_sf %>%
   st_intersection(ma_towns_sf,.) %>% 
   filter(row_number() == 1) %>% 
   pull(., NAME)
+
+# identify threshold for outliers using IQR method
+Outlier <- quantile(ma_blkgrp_sf$DSLPM_19,.75, na.rm = TRUE) + 1.5*(quantile(ma_blkgrp_sf$DSLPM_19,.75, na.rm = TRUE) - quantile(ma_blkgrp_sf$DSLPM_19,.25, na.rm = TRUE))
+
+# identify outliers
+ma_town_outlier <- ma_blkgrp_sf %>% 
+  filter(DSLPM_19 > Outlier) %>% 
+  st_centroid() %>% 
+  st_intersection(ma_towns_sf,.) %>% 
+  # filter(row_number() == 1) %>% 
+  as.data.frame() %>% 
+  distinct(NAME) %>% 
+  arrange(NAME) %>% 
+  pull(., NAME)
 ```
 
-The Block Group with highest Diesel Particulate Matter emissions value in the state is found in `r ma_town_maxDPM` and the lowest is found in `r ma_town_minDPM`.
+The Block Group with highest DPM emissions value in the state is found in `r ma_town_maxDPM` and the lowest is found in `r ma_town_minDPM`. See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality.
 
-Figure \@ref(fig:boxplotDPMMA) is a boxplot of DPM concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median DPM concentration for all Block Groups, which in this case is `r round(median(ma_blkgrp_sf$PM25_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group.  The large dots on the right represent outliers, or unusually high values. 
+Figure \@ref(fig:boxplotDPMMA) is a boxplot of DPM concentrations by Block Group. The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median DPM concentration for all Block Groups, which in this case is `r round(median(ma_blkgrp_sf$DSLPM_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group.  The large dots on the right represent outliers, or unusually high values. In this case, outliers would be represented by DPM values greater than `r Outlier`, which occur in `r glue::glue_collapse(ma_town_outlier,", ", last = ", and ")`.
 
 ```{r boxplotDPMMA, fig.align = "center", fig.cap="Boxplot of 2017 Carbon Dioxoide on-road emissions in metric tons per square kilometer by state at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of CO2 by state for 2017
@@ -1600,9 +1709,9 @@ ma_blkgrp_sf %>%
 
 ### Diesel Particulate Matter in Massachusetts and Populations of Concern
 
-In addition to variations in the general geography of Diesel Particulate Matter concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvgMA) below shows population-weighted exposures for populations of concern relative to average Diesel Particulate Matter concentraions for the state. For example, linguistically isolated households in Massachusetts are exposed to  Diesel Particulate Matter concentrations that are more than 20% above concentrations for the region as a whole. Similarly, low income persons (following Massachusetts's definition) are exposed to concentrations more than 16% above the regional average. By contrast, persons over age 64 are, on average, exposed to concentrations of Diesel Particulate Matter 5% below the regional average. 
+In addition to variations in the general geography of DPM concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvgMA) below shows population-weighted exposures for populations of concern relative to average DPM concentrations for the state. For example, limited English speaking households in Massachusetts are exposed to  DPM concentrations that are more than 20% above concentrations for the region as a whole. Similarly, low income persons, as identified by Massachusetts Environmental Justice policy, are exposed to concentrations more than 16% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of DPM 10% below the state average. 
 
-```{r barplotDPMPopAvgMA, fig.align = "center", fig.cap="Population-weighted average exposures to annual average ambient concentrations of Diesel Particulate Matter across Massachusetts relative to the regional average."}
+```{r barplotDPMPopAvgMA, fig.align = "center", fig.cap="Population-weighted average exposures to annual average ambient concentrations of Diesel Particulate Matter across Massachusetts relative to the state average."}
 # Pop Weighted avg of DPM for all Groups in Massachusetts relative to NE average
 ma_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -1670,14 +1779,16 @@ ma_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "MA Low Income", y = 12, label = "Above state avg"),
+  geom_text(aes(x = "MA Low Income", y = 12, label = "Above state\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1, yend = 15), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
+  geom_text(aes(x = "MA Low Income", y = -12, label = "Below state\naverage"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1, yend = 15), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-15,55))
 ```
 
-There is a moderate positive correlation between the proportions of language isolated households and minorities and ambient concentrations of Diesel Particulate Matter (see Appendix).
+There is a moderate positive correlation between the proportions of limited English speaking households and minorities and ambient concentrations of Diesel Particulate Matter (see Figure \@ref(fig:cormatrixDPMPopAvg) in Appendix B).
 
 
 \pagebreak
@@ -1689,7 +1800,7 @@ Most air toxics originate from transportation and industry, including automobile
 
 The analysis of air toxics cancer risk presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides lifetime cancer risk from inhalation of air toxics, as risk-in-1 million, at the Census Block Group level for 2014, the latest year of data available from the National Air Toxics Assessment. 
 
-Air Toxics Cancer Risk are concentrated along the highway traffic corridor from Stamford to Hartford along I-95 to I-91 (see Figure \@ref(fig:mapATCNE) below).
+Lifetime cancer risks are concentrated around Springfield, northeast of Worcester, and inside of Rt 128 in the Boston area, extending north to Lowell (see Figure \@ref(fig:mapATCNE) below).
 
 ```{r mapATCNE, fig.align = "center", fig.cap="Map of 2014 lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Massachusetts at Census Block Group level."}
 
@@ -1730,7 +1841,7 @@ m12 <- ma_blkgrp_sf %>%
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Annual Lifetime \nCancer Risk from \nInhalation of Air Toxics\n2014", 
+  tm_layout(title = "Annual Lifetime \nCancer Risk from \nInhalation of Air\nToxics, 2014", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1852,11 +1963,25 @@ ma_town_minCaner <- ma_blkgrp_sf %>%
   st_intersection(ma_towns_sf,.) %>% 
   filter(row_number() == 1) %>% 
   pull(., NAME)
+
+# identify threshold for outliers using IQR method
+Outlier <- quantile(ma_blkgrp_sf$CANCER_19,.75, na.rm = TRUE) + 1.5*(quantile(ma_blkgrp_sf$CANCER_19,.75, na.rm = TRUE) - quantile(ma_blkgrp_sf$CANCER_19,.25, na.rm = TRUE))
+
+# identify outliers
+ma_town_outlier <- ma_blkgrp_sf %>% 
+  filter(CANCER_19 > Outlier) %>% 
+  st_centroid() %>% 
+  st_intersection(ma_towns_sf,.) %>% 
+  # filter(row_number() == 1) %>% 
+  as.data.frame() %>% 
+  distinct(NAME) %>% 
+  arrange(NAME) %>% 
+  pull(., NAME)
 ```
 
-The Block Group with highest cancer risk value in the state is found in `r ma_town_maxCancer` and the lowest is found in `r ma_town_minCaner`.
+The Block Group with highest cancer risk value in the state is found in `r ma_town_maxCancer` and the lowest is found in `r ma_town_minCaner`. See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality.
 
-Figure \@ref(fig:boxplotATCNE) is a boxplot of cancer risk by Block Group . The box represents risk values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median lifetime cancer risk value for all Block Groups, which in this case is `r round(median(ma_blkgrp_sf$CANCER_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large dots represent outliers, or unusually high values.
+Figure \@ref(fig:boxplotATCNE) is a boxplot of cancer risk by Block Group. The box represents risk values ranging between the 25th and 75th percentiles. The line that divides the box into two parts represents the median lifetime cancer risk value for all Block Groups, which in this case is `r round(median(ma_blkgrp_sf$CANCER_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large dots represent outliers, or unusually high values. In this case, outliers would be represented by cancer risk values greater than `r Outlier`, which all occur in `r ma_town_outlier`.
 
 ```{r boxplotATCNE, fig.align = "center", fig.cap="Boxplot of lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Massachusetts by state at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of lifetime cancer risk by state for 2014
@@ -1876,7 +2001,7 @@ ma_blkgrp_sf %>%
 
 ### Lifetime Cancer Risk from Inhalation of Air Toxics in Massachusetts and Populations of Concern
 
-In addition to variations in the general geography of Lifetime Cancer Risk from Inhalation of Air Toxics, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvgMA) below shows population-weighted exposures for populations of concern relative to average Lifetime Cancer Risk from Inhalation of Air Toxics for the state. For example, linguistically isolated households in Massachusetts experience lifetime cancer risks from inhalation of air toxics that are 4.6% above the region as a whole. Similarly, minorities are experience lifetime cancer risks of 4% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of Diesel Particulate Matter 1% below the state average. 
+In addition to variations in the general geography of cancer risk, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvgMA) below shows population-weighted exposures for populations of concern relative to the average cancer risk for the state. For example, limited English speaking households in Massachusetts experience lifetime cancer risks from inhalation of air toxics that are 12.2% above the state as a whole. Similarly, minorities, as identified by Massachusetts Environmental Justice policy, experience lifetime cancer risks of 8.4% above the state average. By contrast, persons over age 64 are, on average, exposed to cancer risk 2.7% below the state average. 
 
 ```{r barplotATCPopAvgMA, fig.align = "center", fig.cap="Population-weighted average lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Massachusetts at Census Block Group level relative to the state average."}
 # Pop Weighted avg of DPM for all Groups in Massachusetts relative to NE average
@@ -1946,24 +2071,25 @@ ma_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "Under 5", y = 4, label = "Above state avg"),
+  geom_text(aes(x = "Under 5", y = 4, label = "Above state\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "MA Low Income", xend = "MA Low Income", y = 1, yend = 5), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
+  geom_text(aes(x = "Under 5", y = -2.8, label = "Below state\naverage"),
+            color = "gray48") +
+  # geom_segment(aes(x = "MA Low Income", xend = "MA Low Income", y = 1, yend = 5), arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-4,13))
 ```
 
-There is a moderately positive correlation between the proportions of minorities and cancer risk (see Appendix).
+There is a moderately positive correlation between the proportions of minorities and cancer risk (see Figure \@ref(fig:cormatrixATCPopAvg) in Appendix B).
 
 
 \pagebreak
 ## Respiratory Hazard Index in Massachusetts
 
-Respiratory hazard from air toxics refers to noncancer effects caused by a lifetime of exposure to air toxics listed as Hazardous Air Pollutants (HAPs).[^NATAoverview] EPA's National Air Toxics Assessment (NATA) program calculates a hazard quotient, which is the ratio of ambient air concentration to a chemical’s health-based reference concentration (RfC). No adverse health effects are expected from exposure if the hazard quotient is less than one. This hazard quotient represents the cumulative impacts of all the relevant air toxics for which respiratory effects were the key health effect.[^NATARfC]
+Respiratory hazard from air toxics refers to non-cancer effects caused by a lifetime of exposure to air toxics listed as Hazardous Air Pollutants (HAPs).[^NATAoverview] EPA's National Air Toxics Assessment (NATA) program calculates a hazard quotient, which is the ratio of ambient air concentration to a chemical’s health-based reference concentration (RfC). No adverse health effects are expected from exposure if the hazard quotient is less than one. This hazard quotient represents the cumulative impacts of all the relevant air toxics for which respiratory effects were the key health effect.[^NATARfC]
 
 The analysis of respiratory hazard presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides respiratory hazard, as a ratio of exposure concentration to a health-based reference concentration (RfC), at the Census Block Group level for 2014, the latest year of data available from the National Air Toxics Assessment.
 
-Higher Respiratory Hazard Indices are concentrated along the I-91 to I-95 highway traffic corridor from Stamford to Hartford (see Figure \@ref(fig:mapRHIMA) below). 
+Higher respiratory hazard indices are concentrated around Springfield, and Holyoke, and Lowell, as well as within Rt 128 in the Boston area (see Figure \@ref(fig:mapRHIMA) below). 
 
 ```{r mapRHIMA, fig.align = "center", fig.cap="Map of 2014 respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Massachusetts at Census Block Group level."}
 
@@ -2004,7 +2130,7 @@ m14 <- ma_blkgrp_sf %>%
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Annual Respiratory \nHazard Index from \nInhalation of\nAir Toxics\n2014", 
+  tm_layout(title = "Annual\nRespiratory\nHazard Index\nfrom Inhalation\nof Air Toxics\n2014", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2127,11 +2253,25 @@ ma_town_minRESP <- ma_blkgrp_sf %>%
   st_intersection(ma_towns_sf,.) %>% 
   filter(row_number() == 1) %>% 
   pull(., NAME)
+
+# identify threshold for outliers using IQR method
+Outlier <- quantile(ma_blkgrp_sf$RESP_19,.75, na.rm = TRUE) + 1.5*(quantile(ma_blkgrp_sf$RESP_19,.75, na.rm = TRUE) - quantile(ma_blkgrp_sf$RESP_19,.25, na.rm = TRUE))
+
+# identify outliers
+ma_town_outlier <- ma_blkgrp_sf %>% 
+  filter(RESP_19 > Outlier) %>% 
+  st_centroid() %>% 
+  st_intersection(ma_towns_sf,.) %>% 
+  # filter(row_number() == 1) %>% 
+  as.data.frame() %>% 
+  distinct(NAME) %>% 
+  arrange(NAME) %>% 
+  pull(., NAME)
 ```
 
-The Block Group with highest respiratory hazard index value in the state is found in `r ma_town_maxRESP` and the lowest is found in `r ma_town_minRESP`.
+The Block Group with highest respiratory hazard index value in the state is found in `r ma_town_maxRESP` and the lowest is found in `r ma_town_minRESP`. See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality.
 
-Figure \@ref(fig:boxplotRHIMA) is a boxplot of respiratory hazard indices by Block Group . The box represents index values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median respiratory hazard index value for all Block Groups, which in this case is `r round(median(ma_blkgrp_sf$RESP_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. Large black dots represent outliers or unusually high values.  
+Figure \@ref(fig:boxplotRHIMA) is a boxplot of respiratory hazard indices by Block Group. The box represents index values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median respiratory hazard index value for all Block Groups, which in this case is `r round(median(ma_blkgrp_sf$RESP_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. Large black dots represent outliers or unusually high values. In this case, outliers would be represented by respiratory hazard values greater than `r Outlier`, which occur in `r glue::glue_collapse(ma_town_outlier,", ", last = ", and ")`.
 
 ```{r boxplotRHIMA, fig.align = "center", fig.cap="Boxplot of respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Massachusetts by state at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of lifetime cancer risk by state for 2014
@@ -2151,9 +2291,9 @@ ma_blkgrp_sf %>%
 
 ### Respiratory Hazard Index from Inhalation of Air Toxics in Massachusetts and Populations of Concern
 
-In addition to variations in the general geography of the Respitory Hazard Index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvgMA) below shows population-weighted exposures for populations of concern relative to average Respiratory Hazard Index from Inhalation of Air Toxics for the state. For example, linguistically isolated households in Massachusetts experience respiratory hazard indices from inhalation of air toxics that are 6.1% above the region as a whole. Similarly, minorities are experience lifetime hazard index values more than 5% above the regional average. By contrast, persons over age 64 are, on average, exposed to respiratory hazard indices over 1% below the regional average. 
+In addition to variations in the general geography of the respiratory hazard index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvgMA) below shows population-weighted exposures for populations of concern relative to the average hazard index for the state. For example, limited English speaking households in Massachusetts, as identified by Massachusetts Environmental Justice policy, experience respiratory hazard indices from inhalation of air toxics that are 18.3% above the state as a whole. Similarly, minorities, as identified by Massachusetts Environmental Justice policy, experience lifetime hazard index values more than 10.9% above the state average. By contrast, persons over age 64 are, on average, exposed to respiratory hazard indices over 3.9% below the state average. 
 
-```{r barplotRHIPopAvgMA, fig.align = "center", fig.cap="Population-weighted average respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Massachusetts at Census Block Group level relative to the regional average."}
+```{r barplotRHIPopAvgMA, fig.align = "center", fig.cap="Population-weighted average respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Massachusetts at Census Block Group level relative to the state average."}
 # Pop Weighted avg of RHI for all Groups in Massachusetts relative to NE average
 ma_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -2221,14 +2361,15 @@ ma_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "Under 5", y = 5, label = "Above state avg"),
+  geom_text(aes(x = "Under 5", y = 5, label = "Above state\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "MA Low Income", xend = "MA Low Income", y = 1, yend = 7), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
-  expand_limits(y = c(-5,20))
+  geom_text(aes(x = "Under 5", y = -4.1, label = "Below state\naverage"),
+            color = "gray48") +
+  # geom_segment(aes(x = "MA Low Income", xend = "MA Low Income", y = 1, yend = 7), arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-6,20))
 ```
 
-There is a moderate to strong positive correlation between the proportions of minorities and respiratory hazard index (see Appendix).
+There is a moderate to strong positive correlation between the proportions of minorities and respiratory hazard index (see Figure \@ref(fig:cormatrixRHIPopAvg) in Appendix B).
 
 
 \pagebreak
@@ -2236,9 +2377,9 @@ There is a moderate to strong positive correlation between the proportions of mi
 
 Proximity to motor vehicle traffic is associated with greater exposure to toxic gases and particulate matter, as well as increased noise. Vehicle-related emissions include ultrafine particulates and other components of PM~2.5~, lead and other metals, air toxics such as benzene, nitrogen oxides (NO~x~), hydrocarbons and carbon monoxide (CO), as well as precursors that add to the formation of ground level ozone (O~3~) and smog. Research has repeatedly shown that living near highly trafficked roads is related to increased risk of a variety of adverse health outcomes, including asthma, cardiovascular disease, hypertension, stroke, stress, and increased rates of mortality. EPA’s 2005 National Air Toxics Assessment (NATA) estimated that mobile emissions accounted for about 30% of average cancer risk from Hazardous Air Pollutants.[^EJSCREENTraffic]
 
-EPA's EJSCREEN provides an indicator of traffic exposure measured as residential proximity to roads weighted by traffic volume. More specifically, EJSCREEN's Traffic Proximity and Volume indicator is a count of vehicles (average annual daily traffic) at major roads within 500 meters of residential areas (i.e., Census Blocks) divided by distance in kilometers (km).[^EPATraffic] For example, a residential area at 100 meters distance from a single highway with 33,000 AADT (average annual daily traffic) would result in a score of 33,000/100=330, which is approximately the median person’s block group traffic proximity indicator value in New England. The Traffic Proximity and Volume indicator values are aggregated at the Census Block Group level. 
+EPA's EJSCREEN provides an indicator of traffic exposure measured as residential proximity to roads weighted by traffic volume. More specifically, EJSCREEN's Traffic Proximity and Volume indicator is a count of vehicles (average annual daily traffic) at major roads within 500 meters of residential areas (i.e., Census Blocks) divided by distance in kilometers (km).[^EPATraffic] For example, a residential area at 100 meters distance from a single highway with 33,000 AADT (average annual daily traffic) would result in a score of 33,000/100=330, which is approximately the median block group traffic proximity indicator value in New England. The Traffic Proximity and Volume indicator values are aggregated at the Census Block Group level. 
 
-Exposure to high annual daily traffic volume is concentrated along the I-95 to I-91 highway traffic corridor from Stamford to Hartford (see Figure \@ref(fig:mapTPVMA) below). 
+Exposure to high annual daily traffic volume is concentrated along all major roadways, especially around Springfield and the eastern half of the state (see Figure \@ref(fig:mapTPVMA) below). 
 
 ```{r mapTPVMA, fig.align = "center", fig.cap="Map of 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Massachusetts at Census Block Group level."}
 
@@ -2366,7 +2507,7 @@ tmap_save(m17, "DATA/EJSCREEN/ma_TrafficHotspot.png",
 knitr::include_graphics("DATA/EJSCREEN/ma_TrafficHotspot.png")
 ```
 
-Traffic Proximity and Volume exposure vary across the state (see Table \@ref(tab:statsTPVMA) and Figure \@ref(fig:boxplotTPVMA) below).   
+Traffic proximity and volume exposure vary across the state (see Table \@ref(tab:statsTPVMA) and Figure \@ref(fig:boxplotTPVMA) below).   
 
 ```{r statsTPVMA, fig.align = "center", fig.cap="Annual 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Massachusetts at Census Block Group level."}
 ma_blkgrp_sf %>%
@@ -2404,7 +2545,7 @@ ma_town_minTraffic <- ma_blkgrp_sf %>%
   pull(., NAME)
 ```
 
-The Block Group with highest Traffic Proximity and Volume value in the state is found in `r ma_town_maxTraffic` and the lowest is found in `r ma_town_minTraffic`.
+The Block Group with highest Traffic Proximity and Volume value in the state is found in `r ma_town_maxTraffic` and the lowest is found in `r ma_town_minTraffic`. See Table \@ref(tab:PollutantByTown) in Appendix B for values by municipality.
 
 Figure \@ref(fig:boxplotTPVMA) is a boxplot of Traffic Proximity and Volume values by Block Group . The box represents values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median Traffic Proximity and Volume value for all Block Groups, which in this case is `r round(median(ma_blkgrp_sf$PTRAF_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large black dots represent outliers, or unusually high values.  
 
@@ -2426,7 +2567,7 @@ ma_blkgrp_sf %>%
 
 ### Traffic Proximity and Volume Exposure in Massachusetts and Populations of Concern
 
-In addition to variations in the general geography of the Traffic Proximity and Volume exposure, this exposure also varies demographically. Figure \@ref(fig:barplotTPVPopAvgNE) below shows population-weighted exposures for populations of concern relative to average Traffic Proximity and Volume for the state. For example, low income persons (following Massachusetts's definition) are exposed to Traffic Proximity and Volume more than 71% above the state as a whole. Similarly, language isolated households are exposed to Traffic Proximity and Volume more than 69% above the state average. By contrast, persons over age 64 are, on average, are exposed to Traffic Proximity and Volume of more than 23% below the regional average. 
+In addition to variations in the general geography of the traffic proximity and volume exposure, this exposure also varies demographically. Figure \@ref(fig:barplotTPVPopAvgNE) below shows population-weighted exposures for populations of concern relative to average traffic proximity and volume for the state. For example, limited English speaking households, as identified by Massachusetts Environmental Justice policy, are exposed to traffic proximity and volume more than 123% above the state as a whole. Similarly, minorities, as identified by Massachusetts Environmental Justice policy, are exposed to traffic proximity and volume more than 52% above the state average. By contrast, persons over age 64 are, on average, are exposed to Traffic Proximity and Volume of more than 20% below the state average. 
 
 ```{r barplotTPVPopAvgNE, fig.align = "center", fig.cap="Population-weighted average Traffic Proximity and Volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Massachusetts at Census Block Group level relative to the state average."}
 # Pop Weighted avg of TPV for all Groups in Massachusetts relative to NE average
@@ -2496,14 +2637,16 @@ ma_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "MA Low Income", y = 35, label = "Above state avg"),
+  geom_text(aes(x = "No HS Dip", y = 40, label = "Above state\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1, yend = 30), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
+  geom_text(aes(x = "No HS Dip", y = -20, label = "Below state\naverage"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1, yend = 30), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-30,125))
 ```
 
-There is a moderate positive correlation between the proportions of minorities and traffic proximity and volume, and a moderate positive correlation with low income persons (see Appendix).
+There is a moderate positive correlation between the proportions of minorities and traffic proximity and volume, and a moderate positive correlation with low income persons (see Figure \@ref(fig:cormatrixTPVPopAvg) in Appendix B).
 
 [^EJSCREEN]: U.S. Environmental Protection Agency (EPA), 2019. EJSCREEN Technical Documentation. For more information see www.epa.gov/ejscreen
 
@@ -2572,7 +2715,7 @@ The analyses presented here are based on data from three sources:
 
 The U.S. EPA's EJSCREEN is an online environmental justice mapping and screening tool that provides a "nationally consistent dataset and approach for combining environmental and demographic indicators."  EJSCREEN provides data on 11 environmental indicators, ranging across air, land, and water. The six indicators analyzed here were chosen based on their relationship to transportation sources, especially motor vehicles. Data for each indicator is available by Census Block Group across the U.S. The 2015 (earliest available) and 2019 (latest available) data sets were downloaded from https://www.epa.gov/ejscreen/download-ejscreen-data as CSV files and processed in R. 
 
-All data was analyzed or aggregated geographically by Census Tract and Block Group. A Census Tract is a small, relatively permanent statistical subdivision of a county that contains between 1,200 and 8,000 people. The entire area of a county is covered by Census Tracts, just as the entire area of a state is covered by counties and county equivalents. Census Tracts range in areal size depending on the population density; smaller in denser areas and larger in less densely populated areas. Census Block Groups are subdivisions of Census Tracts that contain between 600 and 3,000 people. Like Tracts, Block Groups range in areal size depending on the population density of the area. Block Groups are the smallest geographic unit at which detailed demographic and household data from the American Community Survey is made available by the Census.  
+All data was analyzed or aggregated geographically by Census Tract and Block Group. A Census Tract is a small, relatively permanent statistical subdivision of a county that contains between 1,200 and 8,000 people. The entire area of a county is covered by Census Tracts, just as the entire area of a state is covered by counties or county equivalents. Census Tracts range in areal size depending on the population density; smaller areas in denser areas and larger areas in less densely populated areas. Census Block Groups are subdivisions of Census Tracts that contain between 600 and 3,000 people. Like Tracts, Block Groups range in areal size depending on the population density of the area. Block Groups are the smallest geographic unit at which detailed demographic and household data from the American Community Survey is made available by the U.S. Census Bureau.  
 
 Below is a summary of the measurement unit and source of each environmental indicator. For more detail on these data sources, see the EJSCREEN Environmental Justice Mapping and Screening Tool: EJSCREEN Technical Documentation 2019. www.epa.gov/ejscreen.
 
@@ -2606,7 +2749,7 @@ Respiratory Hazard Index refers to noncancer effects caused by a lifetime of exp
 
 The 2019 version of EJSCREEN uses 2014 NATA data, which is based on NEI emissions estimates for 2014. 
 
-### Traffic Proimity and Volume {-}
+### Traffic Proximity and Volume {-}
 
 Traffic Proximity and Volume refers to an index of exposure to road traffic. This index is calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters of residential areas (i.e., Census
 Block centroids) divided by distance in kilometers (km). Traffic volume is based on average annual daily traffic (AADT) estimates in the Highway Performance Monitoring System (HPMS) dataset in the Department of Transportation (DOT) National Transportation Atlas Database (NTAD). Each Block Group was assigned a Traffic Proximity and Volume score based on a population-weighted average of the scores for the Census Blocks within the respective Block Group. 
@@ -2615,11 +2758,11 @@ The 2019 version of EJSCREEN uses 2017 HPMS data.
 
 ## Database of Road Transportation Emissions (DARTE) {-}
 
-The Database of Road Transportation Emissions (DARTE) is "the first nationally consistent inventory of US on-road CO2 emissions built from bottom-up source activity data and establishes a national benchmark for monitoring, reporting, and verification of emissions that are vital for regulating greenhouse gases." DARTE provides a 38-year, 1-km resolution inventory of annual on-road CO~2~ emissions for the conterminous United States based on roadway-level vehicle traffic data and state-specific emissions factors for multiple vehicle types on urban and rural roads as compiled in the Database of Road Transportation Emissions (DARTE). For more details about DARTE, see the User Guide for DARTE Annual On-road CO2 Emissions on a 1-km Grid, Conterminous USA, V2, 1980-2017 at https://daac.ornl.gov/cgi-bin/dsviewer.pl?ds_id=1735.
+The Database of Road Transportation Emissions (DARTE) provides a 38-year, 1-km resolution inventory of annual on-road CO~2~ emissions for the conterminous United States based on roadway-level vehicle traffic data and state-specific emissions factors for multiple vehicle types on urban and rural roads as compiled in the Database of Road Transportation Emissions (DARTE). For more details about DARTE, see the User Guide for DARTE Annual On-road CO2 Emissions on a 1-km Grid, Conterminous USA, V2, 1980-2017 at https://daac.ornl.gov/cgi-bin/dsviewer.pl?ds_id=1735.
 
 ### On-road Carbon Dioxide (CO~2~) Emissions {-}
 
-DARTE CO~2~ emissions data from the on-road transportation sector are provided annually for 1980-2017 as a continuous surface at a spatial resolution of 1km in the form of GeoTIFF files for each year. The same data is also provided  aggregated to U.S. 2010 Census Block Group polygons. Units of data are total emissions in kilograms CO~2~ per year for each Block Group. 
+DARTE CO~2~ emissions data from the on-road transportation sector are provided annually for 1980-2017 as a continuous surface at a spatial resolution of 1km in the form of GeoTIFF files for each year. The same data is also provided  aggregated to U.S. 2010 Census Block Group polygons. Units of data are total emissions in kilograms of CO~2~ per year for each Block Group. 
 
 For the purposes of this analysis, DARTE Block Group data for the years 1990 to 2017 was downloaded as a geodatabase and processed in R. 
 
@@ -2720,7 +2863,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Population numbers of minorities, as well as the total population, and PM~2.5~ concentrations, are each reported by Block Group. Since each Block Group is associated with one PM~2.5~ concentration value, we might assume (incorrectly) that everyone is equally exposed to the average PM~2.5~ values of all Block Groups - `r round(mean(c(2.5,6.2,10,5)),2)`. However, not all Block Groups have the same number of people, which means that each PM~2.5~ concentration value is associated with a different number of people. Do more Minorities occupy Block Groups with higher concentrations than the simple average would indicate?
+Population numbers of minorities, as well as the total population, and PM~2.5~ concentrations, are each reported by Block Group. Since each Block Group is associated with one PM~2.5~ concentration value, we might assume (incorrectly) that everyone is equally exposed to the average PM~2.5~ values of all Block Groups (`r round(mean(c(2.5,6.2,10,5)),2)`). However, not all Block Groups have the same number of people, which means that each PM~2.5~ concentration value is associated with a different number of people. Do more Minorities occupy Block Groups with higher concentrations than the simple average would indicate?
 
 To calculate the population-weighted average PM~2.5~ exposure for Minorities, the number of Minorities in each Block Group is used as a 'weight'. The PM~2.5~ concentraions of each Block Group is multiplied by its respective number of Minorities. See the table below. The light gray column on the right is the product of PM~2.5~ values and Minority populations. 
 
@@ -2839,7 +2982,7 @@ ggcorrplot(corrO3, hc.order = TRUE, type = "lower", lab = TRUE,
            lab_size = 2)
 ```
 
-```{r boxplotCO2MA, fig.align = "center", fig.cap="Boxplot of 7 Carbon Dioxoide on-road emissions in metric tons per square kilometer by state at Census Block Group level. 1 dot = 1 Block Group."}
+```{r boxplotCO2MA, fig.align = "center", fig.cap="Boxplot of Carbon Dioxoide on-road emissions in metric tons per square kilometer by state at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of CO2 by state for 2017
 ma_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -2913,7 +3056,7 @@ ggcorrplot(corrAMA, hc.order = TRUE, type = "lower", lab = TRUE,
            ggtheme = ggplot2::theme_minimal(), lab_size = 2)
 ```
 
-```{r cormatrixRHIPopAvg, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group."}
+```{r cormatrixRHIPopAvg, fig.align = "center", fig.cap="Spearman's correlation matrix of respiratory hazard risk and the proportions of populations of concern by Census Block Group."}
 # Create a correlation matrix of cancer risk and populations of concern
 corrAMA <- ma_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -2942,7 +3085,7 @@ ggcorrplot(corrAMA, hc.order = TRUE, type = "lower", lab = TRUE,
            ggtheme = ggplot2::theme_minimal(), lab_size = 2)
 ```
 
-```{r cormatrixTPVPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group."}
+```{r cormatrixTPVPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of traffic proximity and volume and the proportions of populations of concern by Census Block Group."}
 # Create a correlation matrix of cancer risk and populations of concern
 corrTPV <- ma_blkgrp_sf %>% 
   as.data.frame() %>% 
