@@ -1,7 +1,7 @@
 ---
-title: "Transportation Emissions in Vermont"
+title: "Transportation Burdens and Emissions in Vermont"
 author: "Marcos Luna and Neenah Estrella-Luna"
-date: "5/7/2020"
+date: "6/28/2020"
 output: 
   bookdown::pdf_document2:
     toc: true
@@ -28,7 +28,7 @@ Sources of PM~2.5~ emissions include power plants and industrial facilities that
 
 The analysis of PM~2.5~ presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides PM~2.5~ annual concentrations at the Census Block Group level for the years 2011 to 2016 (as of December 2019). 
 
-PM~2.5~ levels vary significantly across Vermont, with highest concentrations in southwest Vermont, with concentration declining from Stamford to Hartford (see Figure \@ref(fig:mapPM25RI) below). 
+PM~2.5~ levels vary significantly across Vermont, with highest concentrations in the southern half of the state as well as the northwest corner along the Canadian border (see Figure \@ref(fig:mapPM25) below). 
 
 ```{r data, include=FALSE}
 library(tidyverse)
@@ -72,8 +72,10 @@ vt_towns_sf_pts <- county_subdivisions(state = "VT", cb = TRUE) %>%
                      "Stowe",
                      "Greensboro",
                      "Bennington",
-                     "Wilmington"),
-         GEOID != "5002161225") %>%
+                     "Wilmington",
+                     "Swanton",
+                     "St. Albans"),
+         !GEOID %in% c("5002161225","5001161675")) %>%
   st_transform(., crs = 2852) %>% 
   st_centroid(of_largest_polygon = TRUE)
 
@@ -118,7 +120,7 @@ Hwy4 <- tmap_icons("https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/US
 Hwy7 <- tmap_icons("https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/US_7.svg/200px-US_7.svg.png")
 ```
 
-```{r mapPM25RI, fig.align = "center", fig.cap="Map of 2016 annual PM2.5 concentrations across Vermont at Census Block Group level."}
+```{r mapPM25, fig.align = "center", fig.cap="Map of 2016 annual PM2.5 concentrations across Vermont at Census Block Group level."}
 # Map of PM2.5 across Vermont
 m1 <- tm_shape(vt_blkgrp_sf, unit = "mi") + 
   tm_fill("PM25_19", style = "quantile", 
@@ -134,13 +136,13 @@ m1 <- tm_shape(vt_blkgrp_sf, unit = "mi") +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(I89roadSegment) +
-  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment2) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I93roadSegment) +
-  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.1) +
   tm_shape(vt_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
@@ -159,9 +161,9 @@ tmap_save(m1, "DATA/EJSCREEN/vt_pm25.png",
 knitr::include_graphics("DATA/EJSCREEN/vt_pm25.png")
 ```
 
-PM~2.5~ concentrations exhibit spatial clustering of both hot spots (i.e. geographic clusters of high values) and cold spots (i.e. geographic clusters of lower values). The map below (Figure \@ref(fig:hotspotPM25RI)) shows statistically significant PM~2.5~ hot spots.
+PM~2.5~ concentrations exhibit spatial clustering of both hot spots (i.e. geographic clusters of high values) and cold spots (i.e. geographic clusters of lower values). The map below (Figure \@ref(fig:hotspotPM25)) shows statistically significant PM~2.5~ hot spots. These hot spots are concentrated around Rutland.
 
-```{r hotspotPM25RI, fig.align = "center", fig.cap="Hot spot map of 2016 annual PM2.5 concentrations at Census Block Group level."}
+```{r hotspotPM25, fig.align = "center", fig.cap="Hot spot map of 2016 annual PM2.5 concentrations at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
 empty_geo <- st_is_empty(vt_blkgrp_sf)
 ne_blkgrp_sp_DemoEJ <- vt_blkgrp_sf[!empty_geo,] %>% 
@@ -193,13 +195,13 @@ m2 <- tm_shape(local_g, unit = "mi",) +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(I89roadSegment) +
-  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment2) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I93roadSegment) +
-  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.1) +
   tm_shape(vt_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
@@ -225,9 +227,47 @@ knitr::include_graphics("DATA/EJSCREEN/vt_pm25hotspot.png")
 
 There is a statistically significant hot spot of PM~2.5~ around Rutland. Warm clusters extend across the southern half of the state. 
 
-These PM~2.5~ levels vary significantly across the state, although the clusters of Block Groups with high PM~2.5~ values remains apparent. Figure \@ref(fig:boxplotPM25RI) is a boxplot of PM~2.5~ concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median PM~2.5~ concentration for all Block Groups, which in this case is `r round(median(vt_blkgrp_sf$PM25_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group.  
+These PM~2.5~ levels vary significantly across the state (see Table \@ref(tab:statsPM) and Figure \@ref(fig:boxplotPM)). See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality.
 
-```{r boxplotPM25RI, fig.align = "center", fig.cap="Boxplot of 2016 annual PM2.5 concentrations at Census Block Group level. 1 dot = 1 Block Group."}
+```{r statsPM, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual PM2.5 concentrations at Census Block Group level for the state."}
+vt_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  # group_by(STATE) %>% 
+  summarize(Mean = round(mean(PM25_19, na.rm = TRUE),2),
+            Median = round(median(PM25_19, na.rm = TRUE),2),
+            Min = round(min(PM25_19, na.rm = TRUE),2),
+            Max = round(max(PM25_19, na.rm = TRUE),2)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    caption = "Annual 2016 PM2.5 concentrations (micrograms per cubic meter) by Census block group for the state.", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+```{r CO2outliers, include=FALSE}
+# download municipal polygons
+vt_towns_sf <- county_subdivisions("VT") %>% 
+  select(NAME) %>% 
+  st_transform(., crs = st_crs(vt_blkgrp_sf))
+
+# extract block groups centroid with highest and lowest values, intersect with town polygons, and pull out town name
+vt_town_max <- vt_blkgrp_sf %>% 
+  filter(PM25_19 == max(PM25_19,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(vt_towns_sf,.) %>% 
+  slice(.,1) %>%
+  pull(., NAME)
+
+vt_town_min <- vt_blkgrp_sf %>% 
+  filter(PM25_19 == min(PM25_19,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(vt_towns_sf,.) %>% 
+  slice(.,1) %>% 
+  pull(., NAME)
+```
+The Block Group with highest PM~2.5~ concentration value in the state is found in `r vt_town_max` and the lowest is found in `r vt_town_min`. See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality.
+
+Figure \@ref(fig:boxplotPM25) is a boxplot of PM~2.5~ concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into two parts represents the median PM~2.5~ concentration for all Block Groups, which in this case is `r round(median(vt_blkgrp_sf$PM25_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group.  
+
+```{r boxplotPM25, fig.align = "center", fig.cap="Boxplot of 2016 annual PM2.5 concentrations at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of PM2.5 by state for 2016
 vt_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -246,10 +286,9 @@ vt_blkgrp_sf %>%
 #   ggplot(aes(x = PM25_19)) + geom_histogram()
 ```
 
+Since 2011, PM~2.5~ levels have declined across the state, on average by `r {round(mean(vt_blkgrp_sf$PM25_pctChange, na.rm = TRUE),1)}`%. Unsurprisingly, this decline has not been uniform (see Figure \@ref(fig:mapPM25change) below). The greatest declines, up to `r {round(min(vt_blkgrp_sf$PM25_pctChange, na.rm = TRUE),1)}`%, have been in the northern half of the state. 
 
-Since 2011, PM~2.5~ levels have declined across the state, on average by `r {round(mean(vt_blkgrp_sf$PM25_pctChange, na.rm = TRUE),1)}`%. Unsurprisingly, this decline has not been uniform (see Figure \@ref(fig:mapPM25RIchange) below). The greatest declines, up to `r {round(min(vt_blkgrp_sf$PM25_pctChange, na.rm = TRUE),1)}`%, have been in the northern half of the state. 
-
-```{r mapPM25RIchange, fig.align = "center", fig.cap="Map of percent change in annual PM2.5 concentrations across Vermont between 2011 and 2016 at Census Block Group level."}
+```{r mapPM25change, fig.align = "center", fig.cap="Map of percent change in annual PM2.5 concentrations across Vermont between 2011 and 2016 at Census Block Group level."}
 # Map of PM2.5 change across Vermont
 m3 <- tm_shape(vt_blkgrp_sf, unit = "mi") + 
   tm_fill("PM25_pctChange", palette = "Greens",
@@ -265,13 +304,13 @@ m3 <- tm_shape(vt_blkgrp_sf, unit = "mi") +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(I89roadSegment) +
-  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment2) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I93roadSegment) +
-  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.1) +
   tm_shape(vt_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
@@ -290,9 +329,9 @@ tmap_save(m3, "DATA/EJSCREEN/vt_pm25change.png",
 knitr::include_graphics("DATA/EJSCREEN/vt_pm25change.png")
 ```
 
-Figure \@ref(fig:slopegraphPM25RI) below compares the average annual PM~2.5~ concentrations for the state and the region between 2011 and 2016. The region and the state both showed significant declines since 2011. Concentrations in Vermont remain below the rest of the region. 
+Figure \@ref(fig:slopegraphPM25) below compares the average annual PM~2.5~ concentrations for the state and the region between 2011 and 2016. The region and the state both showed significant declines since 2011. Concentrations in Vermont remain below the rest of the region. 
 
-```{r slopegraphPM25RI, fig.align = "center", fig.cap="Change in population-weighted exposure to PM2.5 between 2011 and 2016 for Vermont and New England."}
+```{r slopegraphPM25, fig.align = "center", fig.cap="Change in population-weighted concentrations of PM2.5 between 2011 and 2016 for Vermont and New England."}
 # Slope graph of PM2.5 by state and region between 2011 and 2016
 # Create df of 2019 actual values
 PM19wSTAvgs_actual <- vt_blkgrp_sf %>% 
@@ -361,9 +400,9 @@ newggslopegraph(dataframe = PM11_16wSTAvg_actual,
 
 ### PM~2.5~ in Vermont and Populations of Concern
 
-In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvgRI) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the state. For example, adults with less than a high school diploma are exposed to PM~2.5~ concentrations that are 0.1% above concentrations for the state as a whole. All other groups are at or below the state average. 
+In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvg) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the state. For example, adults with less than a high school diploma are exposed to PM~2.5~ concentrations that are 0.1% above concentrations for the state as a whole. All other groups are at or below the state average. 
 
-```{r barplotPM25PopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to PM2.5 for populations of concern in Vermont relative to the state average."}
+```{r barplotPM25PopAvg, fig.align = "center", fig.cap="Population-weighted average exposures to PM2.5 for populations of concern in Vermont relative to the state average."}
 # Pop Weighted avg of PM2.5 for all Groups in Vermont relative to state average
 vt_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -419,14 +458,15 @@ vt_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "No HS Dip", y = 1, label = "Above state avg"),
+  geom_text(aes(x = "No HS Dip", y = 1, label = "Above state\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "Limited English HH", xend = "Limited English HH", y = 0.1, yend = 1.1), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
+  geom_text(aes(x = "No HS Dip", y = -1, label = "Below state\naverage"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Limited English HH", xend = "Limited English HH", y = 0.1, yend = 1.1), arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-2,2))
 ```
 
-Like the region as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that all populations of concern now experience exposures greater than the regional average, with minorities and language isolated households leading on this measure. 
+Like the region as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that all populations of concern now experience exposures greater than the state average, with minorities and limited English speaking households leading on this measure. 
 
 ```{r slopegraphPM25PopAvgNE, fig.align = "center", fig.cap="Change in population-weighted exposure to PM2.5 for populations of concern between 2011 and 2016."}
 # Pop Weighted avg of PM2.5 EXPOSURE CHANGE 2011 - 2016 for all Groups in Vermont relative to NE average. 
@@ -513,7 +553,7 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
                 WiderLabels = TRUE)
 ```
 
-There is a weak positive relationship between the proportion of minority residents or language-isolated households and the concentration of PM~2.5~ (see Appendix).
+There is a weak positive relationship between the proportion of minority residents or language-isolated households and the concentration of PM~2.5~ (see Figure \@ref(fig:cormatrixPM25PopAvg) in Appendix B).
 
 
 \pagebreak
@@ -527,9 +567,9 @@ Ground level ozone has been regulated by the US EPA under the National Ambient A
 
 The analysis of ozone (O~3~) presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides ozone (O~3~) May–September (summer/ ozone season) average of daily-maximum 8-hour-average ozone concentrations, in parts per billion (ppb), at the Census Block Group level for the years 2011 to 2016 (as of December 2019).
 
-Ozone (O~3~) levels vary significantly across Vermont, with highest concentrations in southwest Vermont, and declining toward the north and east (see Figure \@ref(fig:mapO3RI) below).[^NONATTAINMENT] 
+Ozone (O~3~) levels vary significantly across Vermont, with highest concentrations in the southern half of the state, and around Burlington, and declining toward the north and east (see Figure \@ref(fig:mapO3) below).[^NONATTAINMENT] 
 
-```{r mapO3RI, fig.align = "center", fig.cap="Map of 2016 Ozone summer seasonal average of daily maximum 8-hour concentration in air in parts per billion across Vermont at Census Block Group level."}
+```{r mapO3, fig.align = "center", fig.cap="Map of 2016 Ozone summer seasonal average of daily maximum 8-hour concentration in air in parts per billion across Vermont at Census Block Group level."}
 
 # Map of O3 across Vermont
 m4 <- tm_shape(vt_blkgrp_sf, unit = "mi") + 
@@ -546,13 +586,13 @@ m4 <- tm_shape(vt_blkgrp_sf, unit = "mi") +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(I89roadSegment) +
-  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment2) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I93roadSegment) +
-  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.1) +
   tm_shape(vt_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
@@ -571,9 +611,9 @@ tmap_save(m4, "DATA/EJSCREEN/vt_O3.png",
 knitr::include_graphics("DATA/EJSCREEN/vt_O3.png")
 ```
 
-Ozone (O~3~) concentrations exhibit spatial clustering of both hot spots (i.e. geographic clusters of high values) and cold spots (i.e. geographic clusters of lower values). The map below (Figure \@ref(fig:hotspotO3RI))shows statistically significant Ozone (O~3~) hot spots.
+Ozone (O~3~) concentrations exhibit spatial clustering of both hot spots (i.e. geographic clusters of high values) and cold spots (i.e. geographic clusters of lower values). The map below (Figure \@ref(fig:hotspotO3))shows statistically significant Ozone (O~3~) hot spots.
 
-```{r hotspotO3RI, fig.align = "center", fig.cap="Hot spot map of 2016 Ozone concentrations at Census Block Group level."}
+```{r hotspotO3, fig.align = "center", fig.cap="Hot spot map of 2016 Ozone concentrations at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
 empty_geo <- st_is_empty(vt_blkgrp_sf)
 ne_blkgrp_sp_DemoEJ <- vt_blkgrp_sf[!empty_geo,] %>% 
@@ -605,13 +645,13 @@ m5 <- tm_shape(local_g, unit = "mi",) +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(I89roadSegment) +
-  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment2) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I93roadSegment) +
-  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.1) +
   tm_shape(vt_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
@@ -637,9 +677,47 @@ knitr::include_graphics("DATA/EJSCREEN/vt_O3hotspot.png")
 
 There is a statistically significant hot spot of Ozone (O~3~) centered on Bennington and extending north and east. A warm cluster extends north to Manchester and east to Brattleboro. 
 
-These Ozone (O~3~) levels vary significantly across the state. Figure \@ref(fig:boxplotO3RI) is a boxplot of O~3~ concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median O~3~ concentration for all Block Groups, which in this case is `r round(median(vt_blkgrp_sf$OZONE_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large black dots represent outliers, or unusually high or low values relative to the rest of the state.   
+These ozone levels vary significantly across the state (see Table \@ref(tab:statsO3) and Figure \@ref(fig:boxplotO3)). See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality.
 
-```{r boxplotO3RI, fig.align = "center", fig.cap="Boxplot of 2016 Ozone summer seasonal average of daily maximum 8-hour concentrations in air in parts per billion by state at Census Block Group level. 1 dot = 1 Block Group."}
+```{r statsPM, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual ozone concentrations at Census Block Group level for the state."}
+vt_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  # group_by(STATE) %>% 
+  summarize(Mean = round(mean(OZONE_19, na.rm = TRUE),2),
+            Median = round(median(OZONE_19, na.rm = TRUE),2),
+            Min = round(min(OZONE_19, na.rm = TRUE),2),
+            Max = round(max(OZONE_19, na.rm = TRUE),2)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    caption = "Annual 2016 PM2.5 concentrations (micrograms per cubic meter) by Census block group for the state.", align = "r") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+```{r O3outliers, include=FALSE}
+# # download municipal polygons
+# vt_towns_sf <- county_subdivisions("VT") %>% 
+#   select(NAME) %>% 
+#   st_transform(., crs = st_crs(vt_blkgrp_sf))
+
+# extract block groups centroid with highest and lowest values, intersect with town polygons, and pull out town name
+vt_town_max <- vt_blkgrp_sf %>% 
+  filter(OZONE_19 == max(OZONE_19,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(vt_towns_sf,.) %>% 
+  slice(.,1) %>%
+  pull(., NAME)
+
+vt_town_min <- vt_blkgrp_sf %>% 
+  filter(OZONE_19 == min(OZONE_19,na.rm = TRUE)) %>% 
+  st_centroid() %>% 
+  st_intersection(vt_towns_sf,.) %>% 
+  slice(.,1) %>% 
+  pull(., NAME)
+```
+The Block Group with highest O~3~ concentration value in the state is found in `r vt_town_max` and the lowest is found in `r vt_town_min`. See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality.
+
+Figure \@ref(fig:boxplotO3) is a boxplot of O~3~ concentrations by Block Group. The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into two parts represents the median O~3~ concentration for all Block Groups, which in this case is `r round(median(vt_blkgrp_sf$OZONE_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large black dots represent outliers, or unusually high or low values relative to the rest of the state.   
+
+```{r boxplotO3, fig.align = "center", fig.cap="Boxplot of 2016 Ozone summer seasonal average of daily maximum 8-hour concentrations in air in parts per billion by state at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of PM2.5 by state for 2016
 vt_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -654,9 +732,9 @@ vt_blkgrp_sf %>%
   coord_flip()
 ```
 
-Since 2011, Ozone (O~3~) levels have decreased slightly across the state, on average by `r {round(mean(vt_blkgrp_sf$OZONE_pctChange, na.rm = TRUE),1)}`%. These have changes not been uniform (see Figure \@ref(fig:mapO3RIchange) below). The greatest declines, up to `r round(min(vt_blkgrp_sf$OZONE_pctChange, na.rm = TRUE),1)`%, have been in the northeast of the state. By contrast, increases in summer ozone concentrations of up to `r round(max(vt_blkgrp_sf$OZONE_pctChange, na.rm = TRUE),1)`% appear along the western border with New York.
+Since 2011, Ozone (O~3~) levels have decreased slightly across the state, on average by `r {round(mean(vt_blkgrp_sf$OZONE_pctChange, na.rm = TRUE),1)}`%. These have changes not been uniform (see Figure \@ref(fig:mapO3change) below). The greatest declines, up to `r round(min(vt_blkgrp_sf$OZONE_pctChange, na.rm = TRUE),1)`%, have been in the northeast of the state. By contrast, increases in summer ozone concentrations of up to `r round(max(vt_blkgrp_sf$OZONE_pctChange, na.rm = TRUE),1)`% appear along the western border with New York.
 
-```{r mapO3RIchange, fig.align = "center", fig.cap="Map of percent change in summer seasonal Ozone concentrations across Vermont between 2011 and 2016 at Census Block Group level."}
+```{r mapO3change, fig.align = "center", fig.cap="Map of percent change in summer seasonal Ozone concentrations across Vermont between 2011 and 2016 at Census Block Group level."}
 # Map of O3 change across Vermont
 m6 <- tm_shape(vt_blkgrp_sf, unit = "mi") + 
   tm_fill("OZONE_pctChange", palette = "-RdYlGn",
@@ -673,13 +751,13 @@ m6 <- tm_shape(vt_blkgrp_sf, unit = "mi") +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(I89roadSegment) +
-  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment2) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I93roadSegment) +
-  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.1) +
   tm_shape(vt_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
@@ -698,9 +776,9 @@ tmap_save(m6, "DATA/EJSCREEN/vt_O3change.png",
 knitr::include_graphics("DATA/EJSCREEN/vt_O3change.png")
 ```
 
-Figure \@ref(fig:slopegraphO3RI) below compares the average summer Ozone (O~3~) concentrations for the state and for the region between 2011 and 2016. Vermont's average concentrations have decreased and remain lower than the region. 
+Figure \@ref(fig:slopegraphO3) below compares the average summer Ozone (O~3~) concentrations for the state and for the region between 2011 and 2016. Vermont's average concentrations have decreased very slightly and remain lower than the region. 
 
-```{r slopegraphO3RI, fig.align = "center", fig.cap="Change in summer average ozone concentrations between 2011 and 2016 for Vermont and New England."}
+```{r slopegraphO3, fig.align = "center", fig.cap="Change in summer average ozone concentrations between 2011 and 2016 for Vermont and New England."}
 # Slope graph of O3 by state and region between 2011 and 2016
 # Create df of 2019 actual values
 O319wSTAvgs_actual <- vt_blkgrp_sf %>% 
@@ -770,9 +848,9 @@ newggslopegraph(dataframe = O311_16wSTAvg_actual,
 
 ### Ozone (O~3~) in Vermont and Populations of Concern
 
-In addition to variations in the general geography of Ozone (O~3~) concentrations, exposure to this pollutant also varies demographically. Figure \@ref(fig:barplotO3PopAvgRI) below shows population-weighted exposures for populations of concern relative to average Ozone concentrations for the region. For example, minorities and limited English households in Vermont are exposed to summer Ozone concentrations that are approximately 0.5% above concentrations for the region as a whole. By contrast, all other popuations of concern are, on average, exposed to concentrations of Ozone at or below the regional average. 
+In addition to variations in the general geography of Ozone (O~3~) concentrations, exposure to this pollutant also varies demographically. Figure \@ref(fig:barplotO3PopAvg) below shows population-weighted exposures for populations of concern relative to average Ozone concentrations for the region. For example, minorities and limited English households in Vermont are exposed to summer Ozone concentrations that are approximately 0.5% above concentrations for the region as a whole. By contrast, all other populations of concern are, on average, exposed to concentrations of Ozone at or below the state average. 
 
-```{r barplotO3PopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to Ozone for populations of concern in Vermont relative to the regional average."}
+```{r barplotO3PopAvg, fig.align = "center", fig.cap="Population-weighted average exposures to Ozone for populations of concern in Vermont relative to the state average."}
 # Pop Weighted avg of O3 for all Groups in Vermont relative to NE average
 vt_blkgrp_sf %>% 
   as.data.frame() %>%
@@ -828,16 +906,17 @@ vt_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "Over 64", y = .3, label = "Above state avg"),
+  geom_text(aes(x = "Over 64", y = .3, label = "Above state\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "Low Income", xend = "Low Income", y = 0.1, yend = 0.4), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
-  expand_limits(y = c(-0.5,1))
+  geom_text(aes(x = "Over 64", y = -0.6, label = "Below state\naverage"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Low Income", xend = "Low Income", y = 0.1, yend = 0.4), arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-1,1))
 ```
 
-Like the region as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvgRI). Unlike all other populations, minorities and limited English households have experienced a slight increase in population-weighted exposure to Ozone. 
+Like the state as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvg). Unlike all other populations, minorities and limited English households have experienced a slight increase in population-weighted exposure to Ozone. 
 
-```{r slopegraphO3PopAvgRI, fig.align = "center", fig.cap="Change in population-weighted exposure to summer ozone for populations of concern between 2011 and 2016."}
+```{r slopegraphO3PopAvg, fig.align = "center", fig.cap="Change in population-weighted exposure to summer ozone for populations of concern between 2011 and 2016."}
 # Pop Weighted avg of O3 EXPOSURE CHANGE 2011 - 2016 for all Groups in Vermont relative to NE average. 
 # Create df of 2019 actual values
 O319wAvgs_actual <- vt_blkgrp_sf %>% 
@@ -930,9 +1009,9 @@ In 2007, the US Supreme Court ruled that CO~2~ is a pollutant under the terms of
 
 The analysis of carbon dioxide (CO~2~) presented here is based on data from the Database of Road Transportation Emissions (DARTE), a product of the NASA Carbon Monitoring System (CMS). DARTE provides CO~2~ emissions from on-road transportation annually for 1980-2017 as a continuous surface at a spatial resolution of 1 km and also aggregated at the Census Block Group level.[^DARTE]
 
-On-road CO~2~ emissions closely follow major roadways arcoss the region (see Figure \@ref(fig:mapCO2RI) below). 
+On-road CO~2~ emissions closely follow major roadways across the state (see Figure \@ref(fig:mapCO2) below). 
 
-```{r mapCO2RI, fig.align = "center", fig.cap="Map of 2017 Carbon Dioxide (CO2) annual on-road emissions in metric tons per square kilometer across Vermont at Census Block Group level."}
+```{r mapCO2, fig.align = "center", fig.cap="Map of 2017 Carbon Dioxide (CO2) annual on-road emissions in metric tons per square kilometer across Vermont at Census Block Group level."}
 
 # Map of CO2 across Vermont
 m7 <- vt_blkgrp_sf %>% 
@@ -951,13 +1030,13 @@ m7 <- vt_blkgrp_sf %>%
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(I89roadSegment) +
-  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment2) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I93roadSegment) +
-  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.1) +
   tm_shape(vt_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
@@ -976,9 +1055,9 @@ tmap_save(m7, "DATA/EJSCREEN/vt_CO2.png",
 knitr::include_graphics("DATA/EJSCREEN/vt_CO2.png")
 ```
 
-Significant hot spots, or clusters of high CO~2~ emissions, appear in Burlington (see Figure \@ref(fig:hotspotCO2RI) below).
+Significant hot spots, or clusters of high CO~2~ emissions, appear in Burlington (see Figure \@ref(fig:hotspotCO2) below).
 
-```{r hotspotCO2RI, fig.align = "center", fig.cap="Hot spot map of 2017 CO2 emissions at Census Block Group level."}
+```{r hotspotCO2, fig.align = "center", fig.cap="Hot spot map of 2017 CO2 emissions at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
 empty_geo <- st_is_empty(vt_blkgrp_sf)
 ne_blkgrp_sp_DemoEJ <- vt_blkgrp_sf[!empty_geo,] %>% 
@@ -1011,13 +1090,13 @@ m8 <- tm_shape(local_g, unit = "mi",) +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(I89roadSegment) +
-  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment2) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I93roadSegment) +
-  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.1) +
   tm_shape(vt_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
@@ -1041,9 +1120,9 @@ tmap_save(m8, "DATA/EJSCREEN/vt_CO2hotspot.png",
 knitr::include_graphics("DATA/EJSCREEN/vt_CO2hotspot.png")
 ```
 
-CO~2~ emissions vary across the state with significant outliers (see Table \@ref(tab:statsCO2RI).   
+CO~2~ emissions vary across the state with significant outliers (see Table \@ref(tab:statsCO2).   
 
-```{r statsCO2RI, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 CO2 emissions (mtons) at Census Block Group level and by state."}
+```{r statsCO2, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 CO2 emissions (mtons) at Census Block Group level and by state."}
 vt_blkgrp_sf %>% 
   mutate(onroad_2017 = kgco2_2017/1000) %>%
   as.data.frame() %>% 
@@ -1060,10 +1139,10 @@ vt_blkgrp_sf %>%
 ```
 
 ```{r CO2outliers, include=FALSE}
-# download municipal polygons
-vt_towns_sf <- county_subdivisions("VT") %>% 
-  select(NAME) %>% 
-  st_transform(., crs = st_crs(vt_blkgrp_sf))
+# # download municipal polygons
+# vt_towns_sf <- county_subdivisions("VT") %>% 
+#   select(NAME) %>% 
+#   st_transform(., crs = st_crs(vt_blkgrp_sf))
 
 # extract block groups centroid with highest and lowest CO2 values, intersect with town polygons, and pull out town name
 vt_town_maxCO2 <- vt_blkgrp_sf %>% 
@@ -1079,13 +1158,26 @@ vt_town_minCO2 <- vt_blkgrp_sf %>%
   st_intersection(vt_towns_sf,.) %>% 
   filter(row_number() == 1) %>%
   pull(., NAME)
+
+# identify towns with 200% or more change
+vt_town_maxCO2change <- vt_blkgrp_sf %>% 
+  mutate(CO2_pctChange90_17 = (kgco2_2017 - kgco2_1990)/kgco2_1990*100,
+         pctile = percent_rank(CO2_pctChange90_17)) %>%
+  filter(CO2_pctChange90_17 >= 200) %>%
+  st_centroid() %>% 
+  st_intersection(vt_towns_sf,.) %>% 
+  # select(NAME,CO2_pctChange90_17,pctile)
+  # filter(row_number() == 1) %>%
+  as.data.frame() %>% 
+  distinct(NAME) %>% 
+  pull(., NAME)
 ```
 
 The Block Group with highest CO~2~ emissions value in the state is found in `r vt_town_maxCO2` and the lowest is found in `r vt_town_minCO2`.
 
-Since 1990, CO~2~ emissions increased across the state, on average by `r {round((sum(vt_blkgrp_sf$kgco2_2017, na.rm = TRUE)-sum(vt_blkgrp_sf$kgco2_1990, na.rm = TRUE))/sum(vt_blkgrp_sf$kgco2_1990, na.rm = TRUE)*100,1)}`%. These changes have not been uniform (see Figure \@ref(fig:mapCO2RIchange) below). Declines have occurred in central and northern sections of the state. Increased emissions have occurred around in the south and central western areas of the state.
+Since 1990, CO~2~ emissions increased across the state, on average by `r {round((sum(vt_blkgrp_sf$kgco2_2017, na.rm = TRUE)-sum(vt_blkgrp_sf$kgco2_1990, na.rm = TRUE))/sum(vt_blkgrp_sf$kgco2_1990, na.rm = TRUE)*100,1)}`%. These changes have not been uniform (see Figure \@ref(fig:mapCO2change) below). Declines have occurred in central and northern sections of the state. Increased emissions have occurred around in the south and central western areas of the state. Increases over 200% have occurred in `r paste(vt_town_maxCO2change, collapse = " and ")`.
 
-```{r mapCO2RIchange, fig.align = "center", fig.cap="Map of percent change in annual CO2 emissions across Vermont between 1990 and 2017 at Census Block Group level."}
+```{r mapCO2change, fig.align = "center", fig.cap="Map of percent change in annual CO2 emissions across Vermont between 1990 and 2017 at Census Block Group level."}
 # Map of CO2 change across Vermont
 m9 <- vt_blkgrp_sf %>% 
   mutate(CO2_pctChange90_17 = (kgco2_2017 - kgco2_1990)/kgco2_1990*100) %>%
@@ -1104,13 +1196,13 @@ m9 <- vt_blkgrp_sf %>%
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(I89roadSegment) +
-  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment2) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I93roadSegment) +
-  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.1) +
   tm_shape(vt_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
@@ -1129,9 +1221,9 @@ tmap_save(m9, "DATA/EJSCREEN/vt_CO2change.png",
 knitr::include_graphics("DATA/EJSCREEN/vt_CO2change.png")
 ```
 
-At the state level the differences in these changes are also apparent, although less extreme than at the Census block group level. Table \@ref(tab:changeCO2RI) shows summary statistics of CO~2~ emissions for the state as a whole. Figure \@ref(fig:linegraphCO2RI) shows annual CO~2~ emissions between 1990 and 2017. 
+At the state level the differences in these changes are also apparent, although less extreme than at the Census block group level. Table \@ref(tab:changeCO2) shows summary statistics of CO~2~ emissions for the state as a whole. Figure \@ref(fig:linegraphCO2) shows annual CO~2~ emissions between 1990 and 2017. 
 
-```{r changeCO2RI, fig.align = "center", fig.cap="Annual 2017 CO2 emissions (mtons) and Percent Change by state at Census Block Group level."}
+```{r changeCO2, fig.align = "center", fig.cap="Annual 2017 CO2 emissions (mtons) and Percent Change by state at Census Block Group level."}
 # acquire table of 1990 state pop values
 library(tidycensus)
 census_api_key("f2776fbc29cf847505de9308a82c8d65290d16b3")
@@ -1179,7 +1271,7 @@ vt_blkgrp_sf %>%
 ```
 
 
-```{r linegraphCO2RI, fig.align = "center", fig.cap="Total CO2 emissions 1990 to 2017 for Vermont."}
+```{r linegraphCO2, fig.align = "center", fig.cap="Total CO2 emissions 1990 to 2017 for Vermont."}
 # Slope graph of CO2 by state and region between 1990 and 2017
 # Create df of 2017 actual values
 # CO217ST_actual <- vt_blkgrp_sf %>% 
@@ -1250,21 +1342,21 @@ vt_blkgrp_sf %>%
   theme_minimal()
 ```
 
-Vermont saw dramatic growth in CO~2~ emissions between 1990 and 1996 and again between 2001 and 2005. Since 2005, however, total emissions have declined significantly. This is reflected in the decline in per capita emissions since 1990, indicating that emissions growth has lagged population growth (see last three columns in Table \@ref(tab:changeCO2RI)).  
+Vermont saw dramatic growth in CO~2~ emissions between 1990 and 1996 and again between 2001 and 2005. Since 2005, however, total emissions have declined significantly. This is reflected in the decline in per capita emissions since 1990, indicating that emissions growth has been less than population growth (see last three columns in Table \@ref(tab:changeCO2)).  
 
 
 \pagebreak
 ## Diesel Particulate Matter in Vermont
 
-Diesel Particulate Matter (DPM) refers to particulate matter generated from the combustion of diesel fuel. Diesel PM (DPM) mass (expressed as $\mu$gDPM/m^3^) has historically been used as a surrogate measure of exposure for diesel exhaust more generally. Diesel exhaust is a complex mixture of thousands of gases and fine particles that contains more than 40 toxic air contaminants.  These include many known or suspected cancer-causing substances, such as benzene, arsenic and formaldehyde.  It also contains other harmful pollutants, including nitrogen oxides (a component of smog). In addition to long term cancer risk, exposure to diesel exhaust can have immediate health effects.  It can irritate the eyes, nose, throat and lungs, and it can cause coughs, headaches, light-headedness and nausea. Exposure to diesel exhaust also causes inflammation in the lungs, which may aggravate chronic respiratory symptoms and increase the frequency or intensity of asthma attacks.[^DPMcalEPA] 
+Diesel Particulate Matter (DPM) refers to particulate matter generated from the combustion of diesel fuel. DPM mass (expressed as $\mu$gDPM/m^3^) has historically been used as a surrogate measure of exposure for diesel exhaust more generally. Diesel exhaust is a complex mixture of thousands of gases and fine particles that contains more than 40 toxic air contaminants.  These include many known or suspected cancer-causing substances, such as benzene, arsenic and formaldehyde.  It also contains other harmful pollutants, including nitrogen oxides (a component of smog). In addition to long term cancer risk, exposure to diesel exhaust can have immediate health effects.  It can irritate the eyes, nose, throat and lungs, and it can cause coughs, headaches, light-headedness and nausea. Exposure to diesel exhaust also causes inflammation in the lungs, which may aggravate chronic respiratory symptoms and increase the frequency or intensity of asthma attacks.[^DPMcalEPA] 
 
 Major sources of diesel exhaust include engines and motorized vehicles that use diesel fuel, such as trucks, buses, trains, ships, and diesel-powered generators. DPM is classified by the EPA as a Hazardous Air Pollutant (HAP). HAPs are pollutants that are known or suspected to cause cancer or other serious health effects, such as reproductive effects or birth defects, or adverse environmental effects. The EPA has not quantified the cancer risk from exposure to DPM. However, it has established a diesel exhaust reference concentration (RfC) for noncancer health effects. The RfC is 5 $\mu$g/m^3^ for diesel exhaust measured as diesel particulate matter (DPM). This RfC does not consider allergenic effects such as those associated with asthma, immunologic effects or the potential for cardiac effects.[^NATA2014]
 
-The analysis of Diesel Particulate Matter (DPM) presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides annual DPM concentrations, in micrograms per cubic meter of air ($\mu$g/m^3^), at the Census Block Group level for 2014, the latest year of data available from the National Air Toxics Assessment.
+The analysis of DPM presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides annual DPM concentrations, in micrograms per cubic meter of air ($\mu$g/m^3^), at the Census Block Group level for 2014, the latest year of data available from the National Air Toxics Assessment.
 
-Diesel Particulate Matter (DPM) emissions are concentrated along I-91 and around larger municipalities, such as Brattleboro, Rutland, Montpelier, and Burlington (see Figure \@ref(fig:mapDPMRI) below). 
+DPM emissions are concentrated along I-91 and around larger municipalities, such as Brattleboro, Rutland, Montpelier, and Burlington (see Figure \@ref(fig:mapDPM) below). 
 
-```{r mapDPMRI, fig.align = "center", fig.cap="Map of 2014 annual average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter across Vermont at Census Block Group level."}
+```{r mapDPM, fig.align = "center", fig.cap="Map of 2014 annual average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter across Vermont at Census Block Group level."}
 
 # Map of DPM across Vermont
 m10 <- vt_blkgrp_sf %>% 
@@ -1282,13 +1374,13 @@ m10 <- vt_blkgrp_sf %>%
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(I89roadSegment) +
-  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment2) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I93roadSegment) +
-  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.1) +
   tm_shape(vt_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
@@ -1307,9 +1399,9 @@ tmap_save(m10,"DATA/EJSCREEN/vt_DPM.png",
 knitr::include_graphics("DATA/EJSCREEN/vt_DPM.png")
 ```
 
-There are significant spatial clusters of high Diesel Particulate Matter concentrations in Burlington (see Figure \@ref(fig:hotspotDPMRI) below).
+There are significant spatial clusters of high DPM concentrations in Burlington (see Figure \@ref(fig:hotspotDPM) below).
 
-```{r hotspotDPMRI, fig.align = "center", fig.cap="Hot spot map of 2014 Diesel Particulate Matter emissions at Census Block Group level."}
+```{r hotspotDPM, fig.align = "center", fig.cap="Hot spot map of 2014 Diesel Particulate Matter emissions at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
 empty_geo <- st_is_empty(vt_blkgrp_sf)
 ne_blkgrp_sp_DemoEJ <- vt_blkgrp_sf[!empty_geo,] %>%
@@ -1341,13 +1433,13 @@ m11 <- tm_shape(local_g, unit = "mi",) +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(I89roadSegment) +
-  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment2) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I93roadSegment) +
-  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.1) +
   tm_shape(vt_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
@@ -1371,9 +1463,9 @@ tmap_save(m11, "DATA/EJSCREEN/vt_DPMhotspot.png",
 knitr::include_graphics("DATA/EJSCREEN/vt_DPMhotspot.png")
 ```
 
-Diesel Particulate Matter concentrations vary across the state (see Table \@ref(tab:statsDPMRI) and Figure \@ref(fig:boxplotDPMRI) below).  
+DPM concentrations vary across the state (see Table \@ref(tab:statsDPMRI) and Figure \@ref(fig:boxplotDPM) below).  
 
-```{r statsDPMRI, fig.align = "center", fig.cap="Annual 2014 average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter across Vermont at Census Block Group level."}
+```{r statsDPM, fig.align = "center", fig.cap="Annual 2014 average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter across Vermont at Census Block Group level."}
 vt_blkgrp_sf %>%
   as.data.frame() %>% 
   # group_by(STATE) %>% 
@@ -1407,13 +1499,27 @@ vt_town_minDPM <- vt_blkgrp_sf %>%
   st_intersection(vt_towns_sf,.) %>% 
   filter(row_number() == 1) %>% 
   pull(., NAME)
+
+# identify threshold for outliers using IQR method
+Outlier <- quantile(vt_blkgrp_sf$DSLPM_19,.75, na.rm = TRUE) + 1.5*(quantile(vt_blkgrp_sf$DSLPM_19,.75, na.rm = TRUE) - quantile(vt_blkgrp_sf$DSLPM_19,.25, na.rm = TRUE))
+
+# identify outliers
+vt_town_outlier <- vt_blkgrp_sf %>% 
+  filter(DSLPM_19 > Outlier) %>% 
+  st_centroid() %>% 
+  st_intersection(vt_towns_sf,.) %>% 
+  # filter(row_number() == 1) %>% 
+  as.data.frame() %>% 
+  distinct(NAME) %>% 
+  arrange(NAME) %>% 
+  pull(., NAME)
 ```
 
 The Block Group with highest Diesel Particulate Matter emissions value in the state is found in `r vt_town_maxDPM` and the lowest is found in `r vt_town_minDPM`.
 
-Figure \@ref(fig:boxplotDPMRI) is a boxplot of DPM concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median DPM concentration for all Block Groups, which in this case is `r round(median(vt_blkgrp_sf$PM25_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. Larger black dots on right represent outliers, or Block Groups with unusually high values relative to the state.  
+Figure \@ref(fig:boxplotDPM) is a boxplot of DPM concentrations by Block Group. The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into two parts represents the median DPM concentration for all Block Groups, which in this case is `r round(median(vt_blkgrp_sf$DSLPM_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. Larger black dots on right represent outliers, or Block Groups with unusually high values relative to the state. In this case, outliers would be represented by DPM values greater than `r Outlier`, which occur in `r glue::glue_collapse(vt_town_outlier,", ", last = ", and ")`. 
 
-```{r boxplotDPMRI, fig.align = "center", fig.cap="Boxplot of 2017 Carbon Dioxoide on-road emissions in metric tons per square kilometer by state at Census Block Group level. 1 dot = 1 Block Group."}
+```{r boxplotDPM, fig.align = "center", fig.cap="Boxplot of Diesel Particulate Matter (DPM) by state at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of CO2 by state for 2017
 vt_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -1432,9 +1538,9 @@ vt_blkgrp_sf %>%
 
 ### Diesel Particulate Matter in Vermont and Populations of Concern
 
-In addition to variations in the general geography of Diesel Particulate Matter concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvgRI) below shows population-weighted exposures for populations of concern relative to average Diesel Particulate Matter concentraions for the state. For example, limited English households in Vermont are exposed to  Diesel Particulate Matter concentrations that are more than 27% above concentrations for the state as a whole. Similarly, minorities are exposed to concentrations more than 22% above the state average. By contrast, persons over age 64 and under 5 are, on average, exposed to concentrations of Diesel Particulate Matter below the state average. 
+In addition to variations in the general geography of DPM concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvg) below shows population-weighted exposures for populations of concern relative to average DPM concentraions for the state. For example, limited English households in Vermont are exposed to  DPM concentrations that are more than 27% above concentrations for the state as a whole. Similarly, minorities are exposed to concentrations more than 22% above the state average. By contrast, persons over age 64 and under 5 are, on average, exposed to concentrations of DPM below the state average. 
 
-```{r barplotDPMPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to annual average ambient concentrations of Diesel Particulate Matter across Vermont relative to the regional average."}
+```{r barplotDPMPopAvg, fig.align = "center", fig.cap="Population-weighted average exposures to annual average ambient concentrations of Diesel Particulate Matter across Vermont relative to the state average."}
 # Pop Weighted avg of DPM for all Groups in Vermont relative to NE average
 vt_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -1489,14 +1595,16 @@ vt_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "No HS Dip", y = 7, label = "Above state avg"),
+  geom_text(aes(x = "No HS Dip", y = 7, label = "Above state\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1, yend = 10), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
-  expand_limits(y = c(-5,30))
+  geom_text(aes(x = "No HS Dip", y = -7, label = "Below state\naverage"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1, yend = 10), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-10,30))
 ```
 
-There is a moderate positive correlation between the proportions of language isolated households and minorities and ambient concentrations of Diesel Particulate Matter (see Appendix).
+There is a moderate positive correlation between the proportions of limited English speaking households and minorities and ambient concentrations of DPM (see Figure \@ref(fig:cormatrixDPMPopAvg) in Appendix B).
 
 
 \pagebreak
@@ -1508,7 +1616,7 @@ Most air toxics originate from transportation and industry, including automobile
 
 The analysis of air toxics cancer risk presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides lifetime cancer risk from inhalation of air toxics, as risk-in-1 million, at the Census Block Group level for 2014, the latest year of data available from the National Air Toxics Assessment. 
 
-Air Toxics Cancer Risk are concentrated in the northwest, in and around Burliington and also along the southern stretch of I-91 (see Figure \@ref(fig:mapATCNE) below).
+Cancer risks are concentrated in the northwest, in and around Burliington and also along the southern stretch of I-91 (see Figure \@ref(fig:mapATCNE) below).
 
 ```{r mapATCNE, fig.align = "center", fig.cap="Map of 2014 lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Vermont at Census Block Group level."}
 
@@ -1527,19 +1635,19 @@ m12 <- vt_blkgrp_sf %>%
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(I89roadSegment) +
-  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment2) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I93roadSegment) +
-  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.1) +
   tm_shape(vt_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Annual Lifetime \nCancer Risk from \nInhalation of Air Toxics\n2014", 
+  tm_layout(title = "Annual Lifetime \nCancer Risk from \nInhalation of Air\nToxics, 2014", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1552,9 +1660,9 @@ tmap_save(m12, "DATA/EJSCREEN/vt_Cancer.png",
 knitr::include_graphics("DATA/EJSCREEN/vt_Cancer.png")
 ```
 
-There appear to be significant spatial clusters of high lifetime cancer risk from inhalation of air toxics centered on Burlington (see Figure \@ref(fig:hotspotATCRI) below).
+There appear to be significant spatial clusters of high lifetime cancer risk from inhalation of air toxics centered on Burlington (see Figure \@ref(fig:hotspotATC) below).
 
-```{r hotspotATCRI, fig.align = "center", fig.cap="Hot spot map of 2014 lifetime cancer risk from inhalation of air toxics at Census Block Group level."}
+```{r hotspotATC, fig.align = "center", fig.cap="Hot spot map of 2014 lifetime cancer risk from inhalation of air toxics at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
 empty_geo <- st_is_empty(vt_blkgrp_sf)
 ne_blkgrp_sp_DemoEJ <- vt_blkgrp_sf[!empty_geo,] %>%
@@ -1586,13 +1694,13 @@ m13 <- tm_shape(local_g, unit = "mi",) +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(I89roadSegment) +
-  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment2) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I93roadSegment) +
-  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.1) +
   tm_shape(vt_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
@@ -1616,7 +1724,7 @@ tmap_save(m13, "DATA/EJSCREEN/vt_CancerHotspot.png",
 knitr::include_graphics("DATA/EJSCREEN/vt_CancerHotspot.png")
 ```
 \pagebreak
-Lifetime cancer risk from inhalation of air toxics varies across the state (see Table \@ref(tab:statsATCNE) and Figure \@ref(fig:boxplotATCNE) below).  
+Cancer risk varies across the state (see Table \@ref(tab:statsATCNE) and Figure \@ref(fig:boxplotATCNE) below).  
 
 ```{r statsATCNE, fig.align = "center", fig.cap="Annual 2014 lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Vermont at Census Block Group level."}
 vt_blkgrp_sf %>%
@@ -1645,17 +1753,31 @@ vt_town_maxCancer <- vt_blkgrp_sf %>%
   filter(row_number() == 1) %>% 
   pull(., NAME)
 
-vt_town_minCaner <- vt_blkgrp_sf %>% 
+vt_town_minCancer <- vt_blkgrp_sf %>% 
   filter(CANCER_19 == min(CANCER_19,na.rm = TRUE)) %>% 
   st_centroid() %>% 
   st_intersection(vt_towns_sf,.) %>% 
   filter(row_number() == 1) %>% 
   pull(., NAME)
+
+# identify threshold for outliers using IQR method
+Outlier <- quantile(vt_blkgrp_sf$CANCER_19,.75, na.rm = TRUE) + 1.5*(quantile(vt_blkgrp_sf$CANCER_19,.75, na.rm = TRUE) - quantile(vt_blkgrp_sf$CANCER_19,.25, na.rm = TRUE))
+
+# identify outliers
+vt_town_outlier <- vt_blkgrp_sf %>% 
+  filter(CANCER_19 > Outlier) %>% 
+  st_centroid() %>% 
+  st_intersection(vt_towns_sf,.) %>% 
+  # filter(row_number() == 1) %>% 
+  as.data.frame() %>% 
+  distinct(NAME) %>% 
+  arrange(NAME) %>% 
+  pull(., NAME)
 ```
 
-The Block Group with highest cancer risk value in the state is found in `r vt_town_maxCancer` and the lowest is found in `r vt_town_minCaner`.
+The Block Group with highest cancer risk value in the state is found in `r vt_town_maxCancer` and the lowest is found in `r vt_town_minCancer`.
 
-Figure \@ref(fig:boxplotATCNE) is a boxplot of cancer risk by Block Group . The box represents risk values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median lifetime cancer risk value for all Block Groups, which in this case is `r round(median(vt_blkgrp_sf$CANCER_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large black dots on the right represent outliers, or unusually high values. 
+Figure \@ref(fig:boxplotATCNE) is a boxplot of cancer risk by Block Group. The box represents risk values ranging between the 25th and 75th percentiles. The line that divides the box into two parts represents the median lifetime cancer risk value for all Block Groups, which in this case is `r round(median(vt_blkgrp_sf$CANCER_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large black dots on the right represent outliers, or unusually high values. In this case, outliers would be represented by ozone values greater than `r Outlier`, which occur in `r paste(vt_town_outlier,collapse=" and ")`.
 
 ```{r boxplotATCNE, fig.align = "center", fig.cap="Boxplot of lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Vermont by state at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of lifetime cancer risk by state for 2014
@@ -1676,9 +1798,9 @@ vt_blkgrp_sf %>%
 
 ### Lifetime Cancer Risk from Inhalation of Air Toxics in Vermont and Populations of Concern
 
-In addition to variations in the general geography of Lifetime Cancer Risk from Inhalation of Air Toxics, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvgRI) below shows population-weighted exposures for populations of concern relative to average Lifetime Cancer Risk from Inhalation of Air Toxics for the state. For example, limited English households in Vermont experience lifetime cancer risks from inhalation of air toxics that are more than 10% above the state as a whole. Similarly, minorities experience lifetime cancer risks more than 7% above the state average. In fact, all populations of concern experience risks above the state average. 
+In addition to variations in the general geography of cancer risk, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvg) below shows population-weighted exposures for populations of concern relative to average cancer risk for the state. For example, limited English speaking households in Vermont experience lifetime cancer risks from inhalation of air toxics that are more than 10% above the state as a whole. Similarly, minorities cancer risks more than 7% above the state average. In fact, all populations of concern experience risks above the state average. 
 
-```{r barplotATCPopAvgRI, fig.align = "center", fig.cap="Population-weighted average lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Vermont at Census Block Group level relative to the state average."}
+```{r barplotATCPopAvg, fig.align = "center", fig.cap="Population-weighted average lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Vermont at Census Block Group level relative to the state average."}
 # Pop Weighted avg of DPM for all Groups in Vermont relative to NE average
 vt_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -1733,14 +1855,16 @@ vt_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "Low Income", y = 4, label = "Above state avg"),
+  geom_text(aes(x = "Low Income", y = 4, label = "Above state\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1.5, yend = 5), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
-  expand_limits(y = c(-1,12))
+  geom_text(aes(x = "Low Income", y = -2.5, label = "Below state\naverage"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1.5, yend = 5), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-5,12))
 ```
 
-There is a moderately positive correlation between the proportions of minorities and cancer risk (see Appendix).
+There is a moderately positive correlation between the proportions of minorities and cancer risk (see Figure \@ref(fig:cormatrixATCPopAvg) in Appendix B).
 
 
 \pagebreak
@@ -1750,9 +1874,9 @@ Respiratory hazard from air toxics refers to noncancer effects caused by a lifet
 
 The analysis of respiratory hazard presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides respiratory hazard, as a ratio of exposure concentration to a health-based reference concentration (RfC), at the Census Block Group level for 2014, the latest year of data available from the National Air Toxics Assessment.
 
-Higher Respiratory Hazard Indices are concentrated along I-91 and US 7 from Rutland to the northern border, with the highest concentrations around Burlington (see Figure \@ref(fig:mapRHIRI) below). 
+Higher respiratory hazard indices are concentrated along I-91 and US 7 from Rutland to the northern border, with the highest concentrations around Burlington and Montpelier (see Figure \@ref(fig:mapRHI) below). 
 
-```{r mapRHIRI, fig.align = "center", fig.cap="Map of 2014 respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Vermont at Census Block Group level."}
+```{r mapRHI, fig.align = "center", fig.cap="Map of 2014 respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Vermont at Census Block Group level."}
 
 # Map of RHI across Vermont
 m14 <- vt_blkgrp_sf %>% 
@@ -1769,13 +1893,13 @@ m14 <- vt_blkgrp_sf %>%
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(I89roadSegment) +
-  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment2) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I93roadSegment) +
-  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.1) +
   tm_shape(vt_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
@@ -1794,9 +1918,9 @@ tmap_save(m14, "DATA/EJSCREEN/vt_RespHzrd.png",
 knitr::include_graphics("DATA/EJSCREEN/vt_RespHzrd.png")
 ```
 
-There appear to be significant spatial clusters of high indices of respiratory hazard index from inhalation of air toxics in Burlington (see Figure \@ref(fig:hotspotRHIRI) below).
+There appear to be significant spatial clusters of high indices of respiratory hazard index from inhalation of air toxics in Burlington (see Figure \@ref(fig:hotspotRHI) below).
 
-```{r hotspotRHIRI, fig.align = "center", fig.cap="Hot spot map of 2014 respiratory hazard index from inhalation of air toxics at Census Block Group level."}
+```{r hotspotRHI, fig.align = "center", fig.cap="Hot spot map of 2014 respiratory hazard index from inhalation of air toxics at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
 empty_geo <- st_is_empty(vt_blkgrp_sf)
 ne_blkgrp_sp_DemoEJ <- vt_blkgrp_sf[!empty_geo,] %>%
@@ -1828,13 +1952,13 @@ m15 <- tm_shape(local_g, unit = "mi",) +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(I89roadSegment) +
-  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment2) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I93roadSegment) +
-  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.1) +
   tm_shape(vt_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
@@ -1858,9 +1982,9 @@ tmap_save(m15, "DATA/EJSCREEN/vt_RespHzrdHotspot.png",
 knitr::include_graphics("DATA/EJSCREEN/vt_RespHzrdHotspot.png")
 ```
 
-Respiratory hazard indices from inhalation of air toxics vary across the state (see Table \@ref(tab:statsRHIRI) and Figure \@ref(fig:boxplotRHIRI) below).   
+Respiratory hazard indices from inhalation of air toxics vary across the state (see Table \@ref(tab:statsRHIRI) and Figure \@ref(fig:boxplotRHI) below).   
 
-```{r statsRHIRI, fig.align = "center", fig.cap="Annual 2014 respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Vermont at Census Block Group level."}
+```{r statsRHI, fig.align = "center", fig.cap="Annual 2014 respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Vermont at Census Block Group level."}
 vt_blkgrp_sf %>%
   as.data.frame() %>% 
   # group_by(STATE) %>% 
@@ -1894,13 +2018,27 @@ vt_town_minRESP <- vt_blkgrp_sf %>%
   st_intersection(vt_towns_sf,.) %>% 
   filter(row_number() == 1) %>% 
   pull(., NAME)
+
+# identify threshold for outliers using IQR method
+Outlier <- quantile(vt_blkgrp_sf$RESP_19,.75, na.rm = TRUE) + 1.5*(quantile(vt_blkgrp_sf$RESP_19,.75, na.rm = TRUE) - quantile(vt_blkgrp_sf$RESP_19,.25, na.rm = TRUE))
+
+# identify outliers
+vt_town_outlier <- vt_blkgrp_sf %>% 
+  filter(RESP_19 > Outlier) %>% 
+  st_centroid() %>% 
+  st_intersection(vt_towns_sf,.) %>% 
+  # filter(row_number() == 1) %>% 
+  as.data.frame() %>% 
+  distinct(NAME) %>% 
+  arrange(NAME) %>% 
+  pull(., NAME)
 ```
 
 The Block Group with highest respiratory hazard index value in the state is found in `r vt_town_maxRESP` and the lowest is found in `r vt_town_minRESP`.
 
-Figure \@ref(fig:boxplotRHIRI) is a boxplot of respiratory hazard indices by Block Group . The box represents index values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median respiratory hazard index value for all Block Groups, which in this case is `r round(median(vt_blkgrp_sf$RESP_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large black dots on the right represent outliers, or Block Groups with unusually high values relative to the state.   
+Figure \@ref(fig:boxplotRHI) is a boxplot of respiratory hazard indices by Block Group. The box represents index values ranging between the 25th and 75th percentiles. The line that divides the box into two parts represents the median respiratory hazard index value for all Block Groups, which in this case is `r round(median(vt_blkgrp_sf$RESP_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large black dots on the right represent outliers, or Block Groups with unusually high values relative to the state. In this case, outliers would be represented by ozone values greater than `r Outlier`, which occur in `r glue::glue_collapse(vt_town_outlier,", ", last = ", and ")`.  
 
-```{r boxplotRHIRI, fig.align = "center", fig.cap="Boxplot of respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Vermont by state at Census Block Group level. 1 dot = 1 Block Group."}
+```{r boxplotRHI, fig.align = "center", fig.cap="Boxplot of respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Vermont by state at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of lifetime cancer risk by state for 2014
 vt_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -1919,9 +2057,9 @@ vt_blkgrp_sf %>%
 
 ### Respiratory Hazard Index from Inhalation of Air Toxics in Vermont and Populations of Concern
 
-In addition to variations in the general geography of the Respitory Hazard Index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvgRI) below shows population-weighted exposures for populations of concern relative to average Respiratory Hazard Index from Inhalation of Air Toxics for the state. For example, limited English households in Vermont experience respiratory hazard indices from inhalation of air toxics that are over 13% above the state as a whole. Similarly, minorities experience lifetime hazard index values more than 10% above the state average. In fact, all populations of concern are exposed to respiratory hazard indices above the state average. 
+In addition to variations in the general geography of the respitory hazard index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvg) below shows population-weighted exposures for populations of concern relative to average respiratory hazard index for the state. For example, limited English speaking households in Vermont experience respiratory hazard indices that are over 13% above the state as a whole. Similarly, minorities experience respiratory hazard indices more than 10% above the state average. In fact, all populations of concern are exposed to respiratory hazard indices above the state average. 
 
-```{r barplotRHIPopAvgRI, fig.align = "center", fig.cap="Population-weighted average respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Vermont at Census Block Group level relative to the regional average."}
+```{r barplotRHIPopAvg, fig.align = "center", fig.cap="Population-weighted average respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Vermont at Census Block Group level relative to the state average."}
 # Pop Weighted avg of RHI for all Groups in Vermont relative to NE average
 vt_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -1976,14 +2114,16 @@ vt_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "No HS Dip", y = 4, label = "Above state avg"),
+  geom_text(aes(x = "No HS Dip", y = 4, label = "Above state\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "Over 64", xend = "Over 64", y = 1, yend = 5), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
-  expand_limits(y = c(-1,15))
+  geom_text(aes(x = "No HS Dip", y = -2.5, label = "Below state\naverage"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Over 64", xend = "Over 64", y = 1, yend = 5), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-5,15))
 ```
 
-There is a moderate to strong positive correlation between the proportions of minorities and respiratory hazard index (see Appendix).
+There is a moderate to strong positive correlation between the proportions of minorities and respiratory hazard index (see Figure \@ref(fig:cormatrixRHIPopAvg) in Appendix B).
 
 
 \pagebreak
@@ -1991,11 +2131,11 @@ There is a moderate to strong positive correlation between the proportions of mi
 
 Proximity to motor vehicle traffic is associated with greater exposure to toxic gases and particulate matter, as well as increased noise. Vehicle-related emissions include ultrafine particulates and other components of PM~2.5~, lead and other metals, air toxics such as benzene, nitrogen oxides (NO~x~), hydrocarbons and carbon monoxide (CO), as well as precursors that add to the formation of ground level ozone (O~3~) and smog. Research has repeatedly shown that living near highly trafficked roads is related to increased risk of a variety of adverse health outcomes, including asthma, cardiovascular disease, hypertension, stroke, stress, and increased rates of mortality. EPA’s 2005 National Air Toxics Assessment (NATA) estimated that mobile emissions accounted for about 30% of average cancer risk from Hazardous Air Pollutants.[^EJSCREENTraffic]
 
-EPA's EJSCREEN provides an indicator of traffic exposure measured as residential proximity to roads weighted by traffic volume. More specifically, EJSCREEN's Traffic Proximity and Volume indicator is a count of vehicles (average annual daily traffic) at major roads within 500 meters of residential areas (i.e., Census Blocks) divided by distance in kilometers (km).[^EPATraffic] For example, a residential area at 100 meters distance from a single highway with 33,000 AADT (average annual daily traffic) would result in a score of 33,000/100=330, which is approximately the median person’s block group traffic proximity indicator value in New England. The Traffic Proximity and Volume indicator values are aggregated at the Census Block Group level. 
+EPA's EJSCREEN provides an indicator of traffic exposure measured as residential proximity to roads weighted by traffic volume. More specifically, EJSCREEN's Traffic Proximity and Volume indicator is a count of vehicles (average annual daily traffic) at major roads within 500 meters of residential areas (i.e., Census Blocks) divided by distance in kilometers (km).[^EPATraffic] For example, a residential area at 100 meters distance from a single highway with 33,000 AADT (average annual daily traffic) would result in a score of 33,000/100=330, which is approximately the median block group traffic proximity indicator value in New England. The Traffic Proximity and Volume indicator values are aggregated at the Census Block Group level. 
 
-Exposure to high annual daily traffic volume is concentrated along major traffic corridors, as well as within larger municipalities (see Figure \@ref(fig:mapTPVRI) below). 
+Exposure to high annual daily traffic volume is concentrated along major traffic corridors, as well as within larger municipalities (see Figure \@ref(fig:mapTPV) below). 
 
-```{r mapTPVRI, fig.align = "center", fig.cap="Map of 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Vermont at Census Block Group level."}
+```{r mapTPV, fig.align = "center", fig.cap="Map of 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Vermont at Census Block Group level."}
 
 # Map of TPV across Vermont
 m16 <- vt_blkgrp_sf %>% 
@@ -2012,19 +2152,19 @@ m16 <- vt_blkgrp_sf %>%
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(I89roadSegment) +
-  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment2) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I93roadSegment) +
-  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.1) +
   tm_shape(vt_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Annual Traffic \nProximity and Volume \n2017", 
+  tm_layout(title = "Annual Traffic \nProximity and\nVolume, 2017", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2037,9 +2177,9 @@ tmap_save(m16, "DATA/EJSCREEN/vt_Traffic.png",
 knitr::include_graphics("DATA/EJSCREEN/vt_Traffic.png")
 ```
 
-There appear to be significant spatial clusters of traffic proximity and volume in Burlington (see Figure \@ref(fig:hotspotTPVRI) below).
+There appear to be significant spatial clusters of traffic proximity and volume in Burlington (see Figure \@ref(fig:hotspotTPV) below).
 
-```{r hotspotTPVRI, fig.align = "center", fig.cap="Hot spot map of 2017 traffic proximity and volume at Census Block Group level."}
+```{r hotspotTPV, fig.align = "center", fig.cap="Hot spot map of 2017 traffic proximity and volume at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
 empty_geo <- st_is_empty(vt_blkgrp_sf)
 ne_blkgrp_sp_DemoEJ <- vt_blkgrp_sf[!empty_geo,] %>%
@@ -2071,13 +2211,13 @@ m17 <- tm_shape(local_g, unit = "mi",) +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(vt_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
   tm_shape(I89roadSegment) +
-  tm_symbols(shape = I89, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment2) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
   tm_shape(I93roadSegment) +
-  tm_symbols(shape = I93, border.lwd = NA, size = 0.2) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.1) +
   tm_shape(vt_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
@@ -2101,9 +2241,9 @@ tmap_save(m17, "DATA/EJSCREEN/vt_TrafficHotspot.png",
 knitr::include_graphics("DATA/EJSCREEN/vt_TrafficHotspot.png")
 ```
 
-Traffic Proximity and Volume exposure vary across the state (see Table \@ref(tab:statsTPVRI) and Figure \@ref(fig:boxplotTPVRI) below).   
+Traffic proximity and volume exposure vary across the state (see Table \@ref(tab:statsTPV) and Figure \@ref(fig:boxplotTPV) below).   
 
-```{r statsTPVRI, fig.align = "center", fig.cap="Annual 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Vermont at Census Block Group level."}
+```{r statsTPV, fig.align = "center", fig.cap="Annual 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Vermont at Census Block Group level."}
 vt_blkgrp_sf %>%
   as.data.frame() %>% 
   drop_na(PTRAF_19) %>% 
@@ -2140,11 +2280,11 @@ vt_town_minTraffic <- vt_blkgrp_sf %>%
   pull(., NAME)
 ```
 
-The Block Group with highest Traffic Proximity and Volume value in the state is found in `r vt_town_maxTraffic` and the lowest is found in `r vt_town_minTraffic`.
+The Block Group with highest traffic proximity and volume value in the state is found in `r vt_town_maxTraffic` and the lowest is found in `r vt_town_minTraffic`.
 
-Figure \@ref(fig:boxplotTPVRI) is a boxplot of Traffic Proximity and Volume values by Block Group . The box represents values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median Traffic Proximity and Volume value for all Block Groups, which in this case is `r round(median(vt_blkgrp_sf$PTRAF_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large black dots represent outliers, or unusually high values.  
+Figure \@ref(fig:boxplotTPV) is a boxplot of traffic proximity and volume values by Block Group. The box represents values ranging between the 25th and 75th percentiles. The line that divides the box into two parts represents the median Traffic Proximity and Volume value for all Block Groups, which in this case is `r round(median(vt_blkgrp_sf$PTRAF_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large black dots represent outliers, or unusually high values.  
 
-```{r boxplotTPVRI, fig.align = "center", fig.cap="Boxplot of 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Vermont at Census Block Group level."}
+```{r boxplotTPV, fig.align = "center", fig.cap="Boxplot of 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Vermont at Census Block Group level."}
 # boxplot of traffic proximity and volume by state for 2017
 vt_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -2162,7 +2302,7 @@ vt_blkgrp_sf %>%
 
 ### Traffic Proximity and Volume Exposure in Vermont and Populations of Concern
 
-In addition to variations in the general geography of the Traffic Proximity and Volume exposure, this exposure also varies demographically. Figure \@ref(fig:barplotTPVPopAvgNE) below shows population-weighted exposures for populations of concern relative to average Traffic Proximity and Volume for the state. For example, minorities are exposed to Traffic Proximity and Volume more than 79% above the state average. By contrast, persons over age 64 are, on average, are exposed to Traffic Proximity and Volume of more than 13% below the state average. 
+In addition to variations in the general geography of the traffic proximity and volume exposure, this exposure also varies demographically. Figure \@ref(fig:barplotTPVPopAvgNE) below shows population-weighted exposures for populations of concern relative to average traffic proximity and volume for the state. For example, minorities are exposed to traffic proximity and volume more than 79% above the state average. By contrast, persons over age 64 are, on average, are exposed to traffic proximity and volume of more than 13% below the state average. 
 
 ```{r barplotTPVPopAvgNE, fig.align = "center", fig.cap="Population-weighted average Traffic Proximity and Volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Vermont at Census Block Group level relative to the state average."}
 # Pop Weighted avg of TPV for all Groups in Vermont relative to NE average
@@ -2219,14 +2359,16 @@ vt_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "No HS Dip", y = 25, label = "Above state avg"),
+  geom_text(aes(x = "No HS Dip", y = 25, label = "Above state\naverage"),
             color = "gray48") +
-  geom_segment(aes(x = "Under 5", xend = "Under 5", y = 5, yend = 30), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
+  geom_text(aes(x = "No HS Dip", y = -15, label = "Below state\naverage"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 5, yend = 30), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-20,80))
 ```
 
-There is a moderate positive correlation between the proportions of minorities and traffic proximity and volume, and a moderate positive correlation with low income persons (see Appendix).
+There is a moderate positive correlation between the proportions of minorities and traffic proximity and volume, and a moderate positive correlation with low income persons (see Figure \@ref(fig:cormatrixTPVPopAvg) in Appendix B).
 
 [^EJSCREEN]: U.S. Environmental Protection Agency (EPA), 2019. EJSCREEN Technical Documentation. For more information see www.epa.gov/ejscreen
 
@@ -2295,7 +2437,7 @@ The analyses presented here are based on data from three sources:
 
 The U.S. EPA's EJSCREEN is an online environmental justice mapping and screening tool that provides a "nationally consistent dataset and approach for combining environmental and demographic indicators."  EJSCREEN provides data on 11 environmental indicators, ranging across air, land, and water. The six indicators analyzed here were chosen based on their relationship to transportation sources, especially motor vehicles. Data for each indicator is available by Census Block Group across the U.S. The 2015 (earliest available) and 2019 (latest available) data sets were downloaded from https://www.epa.gov/ejscreen/download-ejscreen-data as CSV files and processed in R. 
 
-All data was analyzed or aggregated geographically by Census Tract and Block Group. A Census Tract is a small, relatively permanent statistical subdivision of a county that contains between 1,200 and 8,000 people. The entire area of a county is covered by Census Tracts, just as the entire area of a state is covered by counties and county equivalents. Census Tracts range in areal size depending on the population density; smaller in denser areas and larger in less densely populated areas. Census Block Groups are subdivisions of Census Tracts that contain between 600 and 3,000 people. Like Tracts, Block Groups range in areal size depending on the population density of the area. Block Groups are the smallest geographic unit at which detailed demographic and household data from the American Community Survey is made available by the Census.  
+All data was analyzed or aggregated geographically by Census Tract and Block Group. A Census Tract is a small, relatively permanent statistical subdivision of a county that contains between 1,200 and 8,000 people. The entire area of a county is covered by Census Tracts, just as the entire area of a state is covered by counties or county equivalents. Census Tracts range in areal size depending on the population density; smaller areas in denser areas and larger areas in less densely populated areas. Census Block Groups are subdivisions of Census Tracts that contain between 600 and 3,000 people. Like Tracts, Block Groups range in areal size depending on the population density of the area. Block Groups are the smallest geographic unit at which detailed demographic and household data from the American Community Survey is made available by the U.S. Census Bureau.  
 
 Below is a summary of the measurement unit and source of each environmental indicator. For more detail on these data sources, see the EJSCREEN Environmental Justice Mapping and Screening Tool: EJSCREEN Technical Documentation 2019. www.epa.gov/ejscreen.
 
@@ -2329,7 +2471,7 @@ Respiratory Hazard Index refers to noncancer effects caused by a lifetime of exp
 
 The 2019 version of EJSCREEN uses 2014 NATA data, which is based on NEI emissions estimates for 2014. 
 
-### Traffic Proimity and Volume {-}
+### Traffic Proximity and Volume {-}
 
 Traffic Proximity and Volume refers to an index of exposure to road traffic. This index is calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters of residential areas (i.e., Census
 Block centroids) divided by distance in kilometers (km). Traffic volume is based on average annual daily traffic (AADT) estimates in the Highway Performance Monitoring System (HPMS) dataset in the Department of Transportation (DOT) National Transportation Atlas Database (NTAD). Each Block Group was assigned a Traffic Proximity and Volume score based on a population-weighted average of the scores for the Census Blocks within the respective Block Group. 
@@ -2338,13 +2480,13 @@ The 2019 version of EJSCREEN uses 2017 HPMS data.
 
 ## Database of Road Transportation Emissions (DARTE) {-}
 
-The Database of Road Transportation Emissions (DARTE) is "the first nationally consistent inventory of US on-road CO2 emissions built from bottom-up source activity data and establishes a national benchmark for monitoring, reporting, and verification of emissions that are vital for regulating greenhouse gases." DARTE provides a 38-year, 1-km resolution inventory of annual on-road CO~2~ emissions for the conterminous United States based on roadway-level vehicle traffic data and state-specific emissions factors for multiple vehicle types on urban and rural roads as compiled in the Database of Road Transportation Emissions (DARTE). For more details about DARTE, see the User Guide for DARTE Annual On-road CO2 Emissions on a 1-km Grid, Conterminous USA, V2, 1980-2017 at https://daac.ornl.gov/cgi-bin/dsviewer.pl?ds_id=1735.
+The Database of Road Transportation Emissions (DARTE) provides a 38-year, 1-km resolution inventory of annual on-road CO~2~ emissions for the conterminous United States based on roadway-level vehicle traffic data and state-specific emissions factors for multiple vehicle types on urban and rural roads as compiled in the Database of Road Transportation Emissions (DARTE). For more details about DARTE, see the User Guide for DARTE Annual On-road CO2 Emissions on a 1-km Grid, Conterminous USA, V2, 1980-2017 at https://daac.ornl.gov/cgi-bin/dsviewer.pl?ds_id=1735.
 
 ### On-road Carbon Dioxide (CO~2~) Emissions {-}
 
-DARTE CO~2~ emissions data from the on-road transportation sector are provided annually for 1980-2017 as a continuous surface at a spatial resolution of 1km in the form of GeoTIFF files for each year. The same data is also provided  aggregated to U.S. 2010 Census Block Group polygons. Units of data are total emissions in kilograms CO~2~ per year for each Block Group. 
+DARTE CO~2~ emissions data from the on-road transportation sector are provided annually for 1980-2017 as a continuous surface at a spatial resolution of 1km in the form of GeoTIFF files for each year. The same data is also provided  aggregated to U.S. 2010 Census Block Group polygons. Units of data are total emissions in kilograms of CO~2~ per year for each Block Group. 
 
-For the purposes of this analysis, DARTE Block Group data for the years 1990 to 2017 was downloaded as a geodatabase and processed in R. 
+For the purposes of this analysis, DARTE Block Group data for the years 1990 to 2017 was downloaded as a geodatabase and processed in R.
 
 ## American Community Survey 5-year Estimates {-}
 
@@ -2443,9 +2585,9 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Population numbers of minorities, as well as the total population, and PM~2.5~ concentrations, are each reported by Block Group. Since each Block Group is associated with one PM~2.5~ concentration value, we might assume (incorrectly) that everyone is equally exposed to the average PM~2.5~ values of all Block Groups - `r round(mean(c(2.5,6.2,10,5)),2)`. However, not all Block Groups have the same number of people, which means that each PM~2.5~ concentration value is associated with a different number of people. Do more Minorities occupy Block Groups with higher concentrations than the simple average would indicate?
+Population numbers of minorities, as well as the total population, and PM~2.5~ concentrations, are each reported by Block Group. Since each Block Group is associated with one PM~2.5~ concentration value, we might assume (incorrectly) that everyone is equally exposed to the average PM~2.5~ values of all Block Groups (`r round(mean(c(2.5,6.2,10,5)),2)`). However, not all Block Groups have the same number of people, which means that each PM~2.5~ concentration value is associated with a different number of people. Do more Minorities occupy Block Groups with higher concentrations than the simple average would indicate?
 
-To calculate the population-weighted average PM~2.5~ exposure for Minorities, the number of Minorities in each Block Group is used as a 'weight'. The PM~2.5~ concentraions of each Block Group is multiplied by its respective number of Minorities. See the table below. The light gray column on the right is the product of PM~2.5~ values and Minority populations. 
+To calculate the population-weighted average PM~2.5~ exposure for Minorities, the number of Minorities in each Block Group is used as a 'weight'. The PM~2.5~ concentrations of each Block Group is multiplied by its respective number of Minorities. See the table below. The light gray column on the right is the product of PM~2.5~ values and Minority populations. 
 
 ```{r wmean2}
 data.frame(BG = c("BG1","BG2","BG3","BG4"),
@@ -2598,7 +2740,7 @@ ggcorrplot(corrARI, hc.order = TRUE, type = "lower", lab = TRUE,
            ggtheme = ggplot2::theme_minimal())
 ```
 
-```{r cormatrixRHIPopAvg, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group."}
+```{r cormatrixRHIPopAvg, fig.align = "center", fig.cap="Spearman's correlation matrix of respiratory hazard index and the proportions of populations of concern by Census Block Group."}
 # Create a correlation matrix of cancer risk and populations of concern
 corrARI <- vt_blkgrp_sf %>% 
   as.data.frame() %>%
@@ -2618,7 +2760,7 @@ ggcorrplot(corrARI, hc.order = TRUE, type = "lower", lab = TRUE,
            ggtheme = ggplot2::theme_minimal())
 ```
 
-```{r cormatrixTPVPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group."}
+```{r cormatrixTPVPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of traffice proximity and volume and the proportions of populations of concern by Census Block Group."}
 # Create a correlation matrix of cancer risk and populations of concern
 corrTPV <- vt_blkgrp_sf %>% 
   as.data.frame() %>% 
