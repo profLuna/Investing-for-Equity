@@ -1231,7 +1231,7 @@ leastWalkable2 <- leastWalkable %>%
   mutate(`Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
   arrange(desc(`Under 18`))
 ```
-The population-weighted average walkability scores provide a glimpse of average walkability across the state for different population groups. However, walkability also varies for specific communities. Indeed, it is important to consider populations of concern that reside in communities with low walkability. Figures \@ref(fig:mapLowWalkO64) and \@ref(fig:mapLowWalkUnder18) below highlight Census Block Groups across Rhode Island that are least walkable and the numbers of persons over 64 or under 18 live there. Tables \@ref(tab:tabLowWalkO64) and \@ref(tab:tabLowWalkUnder18) show breakdowns by municipality. For example, Table \@ref(tab:tabLowWalkO64) shows that `r formatC(as.numeric(leastWalkable1[1,3]),big.mark=",")` people over 64 across `r leastWalkable1[1,2]` Block Groups in `r leastWalkable1[1,1]` resided in the least walkable areas. These people represented `r leastWalkable1[1,4]` of people over 64 in `r leastWalkable1[1,1]`. Similarly, Table \@ref(tab:tabLowWalkUnder18) shows that `r formatC(as.numeric(leastWalkable2[1,3]),big.mark=",")` people under 18 across `r TransitNoAccess1[1,2]` Block Groups in `r leastWalkable2[1,1]` resided the least walkable areas. These people represented `r leastWalkable2[1,4]` of people under 18 in `r leastWalkable2[1,1]`.
+The population-weighted average walkability scores provide a glimpse of average walkability across the state for different population groups. However, walkability also varies for specific communities. Indeed, it is important to consider populations of concern that reside in communities with low walkability. Figures \@ref(fig:mapLowWalkO64) and \@ref(fig:mapLowWalkU18) below highlight Census Block Groups across Rhode Island that are least walkable and the numbers of persons over 64 or under 18 live there. Tables \@ref(tab:tabLowWalkO64) and \@ref(tab:tabLowWalkU18) show breakdowns by municipality. For example, Table \@ref(tab:tabLowWalkO64) shows that `r formatC(as.numeric(leastWalkable1[1,3]),big.mark=",")` people over 64 across `r leastWalkable1[1,2]` Block Groups in `r leastWalkable1[1,1]` resided in the least walkable areas. These people represented `r leastWalkable1[1,4]` of people over 64 in `r leastWalkable1[1,1]`. Similarly, Table \@ref(tab:tabLowWalkU18) shows that `r formatC(as.numeric(leastWalkable2[1,3]),big.mark=",")` people under 18 across `r TransitNoAccess1[1,2]` Block Groups in `r leastWalkable2[1,1]` resided the least walkable areas. These people represented `r leastWalkable2[1,4]` of people under 18 in `r leastWalkable2[1,1]`.
 Maps and tables of other populations of concern in the least walkable Block Groups can be found in Appendix B.
 
 ```{r mapLowWalkO64, fig.align = "center", fig.cap="Persons over 64 per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -1451,7 +1451,7 @@ tmap_save(m, "DATA/transport/ri_tburden.png",
 knitr::include_graphics("DATA/transport/ri_tburden.png")
 ````
 
-Transportation cost burden varies for different population groups across the state. Figure \@ref(fig:loliLAI) below compares population-weighted average transportation cost burden for different populations. Most groups live in communities with above average walkability index scores that are also at or above that of the general population. However, persons over age 64 tend to live in communities with walkability scores below the state average. 
+Transportation cost burden varies for different population groups across the state. Figure \@ref(fig:loliLAI) below compares population-weighted average transportation cost burden for different populations. Most groups live in communities with transportation cost burdens that are below that of the general population. However, persons over age 64 tend to live in communities with transportation cost burdens that exceed the state average. 
 
 ```{r loliLAI, fig.align = "center", fig.cap="Population-weighted average transportation cost burden for groups across Rhode Island."}
 # Create lollipop graph of pop-weighted average LAI
@@ -1518,7 +1518,7 @@ HiBurden2 <- HiBurden %>%
   mutate(`Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
   arrange(desc(`Under 18`))
 ```
-The population-weighted average transportation cost burden values provide a glimpse of average transportation cost burden across the state for different population groups. However, transportation cost burden also varies for specific communities. Indeed, it is important to consider populations of concern that reside in communities with a high transportation cost burden. Figures \@ref(fig:mapHiBurdenO64) and \@ref(fig:mapHiBurdenUnder18) below highlight Census Block Groups across Rhode Island where the transportation cost burden is in the highest quintile (i.e., 80th percentile) and the numbers of persons over 64 or under 18 that live there. Tables \@ref(tab:tabHiBurdenO64) and \@ref(tab:tabHiBurdenUnder18) show breakdowns by municipality. For example, Table \@ref(tab:tabHiBurdenO64) shows that `r formatC(as.numeric(HiBurden1[1,3]),big.mark=",")` people over 64 across `r HiBurden1[1,2]` Block Groups in `r HiBurden1[1,1]` resided in areas with the highest transportation cost burden. These people represented `r HiBurden1[1,4]` of people over 64 in `r HiBurden1[1,1]`. Similarly, Table \@ref(tab:tabHiBurdenUnder18) shows that `r formatC(as.numeric(HiBurden2[1,3]),big.mark=",")` people under 18 across `r HiBurden2[1,2]` Block Groups in `r HiBurden2[1,1]` resided in areas with the highest transportation cost burden. These people represented `r HiBurden2[1,4]` of people under 18 in `r HiBurden2[1,1]`.
+The population-weighted average transportation cost burden values provide a glimpse of average transportation cost burden across the state for different population groups. However, transportation cost burden also varies for specific communities. Indeed, it is important to consider populations of concern that reside in communities with a high transportation cost burden. Figures \@ref(fig:mapHiBurdenO64) and \@ref(fig:mapHiBurdenU18) below highlight Census Block Groups across Rhode Island where the transportation cost burden is in the highest quintile (i.e., 80th percentile) and the numbers of persons over 64 or under 18 that live there. Tables \@ref(tab:tabHiBurdenO64) and \@ref(tab:tabHiBurdenU18) show breakdowns by municipality. For example, Table \@ref(tab:tabHiBurdenO64) shows that `r formatC(as.numeric(HiBurden1[1,3]),big.mark=",")` people over 64 across `r HiBurden1[1,2]` Block Groups in `r HiBurden1[1,1]` resided in areas with the highest transportation cost burden. These people represented `r HiBurden1[1,4]` of people over 64 in `r HiBurden1[1,1]`. Similarly, Table \@ref(tab:tabHiBurdenU18) shows that `r formatC(as.numeric(HiBurden2[1,3]),big.mark=",")` people under 18 across `r HiBurden2[1,2]` Block Groups in `r HiBurden2[1,1]` resided in areas with the highest transportation cost burden. These people represented `r HiBurden2[1,4]` of people under 18 in `r HiBurden2[1,1]`.
 Maps and tables of other populations of concern in areas with the highest transportation cost burden can be found in Appendix B.
 
 ```{r mapHiBurdenO64, fig.align = "center", fig.cap="Persons over 64 per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
@@ -1902,7 +1902,7 @@ For the TotalPop, the population-weighted average headway is 6800/92 = `r round(
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(ri_blkgrps_sf_noBus, unit = "mi") +
-  tm_fill(col = "NewUnder18", alpha = 0.9, style = "quantile",
+  tm_fill(col = "NewUnder18", alpha = 0.9, style = "equal",
           colorNA = "white", colorNULL = "gray", title = "Number of\nPersons Under 18",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ri_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -1962,7 +1962,7 @@ ri_blkgrps_sf_noBus %>%
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(ri_blkgrps_sf_noBus, unit = "mi") +
-  tm_fill(col = "NewUnder5", alpha = 0.9, style = "quantile",
+  tm_fill(col = "NewUnder5", alpha = 0.9, style = "equal",
           colorNA = "white", colorNULL = "gray", title = "Number of\nChildren Under 5",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ri_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -2022,7 +2022,7 @@ ri_blkgrps_sf_noBus %>%
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(ri_blkgrps_sf_noBus, unit = "mi") +
-  tm_fill(col = "NewLths", alpha = 0.9, style = "quantile",
+  tm_fill(col = "NewLths", alpha = 0.9, style = "equal",
           colorNA = "white", colorNULL = "gray", title = "Number of\nAdults without a\nHigh School Diploma",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ri_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -2086,7 +2086,7 @@ ri_blkgrps_sf_noBus %>%
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(ri_blkgrps_sf_noBus, unit = "mi") +
-  tm_fill(col = "NewPov", alpha = 0.9, style = "quantile",
+  tm_fill(col = "NewPov", alpha = 0.9, style = "equal",
           colorNA = "white", colorNULL = "gray", title = "Number of\nLow Income Persons",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ri_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -2150,7 +2150,7 @@ ri_blkgrps_sf_noBus %>%
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(ri_tracts_sf_noBus, unit = "mi") +
-  tm_fill(col = "NewHHNoCar", alpha = 0.9, style = "quantile",
+  tm_fill(col = "NewHHNoCar", alpha = 0.9, style = "equal",
           colorNA = "white", colorNULL = "gray", title = "Number of\nNo Car Households",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -2214,7 +2214,7 @@ ri_tracts_sf_noBus %>%
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(ri_blkgrps_sf_noBus, unit = "mi") +
-  tm_fill(col = "NewMinority", alpha = 0.9, style = "quantile",
+  tm_fill(col = "NewMinority", alpha = 0.9, style = "equal",
           colorNA = "white", colorNULL = "gray", title = "Number of\nMinority Persons",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ri_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -2305,7 +2305,7 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
                position = c(0.6,0.005)) +
   tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Transit Route") +
-  tm_layout(title = "Limited English\nSpeaking Households\n1+ Miles from\nNearest Transit\nStop", 
+  tm_layout(title = "Limited English\nSpeaking\nHouseholds\n1+ Miles from\nNearest Transit\nStop", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2348,7 +2348,7 @@ Note that no Low Income or Minority communities, as defined by the state's envir
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(headway80thblkgrps) +
-  tm_fill(col = "NewUnder18", alpha = 0.9, style = "quantile",
+  tm_fill(col = "NewUnder18", alpha = 0.9, style = "equal",
           colorNA = "white", colorNULL = "gray", title = "Number of Persons\nUnder 18",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ri_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -2413,7 +2413,7 @@ headway80thblkgrps %>%
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(headway80thtracts) +
-  tm_fill(col = "NewHHNoCar", alpha = 0.9, style = "quantile",
+  tm_fill(col = "NewHHNoCar", alpha = 0.9, style = "equal",
           colorNA = "white", colorNULL = "gray", title = "Number of\nNo Car Households",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ri_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -2478,7 +2478,7 @@ headway80thtracts %>%
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(headway80thblkgrps) +
-  tm_fill(col = "NewUnder5", alpha = 0.9, style = "quantile",
+  tm_fill(col = "NewUnder5", alpha = 0.9, style = "equal",
           colorNA = "white", colorNULL = "gray", title = "Number of\nChildren Under 5",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ri_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -2543,7 +2543,7 @@ headway80thblkgrps %>%
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(headway80thblkgrps) +
-  tm_fill(col = "NewPov", alpha = 0.9, style = "quantile",
+  tm_fill(col = "NewPov", alpha = 0.9, style = "equal",
           colorNA = "white", colorNULL = "gray", title = "Number of\nLow Income Persons",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ri_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -2608,7 +2608,7 @@ headway80thblkgrps %>%
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(headway80thblkgrps) +
-  tm_fill(col = "NewLths", alpha = 0.9, style = "quantile",
+  tm_fill(col = "NewLths", alpha = 0.9, style = "equal",
           colorNA = "white", colorNULL = "gray", title = "Number of\nNo HS Dip",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ri_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -2673,7 +2673,7 @@ headway80thblkgrps %>%
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(headway80thblkgrps) +
-  tm_fill(col = "NewMinority", alpha = 0.9, style = "quantile",
+  tm_fill(col = "NewMinority", alpha = 0.9, style = "equal",
           colorNA = "white", colorNULL = "gray", title = "Number of\nMinority Persons",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ri_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -2739,7 +2739,7 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(headway80thblkgrps) +
   tm_fill(col = "NewEng_limit", alpha = 0.9, style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Number of\nLimited English HH",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nLimited English Households",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ri_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -2935,7 +2935,7 @@ headway80thblkgrps %>%
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(leastWalkableTract, unit = "mi") +
-  tm_fill(col = "disabledOver18E", alpha = 0.9, style = "quantile",
+  tm_fill(col = "disabledOver18E", alpha = 0.9, style = "equal",
           colorNA = "white", colorNULL = "gray", title = "Disabled Persons\nPer Square Kilometer",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
   tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -3109,7 +3109,7 @@ leastWalkable %>%
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(leastWalkable, unit = "mi") +
-  tm_fill(col = "num2povE", alpha = 0.9, style = "quantile",
+  tm_fill(col = "num2povE", alpha = 0.9, style = "equal",
           colorNA = "white", colorNULL = "gray", title = "Low Income Persons\nPer Square Kilometer",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
   tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -3346,7 +3346,7 @@ Note that no low income and minority communities, as defined by the state's envi
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(HiBurdenTract, unit = "mi") +
-  tm_fill(col = "disabledOver18E", alpha = 0.9, style = "quantile",
+  tm_fill(col = "disabledOver18E", alpha = 0.9, style = "equal",
           colorNA = "white", colorNULL = "gray", title = "Disabled Persons\nPer Square Kilometer",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
   tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -3404,7 +3404,7 @@ HiBurdenTract %>%
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(HiBurden, unit = "mi") +
-  tm_fill(col = "under5E", alpha = 0.9, style = "quantile",
+  tm_fill(col = "under5E", alpha = 0.9, style = "equal",
           colorNA = "white", colorNULL = "gray", title = "Children Under 5\nPer Square Kilometer",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
   tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -3462,7 +3462,7 @@ HiBurden %>%
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(HiBurden, unit = "mi") +
-  tm_fill(col = "lthsE", alpha = 0.9, style = "quantile",
+  tm_fill(col = "lthsE", alpha = 0.9, style = "equal",
           colorNA = "white", colorNULL = "gray", title = "Adults without a\nHigh School Diploma\nPer Square Kilometer",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
   tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -3520,7 +3520,7 @@ HiBurden %>%
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(HiBurden, unit = "mi") +
-  tm_fill(col = "lthsE", alpha = 0.9, style = "quantile",
+  tm_fill(col = "lthsE", alpha = 0.9, style = "equal",
           colorNA = "white", colorNULL = "gray", title = "Low Income Persons\nPer Square Kilometer",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
   tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -3578,7 +3578,7 @@ HiBurden %>%
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(HiBurdenTract, unit = "mi") +
-  tm_fill(col = "HHnoCarE", alpha = 0.9, style = "quantile",
+  tm_fill(col = "HHnoCarE", alpha = 0.9, style = "equal",
           colorNA = "white", colorNULL = "gray", title = "Households\nwithout a Car\nPer Square Kilometer",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
   tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -3636,7 +3636,7 @@ HiBurdenTract %>%
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(HiBurden, unit = "mi") +
-  tm_fill(col = "minorityE", alpha = 0.9, style = "quantile",
+  tm_fill(col = "minorityE", alpha = 0.9, style = "equal",
           colorNA = "white", colorNULL = "gray", title = "Minority Persons\nPer Square Kilometer",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
   tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
