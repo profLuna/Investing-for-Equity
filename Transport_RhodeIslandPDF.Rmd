@@ -1063,7 +1063,7 @@ headway80thtracts %>%
 
 ## Walkability
 
-More walkable communities are positively associated with a variety of quality of life and public health benefits. Conversely, less walkable communities are associated with a range of public health challenges, including higher rates of cardiovascular disease and diabetes.[^WalkCardio] The walkability of neighborhoods is increasingly regarded as an important component of healthier and more sustainable communities, particularly with regard to reducing motor vehicle travel.  
+More walkable communities are positively associated with a variety of quality of life and public health benefits. Conversely, less walkable communities are associated with a range of public health challenges, including higher rates of cardiovascular disease and diabetes.[^WalkCardio] The walkability of neighborhoods is increasingly regarded as an important component of healthier and more sustainable communities, particularly with regard to reducing motor vehicle travel and promoting alternative modes of transport that are more affordable, accessible, and less polluting.  
 
 The National Walkability Index is a nationwide geographic data resource produced by the U.S. Environmental Protection Agency that ranks Census Block Groups according to their relative walkability.[^Walkability] Walkability was modeled based on characteristics of the built environment that influence the likelihood of walking being used as a mode of travel. These characteristics of Block Groups include:
 
@@ -1351,6 +1351,294 @@ leastWalkable %>%
 ```
 
 
+
+## Transportation Cost Burden
+
+Transportation is the second-largest expenditure category for American households, approximately 16% of annual expenditures on average between 2015 and 2018.[^Expenditures] Only housing costs (~32%) exceed those of transportation. The high cost of transportation is due in large part to the costs of dependence on private vehicle ownership, including purchase and financing, insurance, maintenance, and fuel costs. Households without reasonable access to other modes of transportation typically experience higher transportation costs.[^CostBurden] Transportation costs can be significant economic burdens for moderate and lower income households and for communities where destinations are distant or limited. For many working-class and rural households, transportation costs exceed housing costs. 
+
+The Location Affordability Index (LAI) is a nationwide geographic data resource developed by the U.S. Department of Housing and Urban Development (HUD) in collaboration with the U.S. Department of Transportation under the federal Partnership for Sustainable Communities.[^LAIabout] The LAI was developed as a way of integrating both housing and transportation costs into estimates of the affordability of specific neighborhoods and cities. The LAI provides estimated total expenses from transportation, whether transit or motor vehicle, as well as transportation cost as a percentage of household income, for eight different household types — which vary by household income, size, and number of commuters — at the Census Tract level. For the purposes of this analysis, transportation costs as a percentage of income for moderate-income households (households with one commuter making 80% or less of area median household income) was used as a proxy to represent transportation cost burden for all areas. LAI data were also downscaled to the Block Group level for the purpose of demographic analyses and comparisons (see Appendix B Data and Methodology). 
+
+```{r TcostBurden, include=FALSE}
+# Read in Location Affordability Index data. Using Version 3 based on ACS 2012-2016 data at Tract level. Downloaded from https://hudgis-hud.opendata.arcgis.com/datasets/location-affordability-index-v-3?selectedAttribute=avg_hh_size_renters
+lai_ri <- st_read("DATA/transport/Location_Affordability_Index_v.3", "Location_Affordability_Index_v.3") %>% 
+  filter(STUSAB == "RI") %>% 
+  st_make_valid() %>% 
+  st_transform(., crs = 2840)
+
+# Downscale LAI to Block Group by assigning tract value to all overlapping block groups (i.e. block groups with same tract GEOID prefix)
+lai_ri_blkgrp <- ri_blkgrps_sf %>% 
+  mutate(GEOIDT = str_sub(GEOID,1,11)) %>% 
+  left_join(., as.data.frame(lai_ri),by=c("GEOIDT"="GEOID"))
+
+# Join LAI to tracts
+lai_ri_tract <- ri_tracts_sf %>% 
+  left_join(., as.data.frame(lai_ri),by="GEOID")
+
+# create summarized df of population weighted average transportation cost burden by tract pop
+lai_ri_tract_df <- lai_ri_tract %>% 
+  as.data.frame() %>% 
+  transmute(Disabled = disabledOver18E,
+            `No Car HH` = HHnoCarE,
+            hh7_t) %>% 
+  gather(key = Group, value = Pop, Disabled:`No Car HH`) %>% 
+  group_by(Group) %>% 
+  summarize(wTBurden = weighted.mean(hh7_t, Pop, na.rm = TRUE))
+
+# Population-weighted average transportation cost burden for populations of concern
+lai_ri_df <- lai_ri_blkgrp %>% 
+  as.data.frame() %>% 
+  mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>% 
+  mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>% 
+  mutate(RI_MINORITIES = if_else(RI_MINORITY == "M",totalpopE,0)) %>% 
+  mutate(RI_MINORITIES = replace_na(RI_MINORITIES,0)) %>%
+  transmute(`Total Pop` = totalpopE,
+            Minority = minorityE,
+            `Low Income` = num2povE,
+            `Under 5` = under5E,
+            `Under 18` = under18E,
+            `Over 64` = over64E,
+            `Limited English HH` = eng_limitE,
+            `No HS Dip` = lthsE,
+            `RI Low Income` = RI_LOWINC,
+            `RI Minority` = RI_MINORITIES,
+            hh7_t) %>% 
+  gather(key = Group, value = Pop, `Total Pop`:`RI Minority`) %>% 
+  group_by(Group) %>% 
+  summarize(wTBurden = weighted.mean(hh7_t, Pop, na.rm = TRUE)) %>% 
+  rbind(., lai_ri_tract_df)
+```
+
+
+Figure \@ref(fig:mapLAI) below shows transportation cost burden (i.e., transportation cost as a percentage of household income) by Census Tract across Rhode Island. Transportation cost burden varies across the state. It is lowest in and around the state's major urban centers, such as Providence, Pawtucket, Woonsocket, and Newport, and highest in most of the rest of the state. In Little Compton, transportation as a percentage of income exceeds housing. 
+
+```{r mapLAI, fig.align = "center", fig.cap="Transpotation cost burden for Census Tracts across Rhode Island."}
+# isolate places where transportation cost as a percentage of income exceeds housing as a percentage of income
+lai_ToverH <- lai_ri %>% 
+  filter(hh7_t > hh7_h)
+
+m <- tm_shape(lai_ri) +
+  tm_fill(col = "hh7_t", alpha = 0.8, style = "quantile", title = "Transportation as\nPercent of Income", showNA = FALSE,
+          legend.format = list(fun = function(x) formatC(x, digits = 1, format = "f"))) +
+  tm_shape(lai_ToverH) + tm_dots(col = "gray", shape = 8, size = 0.5) +
+  tm_shape(ri_towns_sf, unit = "mi") + 
+  tm_borders(col = "gray", lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I195roadSegment) +
+  tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(ri_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_add_legend(type = "symbol",labels = "Transport burden > housing burden", shape = 8, size = 0.5, col = "gray") +
+  tm_layout(title = "Transportation\nCost Burden", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ri_tburden.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ri_tburden.png")
+````
+
+Transportation cost burden varies for different population groups across the state. Figure \@ref(fig:loliLAI) below compares population-weighted average transportation cost burden for different populations. Most groups live in communities with above average walkability index scores that are also at or above that of the general population. However, persons over age 64 tend to live in communities with walkability scores below the state average. 
+
+```{r loliLAI, fig.align = "center", fig.cap="Population-weighted average transportation cost burden for groups across Rhode Island."}
+# Create lollipop graph of pop-weighted average LAI
+lai_ri_df %>% 
+  ggplot(aes(x = reorder(Group,wTBurden), y = wTBurden)) +
+  geom_segment(aes(x = reorder(Group,wTBurden), 
+                   xend = reorder(Group,wTBurden),
+                   y = pull(lai_ri_df[8,2]), yend = wTBurden), 
+               color = "coral4") +
+  geom_point(color = "coral3", size = 4, alpha = 0.8) +
+  coord_flip() + xlab("") + ylab("Transportation as Percent of Income") + ggtitle("Population-Weighted Transportation Cost Burden") + theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
+  geom_text(aes(x = Group, y = wTBurden + 0.2 * sign(wTBurden), 
+                label = round(wTBurden,1)), 
+            hjust = 0.6, vjust=-0.8, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = pull(lai_ri_df[8,2]), linetype = "dashed") +
+  geom_text(aes(x = "Under 18", y = 24.5, label = "Above state\naverage"),
+            color = "gray48") +
+  geom_text(aes(x = "Under 18", y = 21.5, label = "Below state\naverage"),
+            color = "gray48") +
+  expand_limits(y = c(18,25))
+```
+```{r HiBurden, include=FALSE}
+# Isolate highest transport burden block groups and tracts and add area variable
+HiBurden <- lai_ri_blkgrp %>% 
+  filter(percent_rank(hh7_t) > 0.8) %>% 
+  mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>% 
+  mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>% 
+  mutate(RI_MINORITIES = if_else(RI_MINORITY == "M",totalpopE,0)) %>% 
+  mutate(RI_MINORITIES = replace_na(RI_MINORITIES,0)) %>%
+  mutate(SqKm = bg_area_m2/10^6)
+
+HiBurdenTract <- lai_ri_tract %>% 
+  filter(percent_rank(hh7_t) > 0.8) %>% 
+  mutate(SqKm = as.numeric(st_area(.))/10^6)
+
+HiBurden1 <- HiBurden %>%
+  st_centroid(.) %>% 
+  st_intersection(ri_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Over 64` = sum(over64E,na.rm = TRUE),
+            `Pct of Over 64` = round(sum(over64E)/max(TotalOver64)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
+  arrange(desc(`Over 64`))
+
+HiBurden2 <- HiBurden %>%
+  st_centroid(.) %>% 
+  st_intersection(ri_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Under 18` = sum(under18E,na.rm = TRUE),
+            `Pct of Under 18` = round(sum(under18E)/max(TotalUnder18)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
+  arrange(desc(`Under 18`))
+```
+The population-weighted average transportation cost burden values provide a glimpse of average transportation cost burden across the state for different population groups. However, transportation cost burden also varies for specific communities. Indeed, it is important to consider populations of concern that reside in communities with a high transportation cost burden. Figures \@ref(fig:mapHiBurdenO64) and \@ref(fig:mapHiBurdenUnder18) below highlight Census Block Groups across Rhode Island where the transportation cost burden is in the highest quintile (i.e., 80th percentile) and the numbers of persons over 64 or under 18 that live there. Tables \@ref(tab:tabHiBurdenO64) and \@ref(tab:tabHiBurdenUnder18) show breakdowns by municipality. For example, Table \@ref(tab:tabHiBurdenO64) shows that `r formatC(as.numeric(HiBurden1[1,3]),big.mark=",")` people over 64 across `r HiBurden1[1,2]` Block Groups in `r HiBurden1[1,1]` resided in areas with the highest transportation cost burden. These people represented `r HiBurden1[1,4]` of people over 64 in `r HiBurden1[1,1]`. Similarly, Table \@ref(tab:tabHiBurdenUnder18) shows that `r formatC(as.numeric(HiBurden2[1,3]),big.mark=",")` people under 18 across `r HiBurden2[1,2]` Block Groups in `r HiBurden2[1,1]` resided in areas with the highest transportation cost burden. These people represented `r HiBurden2[1,4]` of people under 18 in `r HiBurden2[1,1]`.
+Maps and tables of other populations of concern in areas with the highest transportation cost burden can be found in Appendix B.
+
+```{r mapHiBurdenO64, fig.align = "center", fig.cap="Persons over 64 per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(HiBurden, unit = "mi") +
+  tm_fill(col = "over64E", alpha = 0.9, style = "quantile",
+          colorNA = "white", colorNULL = "gray", title = "Persons Over 64\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I195roadSegment) +
+  tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(ri_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Persons Over 64\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ri_HiBurdenO64.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ri_HiBurdenO64.png")
+```
+
+```{r tabHiBurdenO64, fig.align = "center", fig.cap="Persons over 64 by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+HiBurden %>%
+  st_centroid(.) %>% 
+  st_intersection(ri_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Over 64` = sum(over64E,na.rm = TRUE),
+            `Pct of Over 64` = round(sum(over64E)/max(TotalOver64)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
+  arrange(desc(`Over 64`)) %>% 
+  filter(`Over 64` > 0) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Persons Over 64 in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Over 64 in Block Groups","Pct of Over 64 in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHiBurdenU18, fig.align = "center", fig.cap="Persons under 18 per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(HiBurden, unit = "mi") +
+  tm_fill(col = "under18E", alpha = 0.9, style = "quantile",
+          colorNA = "white", colorNULL = "gray", title = "Persons Under 18\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I195roadSegment) +
+  tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(ri_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Persons Under 18\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ri_HiBurdenU18.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ri_HiBurdenU18.png")
+```
+
+```{r tabHiBurdenU18, fig.align = "center", fig.cap="Persons under 18 by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+HiBurden %>%
+  st_centroid(.) %>% 
+  st_intersection(ri_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Under 18` = sum(under18E,na.rm = TRUE),
+            `Pct of Under 18` = round(sum(under18E)/max(TotalUnder18)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
+  arrange(desc(`Under 18`)) %>% 
+  filter(`Under 18` > 0) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Persons Under 18 in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Under 18 in Block Groups","Pct of Under 18 in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+
+
 [^Dasymetric]: Areal apportionment of populations for mapping and analysis, also known as dasymetric mapping, is commonly used method to improve risk assessment of flooding. See for example Yi Qiang. 2019. "Disparities of population exposed to flood hazards in the United States." *Journal of Environmental Management* 232:295-304; Yi Qiang, Nina S. N. Lam, Heng Cai, and Lei Zou. 2017. "Changes in Exposure to Flood Hazards in the United States." *Annals of the American Association of Geographers* 107(6):1332-1350. https://doi.org/10.1080/24694452.2017.1320214
 
 [^NLCD2016]: See MRLC NLCD 2016 Land Cover (CONUS). https://www.mrlc.gov/data/nlcd-2016-land-cover-conus.
@@ -1369,16 +1657,23 @@ leastWalkable %>%
 
 [^Walkability]: See US EPA National Walkability Index. https://www.epa.gov/smartgrowth/smart-location-mapping#walkability; Also see Kathleen B. Watson, Geoffrey P. Whitfield, John V. Thomas, David Berrigan, Janet E. Fulton, and Susan A. Carlson. 2020. "Associations between the National Walkability Index and walking among US Adults — National Health Interview Survey, 2015." *Preventive Medicine* 137. https://doi.org/10.1016/j.ypmed.2020.106122.
 
+[^Expenditures]: See U.S. Bureau of Labor Statistics. 2020. "Consumer Expenditures in 2018." BLS Reports May 2020.  https://www.bls.gov/opub/reports/consumer-expenditures/2018/home.htm; see also Thomas W. Sanchez, Carrie Makarewicz, Peter Haas, and Casey J. Dawkins. 2006. "Transportation costs, inequities, and tradeoffs." https://www.researchgate.net/profile/Thomas_Sanchez/publication/278017364_Transportation_Costs_Inequities_and_Tradeoffs/links/5578577e08aeb6d8c01f1382/Transportation-Costs-Inequities-and-Tradeoffs.pdf
+
+[^CostBurden]: See Thomas W. Sanchez, Carrie Makarewicz, Peter Haas, and Casey J. Dawkins. 2006. "Transportation costs, inequities, and tradeoffs." https://www.researchgate.net/profile/Thomas_Sanchez/publication/278017364_Transportation_Costs_Inequities_and_Tradeoffs/links/5578577e08aeb6d8c01f1382/Transportation-Costs-Inequities-and-Tradeoffs.pdf
+
+[^LAIabout]: See U.S. Department of Housing and Urban Development - HUD Exchange. "About the Location Affordability Index."  https://www.hudexchange.info/programs/location-affordability-index/about/
+
 
 \pagebreak
 # Appendix A: Data and Methodology {-}
 
-The analyses presented here are based on data from five sources:
+The analyses presented here are based on data from six sources:
 
 * RIPTA transit network
 * MRLC National Land Cover Database (NLCD)
 * General Transit Feed Specification (GTFS)
 * US EPA Walkability Index
+* US Department of Housing and Urban Development Location Affordability Index
 * American Community Survey 5-year Estimates
   + Population demographics
 
@@ -1421,6 +1716,38 @@ The General Transit Feed Specification (GTFS) is a a common format for public tr
 GTFS data for the Rhode Island Public Transit Authority (RIPTA) was acquired from RIPTA GTFS - OpenMobilityData - TransitFeeds at https://transitfeeds.com/p/rhode-island-public-transit-authority/363. GTFS data was processed using the `tidytransit` package in R. Schedules for all routes running Monday through Friday, 6am to 9pm, were extracted. Headways for each transit stop on these routes (`r formatC(nrow(ri_transit_stops_sf),big.mark=",")` stops in total) was then calculated based on route schedules, and these headways were also averaged for each route.
 
 To calculate headways experienced by different population groups, transit stop points with calculated headways were intersected with the developed portions of Census Block Groups and that were within 400m of these stops. Headways for these intersecting stops were then aggregated to provide mean headways for their intersecting Block Groups. Populations within those intersecting Block Groups were assumed to be subject to those mean headways. 
+
+
+## US EPA Walkability Index {-}
+
+The National Walkability Index is a nationwide geographic data resource produced by the U.S. Environmental Protection Agency that ranks Census Block Groups according to their relative walkability.[^Walkability] Walkability was modeled based on characteristics of the built environment that influence the likelihood of walking being used as a mode of travel. These characteristics of Block Groups include:
+
+* mix of employment types (greater mix = more walkable)
+* amount or density of occupied housing (higher density = more walkable)
+* street intersection density (higher density = more walkable)
+* proportion of workers who carpool (more carpooling = more walkable)
+
+The Walkability Index was downloaded as a shapefile from the US EPA's Smart Location Mapping website at https://www.epa.gov/smartgrowth/smart-location-mapping#walkability. To compare walkability index values with disabled populations and households without a car, Block Group walkability index values were aggregated to the overlying Census Tract as simple averages. Population-weighted averages for the walkability index were also computed for Block Groups and Tracts to compare population groups. 
+
+
+## US Department of Housing and Urban Development Location Affordability Index {-}
+
+The Location Affordability Index (LAI) is a nationwide geographic data resource developed by the U.S. Department of Housing and Urban Development (HUD) in collaboration with the U.S. Department of Transportation under the federal Partnership for Sustainable Communities.[^LAIabout] The LAI was developed as a way of integrating both housing and transportation costs into estimates of the affordability of specific neighborhoods and cities. The LAI provides estimated total expenses from transportation, whether transit or motor vehicle, as well as transportation cost as a percentage of household income, for eight different household types — which vary by household income, size, and number of commuters — at the Census Tract level. For this analysis Location Affordability Index Model Version 3 (LAIM Version 3 or LAIM3), released in March 2019, was used. LAIM Version 3 estimates housing and transportation costs for eight different household profiles, to focus on the impact of the built environment on these costs by holding demographic characteristics constant. These household profiles are described in Table \@ref(tab:tabLAIprofiles). The LAI can be interpreted as the percentage of the specified household profile’s income that would be needed to cover housing, transportation, or combined costs if that household type were to live in the specified Census Tract. So, for example, a household profile (such as single-parent family) with a housing LAI of 40% would be expected to pay 40% of their income for housing if they lived in the specified location. Details on how housing and transportation costs were modeled are descrbed in the Location Affordability Index Version 3 Data and Methodology document. 
+
+```{r tabLAIprofiles}
+data.frame(hhProfile = c("Median-Income Family", "Very Low-Income Individual", "Working Individual", "Single Professional", "Retired Couple", "Single-Parent Family", "Moderate-Income Family", "Dual-Professional Family"),
+hhhIncome = c("MHHI", "National poverty line", "50% of MHHI", "135% of MHHI", "80% of MHHI", "50% of MHHI", "80% of MHHI", "150% of MHHI"),
+hhSize = c(4,1,1,1,2,3,3,4),
+Commuters = c(2,1,1,1,0,1,1,2)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T, 
+                    caption = "Location Affordability Index Household Profiles", 
+                    align = "l",
+                    col.names = c("Household Profile","Income","Household Size","Commuters")) %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped")) %>% 
+  kableExtra::footnote(., general = "MHHI = Median household income for a given area (CBSA or County)")
+```
+
+For the purposes of this analysis, transportation costs as a percentage of income for moderate-income households (three-member households with one commuter making 80% or less of area median household income) was used as a proxy to represent transportation cost burden for all areas. LAI data were also downscaled to the Block Group level for the purpose of demographic analyses and comparisons. Census Block Groups belonging to a given Census Tract were assigned the same value as the overlying Tract. 
 
 
 ## American Community Survey 5-year Estimates {-}
@@ -3011,6 +3338,481 @@ leastWalkable %>%
 ```
 
 Note that no low income and minority communities, as defined by the state's environmental justice policy, were classified as least walkable communities. 
+
+
+## Highest Transportation Cost Burden and Populations of Concern {-}
+
+```{r mapHiBurdenDisabled, fig.align = "center", fig.cap="Disabled Persons per square kilometer in Census Tracts with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(HiBurdenTract, unit = "mi") +
+  tm_fill(col = "disabledOver18E", alpha = 0.9, style = "quantile",
+          colorNA = "white", colorNULL = "gray", title = "Disabled Persons\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I195roadSegment) +
+  tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(ri_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Disabled Persons\nin Highest\nTransportation\nCost Burden\nCensus Tracts", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ri_HiBurdenDisabled.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ri_HiBurdenDisabled.png")
+```
+
+```{r tabHiBurdenDisabled, fig.align = "center", fig.cap="Disabled persons by municipality in Census Tracts with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+HiBurdenTract %>%
+  st_centroid(.) %>% 
+  st_intersection(ri_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Tracts` = n(),
+            Disabled = sum(disabledOver18E,na.rm = TRUE),
+            `Pct of Disabled` = round(sum(disabledOver18E)/max(TotalDisabled)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Pct of Disabled` = paste0(`Pct of Disabled`,"%")) %>% 
+  arrange(desc(Disabled)) %>% 
+  filter(Disabled > 0) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Disabled Persons in Highest Transportation Cost Burden Census Tracts", align = "r", col.names = c(names(.)[1:2],"Number of Disabled in Census Tracts","Pct of Disabled in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHiBurdenU5, fig.align = "center", fig.cap="Children under 5 per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(HiBurden, unit = "mi") +
+  tm_fill(col = "under5E", alpha = 0.9, style = "quantile",
+          colorNA = "white", colorNULL = "gray", title = "Children Under 5\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I195roadSegment) +
+  tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(ri_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Children Under 5\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ri_HiBurdenU5.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ri_HiBurdenU5.png")
+```
+
+```{r tabHiBurdenU5, fig.align = "center", fig.cap="Children under 5 by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+HiBurden %>%
+  st_centroid(.) %>% 
+  st_intersection(ri_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Under 5` = sum(under5E,na.rm = TRUE),
+            `Pct of Under 5` = round(sum(under5E)/max(TotalUnder5)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Pct of Under 5` = paste0(`Pct of Under 5`,"%")) %>% 
+  arrange(desc(`Under 5`)) %>% 
+  filter(`Under 5` > 0) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Persons Under 5 in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Under 5 in Block Groups","Pct of Under 5 in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHiBurdenLTHS, fig.align = "center", fig.cap="Adults wihtout a high school diploma per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(HiBurden, unit = "mi") +
+  tm_fill(col = "lthsE", alpha = 0.9, style = "quantile",
+          colorNA = "white", colorNULL = "gray", title = "Adults without a\nHigh School Diploma\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I195roadSegment) +
+  tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(ri_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Adults without a\nHigh School\nDiploma\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ri_HiBurdenLTHS.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ri_HiBurdenLTHS.png")
+```
+
+```{r tabHiBurdenLTHS, fig.align = "center", fig.cap="Adults without a high school diploma by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+HiBurden %>%
+  st_centroid(.) %>% 
+  st_intersection(ri_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `No HS Dip` = sum(lthsE,na.rm = TRUE),
+            `Pct of No HS Dip` = round(sum(lthsE)/max(TotalNoHS)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Pct of No HS Dip` = paste0(`Pct of No HS Dip`,"%")) %>% 
+  arrange(desc(`No HS Dip`)) %>% 
+  filter(`No HS Dip` > 0) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Adults without a High Schol Diploma in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of No HS Dip in Block Groups","Pct of No HS Dip in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHiBurdenINC, fig.align = "center", fig.cap="Low income persons per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(HiBurden, unit = "mi") +
+  tm_fill(col = "lthsE", alpha = 0.9, style = "quantile",
+          colorNA = "white", colorNULL = "gray", title = "Low Income Persons\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I195roadSegment) +
+  tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(ri_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Low Income\nPersons\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ri_HiBurdenINC.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ri_HiBurdenINC.png")
+```
+
+```{r tabHiBurdenINC, fig.align = "center", fig.cap="Low income persons by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+HiBurden %>%
+  st_centroid(.) %>% 
+  st_intersection(ri_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Low Income` = sum(num2povE,na.rm = TRUE),
+            `Pct of Low Income` = round(sum(num2povE)/max(TotalLowInc)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Pct of Low Income` = paste0(`Pct of Low Income`,"%")) %>% 
+  arrange(desc(`Low Income`)) %>% 
+  filter(`Low Income` > 0) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Low Income Persons in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Low Income in Block Groups","Pct of Low Income in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHiBurdenNoCarHH, fig.align = "center", fig.cap="Households without a car per square kilometer in Census Tracts with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(HiBurdenTract, unit = "mi") +
+  tm_fill(col = "HHnoCarE", alpha = 0.9, style = "quantile",
+          colorNA = "white", colorNULL = "gray", title = "Households\nwithout a Car\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I195roadSegment) +
+  tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(ri_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Households\nwithout a Car\nin Highest\nTransportation\nCost Burden\nCensus Tracts", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ri_HiBurdenNoCarHH.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ri_HiBurdenNoCarHH.png")
+```
+
+```{r tabHiBurdenNoCarHH, fig.align = "center", fig.cap="Households without a car by municipality in Census Tracts with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+HiBurdenTract %>%
+  st_centroid(.) %>% 
+  st_intersection(ri_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Tracts` = n(),
+            `No Car Households` = sum(HHnoCarE,na.rm = TRUE),
+            `Pct of No Car Households` = round(sum(HHnoCarE)/max(TotalNoCar)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Pct of No Car Households` = paste0(`Pct of No Car Households`,"%")) %>% 
+  arrange(desc(`No Car Households`)) %>% 
+  filter(`No Car Households` > 0) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Households without a Car in Highest Transportation Cost Burden Census Tracts", align = "r", col.names = c(names(.)[1:2],"Number of No Car Households in Census Tracts","Pct of No Car Households in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHiBurdenMIN, fig.align = "center", fig.cap="Minority persons per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(HiBurden, unit = "mi") +
+  tm_fill(col = "minorityE", alpha = 0.9, style = "quantile",
+          colorNA = "white", colorNULL = "gray", title = "Minority Persons\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I195roadSegment) +
+  tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(ri_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Minority\nPersons\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ri_HiBurdenMIN.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ri_HiBurdenMIN.png")
+```
+
+```{r tabHiBurdenMIN, fig.align = "center", fig.cap="Minority persons by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+HiBurden %>%
+  st_centroid(.) %>% 
+  st_intersection(ri_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            Minority = sum(minorityE,na.rm = TRUE),
+            `Pct of Minority` = round(sum(minorityE)/max(TotalMin)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Pct of Minority` = paste0(`Pct of Minority`,"%")) %>% 
+  arrange(desc(Minority)) %>% 
+  filter(`Minority` > 0) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Minority Persons in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHiBurdenLEH, fig.align = "center", fig.cap="Limited English speaking households per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(HiBurden, unit = "mi") +
+  tm_fill(col = "eng_limitE", alpha = 0.9, style = "equal",
+          colorNA = "white", colorNULL = "gray", title = "Limited English\nSpeaking Households\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I195roadSegment) +
+  tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(ri_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Limited English\nSpeaking\nHouseholds\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ri_HiBurdenLEH.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ri_HiBurdenLEH.png")
+```
+
+```{r tabHiBurdenLEH, fig.align = "center", fig.cap="Limited English speaking households by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+HiBurden %>%
+  st_centroid(.) %>% 
+  st_intersection(ri_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Limited English HH` = sum(eng_limitE,na.rm = TRUE),
+            `Pct of Limited English HH` = round(sum(eng_limitE)/max(TotalNoHS)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Pct of Limited English HH` = if_else(`Pct of Limited English HH` > 100, 100,`Pct of Limited English HH`)) %>% 
+  mutate(`Pct of Limited English HH` = paste0(`Pct of Limited English HH`,"%")) %>% 
+  arrange(desc(`Limited English HH`)) %>% 
+  filter(`Limited English HH` > 0) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Limited English Speaking Households in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Limited English HH in Block Groups","Pct of Limited English HH in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHiBurdenRIINC, fig.align = "center", fig.cap="Low income persons, as defined by state environmental justice policy, per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(HiBurden, unit = "mi") +
+  tm_fill(col = "RI_LOWINC", alpha = 0.9, style = "equal",
+          colorNA = "white", colorNULL = "gray", title = "RI Low Income\nPersons\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ri_highways) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I195roadSegment) +
+  tm_symbols(shape = I195, border.lwd = NA, size = 0.1) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(ri_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+               position = c(0.6,0.005)) +
+  tm_layout(title = "RI Low Income\nPersons\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ri_HiBurdenRIINC.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ri_HiBurdenRIINC.png")
+```
+
+```{r tabHiBurdenRIINC, fig.align = "center", fig.cap="Low income persons, as defined by state environmental justice policy, by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+HiBurden %>%
+  st_centroid(.) %>% 
+  st_intersection(ri_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `RI Low Income` = sum(RI_LOWINC,na.rm = TRUE),
+            `Pct of RI Low Income` = round(sum(RI_LOWINC)/max(TotalRI_LOWINC)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Pct of RI Low Income` = if_else(`Pct of RI Low Income` > 100, 100,`Pct of RI Low Income`)) %>% 
+  mutate(`Pct of RI Low Income` = paste0(`Pct of RI Low Income`,"%")) %>% 
+  arrange(desc(`RI Low Income`)) %>% 
+  filter(`RI Low Income` > 0) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "RI Low Income in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of RI Low Income in Block Groups","Pct of RI Low Income in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+Note that no minority communities, as defined by the state's environmental justice policy, were classified as highest transportation cost burden communities. 
+
+
+
+
 
 
 
