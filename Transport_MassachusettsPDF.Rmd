@@ -30,7 +30,7 @@ library(lwgeom)
 
 \pagebreak
 
-# Analysis of adequacy of public transit and walkability in Massachusetts
+# Analysis of adequacy of public transit, walkability, and transportation cost burden in Massachusetts
 
 This is an analysis of access to public transit and walkability in Massachusetts.
 
@@ -42,7 +42,7 @@ rm(ne_blkgrp_sf90)
 
 ### Read in MA transit data from MassGIS and MassDOT and merge. See https://docs.digital.mass.gov/dataset/massgis-data-mbta-bus-routes-and-stops
 # read in MBTA bus routes
-mbta_busRoutes_sf <- st_read(dsn = "DATA/transport/mbtabus",
+mbta_busRoutes_sf <- st_read(dsn = "DATA/transport/MA/mbtabus",
                            layer = "MBTABUSROUTES_ARC") %>% 
   transmute(ROUTE = MBTA_ROUTE,
             ROUTE_DESC = ROUTE_DESC,
@@ -50,32 +50,32 @@ mbta_busRoutes_sf <- st_read(dsn = "DATA/transport/mbtabus",
             TYPE = "Bus")
 
 # read in MBTA bus stops
-mbta_busStops_sf <- st_read(dsn = "DATA/transport/mbtabus",
+mbta_busStops_sf <- st_read(dsn = "DATA/transport/MA/mbtabus",
                           layer = "MBTABUSSTOPS_PT") %>% 
   transmute(STOP_NAME = STOP_NAME,
             AGENCY = "MBTA",
             TYPE = "Bus")
 
 # read in MBTA rapid transit routes
-mbta_rtRoutes_sf <- st_read(dsn = "DATA/transport/mbta_rapid_transit",
+mbta_rtRoutes_sf <- st_read(dsn = "DATA/transport/MA/mbta_rapid_transit",
                            layer = "MBTA_ARC")
 
 # read in MBTA rapid transit stops
-mbta_rtStops_sf <- st_read(dsn = "DATA/transport/mbta_rapid_transit",
+mbta_rtStops_sf <- st_read(dsn = "DATA/transport/MA/mbta_rapid_transit",
                            layer = "MBTA_NODE") %>% 
   transmute(STOP_NAME = STATION,
             AGENCY = LINE,
             TYPE = "Rapid Transit") # standardize to rbind with other stops
 
 # read in MBTA trains and commuter rail routes
-mbta_trainRoutes_sf <- st_read("DATA/transport/mbta_trains",
+mbta_trainRoutes_sf <- st_read("DATA/transport/MA/mbta_trains",
                              layer = "TRAINS_ARC") %>% 
   filter(COMMRAIL == "Y") %>%  # limit to commuter rail
   group_by(LINE_BRNCH) %>% 
   summarize()
 
 # read in MBTA trains and commuter rail stops
-mbta_trainStops_sf <- st_read("DATA/transport/mbta_trains",
+mbta_trainStops_sf <- st_read("DATA/transport/MA/mbta_trains",
                              layer = "TRAINS_NODE") %>% 
   filter(C_RAILSTAT == "Y") %>%  # limit to commuter rail
   transmute(STOP_NAME = STATION,
@@ -83,7 +83,7 @@ mbta_trainStops_sf <- st_read("DATA/transport/mbta_trains",
             TYPE = "Commuter Rail") # standardize to rbind with other stops
 
 # read in MA regional transit authorities beyond MBTA
-ma_busRoutes_sf <- st_read("DATA/transport/MA_Regional_Transit_Authorities_Routes-shp", layer = "Regional_Transit_Authorities") %>% 
+ma_busRoutes_sf <- st_read("DATA/transport/MA/MA_Regional_Transit_Authorities_Routes-shp", layer = "Regional_Transit_Authorities") %>% 
   st_transform(., crs = st_crs(mbta_busRoutes_sf)) %>% 
   transmute(ROUTE = route_shor,
             ROUTE_DESC = route_long,
@@ -91,26 +91,26 @@ ma_busRoutes_sf <- st_read("DATA/transport/MA_Regional_Transit_Authorities_Route
             TYPE = route_ty_1)
 
 # read in MA regional transit authority bus stops beyond MBTA
-ma_busStops_sf <- st_read("DATA/transport/MA_Regional_Transit_Authorities_Stops-shp", layer = "Regional_Transit_Authorities") %>% 
+ma_busStops_sf <- st_read("DATA/transport/MA/MA_Regional_Transit_Authorities_Stops-shp", layer = "Regional_Transit_Authorities") %>% 
   st_transform(., crs = st_crs(mbta_busRoutes_sf)) %>% 
   transmute(STOP_NAME = stop_name,
             AGENCY = Agency,
             TYPE = "Bus")
 
 # # read in MA ferry routes
-# ma_ferryRoutes_sf <- st_read("DATA/transport/MA_Ferry_Routes-shp",
+# ma_ferryRoutes_sf <- st_read("DATA/transport/MA/MA_Ferry_Routes-shp",
 #                              layer = "Ferry_Routes") %>% 
 #   filter(TYPE == "pass" & SERVICE == "year round") %>% 
 #   st_transform(., crs = st_crs(mbta_busRoutes_sf))
 # 
 # # read in MA seaports
-# ma_seaports_sf <- st_read("DATA/transport/MA_Seaports-shp", 
+# ma_seaports_sf <- st_read("DATA/transport/MA/MA_Seaports-shp", 
 #                           layer = "Seaports") %>% 
 #   filter(PASSENGER == "Yes" & SERVICE == "year round") %>% 
 #   st_transform(., crs = st_crs(mbta_busRoutes_sf))
 
 # read in MA park-in-ride lots and limit to those that are operational and serving either bus or rail
-ma_parknride_sf <- st_read(dsn = "DATA/transport/MA_Park_and_Ride_Lots-shp",
+ma_parknride_sf <- st_read(dsn = "DATA/transport/MA/MA_Park_and_Ride_Lots-shp",
                            layer = "Park_and_Ride_Lots") %>% 
   filter(STATUS == "Operational" & 
            (BUS_SERVIC != "N" | RAIL_SERVI != "N")) %>% 
@@ -822,7 +822,7 @@ ma_tracts_sf_noTransit_simple <- ma_tracts_sf_noTransit %>%
 This analysis seeks to identify communities that are underserved by access to public transit. Access to transit is measured in terms of distance to transit boarding stops and in terms of frequency of service. 
 
 Massachusetts is served by `r length(unique(ma_busRoutesAll_sf$AGENCY))`
-regional public transit agencies, as well as a number of private operators. These transit services include buses, rapid transit (i.e., subway or light rail), commuter rail, and park-in-ride lots served by public and private buses or shuttles. Amtrak train service passes through Massachusetts as well, but it is only considered with respect to commuter rail service. Ferry services, water taxis, and other seasonal transportation services are not considered in this analysis. Figure \@ref(fig:transitMap) shows `r formatC(nrow(ma_busRoutesAll_sf),big.mark = ",")` fixed public transit routes across the state along with population density.
+regional public transit agencies, as well as a number of private operators. These transit services include buses, rapid transit (i.e., subway or light rail), commuter rail, and park-in-ride lots served by public and private buses or shuttles. Amtrak train service passes through Massachusetts as well, but it is not included in this analysis. Ferry services, water taxis, and other seasonal transportation services are not considered in this analysis. The analysis below evaluates access to bus, rapid transit, and commuter rail separately, as well as access to any mode of transit. Figure \@ref(fig:transitMap) shows `r formatC(nrow(ma_busRoutesAll_sf),big.mark = ",")` fixed public transit routes across the state along with population density.
 
 ```{r transitMap, fig.align = "center", fig.cap="Transit service and population density in Massachusetts."}
 # bbox_new <- st_bbox(ma_blkgrps_sf) # current bounding box
@@ -891,10 +891,10 @@ regional public transit agencies, as well as a number of private operators. Thes
 #             legend.title.size = 0.8,
 #             legend.outside.position = c("right", "top"))
 # 
-# tmap_save(m, "DATA/transport/ma_transit.png",
+# tmap_save(m, "DATA/transport/MA/figures/ma_transit.png",
 #           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_transit.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_transit.png")
 ```
 
 Approximately `r paste0(round(ma_transitAccessPops_df %>% filter(Group == "Total Pop") %>% dplyr::select(PctBus) %>% pull(),1),"%")` of the state population lives within reasonable walking distance of a bus stop (defined as approximately 400 meters or 1/4 mile). 
@@ -1013,8 +1013,8 @@ ma_transitAccessPops_df %>%
   kableExtra::kable(longtable = T, booktabs = T, 
                     format.args = list(big.mark = ','), align = "r",
                     caption = "Populations with Access to Transit", 
-                    col.names = c("Group","MA Pop","Bus","Rapid Transit","Commuter Rail*","Any Transit","Bus","Rapid Transit","Commuter Rail*","Any Transit")) %>% 
-  kableExtra::column_spec(3:10, width = "2cm") %>%
+                    col.names = c("Group","MA Pop","Bus","Rapid Transit","Comm Rail*","Any Transit","Bus","Rapid Transit","Comm Rail*","Any Transit")) %>% 
+  kableExtra::column_spec(3:10, width = "1.5cm") %>%
   kableExtra::add_header_above(c(" " = 2, "Total Pop with Access" = 4, "Pct Pop with Access" = 4)) %>% 
   kableExtra::footnote(general = "Access is 1/4 mile (400m) from bus stop, 1/2 mile (800m) from rapid transit stop, or 3 miles (4800m) from commuter rail stop.", symbol = "Commuter Rail includes Park-in-Ride lots") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
@@ -1175,10 +1175,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_busO64access.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_busO64access.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_busO64access.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_busO64access.png")
 ```
 
 ```{r tabBusAccessO64, fig.align = "center", fig.cap="Persons over 64 in Census Block Groups one or more miles from the nearest bus stop."}
@@ -1192,12 +1192,14 @@ ma_blkgrps_sf_noBus %>%
             `Over 64` = sum(NewOver64,na.rm = TRUE),
             `Pct of Over 64` = round(sum(NewOver64)/max(TotalOver64)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of Over 64` > 0) %>% 
+  mutate(`Pct of Over 64` = if_else(`Pct of Over 64` > 100, 100, `Pct of Over 64`)) %>% 
   mutate(`Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
   arrange(desc(`Over 64`)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Persons Over 64 One or More Miles from Nearest Transit Stop", align = "r", 
+                    caption = "Persons Over 64 One or More Miles from Nearest Bus Stop", align = "r", 
                     col.names = c(names(.)[1:2],"Number of Over 64 in Block Groups","Pct of Over 64 in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
@@ -1247,10 +1249,10 @@ ma_blkgrps_sf_noBus %>%
 #             legend.title.size = 0.8,
 #             legend.outside.position = c("right", "top"))
 # 
-# tmap_save(m, "DATA/transport/ma_RTO64access.png",
+# tmap_save(m, "DATA/transport/MA/figures/ma_RTO64access.png",
 #           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_RTO64access.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_RTO64access.png")
 ```
 
 ```{r tabRTAccessO64, fig.align = "center", fig.cap="Persons over 64 in Census Block Groups one or more miles from the nearest rapid transit stop."}
@@ -1265,6 +1267,7 @@ ma_blkgrps_sf_noRT %>%
             `Pct of Over 64` = round(sum(NewOver64)/max(TotalOver64)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
   filter(`Pct of Over 64` > 0) %>% 
+  mutate(`Pct of Over 64` = if_else(`Pct of Over 64` > 100, 100, `Pct of Over 64`)) %>%
   mutate(`Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
   arrange(desc(`Over 64`)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
@@ -1321,10 +1324,10 @@ ma_blkgrps_sf_noRT %>%
 #             legend.title.size = 0.8,
 #             legend.outside.position = c("right", "top"))
 # 
-# tmap_save(m, "DATA/transport/ma_CRPRO64access.png",
+# tmap_save(m, "DATA/transport/MA/figures/ma_CRPRO64access.png",
 #           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_CRPRO64access.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_CRPRO64access.png")
 ```
 
 ```{r tabCRPRAccessO64, fig.align = "center", fig.cap="Persons over 64 in Census Block Groups ten or more miles from the nearest commuter rail stop or park-in-ride lot."}
@@ -1339,6 +1342,7 @@ ma_blkgrps_sf_noCRPR %>%
             `Pct of Over 64` = round(sum(NewOver64)/max(TotalOver64)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
   filter(`Pct of Over 64` > 0) %>% 
+  mutate(`Pct of Over 64` = if_else(`Pct of Over 64` > 100, 100, `Pct of Over 64`)) %>%
   mutate(`Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
   arrange(desc(`Over 64`)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
@@ -1349,7 +1353,7 @@ ma_blkgrps_sf_noCRPR %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
 
-```{r mapTransitAccessO64, fig.align = "center", fig.cap="Persons over 64 without reasonable access to any form of transit by Census Block Group."}
+```{r mapTransitAccessO64, fig.align = "center", fig.cap="Persons over 64 without reasonable access to any form of transit by Census Block Group based on reasonable distances for each mode."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") +
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(ma_blkgrps_sf_noTransit_simple, unit = "mi") +
@@ -1398,10 +1402,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_transitO64access.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_transitO64access.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_transitO64access.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_transitO64access.png")
 ```
 
 ```{r tabTransitAccessO64, fig.align = "center", fig.cap="Persons over 64 in Census Block Groups without reasonable access to any mode of transit."}
@@ -1449,24 +1453,24 @@ Headways are significant for transit dependent populations and can affect the qu
 #   select(archive_url) %>% 
 #   pull()
 # 
-# download.file(mbtaGTFSurl,"DATA/transport/MA_gtfs_files/mbta_transit.zip")
-# download.file(url = "http://data.trilliumtransit.com/gtfs/berkshire-ma-us/berkshire-ma-us.zip", "DATA/transport/MA_gtfs_files/berkshireRTA.zip")
-# download.file(url = "http://data.trilliumtransit.com/gtfs/brockton-ma-us/brockton-ma-us.zip", "DATA/transport/MA_gtfs_files/brocktonRTA.zip")
-# download.file(url = "http://data.trilliumtransit.com/gtfs/capeann-ma-us/capeann-ma-us.zip", "DATA/transport/MA_gtfs_files/capeannRTA.zip")
-# download.file(url = "http://data.trilliumtransit.com/gtfs/capecod-ma-us/capecod-ma-us.zip", "DATA/transport/MA_gtfs_files/capecodRTA.zip")
-# download.file(url = "http://data.trilliumtransit.com/gtfs/gatra-ma-us/gatra-ma-us.zip", "DATA/transport/MA_gtfs_files/tauntonattleboroRTA.zip")
-# download.file(url = "http://data.trilliumtransit.com/gtfs/lowell-ma-us/lowell-ma-us.zip", "DATA/transport/MA_gtfs_files/lowellRTA.zip")
-# download.file(url = "http://data.trilliumtransit.com/gtfs/merrimackvalley-ma-us/merrimackvalley-ma-us.zip", "DATA/transport/MA_gtfs_files/merrimackvalleyRTA.zip")
-# download.file(url = "http://vc.mwrta.com/gtfs/google_transit.zip", "DATA/transport/MA_gtfs_files/metrowestRTA.zip")
-# download.file(url = "http://data.trilliumtransit.com/gtfs/montachusett-ma-us/montachusett-ma-us.zip", "DATA/transport/MA_gtfs_files/montachusettRTA.zip")
-# download.file(url = "http://data.trilliumtransit.com/gtfs/nantucket-ma-us/nantucket-ma-us.zip", "DATA/transport/MA_gtfs_files/nantucketRTA.zip")
-# download.file(url = "http://www.pvta.com/g_trans/google_transit.zip", "DATA/transport/MA_gtfs_files/pioneervalleyRTA.zip")
-# download.file(url = "http://data.trilliumtransit.com/gtfs/srta-ma-us/srta-ma-us.zip", "DATA/transport/MA_gtfs_files/southeasternRTA.zip")
-# download.file(url = "http://data.trilliumtransit.com/gtfs/marthasvineyard-ma-us/marthasvineyard-ma-us.zip", "DATA/transport/MA_gtfs_files/vineyardTA.zip")
-# download.file(url = "http://data.trilliumtransit.com/gtfs/wrta-ma-us/wrta-ma-us.zip", "DATA/transport/MA_gtfs_files/worcesterRTA.zip")
+# download.file(mbtaGTFSurl,"DATA/transport/MA/MA_gtfs_files/mbta_transit.zip")
+# download.file(url = "http://data.trilliumtransit.com/gtfs/berkshire-ma-us/berkshire-ma-us.zip", "DATA/transport/MA/MA_gtfs_files/berkshireRTA.zip")
+# download.file(url = "http://data.trilliumtransit.com/gtfs/brockton-ma-us/brockton-ma-us.zip", "DATA/transport/MA/MA_gtfs_files/brocktonRTA.zip")
+# download.file(url = "http://data.trilliumtransit.com/gtfs/capeann-ma-us/capeann-ma-us.zip", "DATA/transport/MA/MA_gtfs_files/capeannRTA.zip")
+# download.file(url = "http://data.trilliumtransit.com/gtfs/capecod-ma-us/capecod-ma-us.zip", "DATA/transport/MA/MA_gtfs_files/capecodRTA.zip")
+# download.file(url = "http://data.trilliumtransit.com/gtfs/gatra-ma-us/gatra-ma-us.zip", "DATA/transport/MA/MA_gtfs_files/tauntonattleboroRTA.zip")
+# download.file(url = "http://data.trilliumtransit.com/gtfs/lowell-ma-us/lowell-ma-us.zip", "DATA/transport/MA/MA_gtfs_files/lowellRTA.zip")
+# download.file(url = "http://data.trilliumtransit.com/gtfs/merrimackvalley-ma-us/merrimackvalley-ma-us.zip", "DATA/transport/MA/MA_gtfs_files/merrimackvalleyRTA.zip")
+# download.file(url = "http://vc.mwrta.com/gtfs/google_transit.zip", "DATA/transport/MA/MA_gtfs_files/metrowestRTA.zip")
+# download.file(url = "http://data.trilliumtransit.com/gtfs/montachusett-ma-us/montachusett-ma-us.zip", "DATA/transport/MA/MA_gtfs_files/montachusettRTA.zip")
+# download.file(url = "http://data.trilliumtransit.com/gtfs/nantucket-ma-us/nantucket-ma-us.zip", "DATA/transport/MA/MA_gtfs_files/nantucketRTA.zip")
+# download.file(url = "http://www.pvta.com/g_trans/google_transit.zip", "DATA/transport/MA/MA_gtfs_files/pioneervalleyRTA.zip")
+# download.file(url = "http://data.trilliumtransit.com/gtfs/srta-ma-us/srta-ma-us.zip", "DATA/transport/MA/MA_gtfs_files/southeasternRTA.zip")
+# download.file(url = "http://data.trilliumtransit.com/gtfs/marthasvineyard-ma-us/marthasvineyard-ma-us.zip", "DATA/transport/MA/MA_gtfs_files/vineyardTA.zip")
+# download.file(url = "http://data.trilliumtransit.com/gtfs/wrta-ma-us/wrta-ma-us.zip", "DATA/transport/MA/MA_gtfs_files/worcesterRTA.zip")
 
 # Process MBTA GTFS separately because it errors out
-mbta_transit <- read_gtfs("DATA/transport/MA_gtfs_files/mbta_transit.zip")
+mbta_transit <- read_gtfs("DATA/transport/MA/MA_gtfs_files/mbta_transit.zip")
 
 # filter out stops with missing coordinates, otherwise tidytransit errors
 transit_stops <- mbta_transit$stops %>% 
@@ -1479,7 +1483,7 @@ mbta_transit$stops <- transit_stops
 mbta_transit <- gtfs_as_sf(mbta_transit)
 
 # create list of downloaded GTFS files
-fileList <- as.list(list.files("DATA/transport/MA_gtfs_files/", pattern = ".zip", full.names = TRUE))
+fileList <- as.list(list.files("DATA/transport/MA/MA_gtfs_files/", pattern = ".zip", full.names = TRUE))
 
 # extract just file names without extension
 fileListNames <- lapply(fileList, 
@@ -1898,13 +1902,13 @@ ma_routes_sf_Bus <- ma_routes_sf_Bus %>%
 #             legend.title.size = 0.8,
 #             legend.outside.position = c("right", "top"))
 # 
-# tmap_save(m, "DATA/transport/ma_busHeadways.png",
+# tmap_save(m, "DATA/transport/MA/figures/ma_busHeadways.png",
 #           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_busHeadways.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_busHeadways.png")
 ```
 
-The average population-weighted headway for all bus routes in the state is `r round(ma_busHeadwayPops_df %>% filter(Group == "Total Pop") %>% select(AvgWHeadway) %>% pull(),1)` minutes. However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliBusHeadway) below compares the population-weighted average bus headways for different groups across the state. Most groups have average headways lower than the general population. However, persons over age 64 have headways that exceed that of the general population (`r round(ma_busHeadwayPops_df %>% filter(Group == "Over 64") %>% select(AvgWHeadway) %>% pull(),1)` minutes). The shortest population-weighted average headway, experienced by limited English speaking households, as defined by Massachusetts environmental justice policy, is `r round(ma_busHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),0)` minutes.
+The average population-weighted headway for all bus routes in the state is `r round(ma_busHeadwayPops_df %>% filter(Group == "Total Pop") %>% select(AvgWHeadway) %>% pull(),1)` minutes. However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliBusHeadway) below compares the population-weighted average bus headways for different groups across the state. Most groups have average headways shorter than the general population. However, persons over age 64 have headways that exceed that of the general population (`r round(ma_busHeadwayPops_df %>% filter(Group == "Over 64") %>% select(AvgWHeadway) %>% pull(),1)` minutes). The shortest population-weighted average headway, experienced by limited English speaking households, as defined by Massachusetts environmental justice policy, is `r round(ma_busHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),0)` minutes.
 
 ```{r loliBusHeadway, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average bus headways for groups within 400 meters of a bus stop across Massachusetts."}
 ma_busHeadwayPops_df %>% 
@@ -1914,7 +1918,7 @@ ma_busHeadwayPops_df %>%
                    y = pull(ma_busHeadwayPops_df[9,2]), yend = AvgWHeadway), 
                color = "tan1") +
   geom_point(color = "orange", size = 4, alpha = 0.8) +
-  coord_flip() + xlab("") + ylab("minutes") + ggtitle("Population-Weighted Average Stop Headway for\nMassachusetts Groups within Walking Distance (400m)\nof Bus Stops") + theme_light() +
+  coord_flip() + xlab("") + ylab("minutes") + ggtitle("Population-Weighted Average Bus Stop Headway for\nMassachusetts Groups within Walking Distance (400m)\nof Bus Stops") + theme_light() +
   theme(panel.grid.major.y = element_blank(),
         panel.border = element_blank(),
         axis.ticks.y = element_blank()) +
@@ -1931,7 +1935,7 @@ ma_busHeadwayPops_df %>%
   expand_limits(y = c(75,105))
 ```
 
-Rapid transit routes, which are localized to Boston and adjacent municipalities, show considerably lower average headways than bus routes. Figure \@ref(fig:mapGTFSrapidTransit) shows average headways by line, and Table \@ref(tab:tabGTFSrapidTransit) shows a breakdown of headway times by route. The average population-weighted headway for all rapid transit routes in the state is `r round(ma_RTHeadwayPops_df %>% filter(Group == "Total Pop") %>% select(AvgWHeadway) %>% pull(),1)` minutes. However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliRTHeadway) below compares the population-weighted average rapid transit headways for different groups within reasonable walking distance of stops. More than half of the groups have average headways higher than the general population. Adults without a high school diploma have the highest population-weighted average headways (`r round(ma_RTHeadwayPops_df %>% filter(Group == "No HS Dip") %>% select(AvgWHeadway) %>% pull(),1)` minutes). The shortest population-weighted average headway, experienced by limited English speaking households, as defined by Massachusetts environmental justice policy, is `r round(ma_RTHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),1)` minutes.
+Rapid transit routes, which are localized to Boston and adjacent municipalities, show considerably shorter average headways than bus routes. Figure \@ref(fig:mapGTFSrapidTransit) shows average headways by line, and Table \@ref(tab:tabGTFSrapidTransit) shows a breakdown of headway times by route. The average population-weighted headway for all rapid transit routes in the state is `r round(ma_RTHeadwayPops_df %>% filter(Group == "Total Pop") %>% select(AvgWHeadway) %>% pull(),1)` minutes. However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliRTHeadway) below compares the population-weighted average rapid transit headways for different groups within reasonable walking distance of stops. More than half of the groups have average headways longer than the general population. Adults without a high school diploma have the longest population-weighted average headways (`r round(ma_RTHeadwayPops_df %>% filter(Group == "No HS Dip") %>% select(AvgWHeadway) %>% pull(),1)` minutes). The shortest population-weighted average headway, experienced by limited English speaking households, as defined by Massachusetts environmental justice policy, is `r round(ma_RTHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),1)` minutes.
 
 ```{r mapGTFSrapidTransit, fig.align = "center", fig.cap="Mean headways by rapid transit route for Massachusetts routes running Monday through Friday, from 6am - 9pm."}
 # arrange row order descending so that higher frequency lines are on top
@@ -1941,48 +1945,62 @@ ma_routes_sf_RT <- ma_routes_sf_RT %>%
   # st_simplify(., dTolerance = 100) %>% 
   st_make_valid()
 
-# m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") + 
-#   tm_polygons(col = "gray", border.alpha = 0.8, lwd = 0.2, alpha = 0.2) +
-#   tm_text("NAME", size = 0.7, remove.overlap = TRUE, col = "gray") +
-#   tm_shape(ma_highways) + tm_lines(col = "seashell4", lwd = 1) +
-#   tm_shape(ma_highways2nd) + tm_lines(col = "seashell4", lwd = 1) +
-#   tm_shape(ma_routes_sf_RT) + 
-#   tm_lines(col = "mean_headways", style = "quantile", lwd = 2, 
-#            title.col = "Minutes", legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), 
-#            palette = c("#1a9641","#a6d96a","#ffff00","#fdae61","#d7191c")) +
-#   tm_shape(I95roadSegment) +
-#   tm_symbols(shape = I95, border.lwd = NA, size = .1) +
-#   tm_shape(I95roadSegment2) +
-#   tm_symbols(shape = I95, border.lwd = NA, size = .1) +
-#   tm_shape(I395roadSegment) +
-#   tm_symbols(shape = I395, border.lwd = NA, size = .1) +
-#   tm_shape(I91roadSegment) +
-#   tm_symbols(shape = I91, border.lwd = NA, size = .1) +
-#   tm_shape(I495roadSegment) +
-#   tm_symbols(shape = I495, border.lwd = NA, size = .1) +
-#   tm_shape(I495roadSegment2) +
-#   tm_symbols(shape = I495, border.lwd = NA, size = .1) +
-#   tm_shape(I495roadSegment3) +
-#   tm_symbols(shape = I495, border.lwd = NA, size = .1) +
-#   tm_shape(I90roadSegment) +
-#   tm_symbols(shape = I90, border.lwd = NA, size = .1) +
-#   tm_shape(I90roadSegment2) +
-#   tm_symbols(shape = I90, border.lwd = NA, size = .1) +
-#   # tm_shape(ma_towns_sf_pts) + tm_dots() +
-#   # tm_text("NAME", size = 0.5, col = "black", 
-#   #         xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-#   tm_scale_bar(breaks = c(0, 1, 2), text.size = 0.5, 
-#                position = c(0.6,0.005)) +
-#   tm_layout(title = "Mean\nHeadways\nby Rapid\nTransit\nRoute", 
-#             frame = FALSE, main.title.size = 0.8,
-#             legend.outside = TRUE,
-#             legend.title.size = 0.8,
-#             legend.outside.position = c("right", "top"))
-# 
-# tmap_save(m, "DATA/transport/ma_rtHeadways.png",
-#           height = 6, width = 5, units = "in", dpi = 600)
+# remove water area from towns layer for closeup mapping
+ma_water <- area_water("MA", county = "Suffolk", class = "sf") %>% 
+  st_transform(., crs = st_crs(ma_towns_sf))
+# function to erase overlapping areas
+st_erase <- function(x,y) {
+  st_difference(x, st_union(y))
+}
+# create copy of ma_towns with water features erased
+ma_towns_sf_cb <- st_erase(ma_towns_sf,ma_water) %>% 
+  group_by(NAME) %>% 
+  summarize() %>% 
+  st_make_valid()
 
-knitr::include_graphics("DATA/transport/ma_rtHeadways.png")
+m <- tm_shape(ma_towns_sf_cb, bbox = ma_routes_sf_RT, unit = "mi") +
+  tm_polygons(col = "gray", border.alpha = 0.8, lwd = 0.2, alpha = 0.2) +
+  tm_shape(ma_towns_sf) + 
+  tm_text("NAME", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ma_highways) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(ma_highways2nd) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(ma_routes_sf_RT) +
+  tm_lines(col = "mean_headways", style = "quantile", lwd = 2,
+           title.col = "Minutes", legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")),
+           palette = c("#1a9641","#a6d96a","#ffff00","#fdae61","#d7191c")) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = .1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = .1) +
+  tm_shape(I395roadSegment) +
+  tm_symbols(shape = I395, border.lwd = NA, size = .1) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment2) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment3) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I90roadSegment) +
+  tm_symbols(shape = I90, border.lwd = NA, size = .1) +
+  tm_shape(I90roadSegment2) +
+  tm_symbols(shape = I90, border.lwd = NA, size = .1) +
+  # tm_shape(ma_towns_sf_pts) + tm_dots() +
+  # tm_text("NAME", size = 0.5, col = "black",
+  #         xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 1, 2), text.size = 0.5,
+               position = c(0.6,0.005)) +
+  tm_layout(title = "Mean\nHeadways\nby Rapid\nTransit\nRoute",
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/MA/figures/ma_rtHeadways.png",
+          height = 6, width = 5, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/MA/figures/ma_rtHeadways.png")
 ```
 
 ```{r tabGTFSrapidTransit, fig.align = "center", fig.cap="Headway by rapid transit line based on on GTFS schedule for Monday to Friday service, 6am - 9pm."}
@@ -2031,7 +2049,7 @@ ma_RTHeadwayPops_df %>%
   expand_limits(y = c(6,13))
 ```
 
-Headways for commuter rail routes are slightly lower on average than bus routes. Figure \@ref(fig:mapGTFScommuterRail) shows average headways by line, and Table \@ref(tab:tabGTFSrapidCommuterRail) shows a breakdown of headway times by route. The average population-weighted headway for all commuter rail routes in the state is `r round(ma_CRHeadwayPops_df %>% filter(Group == "Total Pop") %>% select(AvgWHeadway) %>% pull(),1)` minutes. However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliCRHeadway) below compares the population-weighted average commuter rail headways for different groups within 3 miles (4800m) of stops. Most groups have average headways lower than the general population. However, persons over 64 have population-weighted average headways greater than the general population (`r round(ma_CRHeadwayPops_df %>% filter(Group == "Over 64") %>% select(AvgWHeadway) %>% pull(),1)` minutes). The shortest population-weighted average headway, experienced by limited English speaking households, as defined by Massachusetts environmental justice policy, is `r round(ma_CRHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),1)` minutes.
+Headways for commuter rail routes are slightly shorter on average than bus routes. Figure \@ref(fig:mapGTFScommuterRail) shows average headways by line and Table \@ref(tab:tabGTFSrapidCommuterRail) shows a breakdown of headway times by route. The average population-weighted headway for all commuter rail routes in the state is `r round(ma_CRHeadwayPops_df %>% filter(Group == "Total Pop") %>% select(AvgWHeadway) %>% pull(),1)` minutes. However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliCRHeadway) below compares the population-weighted average commuter rail headways for different groups within 3 miles (4800m) of stops. Most groups have average headways shorter than the general population. However, persons over 64 have population-weighted average headways longer than the general population (`r round(ma_CRHeadwayPops_df %>% filter(Group == "Over 64") %>% select(AvgWHeadway) %>% pull(),1)` minutes). The shortest population-weighted average headway, experienced by limited English speaking households, as defined by Massachusetts environmental justice policy, is `r round(ma_CRHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),1)` minutes.
 
 ```{r mapGTFScommuterRail, fig.align = "center", fig.cap="Mean headways by commuter rail route for Massachusetts routes running Monday through Friday, from 6am - 9pm."}
 # arrange row order descending so that higher frequency lines are on top
@@ -2041,14 +2059,14 @@ ma_routes_sf_CR <- ma_routes_sf_CR %>%
   # st_simplify(., dTolerance = 100) %>% 
   st_make_valid()
 
-# m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_CR, unit = "mi") + 
+# m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_CR, unit = "mi") +
 #   tm_polygons(col = "gray", border.alpha = 0.8, lwd = 0.2, alpha = 0.2) +
 #   tm_text("NAME", size = 0.4, remove.overlap = TRUE, col = "gray") +
 #   tm_shape(ma_highways) + tm_lines(col = "seashell4", lwd = 1) +
 #   tm_shape(ma_highways2nd) + tm_lines(col = "seashell4", lwd = 1) +
-#   tm_shape(ma_routes_sf_CR) + 
-#   tm_lines(col = "mean_headways", style = "quantile", lwd = 2, 
-#            title.col = "Minutes", legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), 
+#   tm_shape(ma_routes_sf_CR) +
+#   tm_lines(col = "mean_headways", style = "quantile", lwd = 2,
+#            title.col = "Minutes", legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")),
 #            palette = c("#1a9641","#a6d96a","#ffff00","#fdae61","#d7191c")) +
 #   tm_shape(I95roadSegment) +
 #   tm_symbols(shape = I95, border.lwd = NA, size = .1) +
@@ -2069,20 +2087,20 @@ ma_routes_sf_CR <- ma_routes_sf_CR %>%
 #   tm_shape(I90roadSegment2) +
 #   tm_symbols(shape = I90, border.lwd = NA, size = .1) +
 #   # tm_shape(ma_towns_sf_pts) + tm_dots() +
-#   # tm_text("NAME", size = 0.5, col = "black", 
+#   # tm_text("NAME", size = 0.5, col = "black",
 #   #         xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-#   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
+#   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5,
 #                position = c(0.6,0.005)) +
-#   tm_layout(title = "Mean\nHeadways\nby Commuter\nRail Route", 
+#   tm_layout(title = "Mean\nHeadways\nby Commuter\nRail Route",
 #             frame = FALSE, main.title.size = 0.8,
 #             legend.outside = TRUE,
 #             legend.title.size = 0.8,
 #             legend.outside.position = c("right", "top"))
 # 
-# tmap_save(m, "DATA/transport/ma_crHeadways.png",
+# tmap_save(m, "DATA/transport/MA/figures/ma_crHeadways.png",
 #           height = 6, width = 5, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_crHeadways.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_crHeadways.png")
 ```
 
 ```{r tabGTFSrapidCommuterRail, fig.align = "center", fig.cap="Headway by commuter rail line based on on GTFS schedule for Monday to Friday service, 6am - 9pm."}
@@ -2226,7 +2244,7 @@ headway80_commuterRail <- headway80thblkgrps_CR %>%
   mutate(`Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
   arrange(desc(`Over 64`))
 ```
-The population-weighted average headways above provide a glimpse of average headways across the state for different population groups and for different transit modes. However, headways also vary for specific communities. Indeed, it is important to consider populations of concern or transportation-limited populations that experience excessively large headways or low service frequency. Figures \@ref(fig:mapHeadwayOver64bus) to \@ref(fig:mapHeadwayOver64commuterRail) below highlight communities of persons over 64 and adults without a high school diploma who are within reasonable distance of bus stops (i.e., 400m or 1/4 mile), rapid transit stops (i.e., 800m or 1/2 mile), and commuter rail stops (i.e., 4800m or 3 miles), but where the mean headway for these stops exceeds the 80th percentile of mean route headways for the state. Tables \@ref(tab:tabHeadwayOver64bus) to \@ref(tab:tabHeadwayOver64commuterRail) show breakdowns by municipality. For example, Table \@ref(tab:tabHeadwayOver64bus) shows that `r formatC(as.numeric(headway80thblkgrps_bus[1,3]),big.mark=",")` people over 64 across `r headway80thblkgrps_bus[1,2]` Block Groups in `r headway80thblkgrps_bus[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ma_routes_sf_Bus$mean_headways,0.8)` minutes. These people represented `r headway80thblkgrps_bus[1,4]` of people over 64 in `r headway80thblkgrps_bus[1,1]`. Similarly, Table \@ref(tab:tabHeadwayDisabledRT) shows that `r formatC(as.numeric(headway80thblkgrps_RT[1,3]),big.mark=",")` people with disabilities across `r headway80thblkgrps_RT[1,2]` Census Tracts in `r headway80thblkgrps_RT[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ma_routes_sf_RT$mean_headways,0.8)` minutes. These people represented `r headway80thblkgrps_RT[1,4]` of people with disabilities in `r headway80thblkgrps_RT[1,1]`.
+The population-weighted average headways above provide a glimpse of average headways across the state for different population groups and for different transit modes. However, headways also vary for specific communities. Indeed, it is important to consider populations of concern or transportation-limited populations that experience excessively long headways or low service frequency. Figures \@ref(fig:mapHeadwayOver64bus) to \@ref(fig:mapHeadwayOver64CR) below highlight communities of persons over 64 and adults without a high school diploma who are within reasonable distance of bus stops (i.e., 400m or 1/4 mile), rapid transit stops (i.e., 800m or 1/2 mile), and commuter rail stops (i.e., 4800m or 3 miles), but where the mean headway for these stops exceeds the 80th percentile of mean route headways for the state. Tables \@ref(tab:tabHeadwayOver64bus) to \@ref(tab:tabHeadwayOver64commuterRail) show breakdowns by municipality. For example, Table \@ref(tab:tabHeadwayOver64bus) shows that `r formatC(as.numeric(headway80_bus[1,3]),big.mark=",",digits = 5)` people over 64 across `r headway80_bus[1,2]` Block Groups in `r headway80_bus[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ma_routes_sf_Bus$mean_headways,0.8)` minutes. These people represented `r headway80_bus[1,4]` of people over 64 in `r headway80_bus[1,1]`. Similarly, Table \@ref(tab:tabHeadwayDisabledRT) shows that `r formatC(as.numeric(headway80_rapidTransit[1,3]),big.mark=",")` people with disabilities across `r headway80_rapidTransit[1,2]` Census Tracts in `r headway80_rapidTransit[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ma_routes_sf_RT$mean_headways,0.8)` minutes. These people represented `r headway80_rapidTransit[1,4]` of people with disabilities in `r headway80_rapidTransit[1,1]`.
 Maps and tables of other populations of concern with excessive headways can be found in Appendix B. 
 
 ```{r mapHeadwayOver64bus, fig.align = "center", fig.cap="Persons over 64 within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -2273,10 +2291,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayOver64bus.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayOver64bus.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayOver64bus.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayOver64bus.png")
 ```
 
 ```{r tabHeadwayOver64bus, fig.align = "center", fig.cap="Persons over 64 within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -2290,20 +2308,23 @@ headway80thblkgrps_bus %>%
             `Over 64` = sum(NewOver64,na.rm = TRUE),
             `Pct of Over 64` = round(sum(NewOver64)/max(TotalOver64)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of Over 64` > 0) %>% 
+  mutate(`Pct of Over 64` = if_else(`Pct of Over 64` > 100, 100, `Pct of Over 64`)) %>% 
   mutate(`Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
   arrange(desc(`Over 64`)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = paste("Persons Over 64","with Average Headways",paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of Over 64 in Block Groups","Pct of Over 64 in City/Town")) %>% 
+                    caption = paste("Persons Over 64","with Average Bus Headways",paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of Over 64 in Block Groups","Pct of Over 64 in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 
 ```
 
 ```{r mapHeadwayNoHSDipRT, fig.align = "center", fig.cap="Adults without a high school diploma within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
-m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") + 
+m <- tm_shape(ma_towns_sf_cb, bbox = ma_routes_sf_RT, unit = "mi") +
   tm_polygons(col = "gray", border.alpha = 0.8, lwd = 0.2, alpha = 0.2) +
+  tm_shape(ma_towns_sf) + 
   tm_text("NAME", size = 0.7, remove.overlap = TRUE, col = "gray") +
   tm_shape(ma_highways) + tm_lines(col = "seashell4", lwd = 1) +
   tm_shape(ma_highways2nd) + tm_lines(col = "seashell4", lwd = 1) +
@@ -2339,16 +2360,16 @@ m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") +
   tm_scale_bar(breaks = c(0, 1, 2), text.size = 0.5, 
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Rapid Transit Route") +
-  tm_layout(title = paste("Adults without a High","School Diploma","with Headways",paste0("Over ",quantile(ma_routes_sf_RT$mean_headways,0.8)," Minutes"),sep = "\n"), 
+  tm_layout(title = paste("Adults without a High","School Diploma","with Rapid", "Transit Headways",paste0("Over ",quantile(ma_routes_sf_RT$mean_headways,0.8)," Minutes"),sep = "\n"), 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayNoHSDipRT.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayNoHSDipRT.png",
           height = 6, width = 5, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayNoHSDipRT.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayNoHSDipRT.png")
 ```
 
 ```{r tabHeadwayDisabledRT, fig.align = "center", fig.cap="Adults without a high school diploma within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -2367,7 +2388,7 @@ headway80thblkgrps_RT %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = paste("Adults without a High School Diploma","with Headways",paste0("Over ",quantile(ma_routes_sf_RT$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of No HS Dip in Block Groups","Pct of No HS Dip in City/Town")) %>% 
+                    caption = paste("Adults without a High School Diploma","with Rapid Transit Headways",paste0("Over ",quantile(ma_routes_sf_RT$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of No HS Dip in Block Groups","Pct of No HS Dip in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 
@@ -2417,10 +2438,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayOver64cr.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayOver64cr.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayOver64cr.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayOver64cr.png")
 ```
 
 ```{r tabHeadwayOver64commuterRail, fig.align = "center", fig.cap="Persons over 64 within 800m or 1/2 mile of commuter rail stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -2439,7 +2460,7 @@ headway80thblkgrps_CR %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = paste("Persons Over 64","with Average Headways",paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of Over 64 in Block Groups","Pct of Over 64 in City/Town")) %>% 
+                    caption = paste("Persons Over 64","with Average Commuter Rail Headways",paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of Over 64 in Block Groups","Pct of Over 64 in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 
@@ -2514,7 +2535,7 @@ ma_wAvgWalkability_df <- ma_blkgrp_walkability_sf %>%
   rbind(., ma_tract_walkability_df)
 ```
 
-Figure \@ref(fig:mapWalkability) shows walkability scores by Census Block Group across Massachusetts.  Walkability varies across the state. It is highest in and around the state's major urban centers, such as Providence, Portsmouth, and Newport, and lowest in the western suburbs.
+Figure \@ref(fig:mapWalkability) shows walkability scores by Census Block Group across Massachusetts.  Walkability varies across the state. It is highest in and around the state's major urban centers, such as the Boston area, Springfield, Holyoke, Lawrence, Lowell, Pittsfield, and urbanized areas of the Cape.
 
 ```{r mapWalkability, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Walkability Index scores for Census Block Groups across Massachusetts."}
 m <- tm_shape(ma_blkgrp_walkability_sf) +
@@ -2557,13 +2578,13 @@ m <- tm_shape(ma_blkgrp_walkability_sf) +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_walk.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_walk.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_walk.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_walk.png")
 ```
 
-Walkability varies for different population groups across the state. Figure \@ref(fig:loliWalkability) below compares population-weighted average walkability index scores for different populations. Most groups live in communities with above average walkability index scores that are also at or above that of the general population. However, persons over age 64 and under 18 tend to live in communities with walkability scores below the state average. 
+Walkability varies for different population groups across the state. Figure \@ref(fig:loliWalkability) below compares population-weighted average walkability index scores for different populations. The average population-weighted walkability score across Massachusetts is `r round(ma_wAvgWalkability_df %>% filter(Group == "Total Pop") %>% select(wNatWalkIndex) %>% pull(),1)`. Most groups live in communities with walkability index scores that are at or above that of the general population. However, persons over age 64 and under 18 tend to live in communities with walkability scores below the state average. 
 
 ```{r loliWalkability, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="population-weighted average walkability index scores for groups across Massachusetts."}
 # Create lollipop graph of pop-weighted average walk index
@@ -2675,10 +2696,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_walkO64.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_walkO64.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_walkO64.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_walkO64.png")
 ```
 
 ```{r tabLowWalkO64, fig.align = "center", fig.cap="Persons over 64 by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -2692,6 +2713,7 @@ leastWalkable %>%
             `Over 64` = sum(over64E,na.rm = TRUE),
             `Pct of Over 64` = round(sum(over64E)/max(TotalOver64)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  mutate(`Pct of Over 64` = if_else(`Pct of Over 64` > 100, 100, `Pct of Over 64`)) %>%
   mutate(`Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
   arrange(desc(`Over 64`)) %>% 
   filter(`Over 64` > 0) %>% 
@@ -2744,10 +2766,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_walkU18.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_walkU18.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_walkU18.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_walkU18.png")
 ```
 
 ```{r tabLowWalkU18, fig.align = "center", fig.cap="Persons under 18 by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -2761,6 +2783,8 @@ leastWalkable %>%
             `Under 18` = sum(under18E,na.rm = TRUE),
             `Pct of Under 18` = round(sum(under18E)/max(TotalUnder18)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of Under 18` > 0) %>% 
+  mutate(`Pct of Under 18` = if_else(`Pct of Under 18` > 100, 100, `Pct of Under 18`)) %>% 
   mutate(`Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
   arrange(desc(`Under 18`)) %>% 
   filter(`Under 18` > 0) %>% 
@@ -2834,9 +2858,9 @@ lai_ma_df <- lai_ma_blkgrp %>%
 ```
 
 
-Figure \@ref(fig:mapLAI) below shows transportation cost burden (i.e., transportation cost as a percentage of household income) by Census Tract across Massachusetts. Transportation cost burden varies across the state. It is lowest in and around the state's major urban centers, such as Providence, Pawtucket, Woonsocket, and Newport, and highest in most of the rest of the state. In Little Compton, transportation as a percentage of income exceeds housing. 
+Figure \@ref(fig:mapLAI) below shows transportation cost burden (i.e., transportation cost as a percentage of household income) by Census Tract across Massachusetts. Transportation cost burden varies across the state. It is lowest in and around the state's major urban centers, and it is highest in central and western parts of the state. 
 
-```{r mapLAI, fig.align = "center", fig.cap="Transpotation cost burden for Census Tracts across Massachusetts."}
+```{r mapLAI, fig.align = "center", fig.cap="Transportation cost burden for Census Tracts across Massachusetts."}
 # isolate places where transportation cost as a percentage of income exceeds housing as a percentage of income
 lai_ToverH <- lai_ri %>% 
   filter(hh7_t > hh7_h)
@@ -2881,15 +2905,15 @@ m <- tm_shape(lai_ri) +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_tburden.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_tburden.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_tburden.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_tburden.png")
 ````
 
 Transportation cost burden varies for different population groups across the state. Figure \@ref(fig:loliLAI) below compares population-weighted average transportation cost burden for different populations. Most groups live in communities with transportation cost burdens that are below that of the general population. However, persons over age 64 and under 18 tend to live in communities with transportation cost burdens that exceed the state average. 
 
-```{r loliLAI, fig.align = "center", fig.cap="Population-weighted average transportation cost burden for groups across Massachusetts."}
+```{r loliLAI, fig.align = "center", fig.cap="Population-weighted average transportation cost burden as a percentage of household income for groups across Massachusetts."}
 # Create lollipop graph of pop-weighted average LAI
 lai_ma_df %>% 
   ggplot(aes(x = reorder(Group,wTBurden), y = wTBurden)) +
@@ -3000,10 +3024,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_HiBurdenO64.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_HiBurdenO64.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_HiBurdenO64.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_HiBurdenO64.png")
 ```
 
 ```{r tabHiBurdenO64, fig.align = "center", fig.cap="Persons over 64 by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
@@ -3017,6 +3041,8 @@ HiBurden %>%
             `Over 64` = sum(over64E,na.rm = TRUE),
             `Pct of Over 64` = round(sum(over64E)/max(TotalOver64)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of Over 64` > 0) %>% 
+  mutate(`Pct of Over 64` = if_else(`Pct of Over 64` > 100, 100, `Pct of Over 64`)) %>% 
   mutate(`Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
   arrange(desc(`Over 64`)) %>% 
   filter(`Over 64` > 0) %>% 
@@ -3069,10 +3095,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_HiBurdenU18.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_HiBurdenU18.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_HiBurdenU18.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_HiBurdenU18.png")
 ```
 
 ```{r tabHiBurdenU18, fig.align = "center", fig.cap="Persons under 18 by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
@@ -3086,6 +3112,8 @@ HiBurden %>%
             `Under 18` = sum(under18E,na.rm = TRUE),
             `Pct of Under 18` = round(sum(under18E)/max(TotalUnder18)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of Under 18` > 0) %>% 
+  mutate(`Pct of Under 18` = if_else(`Pct of Under 18` > 100, 100, `Pct of Under 18`)) %>% 
   mutate(`Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
   arrange(desc(`Under 18`)) %>% 
   filter(`Under 18` > 0) %>% 
@@ -3407,10 +3435,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_busU18access.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_busU18access.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_busU18access.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_busU18access.png")
 ```
 
 ```{r tabBusAccessU18, fig.align = "center", fig.cap="Persons under 18 in Census Block Groups one or more miles from the nearest bus stop."}
@@ -3425,6 +3453,7 @@ ma_blkgrps_sf_noBus %>%
             `Pct of Under 18` = round(sum(NewUnder18)/max(TotalUnder18)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
   filter(`Pct of Under 18` > 0) %>% 
+  mutate(`Pct of Under 18` = if_else(`Pct of Under 18` > 100, 100, `Pct of Under 18`)) %>%
   mutate(`Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
   arrange(desc(`Under 18`)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
@@ -3479,10 +3508,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_busDisabledaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_busDisabledaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_busDisabledaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_busDisabledaccess.png")
 ```
 
 ```{r tabBusAccessDisabled, fig.align = "center", fig.cap="Disabled Persons in Census Block Groups one or more miles from the nearest bus stop."}
@@ -3496,6 +3525,8 @@ ma_tracts_sf_noBus %>%
             Disabled = sum(NewDisabled,na.rm = TRUE),
             `Pct of Disabled` = round(sum(NewDisabled)/max(TotalDisabled)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of Disabled` > 0) %>% 
+  mutate(`Pct of Disabled` = if_else(`Pct of Disabled` > 100, 100, `Pct of Disabled`)) %>%
   mutate(`Pct of Disabled` = paste0(`Pct of Disabled`,"%")) %>% 
   arrange(desc(Disabled)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
@@ -3550,10 +3581,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_busU5access.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_busU5access.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_busU5access.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_busU5access.png")
 ```
 
 ```{r tabBusAccessU5, fig.align = "center", fig.cap="Children under 5 in Census Block Groups one or more miles from the nearest bus stop."}
@@ -3568,6 +3599,7 @@ ma_blkgrps_sf_noBus %>%
             `Pct of Under 5` = round(sum(NewUnder5)/max(TotalUnder5)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
   filter(`Pct of Under 5` > 0) %>% 
+  mutate(`Pct of Under 5` = if_else(`Pct of Under 5` > 100, 100, `Pct of Under 5`)) %>%
   mutate(`Pct of Under 5` = paste0(`Pct of Under 5`,"%")) %>% 
   arrange(desc(`Under 5`)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
@@ -3622,10 +3654,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_busMAINCaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_busMAINCaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_busMAINCaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_busMAINCaccess.png")
 ```
 
 ```{r tabBusAccessMAINC, fig.align = "center", fig.cap="Low income persons, as defined by state environmental justice policy, in Census Block Groups one or more miles from the nearest bus stop."}
@@ -3695,10 +3727,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_busINCaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_busINCaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_busINCaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_busINCaccess.png")
 ```
 
 ```{r tabBusAccessINC, fig.align = "center", fig.cap="Low income persons in Census Block Groups one or more miles from the nearest bus stop."}
@@ -3768,10 +3800,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_busNOHSaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_busNOHSaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_busNOHSaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_busNOHSaccess.png")
 ```
 
 ```{r tabBusAccessNOHS, fig.align = "center", fig.cap="Adults without a high school diploma in Census Block Groups one or more miles from the nearest bus stop."}
@@ -3785,6 +3817,8 @@ ma_blkgrps_sf_noBus %>%
             `No HS Dip` = sum(NewLths,na.rm = TRUE),
             `Pct of No HS Dip` = round(sum(NewLths)/max(TotalNoHS)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of No HS Dip` > 0) %>% 
+  mutate(`Pct of No HS Dip` = if_else(`Pct of No HS Dip` > 100, 100, `Pct of No HS Dip`)) %>% 
   mutate(`Pct of No HS Dip` = paste0(`Pct of No HS Dip`,"%")) %>% 
   arrange(desc(`No HS Dip`)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
@@ -3839,10 +3873,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_busMINaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_busMINaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_busMINaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_busMINaccess.png")
 ```
 
 ```{r tabBusAccessMIN, fig.align = "center", fig.cap="Minority persons in Census Block Groups one or more miles from the nearest bus stop."}
@@ -3856,6 +3890,8 @@ ma_blkgrps_sf_noBus %>%
             Minority = sum(NewOver64,na.rm = TRUE),
             `Pct of Minority` = round(sum(NewMinority)/max(TotalMin)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of Minority` > 0) %>% 
+  mutate(`Pct of Minority` = if_else(`Pct of Minority` > 100, 100, `Pct of Minority`)) %>% 
   mutate(`Pct of Minority` = paste0(`Pct of Minority`,"%")) %>% 
   arrange(desc(Minority)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
@@ -3910,10 +3946,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_busNoCaraccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_busNoCaraccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_busNoCaraccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_busNoCaraccess.png")
 ```
 
 ```{r tabBusAccessNoCar, fig.align = "center", fig.cap="Households without a car in Census Tracts one or more miles from the nearest bus stop."}
@@ -3928,6 +3964,7 @@ ma_tracts_sf_noBus %>%
             `Pct of No Car HH` = round(sum(NewHHNoCar)/max(TotalNoCar)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
   filter(`Pct of No Car HH` > 0) %>% 
+  mutate(`Pct of No Car HH` = if_else(`Pct of No Car HH` > 100, 100, `Pct of No Car HH`)) %>%
   mutate(`Pct of No Car HH` = paste0(`Pct of No Car HH`,"%")) %>% 
   arrange(desc(`No Car HH`)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
@@ -3982,10 +4019,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_busMAMINaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_busMAMINaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_busMAMINaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_busMAMINaccess.png")
 ```
 
 ```{r tabBusAccessMAMIN, fig.align = "center", fig.cap="MA Minority persons in Census Block Groups one or more miles from the nearest bus stop."}
@@ -4000,6 +4037,7 @@ ma_blkgrps_sf_noBus %>%
             `Pct of MA Minority` = round(sum(NewMA_MINORITY)/max(TotalMA_MINORITY)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
   filter(`Pct of MA Minority` > 0) %>% 
+  mutate(`Pct of MA Minority` = if_else(`Pct of MA Minority` > 100, 100, `Pct of MA Minority`)) %>%
   mutate(`Pct of MA Minority` = paste0(`Pct of MA Minority`,"%")) %>% 
   arrange(desc(`MA Minority`)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
@@ -4054,10 +4092,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_busLEHaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_busLEHaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_busLEHaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_busLEHaccess.png")
 ```
 
 ```{r tabBusAccessLEH, fig.align = "center", fig.cap="Limited English speaking households in Census Block Groups one or more miles from the nearest bus stop."}
@@ -4128,10 +4166,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_busMALEHaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_busMALEHaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_busMALEHaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_busMALEHaccess.png")
 ```
 
 ```{r tabBusAccessMALEH, fig.align = "center", fig.cap="Limited English speaking households, as defined by state environmental justice policy, in Census Block Groups one or more miles from the nearest bus stop."}
@@ -4205,10 +4243,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_RTDisabledaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_RTDisabledaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_RTDisabledaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_RTDisabledaccess.png")
 ```
 
 ```{r tabRTAccessDisabled, fig.align = "center", fig.cap="Disabled Persons in Census Block Groups one or more miles from the nearest rapid transit stop."}
@@ -4222,6 +4260,7 @@ ma_tracts_sf_noRT %>%
             Disabled = sum(NewDisabled,na.rm = TRUE),
             `Pct of Disabled` = round(sum(NewDisabled)/max(TotalDisabled)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of Disabled` > 0) %>%
   mutate(`Pct of Disabled` = if_else(`Pct of Disabled` > 100, 100, `Pct of Disabled`)) %>% 
   mutate(`Pct of Disabled` = paste0(`Pct of Disabled`,"%")) %>% 
   arrange(desc(Disabled)) %>% 
@@ -4277,10 +4316,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_RTU5access.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_RTU5access.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_RTU5access.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_RTU5access.png")
 ```
 
 ```{r tabRTAccessU5, fig.align = "center", fig.cap="Children under 5 in Census Block Groups one or more miles from the nearest rapid transit stop."}
@@ -4350,10 +4389,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_RTMAINCaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_RTMAINCaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_RTMAINCaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_RTMAINCaccess.png")
 ```
 
 ```{r tabRTAccessMAINC, fig.align = "center", fig.cap="Low income persons, as defined by state environmental justice policy, in Census Block Groups one or more miles from the nearest rapid transit stop."}
@@ -4423,10 +4462,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_RTINCaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_RTINCaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_RTINCaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_RTINCaccess.png")
 ```
 
 ```{r tabRTAccessINC, fig.align = "center", fig.cap="Low income persons in Census Block Groups one or more miles from the nearest rapid transit stop."}
@@ -4496,10 +4535,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_RTNOHSaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_RTNOHSaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_RTNOHSaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_RTNOHSaccess.png")
 ```
 
 ```{r tabRTAccessNOHS, fig.align = "center", fig.cap="Adults without a high school diploma in Census Block Groups one or more miles from the nearest rapid transit stop."}
@@ -4569,10 +4608,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_RTMINaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_RTMINaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_RTMINaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_RTMINaccess.png")
 ```
 
 ```{r tabRTAccessMIN, fig.align = "center", fig.cap="Minority persons in Census Block Groups one or more miles from the nearest rapid transit stop."}
@@ -4642,10 +4681,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_RTNoCaraccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_RTNoCaraccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_RTNoCaraccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_RTNoCaraccess.png")
 ```
 
 ```{r tabRTAccessNoCar, fig.align = "center", fig.cap="Households without a car in Census Tracts one or more miles from the nearest rapid transit stop."}
@@ -4715,10 +4754,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_RTMAMINaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_RTMAMINaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_RTMAMINaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_RTMAMINaccess.png")
 ```
 
 ```{r tabRTAccessMAMIN, fig.align = "center", fig.cap="MA Minority persons in Census Block Groups one or more miles from the nearest rapid transit stop."}
@@ -4788,10 +4827,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_RTLEHaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_RTLEHaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_RTLEHaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_RTLEHaccess.png")
 ```
 
 ```{r tabRTAccessLEH, fig.align = "center", fig.cap="Limited English speaking households in Census Block Groups one or more miles from the nearest rapid transit stop."}
@@ -4862,10 +4901,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_RTMALEHaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_RTMALEHaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_RTMALEHaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_RTMALEHaccess.png")
 ```
 
 ```{r tabRTAccessMALEH, fig.align = "center", fig.cap="Limited English speaking households, as defined by state environmental justice policy, in Census Block Groups one or more miles from the nearest rapid transit stop."}
@@ -4940,10 +4979,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_CRPRU18access.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_CRPRU18access.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_CRPRU18access.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_CRPRU18access.png")
 ```
 
 ```{r tabCRPRAccessU18, fig.align = "center", fig.cap="Persons under 18 in Census Block Groups ten or more miles from the nearest commuter rail stop or park-in-ride lot."}
@@ -5013,10 +5052,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_CRPRDisabledaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_CRPRDisabledaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_CRPRDisabledaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_CRPRDisabledaccess.png")
 ```
 
 ```{r tabCRPRAccessDisabled, fig.align = "center", fig.cap="Disabled Persons in Census Block Groups ten or more miles from the nearest commuter rail stop or park-in-ride lot."}
@@ -5086,10 +5125,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_CRPRU5access.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_CRPRU5access.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_CRPRU5access.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_CRPRU5access.png")
 ```
 
 ```{r tabCRPRAccessU5, fig.align = "center", fig.cap="Children under 5 in Census Block Groups ten or more miles from the nearest commuter rail stop or park-in-ride lot."}
@@ -5159,10 +5198,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_CRPRMAINCaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_CRPRMAINCaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_CRPRMAINCaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_CRPRMAINCaccess.png")
 ```
 
 ```{r tabCRPRAccessMAINC, fig.align = "center", fig.cap="Low income persons, as defined by state environmental justice policy, in Census Block Groups ten or more miles from the nearest commuter rail stop or park-in-ride lot."}
@@ -5232,10 +5271,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_CRPRINCaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_CRPRINCaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_CRPRINCaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_CRPRINCaccess.png")
 ```
 
 ```{r tabCRPRAccessINC, fig.align = "center", fig.cap="Low income persons in Census Block Groups ten or more miles from the nearest commuter rail stop or park-in-ride lot."}
@@ -5305,10 +5344,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_CRPRNOHSaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_CRPRNOHSaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_CRPRNOHSaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_CRPRNOHSaccess.png")
 ```
 
 ```{r tabCRPRAccessNOHS, fig.align = "center", fig.cap="Adults without a high school diploma in Census Block Groups ten or more miles from the nearest commuter rail stop or park-in-ride lot."}
@@ -5378,10 +5417,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_CRPRMINaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_CRPRMINaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_CRPRMINaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_CRPRMINaccess.png")
 ```
 
 ```{r tabCRPRAccessMIN, fig.align = "center", fig.cap="Minority persons in Census Block Groups ten or more miles from the nearest commuter rail stop or park-in-ride lot."}
@@ -5451,10 +5490,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_CRPRNoCaraccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_CRPRNoCaraccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_CRPRNoCaraccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_CRPRNoCaraccess.png")
 ```
 
 ```{r tabCRPRAccessNoCar, fig.align = "center", fig.cap="Households without a car in Census Tracts ten or more miles from the nearest commuter rail stop or park-in-ride lot."}
@@ -5524,10 +5563,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_CRPRMAMINaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_CRPRMAMINaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_CRPRMAMINaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_CRPRMAMINaccess.png")
 ```
 
 ```{r tabCRPRAccessMAMIN, fig.align = "center", fig.cap="MA Minority persons in Census Block Groups ten or more miles from the nearest commuter rail stop or park-in-ride lot."}
@@ -5597,10 +5636,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_CRPRLEHaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_CRPRLEHaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_CRPRLEHaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_CRPRLEHaccess.png")
 ```
 
 ```{r tabCRPRAccessLEH, fig.align = "center", fig.cap="Limited English speaking households in Census Block Groups ten or more miles from the nearest commuter rail stop or park-in-ride lot."}
@@ -5671,10 +5710,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_CRPRMALEHaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_CRPRMALEHaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_CRPRMALEHaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_CRPRMALEHaccess.png")
 ```
 
 ```{r tabCRPRAccessMALEH, fig.align = "center", fig.cap="Limited English speaking households, as defined by state environmental justice policy, in Census Block Groups ten or more miles from the nearest commuter rail stop or park-in-ride lot."}
@@ -5749,10 +5788,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_transitU18access.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_transitU18access.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_transitU18access.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_transitU18access.png")
 ```
 
 ```{r tabTransitAccessU18, fig.align = "center", fig.cap="Persons under 18 in Census Block Groups without reasonable access to any form of transit."}
@@ -5822,10 +5861,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_transitDisabledaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_transitDisabledaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_transitDisabledaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_transitDisabledaccess.png")
 ```
 
 ```{r tabTransitAccessDisabled, fig.align = "center", fig.cap="Disabled Persons in Census Block Groups without reasonable access to any form of transit."}
@@ -5895,10 +5934,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_transitU5access.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_transitU5access.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_transitU5access.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_transitU5access.png")
 ```
 
 ```{r tabTransitAccessU5, fig.align = "center", fig.cap="Children under 5 in Census Block Groups without reasonable access to any form of transit."}
@@ -5968,10 +6007,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_transitMAINCaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_transitMAINCaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_transitMAINCaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_transitMAINCaccess.png")
 ```
 
 ```{r tabTransitAccessMAINC, fig.align = "center", fig.cap="Low income persons, as defined by state environmental justice policy, in Census Block Groups without reasonable access to any form of transit."}
@@ -6041,10 +6080,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_transitINCaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_transitINCaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_transitINCaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_transitINCaccess.png")
 ```
 
 ```{r tabTransitAccessINC, fig.align = "center", fig.cap="Low income persons in Census Block Groups without reasonable access to any form of transit."}
@@ -6114,10 +6153,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_transitNOHSaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_transitNOHSaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_transitNOHSaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_transitNOHSaccess.png")
 ```
 
 ```{r tabTransitAccessNOHS, fig.align = "center", fig.cap="Adults without a high school diploma in Census Block Groups without reasonable access to any form of transit."}
@@ -6187,10 +6226,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_transitMINaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_transitMINaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_transitMINaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_transitMINaccess.png")
 ```
 
 ```{r tabTransitAccessMIN, fig.align = "center", fig.cap="Minority persons in Census Block Groups without reasonable access to any form of transit."}
@@ -6260,10 +6299,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_transitNoCaraccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_transitNoCaraccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_transitNoCaraccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_transitNoCaraccess.png")
 ```
 
 ```{r tabTransitAccessNoCar, fig.align = "center", fig.cap="Households without a car in Census Tracts without reasonable access to any form of transit."}
@@ -6333,10 +6372,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_transitMAMINaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_transitMAMINaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_transitMAMINaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_transitMAMINaccess.png")
 ```
 
 ```{r tabTransitAccessMAMIN, fig.align = "center", fig.cap="MA Minority persons in Census Block Groups without reasonable access to any form of transit.", include=FALSE, eval=FALSE}
@@ -6406,10 +6445,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_transitLEHaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_transitLEHaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_transitLEHaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_transitLEHaccess.png")
 ```
 
 ```{r tabTransitAccessLEH, fig.align = "center", fig.cap="Limited English speaking households in Census Block Groups without reasonable access to any form of transit."}
@@ -6480,10 +6519,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_transitMALEHaccess.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_transitMALEHaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_transitMALEHaccess.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_transitMALEHaccess.png")
 ```
 
 ```{r tabTransitAccessMALEH, fig.align = "center", fig.cap="Limited English speaking households, as defined by state environmental justice policy, in Census Block Groups without reasonable access to any form of transit.", include=FALSE, eval=FALSE}
@@ -6561,10 +6600,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayDisabledBus.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayDisabledBus.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayDisabledBus.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayDisabledBus.png")
 ```
 
 ```{r tabHeadwayDisabledbus, fig.align = "center", fig.cap="Disabled Persons in Census Tracts one or more miles from the nearest bus stop."}
@@ -6633,10 +6672,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayUnder5bus.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayUnder5bus.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayUnder5bus.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayUnder5bus.png")
 ```
 
 ```{r tabHeadwayU5, fig.align = "center", fig.cap="Children under 5 within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -6706,10 +6745,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayUnder18bus.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayUnder18bus.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayUnder18bus.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayUnder18bus.png")
 ```
 
 ```{r tabHeadwayU18, fig.align = "center", fig.cap="Persons under 18 within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -6779,10 +6818,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayMAINCbus.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayMAINCbus.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayMAINCbus.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayMAINCbus.png")
 ```
 
 ```{r tabHeadwayMAINC, fig.align = "center", fig.cap="Low income persons, as defined by state environmental justice policy, within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -6852,10 +6891,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayINCbus.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayINCbus.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayINCbus.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayINCbus.png")
 ```
 
 ```{r tabHeadwayINC, fig.align = "center", fig.cap="Low income persons within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -6925,10 +6964,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayLTHSbus.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayLTHSbus.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayLTHSbus.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayLTHSbus.png")
 ```
 
 ```{r tabHeadwayNOHS, fig.align = "center", fig.cap="Adults without a high school diploma within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -6998,10 +7037,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayMINbus.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayMINbus.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayMINbus.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayMINbus.png")
 ```
 
 ```{r tabHeadwayMIN, fig.align = "center", fig.cap="Minority persons within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -7071,10 +7110,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayNoCarHHbus.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayNoCarHHbus.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayNoCarHHbus.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayNoCarHHbus.png")
 ```
 
 ```{r tabHeadwayNoCar, fig.align = "center", fig.cap="Households without a car within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -7144,10 +7183,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayMAMINbus.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayMAMINbus.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayMAMINbus.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayMAMINbus.png")
 ```
 
 ```{r tabHeadwayMAMIN, fig.align = "center", fig.cap="MA Minority persons within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -7217,10 +7256,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayLEHbus.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayLEHbus.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayLEHbus.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayLEHbus.png")
 ```
 
 ```{r tabHeadwayLEH, fig.align = "center", fig.cap="Limited English speaking households within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -7291,10 +7330,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayMALEHbus.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayMALEHbus.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayMALEHbus.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayMALEHbus.png")
 ```
 
 ```{r tabHeadwayMALEH, fig.align = "center", fig.cap="Limited English speaking households, as defined by state environmental justice policy, within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -7365,10 +7404,10 @@ m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayDisabledRT.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayDisabledRT.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayDisabledRT.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayDisabledRT.png")
 ```
 
 ```{r tabHeadwayRTDisabled, fig.align = "center", fig.cap="Disabled Persons in Census Tracts one or more miles from the nearest bus stop."}
@@ -7383,6 +7422,7 @@ headway80thtracts_RT %>%
             `Pct of Disabled` = round(sum(NewDisabled)/max(TotalDisabled)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
   filter(`Pct of Disabled` > 0) %>% 
+  mutate(`Pct of Disabled` = if_else(`Pct of Disabled` > 100, 100, `Pct of Disabled`)) %>%
   mutate(`Pct of Disabled` = paste0(`Pct of Disabled`,"%")) %>% 
   arrange(desc(Disabled)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
@@ -7433,10 +7473,10 @@ m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayUnder5RT.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayUnder5RT.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayUnder5RT.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayUnder5RT.png")
 ```
 
 ```{r tabHeadwayRTU5, fig.align = "center", fig.cap="Children under 5 within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -7502,10 +7542,10 @@ m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayUnder18RT.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayUnder18RT.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayUnder18RT.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayUnder18RT.png")
 ```
 
 ```{r tabHeadwayRTU18, fig.align = "center", fig.cap="Persons under 18 within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -7571,10 +7611,10 @@ m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayMAINCRT.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayMAINCRT.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayMAINCRT.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayMAINCRT.png")
 ```
 
 ```{r tabHeadwayRTMAINC, fig.align = "center", fig.cap="Low income persons, as defined by state environmental justice policy, within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -7640,10 +7680,10 @@ m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayINCRT.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayINCRT.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayINCRT.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayINCRT.png")
 ```
 
 ```{r tabHeadwayRTINC, fig.align = "center", fig.cap="Low income persons within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -7709,10 +7749,10 @@ m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayO64RT.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayO64RT.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayO64RT.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayO64RT.png")
 ```
 
 ```{r tabHeadwayRTO64, fig.align = "center", fig.cap="Persons over 64 within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -7778,10 +7818,10 @@ m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayMINRT.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayMINRT.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayMINRT.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayMINRT.png")
 ```
 
 ```{r tabHeadwayRTMIN, fig.align = "center", fig.cap="Minority persons within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -7847,10 +7887,10 @@ m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayNoCarHHRT.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayNoCarHHRT.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayNoCarHHRT.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayNoCarHHRT.png")
 ```
 
 ```{r tabHeadwayRTNoCar, fig.align = "center", fig.cap="Households without a car within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -7916,10 +7956,10 @@ m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayMAMINRT.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayMAMINRT.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayMAMINRT.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayMAMINRT.png")
 ```
 
 ```{r tabHeadwayRTMAMIN, fig.align = "center", fig.cap="MA Minority persons within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -7985,10 +8025,10 @@ m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayLEHRT.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayLEHRT.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayLEHRT.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayLEHRT.png")
 ```
 
 ```{r tabHeadwayRTLEH, fig.align = "center", fig.cap="Limited English speaking households within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -8055,10 +8095,10 @@ m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayMALEHRT.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayMALEHRT.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayMALEHRT.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayMALEHRT.png")
 ```
 
 ```{r tabHeadwayRTMALEH, fig.align = "center", fig.cap="Limited English speaking households, as defined by state environmental justice policy, within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state.",include=FALSE,eval=FALSE}
@@ -8134,10 +8174,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayDisabledCR.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayDisabledCR.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayDisabledCR.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayDisabledCR.png")
 ```
 
 ```{r tabHeadwayCRDisabled, fig.align = "center", fig.cap="Disabled Persons within 4800m or 3 miles of commuter rail stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -8152,6 +8192,7 @@ headway80thtracts_CR %>%
             `Pct of Disabled` = round(sum(NewDisabled)/max(TotalDisabled)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
   filter(`Pct of Disabled` > 0) %>% 
+  mutate(`Pct of Disabled` = if_else(`Pct of Disabled` > 100, 100, `Pct of Disabled`)) %>%
   mutate(`Pct of Disabled` = paste0(`Pct of Disabled`,"%")) %>% 
   arrange(desc(Disabled)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
@@ -8206,10 +8247,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayUnder5CR.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayUnder5CR.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayUnder5CR.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayUnder5CR.png")
 ```
 
 ```{r tabHeadwayCRU5, fig.align = "center", fig.cap="Children under 5 within 4800m or 3 miles of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -8279,10 +8320,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayUnder18CR.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayUnder18CR.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayUnder18CR.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayUnder18CR.png")
 ```
 
 ```{r tabHeadwayCRU18, fig.align = "center", fig.cap="Persons under 18 within 4800m or 3 miles of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -8352,10 +8393,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayMAINCCR.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayMAINCCR.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayMAINCCR.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayMAINCCR.png")
 ```
 
 ```{r tabHeadwayCRMAINC, fig.align = "center", fig.cap="Low income persons, as defined by state environmental justice policy, within 4800m or 3 miles of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -8425,10 +8466,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayINCCR.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayINCCR.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayINCCR.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayINCCR.png")
 ```
 
 ```{r tabHeadwayCRINC, fig.align = "center", fig.cap="Low income persons within 4800m or 3 miles of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -8498,10 +8539,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayLTHSCR.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayLTHSCR.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayLTHSCR.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayLTHSCR.png")
 ```
 
 ```{r tabHeadwayCRNOHS, fig.align = "center", fig.cap="Adults without a high school diploma within 4800m or 3 miles of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -8571,10 +8612,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayMINCR.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayMINCR.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayMINCR.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayMINCR.png")
 ```
 
 ```{r tabHeadwayCRMIN, fig.align = "center", fig.cap="Minority persons within 4800m or 3 miles of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -8644,10 +8685,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayNoCarHHCR.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayNoCarHHCR.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayNoCarHHCR.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayNoCarHHCR.png")
 ```
 
 ```{r tabHeadwayCRNoCar, fig.align = "center", fig.cap="Households without a car within 4800m or 3 miles of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -8717,10 +8758,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayMAMINCR.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayMAMINCR.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayMAMINCR.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayMAMINCR.png")
 ```
 
 ```{r tabHeadwayCRMAMIN, fig.align = "center", fig.cap="MA Minority persons within 4800m or 3 miles of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -8790,10 +8831,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayLEHCR.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayLEHCR.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayLEHCR.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayLEHCR.png")
 ```
 
 ```{r tabHeadwayCRLEH, fig.align = "center", fig.cap="Limited English speaking households within 4800m or 3 miles of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -8864,10 +8905,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_headwayMALEHCR.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_headwayMALEHCR.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_headwayMALEHCR.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_headwayMALEHCR.png")
 ```
 
 ```{r tabHeadwayCRMALEH, fig.align = "center", fig.cap="Limited English speaking households, as defined by state environmental justice policy, within 4800m or 3 miles of transit stops in which the mean headway for these stops is above the 80th percentile for the state.", include=FALSE, eval=FALSE}
@@ -8940,10 +8981,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_walkDisabled.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_walkDisabled.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_walkDisabled.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_walkDisabled.png")
 ```
 
 ```{r tabLowWalkDisabled, fig.align = "center", fig.cap="Disabled persons by municipality in least walkable Census Tracts (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -8957,6 +8998,8 @@ leastWalkableTract %>%
             Disabled = sum(disabledOver18E,na.rm = TRUE),
             `Pct of Disabled` = round(sum(disabledOver18E)/max(TotalDisabled)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of Disabled` > 0) %>% 
+  mutate(`Pct of Disabled` = if_else(`Pct of Disabled` > 100, 100, `Pct of Disabled`)) %>%
   mutate(`Pct of Disabled` = paste0(`Pct of Disabled`,"%")) %>% 
   arrange(desc(`Disabled`)) %>% 
   filter(Disabled > 0) %>% 
@@ -9009,10 +9052,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_walkU5.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_walkU5.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_walkU5.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_walkU5.png")
 ```
 
 ```{r tabLowWalkU5, fig.align = "center", fig.cap="Children under 5 by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -9026,6 +9069,8 @@ leastWalkable %>%
             `Under 5` = sum(under5E,na.rm = TRUE),
             `Pct of Under 5` = round(sum(under5E)/max(TotalUnder5)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of Under 5` > 0) %>% 
+  mutate(`Pct of Under 5` = if_else(`Pct of Under 5` > 100, 100, `Pct of Under 5`)) %>%
   mutate(`Pct of Under 5` = paste0(`Pct of Under 5`,"%")) %>% 
   arrange(desc(`Under 5`)) %>% 
   filter(`Under 5` > 0) %>% 
@@ -9078,10 +9123,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_walkNoHSDip.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_walkNoHSDip.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_walkNoHSDip.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_walkNoHSDip.png")
 ```
 
 ```{r tabLowWalkNoHSDip, fig.align = "center", fig.cap="Adults without a high school diploma by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -9095,6 +9140,8 @@ leastWalkable %>%
             `No HS Dip` = sum(lthsE,na.rm = TRUE),
             `Pct of No HS Dip` = round(sum(lthsE)/max(TotalNoHS)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of No HS Dip` > 0) %>% 
+  mutate(`Pct of No HS Dip` = if_else(`Pct of No HS Dip` > 100, 100, `Pct of No HS Dip`)) %>%
   mutate(`Pct of No HS Dip` = paste0(`Pct of No HS Dip`,"%")) %>% 
   arrange(desc(`No HS Dip`)) %>% 
   filter(`No HS Dip` > 0) %>% 
@@ -9147,10 +9194,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_walkLowInc.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_walkLowInc.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_walkLowInc.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_walkLowInc.png")
 ```
 
 ```{r tabLowWalkLowInc, fig.align = "center", fig.cap="Low income persons by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -9164,6 +9211,8 @@ leastWalkable %>%
             `Low Income` = sum(num2povE,na.rm = TRUE),
             `Pct of Low Income` = round(sum(num2povE)/max(TotalLowInc)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of Low Income` > 0) %>% 
+  mutate(`Pct of Low Income` = if_else(`Pct of Low Income` > 100, 100, `Pct of Low Income`)) %>%
   mutate(`Pct of Low Income` = paste0(`Pct of Low Income`,"%")) %>% 
   arrange(desc(`Low Income`)) %>% 
   filter(`Low Income` > 0) %>% 
@@ -9216,10 +9265,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_walkNoCar.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_walkNoCar.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_walkNoCar.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_walkNoCar.png")
 ```
 
 ```{r tabLowWalkNoCar, fig.align = "center", fig.cap="Households without a car by municipality in least walkable Census Tracts (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -9230,12 +9279,14 @@ leastWalkableTract %>%
   left_join(., townpopsdf,by="NAME") %>%
   group_by(NAME) %>%
   summarize(`Tracts` = n(),
-            Disabled = sum(HHnoCarE,na.rm = TRUE),
-            `Pct of Disabled` = round(sum(HHnoCarE)/max(TotalNoCar)*100,1)) %>% 
+            `No Car HH` = sum(HHnoCarE,na.rm = TRUE),
+            `Pct of No Car HH` = round(sum(HHnoCarE)/max(TotalNoCar)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
-  mutate(`Pct of Disabled` = paste0(`Pct of Disabled`,"%")) %>% 
-  arrange(desc(`Disabled`)) %>% 
-  filter(Disabled > 0) %>% 
+  filter(`Pct of No Car HH` > 0) %>% 
+  mutate(`Pct of No Car HH` = if_else(`Pct of No Car HH` > 100, 100, `Pct of No Car HH`)) %>%
+  mutate(`Pct of No Car HH` = paste0(`Pct of No Car HH`,"%")) %>% 
+  arrange(desc(`No Car HH`)) %>% 
+  filter(`No Car HH` > 0) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
@@ -9285,10 +9336,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_walkMinority.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_walkMinority.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_walkMinority.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_walkMinority.png")
 ```
 
 ```{r tabLowWalkMinority, fig.align = "center", fig.cap="Minority persons by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -9302,6 +9353,8 @@ leastWalkable %>%
             Minority = sum(minorityE,na.rm = TRUE),
             `Pct of Minority` = round(sum(minorityE)/max(TotalMin)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of Minority` > 0) %>% 
+  mutate(`Pct of Minority` = if_else(`Pct of Minority` > 100, 100, `Pct of Minority`)) %>%
   mutate(`Pct of Minority` = paste0(`Pct of Minority`,"%")) %>% 
   arrange(desc(Minority)) %>% 
   filter(Minority > 0) %>% 
@@ -9354,10 +9407,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_walkLEH.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_walkLEH.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_walkLEH.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_walkLEH.png")
 ```
 
 ```{r tabLowWalkLEH, fig.align = "center", fig.cap="Limited English speaking households by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -9371,6 +9424,8 @@ leastWalkable %>%
             `Limited English HH` = sum(eng_limitE,na.rm = TRUE),
             `Pct of Limited English HH` = round(sum(eng_limitE)/max(TotalLEH)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of Limited English HH` > 0) %>% 
+  mutate(`Pct of Limited English HH` = if_else(`Pct of Limited English HH` > 100, 100, `Pct of Limited English HH`)) %>%
   mutate(`Pct of Limited English HH` = paste0(`Pct of Limited English HH`,"%")) %>% 
   arrange(desc(`Limited English HH`)) %>% 
   filter(`Limited English HH` > 0) %>% 
@@ -9423,10 +9478,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_walkMALEH.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_walkMALEH.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_walkMALEH.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_walkMALEH.png")
 ```
 
 ```{r tabLowWalkMALEH, fig.align = "center", fig.cap="Limited English speaking households, as defined by state environmental justice policy, by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -9440,6 +9495,8 @@ leastWalkable %>%
             `MA Limited English HH` = sum(MA_ENGLISH,na.rm = TRUE),
             `Pct of MA Limited English HH` = round(sum(MA_ENGLISH)/max(TotalMA_ENGLISH)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of MA Limited English HH` > 0) %>% 
+  mutate(`Pct of MA Limited English HH` = if_else(`Pct of MA Limited English HH` > 100, 100, `Pct of MA Limited English HH`)) %>%
   mutate(`Pct of MA Limited English HH` = paste0(`Pct of MA Limited English HH`,"%")) %>% 
   arrange(desc(`MA Limited English HH`)) %>% 
   filter(`MA Limited English HH` > 0) %>% 
@@ -9492,10 +9549,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_walkMAMIN.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_walkMAMIN.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_walkMAMIN.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_walkMAMIN.png")
 ```
 
 ```{r tabLowWalkMAMIN, fig.align = "center", fig.cap="Minority persons, as defined by state environmental justice policy, by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -9509,6 +9566,8 @@ leastWalkable %>%
             `MA Minority` = sum(MA_MINORITY,na.rm = TRUE),
             `Pct of MA Minority` = round(sum(MA_MINORITY)/max(TotalMA_MINORITY)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of MA Minority` > 0) %>% 
+  mutate(`Pct of MA Minority` = if_else(`Pct of MA Minority` > 100, 100, `Pct of MA Minority`)) %>%
   mutate(`Pct of MA Minority` = paste0(`Pct of MA Minority`,"%")) %>% 
   arrange(desc(`MA Minority`)) %>% 
   filter(`MA Minority` > 0) %>% 
@@ -9561,10 +9620,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_walkMAINC.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_walkMAINC.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_walkMAINC.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_walkMAINC.png")
 ```
 
 ```{r tabLowWalkMAINC, fig.align = "center", fig.cap="Low income persons, as defined by state environmental justice policy, by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -9578,6 +9637,8 @@ leastWalkable %>%
             `MA Low Income` = sum(MA_LOWINC,na.rm = TRUE),
             `Pct of MA Low Income` = round(sum(MA_LOWINC)/max(TotalMA_LOWINC)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of MA Low Income` > 0) %>% 
+  mutate(`Pct of MA Low Income` = if_else(`Pct of MA Low Income` > 100, 100, `Pct of MA Low Income`)) %>%
   mutate(`Pct of MA Low Income` = paste0(`Pct of MA Low Income`,"%")) %>% 
   arrange(desc(`MA Low Income`)) %>% 
   filter(`MA Low Income` > 0) %>% 
@@ -9633,10 +9694,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_HiBurdenDisabled.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_HiBurdenDisabled.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_HiBurdenDisabled.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_HiBurdenDisabled.png")
 ```
 
 ```{r tabHiBurdenDisabled, fig.align = "center", fig.cap="Disabled persons by municipality in Census Tracts with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
@@ -9650,6 +9711,8 @@ HiBurdenTract %>%
             Disabled = sum(disabledOver18E,na.rm = TRUE),
             `Pct of Disabled` = round(sum(disabledOver18E)/max(TotalDisabled)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of Disabled` > 0) %>% 
+  mutate(`Pct of Disabled` = if_else(`Pct of Disabled` > 100, 100, `Pct of Disabled`)) %>%
   mutate(`Pct of Disabled` = paste0(`Pct of Disabled`,"%")) %>% 
   arrange(desc(Disabled)) %>% 
   filter(Disabled > 0) %>% 
@@ -9702,10 +9765,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_HiBurdenU5.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_HiBurdenU5.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_HiBurdenU5.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_HiBurdenU5.png")
 ```
 
 ```{r tabHiBurdenU5, fig.align = "center", fig.cap="Children under 5 by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
@@ -9719,6 +9782,8 @@ HiBurden %>%
             `Under 5` = sum(under5E,na.rm = TRUE),
             `Pct of Under 5` = round(sum(under5E)/max(TotalUnder5)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of Under 5` > 0) %>% 
+  mutate(`Pct of Under 5` = if_else(`Pct of Under 5` > 100, 100, `Pct of Under 5`)) %>%
   mutate(`Pct of Under 5` = paste0(`Pct of Under 5`,"%")) %>% 
   arrange(desc(`Under 5`)) %>% 
   filter(`Under 5` > 0) %>% 
@@ -9771,10 +9836,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_HiBurdenLTHS.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_HiBurdenLTHS.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_HiBurdenLTHS.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_HiBurdenLTHS.png")
 ```
 
 ```{r tabHiBurdenLTHS, fig.align = "center", fig.cap="Adults without a high school diploma by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
@@ -9788,6 +9853,8 @@ HiBurden %>%
             `No HS Dip` = sum(lthsE,na.rm = TRUE),
             `Pct of No HS Dip` = round(sum(lthsE)/max(TotalNoHS)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of No HS Dip` > 0) %>% 
+  mutate(`Pct of No HS Dip` = if_else(`Pct of No HS Dip` > 100, 100, `Pct of No HS Dip`)) %>%
   mutate(`Pct of No HS Dip` = paste0(`Pct of No HS Dip`,"%")) %>% 
   arrange(desc(`No HS Dip`)) %>% 
   filter(`No HS Dip` > 0) %>% 
@@ -9840,10 +9907,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_HiBurdenINC.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_HiBurdenINC.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_HiBurdenINC.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_HiBurdenINC.png")
 ```
 
 ```{r tabHiBurdenINC, fig.align = "center", fig.cap="Low income persons by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
@@ -9857,6 +9924,8 @@ HiBurden %>%
             `Low Income` = sum(num2povE,na.rm = TRUE),
             `Pct of Low Income` = round(sum(num2povE)/max(TotalLowInc)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of Low Income` > 0) %>% 
+  mutate(`Pct of Low Income` = if_else(`Pct of Low Income` > 100, 100, `Pct of Low Income`)) %>%
   mutate(`Pct of Low Income` = paste0(`Pct of Low Income`,"%")) %>% 
   arrange(desc(`Low Income`)) %>% 
   filter(`Low Income` > 0) %>% 
@@ -9909,10 +9978,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_HiBurdenNoCarHH.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_HiBurdenNoCarHH.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_HiBurdenNoCarHH.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_HiBurdenNoCarHH.png")
 ```
 
 ```{r tabHiBurdenNoCarHH, fig.align = "center", fig.cap="Households without a car by municipality in Census Tracts with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
@@ -9927,6 +9996,7 @@ HiBurdenTract %>%
             `Pct of No Car Households` = round(sum(HHnoCarE)/max(TotalNoCar)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
   filter(`Pct of No Car Households` > 0) %>% 
+  mutate(`Pct of No Car Households` = if_else(`Pct of No Car Households` > 100, 100, `Pct of No Car Households`)) %>%
   mutate(`Pct of No Car Households` = paste0(`Pct of No Car Households`,"%")) %>% 
   arrange(desc(`No Car Households`)) %>% 
   filter(`No Car Households` > 0) %>% 
@@ -9979,10 +10049,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_HiBurdenMIN.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_HiBurdenMIN.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_HiBurdenMIN.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_HiBurdenMIN.png")
 ```
 
 ```{r tabHiBurdenMIN, fig.align = "center", fig.cap="Minority persons by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
@@ -9996,6 +10066,8 @@ HiBurden %>%
             Minority = sum(minorityE,na.rm = TRUE),
             `Pct of Minority` = round(sum(minorityE)/max(TotalMin)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of Minority` > 0) %>% 
+  mutate(`Pct of Minority` = if_else(`Pct of Minority` > 100, 100, `Pct of Minority`)) %>%
   mutate(`Pct of Minority` = paste0(`Pct of Minority`,"%")) %>% 
   arrange(desc(Minority)) %>% 
   filter(`Minority` > 0) %>% 
@@ -10048,10 +10120,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_HiBurdenLEH.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_HiBurdenLEH.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_HiBurdenLEH.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_HiBurdenLEH.png")
 ```
 
 ```{r tabHiBurdenLEH, fig.align = "center", fig.cap="Limited English speaking households by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
@@ -10118,10 +10190,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_HiBurdenMAINC.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_HiBurdenMAINC.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_HiBurdenMAINC.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_HiBurdenMAINC.png")
 ```
 
 ```{r tabHiBurdenMAINC, fig.align = "center", fig.cap="Low income persons, as defined by state environmental justice policy, by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
@@ -10188,10 +10260,10 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ma_HiBurdenMAMIN.png",
+tmap_save(m, "DATA/transport/MA/figures/ma_HiBurdenMAMIN.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ma_HiBurdenMAMIN.png")
+knitr::include_graphics("DATA/transport/MA/figures/ma_HiBurdenMAMIN.png")
 ```
 
 ```{r tabHiBurdenMAMIN, fig.align = "center", fig.cap="Minority persons, as defined by state environmental justice policy, by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
