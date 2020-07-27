@@ -1,7 +1,7 @@
 ---
 title: "Transportation Options in Rhode Island"
 author: "Marcos Luna and Neenah Estrella-Luna"
-date: "6/23/2020"
+date: "`r Sys.Date()`"
 output: 
   bookdown::pdf_document2:
     toc: true
@@ -14,16 +14,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE)
-```
 
-\pagebreak
-
-# Analysis of adequacy of public transit and walkability in Rhode Island
-
-This is an analysis of access to public transit and walkability in Rhode Island.
-
-```{r data, include=FALSE}
-### Analysis of Rhode Island transportation options
 library(tidyverse)
 library(sf)
 library(tmap)
@@ -35,25 +26,36 @@ library(lubridate)
 library(maptools)
 library(spdep)
 library(lwgeom)
+```
 
+\pagebreak
+
+# Analysis of adequacy of public transit, walkability, and transportation cost burden in Rhode Island
+
+This is an analysis of access to public transit and walkability in Rhode Island.
+
+```{r data, include=FALSE}
+### Analysis of Rhode Island transportation options
 load("DATA/ne_layers.rds")
+
+rm(ne_blkgrp_sf90)
 
 ### Read in RI transit data. See http://www.rigis.org/
 # read in RIPTA bus routes
-ri_busroutes_sf <- st_read(dsn = "DATA/transport/RIPTA_Bus_Routes",
+ri_busroutes_sf <- st_read(dsn = "DATA/transport/RI/RIPTA_Bus_Routes",
                            layer = "RIPTA_Bus_Routes")
 # read in RIPTA bus stops
-ri_busstops_sf <- st_read(dsn = "DATA/transport/RIPTA_Bus_Stops",
+ri_busstops_sf <- st_read(dsn = "DATA/transport/RI/RIPTA_Bus_Stops",
                           layer = "RIPTA_Bus_Stops")
 # read in RI ferry routes
-ri_ferryroutes_sf <- st_read(dsn = "DATA/transport/RI_Ferry_Routes",
+ri_ferryroutes_sf <- st_read(dsn = "DATA/transport/RI/RI_Ferry_Routes",
                              layer = "Ferry_Routes")
 # read in RI railroad rights of way
-ri_railrow_sf <- st_read(dsn = "DATA/transport/RI_Railroad_Rights_of_Way",
+ri_railrow_sf <- st_read(dsn = "DATA/transport/RI/RI_Railroad_Rights_of_Way",
                          layer = "Railroad_Rights_of_Way") %>% 
   filter(STATUS == "Active" & RAILUSE == "Passenger")
 # read in RI park and ride stops
-ri_parknride_sf <- st_read(dsn = "DATA/transport/RIPTA_Park_and_Ride_Stops",
+ri_parknride_sf <- st_read(dsn = "DATA/transport/RI/RIPTA_Park_and_Ride_Stops",
                            layer = "RIPTA_Park_and_Ride_Stops")
 
 # Convert to projected local CRS EPSG:2840: NAD83(HARN) / Rhode Island
@@ -122,6 +124,16 @@ ri_tracts_developed <- st_read(dsn = "DATA/FEMA/RI",
          NewOver18 = Over18E*Proportion,
          NewHHNoCar = HHnoCarE*Proportion)
 
+# create a simplified version for faster mapping
+ri_blkgrps_developed_simple <- st_simplify(ri_blkgrps_developed,
+                                           dTolerance = 100) %>% 
+  filter(!st_is_empty(.)) %>% 
+  st_make_valid()
+# repeat for tracts
+ri_tracts_developed_simple <- st_simplify(ri_tracts_developed, 
+                                          dTolerance = 100) %>% 
+  filter(!st_is_empty(.)) %>% 
+  st_make_valid()
 
 # # clean up
 # rm(list = ls(pattern = "ne_"))
@@ -411,7 +423,7 @@ ri_tracts_sf_noBus <- ri_tracts_developed %>%
 
 This analysis seeks to identify communities that are underserved by access to public transit. Access to transit is measured in terms of distance to transit boarding stops and in terms of frequency of service. 
 
-Rhode Island is served primarily by the Rhode Island Public Transit Authority (RIPTA) which is a quasi-public, independent authority. This public transit service system is made up almost entirely by fixed-route bus service, which passes through 36 of Rhode Island's 39 municipalities. Amtrak train service passes through Rhode Island as well, but it is not considered in this analysis. This analysis looks at bus service access and frequency in Rhode Island. Figure \@ref(fig:transitMap) shows `r nrow(ri_busroutes_sf)` fixed public transit routes across the state along with population density.
+Rhode Island is served primarily by the Rhode Island Public Transit Authority (RIPTA) which is a quasi-public, independent authority. This public transit service system is made up almost entirely by fixed-route bus service, which passes through 36 of Rhode Island's 39 municipalities. Amtrak train service passes through Rhode Island as well, but it is not considered in this analysis because it is not managed by the state of Rhode Island. This analysis looks at bus service access and frequency in Rhode Island. Figure \@ref(fig:transitMap) shows `r nrow(ri_busroutes_sf)` fixed public transit routes across the state along with population density.
 
 ```{r transitMap, fig.align = "center", fig.cap="Transit service and population density in Rhode Island."}
 # bbox_new <- st_bbox(ri_blkgrps_sf) # current bounding box
@@ -432,7 +444,7 @@ Rhode Island is served primarily by the Rhode Island Public Transit Authority (R
 
 m <- tm_shape(ri_towns_sf, unit = "mi") + 
   tm_borders(col = "gray", lwd = 0.2) +
-  tm_shape(ri_blkgrps_developed) +
+  tm_shape(ri_blkgrps_developed_simple) +
   tm_fill(col = "NewPopAcre", alpha = 0.8, style = "quantile",
           colorNA = "white", colorNULL = "gray", title = "Pop per Acre",
           legend.format = list(fun = function(x) formatC(x, digits = 1, format = "f")), palette = "YlGn") +
@@ -462,10 +474,10 @@ m <- tm_shape(ri_towns_sf, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_transit.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_transit.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_transit.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_transit.png")
 ```
 
 Approximately `r paste0(round(ri_busAccessPops_df %>% filter(Group == "Total Pop") %>% dplyr::select(PctBus) %>% pull(),1),"%")` of the state population lives within reasonable walking distance of a bus stop (defined as approximately 400 meters or 1/4 mile). 
@@ -581,10 +593,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_transitO64access.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_transitO64access.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_transitO64access.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_transitO64access.png")
 ```
 
 ```{r tabTransitAccessO64, fig.align = "center", fig.cap="Persons over 64 in Census Block Groups one or more miles from the nearest bus stop."}
@@ -646,10 +658,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_transitDisabledaccess.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_transitDisabledaccess.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_transitDisabledaccess.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_transitDisabledaccess.png")
 ```
 
 ```{r tabTransitAccessDisabled, fig.align = "center", fig.cap="Persons over 64 in Census Block Groups one or more miles from the nearest bus stop."}
@@ -675,7 +687,7 @@ ri_tracts_sf_noBus %>%
 
 
 ## Frequency of Transit Service
-The quality of access to public transit can also be assessed by the level or frequency of service, which is measured by "headway." Headway describes the time between transit vehicle arrivals at a transit stop. For example, a bus route with a 15 minute headway would mean that the bus arrives at a given stop four times an hour (it's frequency), or once every 15 minutes. Transit headways are affected by the scheduled frequency of service, the number of vehicles on a given route, traffic delays, and dispatch management of vehicle spacing.[^mindGap] Headways are significant because they affect the desirability and useability of transit service.[^headways] Headways can affect:
+The quality of access to public transit can also be assessed by the level or frequency of service, which is measured by "headway." Headway describes the scheduled or observed time between transit vehicle arrivals at a transit stop. For example, a bus route with a 15 minute headway would mean that the bus is scheduled or actually arrives at a given stop four times an hour (it's frequency), or once every 15 minutes. Transit headways are affected by the scheduled frequency of service, the number of vehicles on a given route, traffic delays, and dispatch management of vehicle spacing.[^mindGap] Headways are significant because they affect the desirability and useability of transit service.[^headways] Headways can affect:
 
 * average wait times
 * the amount of planning and preparation needed to use transit and stay on schedule
@@ -691,7 +703,7 @@ Headways are significant for transit dependent populations and can affect the qu
 # ri_transit <- read_gtfs("https://www.ripta.com/stuff/contentmgr/files/0/3cda81dfa140edbe9aae214b26245b4a/files/google_transit.zip") %>% 
 #   gtfs_as_sf()
 # Use previously downloaded GTFS for June 2019
-ri_transit <- read_gtfs("DATA/transport/RIPTA062019gtfs.zip") %>% 
+ri_transit <- read_gtfs("DATA/transport/RI/RI_gtfs_files/RIPTA062019gtfs.zip") %>% 
   gtfs_as_sf()
 
 # add a table to the feed that indicates which service_id runs on which date. This is later useful for linking dates and trips via service_id.
@@ -840,10 +852,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_transitHeadways.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_transitHeadways.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_transitHeadways.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_transitHeadways.png")
 ```
 
 ```{r tabGTFS, fig.align = "center", fig.cap="Headway by service type for Rhode Island transit based on on GTFS schedule for Monday to Friday service, 6am - 9pm."}
@@ -866,7 +878,7 @@ ri_busroutes_sf %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-The average population-weighted headway for all transit in the state is `r round(ri_busHeadwayPops_df %>% filter(Group == "Total Pop") %>% select(AvgWHeadway) %>% pull(),1)` minutes. However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliHeadway) below compares the population-weighted average headways for different groups across the state. Most groups have average headways lower than the general population. However, persons over age 64 have headways that exceed that of the general population (`r round(ri_busHeadwayPops_df %>% filter(Group == "Over 64") %>% select(AvgWHeadway) %>% pull(),1)` minutes). The shortest population-weighted average headway, experienced by minorities, as defined by Rhode Island environmental justice policy, is `r round(ri_busHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),0)` minutes.
+The average population-weighted headway for all transit in the state is `r round(ri_busHeadwayPops_df %>% filter(Group == "Total Pop") %>% select(AvgWHeadway) %>% pull(),1)` minutes. However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliHeadway) below compares the population-weighted average headways for different groups across the state. Most groups have average headways shorter than the general population. However, persons over age 64 have headways that exceed that of the general population (`r round(ri_busHeadwayPops_df %>% filter(Group == "Over 64") %>% select(AvgWHeadway) %>% pull(),1)` minutes). The shortest population-weighted average headway, experienced by minorities, as defined by Rhode Island environmental justice policy, is `r round(ri_busHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),0)` minutes.
 
 ```{r loliHeadway, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average headways for groups within 400 meters of a bus stop across Rhode Island."}
 ri_busHeadwayPops_df %>% 
@@ -929,7 +941,7 @@ headway80_2 <- headway80thtracts %>%
   mutate(`Pct of Disabled` = paste0(`Pct of Disabled`,"%")) %>% 
   arrange(desc(Disabled))
 ```
-The population-weighted average headways above provide a glimpse of average headways across the state for different population groups. However, headways also vary for specific communities. Indeed, it is important to consider populations of concern or transportation-limited populations that experience excessively large headways or low service frequency. Figures \@ref(fig:mapHeadwayOver64) and \@ref(fig:mapHeadwayDisabled) below highlight communities of persons over 64 or disabled persons within walking distance of transit stops (i.e., 400m or 1/4 mile), but where the mean headway for these stops exceeds the 80th percentile of mean route headways for the state (`r quantile(ri_routes_sf$mean_headways,0.8)` minutes). Tables \@ref(tab:tabHeadwayOver64) and \@ref(tab:tabHeadwayDisabled) show breakdowns by municipality. For example, Table \@ref(tab:tabHeadwayOver64) shows that `r formatC(as.numeric(headway80_1[1,3]),big.mark=",")` people over 64 across `r headway80_1[1,2]` Block Groups in `r headway80_1[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ri_routes_sf$mean_headways,0.8)` minutes. These people represented `r headway80_1[1,4]` of people over 64 in `r headway80_1[1,1]`. Similarly, Table \@ref(tab:tabHeadwayDisabled) shows that `r formatC(as.numeric(headway80_2[1,3]),big.mark=",")` people with disabilities across `r headway80_2[1,2]` Census Tracts in `r headway80_2[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ri_routes_sf$mean_headways,0.8)` minutes. These people represented `r headway80_2[1,4]` of people with disabilities in `r headway80_2[1,1]`.
+The population-weighted average headways above provide a glimpse of average headways across the state for different population groups. However, headways also vary for specific communities. Indeed, it is important to consider populations of concern or transportation-limited populations that experience excessively long headways or low service frequency. Figures \@ref(fig:mapHeadwayOver64) and \@ref(fig:mapHeadwayDisabled) below highlight communities of persons over 64 or disabled persons within walking distance of transit stops (i.e., 400m or 1/4 mile), but where the mean headway for these stops exceeds the 80th percentile of mean route headways for the state (`r quantile(ri_routes_sf$mean_headways,0.8)` minutes). Tables \@ref(tab:tabHeadwayOver64) and \@ref(tab:tabHeadwayDisabled) show breakdowns by municipality. For example, Table \@ref(tab:tabHeadwayOver64) shows that `r formatC(as.numeric(headway80_1[1,3]),big.mark=",")` people over 64 across `r headway80_1[1,2]` Block Groups in `r headway80_1[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ri_routes_sf$mean_headways,0.8)` minutes. These people represented `r headway80_1[1,4]` of people over 64 in `r headway80_1[1,1]`. Similarly, Table \@ref(tab:tabHeadwayDisabled) shows that `r formatC(as.numeric(headway80_2[1,3]),big.mark=",")` people with disabilities across `r headway80_2[1,2]` Census Tracts in `r headway80_2[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ri_routes_sf$mean_headways,0.8)` minutes. These people represented `r headway80_2[1,4]` of people with disabilities in `r headway80_2[1,1]`.
 Maps and tables of other populations of concern with excessive headways can be found in Appendix B. 
 
 ```{r mapHeadwayOver64, fig.align = "center", fig.cap="Persons over 64 within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -968,10 +980,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_headwayOver64.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_headwayOver64.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_headwayOver64.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_headwayOver64.png")
 ```
 
 ```{r tabHeadwayOver64, fig.align = "center", fig.cap="Persons over 64 within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -1032,10 +1044,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_headwayDisabled.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_headwayDisabled.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_headwayDisabled.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_headwayDisabled.png")
 ```
 
 ```{r tabHeadwayDisabled, fig.align = "center", fig.cap="Disabled persons within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -1127,7 +1139,7 @@ ri_wAvgWalkability_df <- ri_blkgrp_walkability_sf %>%
   rbind(., ri_tract_walkability_df)
 ```
 
-Figure \@ref(fig:mapWalkability) shows walkability scores by Census Block Group across Rhode Island.  Walkability varies across the state. It is highest in and around the state's major urban centers, such as Providence, Portsmouth, and Newport, and lowest in the western suburbs.
+Figure \@ref(fig:mapWalkability) shows walkability scores by Census Block Group across Rhode Island.  The average population-weighted walkability score for the state is `r round(ri_wAvgWalkability_df %>% filter(Group == "Total Pop") %>% select(wNatWalkIndex) %>% pull(),1)`. However, walkability varies across the state. It is highest in and around the state's major urban centers, such as Providence, Portsmouth, and Newport, and lowest in the western suburbs.
 
 ```{r mapWalkability, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Walkability Index scores for Census Block Groups across Rhode Island."}
 m <- tm_shape(ri_blkgrp_walkability_sf) +
@@ -1159,13 +1171,13 @@ m <- tm_shape(ri_blkgrp_walkability_sf) +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_walk.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_walk.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_walk.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_walk.png")
 ```
 
-Walkability varies for different population groups across the state. Figure \@ref(fig:loliWalkability) below compares population-weighted average walkability index scores for different populations. Most groups live in communities with above average walkability index scores that are also at or above that of the general population. However, persons over age 64 tend to live in communities with walkability scores below the state average. 
+Walkability varies for different population groups across the state. Figure \@ref(fig:loliWalkability) below compares population-weighted average walkability index scores for different populations. Most groups live in communities with walkability index scores that are at or above that of the general population. However, persons over age 64 tend to live in communities with walkability scores below the state average. 
 
 ```{r loliWalkability, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="population-weighted average walkability index scores for groups across Rhode Island."}
 # Create lollipop graph of pop-weighted average walk index
@@ -1264,10 +1276,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_walkO64.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_walkO64.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_walkO64.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_walkO64.png")
 ```
 
 ```{r tabLowWalkO64, fig.align = "center", fig.cap="Persons over 64 by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -1322,10 +1334,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_walkU18.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_walkU18.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_walkU18.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_walkU18.png")
 ```
 
 ```{r tabLowWalkU18, fig.align = "center", fig.cap="Persons under 18 by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -1409,9 +1421,9 @@ lai_ri_df <- lai_ri_blkgrp %>%
 ```
 
 
-Figure \@ref(fig:mapLAI) below shows transportation cost burden (i.e., transportation cost as a percentage of household income) by Census Tract across Rhode Island. Transportation cost burden varies across the state. It is lowest in and around the state's major urban centers, such as Providence, Pawtucket, Woonsocket, and Newport, and highest in most of the rest of the state. In Little Compton, transportation as a percentage of income exceeds housing. 
+Figure \@ref(fig:mapLAI) below shows transportation cost burden (i.e., transportation cost as a percentage of household income) by Census Tract across Rhode Island. Transportation cost burden varies across the state. It is lowest in and around the state's major urban centers, such as Providence, Pawtucket, Woonsocket, and Newport, and highest in most of the rest of the state. In Little Compton, transportation costs as a percentage of income exceeds housing costs. 
 
-```{r mapLAI, fig.align = "center", fig.cap="Transpotation cost burden for Census Tracts across Rhode Island."}
+```{r mapLAI, fig.align = "center", fig.cap="Transportation cost burden for Census Tracts across Rhode Island."}
 # isolate places where transportation cost as a percentage of income exceeds housing as a percentage of income
 lai_ToverH <- lai_ri %>% 
   filter(hh7_t > hh7_h)
@@ -1445,15 +1457,15 @@ m <- tm_shape(lai_ri) +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_tburden.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_tburden.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_tburden.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_tburden.png")
 ````
 
-Transportation cost burden varies for different population groups across the state. Figure \@ref(fig:loliLAI) below compares population-weighted average transportation cost burden for different populations. Most groups live in communities with transportation cost burdens that are below that of the general population. However, persons over age 64 tend to live in communities with transportation cost burdens that exceed the state average. 
+Transportation cost burden varies for different population groups across the state. Figure \@ref(fig:loliLAI) below compares population-weighted average transportation cost burden for different populations. Most groups live in communities with transportation cost burdens that are below that of the state average of `r round(lai_ri_df %>% filter(Group == "Total Pop") %>% select(wTBurden) %>% pull(),1)`%. However, persons over age 64 tend to live in communities with transportation cost burdens that come to almost `r round(lai_ri_df %>% filter(Group == "Over 64") %>% select(wTBurden) %>% pull(),0)`% of household income. 
 
-```{r loliLAI, fig.align = "center", fig.cap="Population-weighted average transportation cost burden for groups across Rhode Island."}
+```{r loliLAI, fig.align = "center", fig.cap="Population-weighted average transportation cost burden as a percentage of household income for groups across Rhode Island."}
 # Create lollipop graph of pop-weighted average LAI
 lai_ri_df %>% 
   ggplot(aes(x = reorder(Group,wTBurden), y = wTBurden)) +
@@ -1551,10 +1563,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_HiBurdenO64.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_HiBurdenO64.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_HiBurdenO64.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_HiBurdenO64.png")
 ```
 
 ```{r tabHiBurdenO64, fig.align = "center", fig.cap="Persons over 64 by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
@@ -1609,10 +1621,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_HiBurdenU18.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_HiBurdenU18.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_HiBurdenU18.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_HiBurdenU18.png")
 ```
 
 ```{r tabHiBurdenU18, fig.align = "center", fig.cap="Persons under 18 by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
@@ -1931,10 +1943,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_transitU18access.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_transitU18access.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_transitU18access.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_transitU18access.png")
 ```
 
 ```{r tabTransitAccessU18, fig.align = "center", fig.cap="Persons under 18 in Census Block Groups one or more miles from the nearest bus stop."}
@@ -1991,10 +2003,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_transitU5access.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_transitU5access.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_transitU5access.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_transitU5access.png")
 ```
 
 ```{r tabTransitAccessU5, fig.align = "center", fig.cap="Children under 5 in Census Block Groups one or more miles from the nearest bus stop."}
@@ -2055,10 +2067,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_transitNOHSaccess.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_transitNOHSaccess.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_transitNOHSaccess.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_transitNOHSaccess.png")
 ```
 
 ```{r tabTransitAccessNOHS, fig.align = "center", fig.cap="Adults without a high school diploma in Census Block Groups one or more miles from the nearest bus stop."}
@@ -2119,10 +2131,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_transitINCaccess.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_transitINCaccess.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_transitINCaccess.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_transitINCaccess.png")
 ```
 
 ```{r tabTransitAccessINC, fig.align = "center", fig.cap="Low income persons in Census Block Groups one or more miles from the nearest bus stop."}
@@ -2183,10 +2195,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_transitNoCaraccess.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_transitNoCaraccess.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_transitNoCaraccess.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_transitNoCaraccess.png")
 ```
 
 ```{r tabTransitAccessNoCar, fig.align = "center", fig.cap="Households without a car in Census Tracts one or more miles from the nearest bus stop."}
@@ -2247,10 +2259,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_transitMINaccess.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_transitMINaccess.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_transitMINaccess.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_transitMINaccess.png")
 ```
 
 ```{r tabTransitAccessMIN, fig.align = "center", fig.cap="Minority persons in Census Block Groups one or more miles from the nearest bus stop."}
@@ -2311,10 +2323,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_transitLEHaccess.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_transitLEHaccess.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_transitLEHaccess.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_transitLEHaccess.png")
 ```
 
 ```{r tabTransitAccessLEH, fig.align = "center", fig.cap="Limited English speaking households in Census Block Groups one or more miles from the nearest bus stop."}
@@ -2380,10 +2392,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_headwayU18.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_headwayU18.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_headwayU18.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_headwayU18.png")
 ```
 
 ```{r tabHeadwayUnder18, fig.align = "center", fig.cap="Persons under 18 within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -2445,10 +2457,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_headwayNoCar.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_headwayNoCar.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_headwayNoCar.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_headwayNoCar.png")
 ```
 
 ```{r tabHeadwayNoCar, fig.align = "center", fig.cap="Households without a car within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -2510,10 +2522,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_headwayUnder5.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_headwayUnder5.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_headwayUnder5.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_headwayUnder5.png")
 ```
 
 ```{r tabHeadwayUnder5, fig.align = "center", fig.cap="Children under 5 within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -2575,10 +2587,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_headwayLowInc.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_headwayLowInc.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_headwayLowInc.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_headwayLowInc.png")
 ```
 
 ```{r tabHeadwayLowInc, fig.align = "center", fig.cap="Low income persons within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -2640,10 +2652,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_headwayNoHSDip.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_headwayNoHSDip.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_headwayNoHSDip.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_headwayNoHSDip.png")
 ```
 
 ```{r tabHeadwayNoHSDip, fig.align = "center", fig.cap="Adults without a high school diploma within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -2705,10 +2717,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_headwayMinority.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_headwayMinority.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_headwayMinority.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_headwayMinority.png")
 ```
 
 ```{r tabHeadwayMinority, fig.align = "center", fig.cap="Minority persons within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -2770,10 +2782,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_headwayLEH.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_headwayLEH.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_headwayLEH.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_headwayLEH.png")
 ```
 
 ```{r tabHeadwayLEH, fig.align = "center", fig.cap="Limited English speaking households within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -2835,10 +2847,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_headwayRILowInc.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_headwayRILowInc.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_headwayRILowInc.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_headwayRILowInc.png")
 ```
 
 ```{r tabHeadwayRILowInc, fig.align = "center", fig.cap="Low income persons, as defined by the state's environmental justice policy, within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -2900,10 +2912,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_headwayRIMinority.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_headwayRIMinority.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_headwayRIMinority.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_headwayRIMinority.png")
 ```
 
 ```{r tabHeadwayRIMinority, fig.align = "center", fig.cap="Minority persons, as defined by the state's environmental justice policy, within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -2961,10 +2973,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_walkDisabled.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_walkDisabled.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_walkDisabled.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_walkDisabled.png")
 ```
 
 ```{r tabLowWalkDisabled, fig.align = "center", fig.cap="Disabled persons by municipality in least walkable Census Tracts (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -3019,10 +3031,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_walkU5.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_walkU5.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_walkU5.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_walkU5.png")
 ```
 
 ```{r tabLowWalkU5, fig.align = "center", fig.cap="Children under 5 by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -3077,10 +3089,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_walkNoHSDip.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_walkNoHSDip.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_walkNoHSDip.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_walkNoHSDip.png")
 ```
 
 ```{r tabLowWalkNoHSDip, fig.align = "center", fig.cap="Adults without a high school diploma by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -3135,10 +3147,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_walkLowInc.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_walkLowInc.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_walkLowInc.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_walkLowInc.png")
 ```
 
 ```{r tabLowWalkLowInc, fig.align = "center", fig.cap="Low income persons by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -3193,10 +3205,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_walkNoCar.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_walkNoCar.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_walkNoCar.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_walkNoCar.png")
 ```
 
 ```{r tabLowWalkNoCar, fig.align = "center", fig.cap="Households without a car by municipality in least walkable Census Tracts (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -3251,10 +3263,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_walkMinority.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_walkMinority.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_walkMinority.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_walkMinority.png")
 ```
 
 ```{r tabLowWalkMinority, fig.align = "center", fig.cap="Minority persons by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -3309,10 +3321,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_walkLEH.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_walkLEH.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_walkLEH.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_walkLEH.png")
 ```
 
 ```{r tabLowWalkLEH, fig.align = "center", fig.cap="Limited English speaking households by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
@@ -3372,10 +3384,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_HiBurdenDisabled.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_HiBurdenDisabled.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_HiBurdenDisabled.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_HiBurdenDisabled.png")
 ```
 
 ```{r tabHiBurdenDisabled, fig.align = "center", fig.cap="Disabled persons by municipality in Census Tracts with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
@@ -3430,10 +3442,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_HiBurdenU5.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_HiBurdenU5.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_HiBurdenU5.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_HiBurdenU5.png")
 ```
 
 ```{r tabHiBurdenU5, fig.align = "center", fig.cap="Children under 5 by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
@@ -3488,10 +3500,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_HiBurdenLTHS.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_HiBurdenLTHS.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_HiBurdenLTHS.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_HiBurdenLTHS.png")
 ```
 
 ```{r tabHiBurdenLTHS, fig.align = "center", fig.cap="Adults without a high school diploma by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
@@ -3546,10 +3558,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_HiBurdenINC.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_HiBurdenINC.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_HiBurdenINC.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_HiBurdenINC.png")
 ```
 
 ```{r tabHiBurdenINC, fig.align = "center", fig.cap="Low income persons by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
@@ -3604,10 +3616,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_HiBurdenNoCarHH.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_HiBurdenNoCarHH.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_HiBurdenNoCarHH.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_HiBurdenNoCarHH.png")
 ```
 
 ```{r tabHiBurdenNoCarHH, fig.align = "center", fig.cap="Households without a car by municipality in Census Tracts with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
@@ -3662,10 +3674,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_HiBurdenMIN.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_HiBurdenMIN.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_HiBurdenMIN.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_HiBurdenMIN.png")
 ```
 
 ```{r tabHiBurdenMIN, fig.align = "center", fig.cap="Minority persons by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
@@ -3720,10 +3732,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_HiBurdenLEH.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_HiBurdenLEH.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_HiBurdenLEH.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_HiBurdenLEH.png")
 ```
 
 ```{r tabHiBurdenLEH, fig.align = "center", fig.cap="Limited English speaking households by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
@@ -3779,10 +3791,10 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/ri_HiBurdenRIINC.png",
+tmap_save(m, "DATA/transport/RI/figures/ri_HiBurdenRIINC.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/ri_HiBurdenRIINC.png")
+knitr::include_graphics("DATA/transport/RI/figures/ri_HiBurdenRIINC.png")
 ```
 
 ```{r tabHiBurdenRIINC, fig.align = "center", fig.cap="Low income persons, as defined by state environmental justice policy, by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
