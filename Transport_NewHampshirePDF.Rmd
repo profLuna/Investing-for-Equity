@@ -1,0 +1,2033 @@
+---
+title: "Transportation Options in New Hampshire"
+author: "Marcos Luna and Neenah Estrella-Luna"
+date: "`r Sys.Date()`"
+output: 
+  bookdown::pdf_document2:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    fig_caption: yes        
+    includes:  
+      in_header: my_header.tex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE)
+
+library(tidyverse)
+library(sf)
+library(tmap)
+library(tidytransit)
+library(sp)
+library(tigris)
+options(tigris_use_cache = TRUE, tigris_class = "sf")
+library(lubridate)
+library(maptools)
+library(spdep)
+library(lwgeom)
+```
+
+\pagebreak
+
+# Analysis of walkability and transportation cost burden in New Hampshire
+
+This is an analysis of walkability and transportation cost burden in New Hampshire.
+
+```{r data, include=FALSE}
+### Analysis of New Hampshire transportation options
+load("DATA/ne_layers.rds")
+
+# extract census units for state
+nh_blkgrps_sf <- ne_blkgrp_sf %>% 
+  filter(STATE == "New Hampshire") %>% 
+  select(GEOID, NAME,STATE, bg_area_m2, totalpopE, minorityE, under5E, under18E, over64E, householdsE, eng_hhE, eng_limitE, age25upE, lthsE, povknownE, num2povE) %>% 
+  st_transform(., crs = 2823) %>% 
+  filter(!st_is_empty(.)) %>% 
+  mutate(PopAcre = totalpopE/(bg_area_m2*0.000247105))
+
+nh_tracts_sf <- ne_tracts_sf %>% 
+  filter(STATE == "New Hampshire") %>% 
+  select(GEOID, NAME, totalpopE, STATE, Over18E, disabledOver18E, totalHHE, HHnoCarE) %>% 
+  st_transform(., crs = 2823) %>% 
+  filter(!st_is_empty(.))
+
+# clean up
+rm(ne_blkgrp_sf,ne_tracts_sf,ne_blkgrp_sf90)
+
+
+# Read in route linework by Bradford Newton
+# create vector of directory paths
+dir_list <- list.dirs(path = "DATA/transport/BRADFORD/New Hampshire", 
+                      full.names = TRUE, recursive = TRUE) %>% 
+  .[-1]  # get rid of top level directory path
+
+
+# create function to list layers in each path, extract layer names from each directory as a character vector, read layers in, and create common variables
+getLayers <- function(x) {
+  lnames <- st_layers(x)
+  lnames <- lnames$name
+  lapply(lnames, function (y) 
+    st_read(dsn = x, layer = y) %>% 
+      transmute(AGENCY = sub(".*NH - ", "", x), ROUTE = y))
+}
+
+# apply function
+nh_transit_list <- lapply(dir_list, getLayers)
+
+# unlist nested lists of transit layers
+nh_transit_list <- unlist(nh_transit_list, recursive = FALSE)
+
+# combine into one sf layer
+nh_transit_sf <- do.call(rbind, nh_transit_list) %>% 
+  st_transform(crs = 2823) %>% 
+  st_make_valid()
+
+# Use dasymetric mapping to calculate populations with access to transit. Approach follows method used by Qiang (2019) to eliminate unpopulated areas of census polygons and then reallocate populations to developed areas as identified in National Land Cover Dataset (NLCD). 
+# Perform NLCD raster-to-vector conversion, vector erase/difference, and vector intersections in ArcMap because it takes too long in R. 
+# In ArcMap:
+# Convert NLCD raster to shapefile. Clip to state.
+# Isolate undeveloped areas (gridcode NOT 22 - 24). 
+# Erase areas of block groups and tracts that overlap with undeveloped areas in NLCD shapefiles. Compute OldArea of erased polygons in sqm to identify area of developed polygons remaining. 
+
+##### Return to working in R ######
+# read in processed nh_blkgrps and nh_tracts
+# st_layers(dsn = "DATA/FEMA/NH")
+nh_blkgrps_developed <- st_read(dsn = "DATA/FEMA/NH",
+                                layer = "nh_blkgrps_developed")
+
+nh_blkgrps_developed <- nh_blkgrps_sf %>%
+  as.data.frame() %>%
+  dplyr::select(-geometry) %>%
+  left_join(nh_blkgrps_developed, ., by = "GEOID") %>%
+  st_transform(., crs = 2823) %>%
+  mutate(NewArea = st_area(.)) %>%
+  st_make_valid() %>%
+  mutate(Proportion = as.numeric(NewArea/OldArea),
+         NewPop = totalpopE*Proportion,
+         NewMinority = minorityE*Proportion,
+         NewUnder5 = under5E*Proportion,
+         NewOver64 = over64E*Proportion,
+         NewUnder18 = under18E*Proportion,
+         NewEng_limit = eng_limitE*Proportion,
+         NewPov = num2povE*Proportion,
+         NewLths = lthsE*Proportion,
+         NewPopAcre = NewPop/(NewArea*0.000247105))
+
+nh_tracts_developed <- st_read(dsn = "DATA/FEMA/NH",
+                                layer = "nh_tracts_developed") %>%
+  left_join(., as.data.frame(nh_tracts_sf), by = "GEOID") %>%
+  st_transform(., crs = 2823) %>%
+  mutate(NewArea = st_area(.)) %>%
+  st_make_valid() %>%
+  mutate(Proportion = as.numeric(NewArea/OldArea),
+         NewDisabled = disabledOver18E*Proportion,
+         NewOver18 = Over18E*Proportion,
+         NewHHNoCar = HHnoCarE*Proportion)
+
+# create a simplified version for faster mapping
+nh_blkgrps_developed_simple <- st_simplify(nh_blkgrps_developed,
+                                           dTolerance = 100) %>%
+  filter(!st_is_empty(.)) %>%
+  st_make_valid()
+# repeat for tracts
+nh_tracts_developed_simple <- st_simplify(nh_tracts_developed,
+                                          dTolerance = 100) %>%
+  filter(!st_is_empty(.)) %>%
+  st_make_valid()
+
+# Create a 400m buffer around bus routes
+nh_busBuff400m <- st_buffer(nh_transit_sf,dist = 400) %>%
+  st_union() %>%
+  st_as_sf()
+
+# Use areal interpolation to calculate populations of concern within buffer of accessibility
+nh_busBuff400m_sf <- nh_blkgrps_developed %>%
+  select(GEOID,NewArea:NewLths) %>%
+  mutate(OldArea = NewArea) %>%
+  st_intersection(nh_busBuff400m,.) %>%
+  mutate(NewArea = st_area(.),
+         Proportion = NewArea/OldArea,
+         NewPop = as.integer(NewPop*Proportion),
+         NewMinority = as.integer(NewMinority*Proportion),
+         NewUnder5 = as.integer(NewUnder5*Proportion),
+         NewOver64 = as.integer(NewOver64*Proportion),
+         NewUnder18 = as.integer(NewUnder18*Proportion),
+         NewEng_limit = as.integer(NewEng_limit*Proportion),
+         NewPov = as.integer(NewPov*Proportion),
+         NewLths = as.integer(NewLths*Proportion))
+
+# Repeat for tracts
+nh_busBuff400mTracts_sf <- nh_tracts_developed %>%
+  select(GEOID,NewDisabled:NewHHNoCar) %>%
+  mutate(OldArea = st_area(.)) %>%
+  st_intersection(nh_busBuff400m,.) %>%
+  mutate(NewArea = st_area(.),
+         Proportion = NewArea/OldArea,
+         NewDisabled = as.integer(NewDisabled*Proportion),
+         NewNoCar = as.integer(NewHHNoCar*Proportion))
+
+# Compute total block group populations within transit buffers
+nh_busBuff400m_df <- nh_busBuff400m_sf %>%
+  as.data.frame() %>%
+  summarize(`Total Pop` = sum(NewPop),
+            Minority = sum(NewMinority),
+            `Under 5` = sum(NewUnder5),
+            `Over 64` = sum(NewOver64),
+            `Under 18` = sum(NewUnder18),
+            `Limited English HH` = sum(NewEng_limit),
+            `Low Income` = sum(NewPov),
+            `No HS Dip` = sum(NewLths)) %>%
+  gather(key = Group, value = BusPop)
+
+# Compute total tract populations within bus stop buffer
+nh_busBuff400mTracts_df <- nh_busBuff400mTracts_sf %>%
+  as.data.frame() %>%
+  summarize(`Disabled` = sum(NewDisabled),
+            `No Car HH` = sum(NewNoCar)) %>%
+  gather(key = Group, value = BusPop)
+
+# Compute total tract populations within the state for same groups
+nh_tract_pops_df <- nh_tracts_sf %>%
+  as.data.frame() %>%
+  summarize(`Disabled` = sum(disabledOver18E),
+            `No Car HH` = sum(HHnoCarE)) %>%
+  gather(key = Group, value = NHPop) %>%
+  left_join(.,nh_busBuff400mTracts_df, by = "Group")
+
+# Compute populations for state, join with buffer pops
+nh_transitAccessPops_df <- nh_blkgrps_sf %>%
+  as.data.frame() %>%
+  summarize(`Total Pop` = sum(totalpopE),
+            Minority = sum(minorityE),
+            `Under 5` = sum(under5E),
+            `Over 64` = sum(over64E),
+            `Under 18` = sum(under18E),
+            `Limited English HH` = sum(eng_limitE),
+            `Low Income` = sum(num2povE),
+            `No HS Dip` = sum(lthsE)) %>%
+  gather(key = Group, value = NHPop) %>%
+  left_join(., nh_busBuff400m_df, by = "Group") %>%
+  rbind(.,nh_tract_pops_df) %>%
+  mutate(PctBus = BusPop/NHPop*100)
+
+# create point layer of towns for context
+nh_towns_sf_pts <- county_subdivisions(state = "NH", cb = TRUE) %>% 
+  filter(NAME %in% c("Nashua",
+                     "Portsmouth",
+                     "Manchester",
+                     "Concord",
+                     "Laconia",
+                     "Lebanon",
+                     "Conway",
+                     "Woodstock",
+                     "Franconia",
+                     "Berlin",
+                     "Lancaster",
+                     "Pittsburg",
+                     "Keene",
+                     "Seabrook",
+                     "Hampton",
+                     "Salem")) %>% 
+  st_transform(., crs = 2823) %>% 
+  st_centroid(of_largest_polygon = TRUE)
+
+# Create road layer for context
+nh_highways <- primary_roads() %>% 
+  filter(FULLNAME %in% c("I- 89","I- 91","I- 93","I- 95")) %>% 
+  tmaptools::crop_shape(., ne_states_sf_cb) %>% 
+  st_transform(., crs = 2823)
+
+# Extract highway segments for labeling
+I89roadSegment <- nh_highways %>% 
+  filter(LINEARID == "1105281262324")
+
+I91roadSegment <- nh_highways %>% 
+  filter(LINEARID == "110373954766")
+
+I95roadSegment <- nh_highways %>% 
+  filter(LINEARID == "1105578995804")
+
+I93roadSegment <- nh_highways %>% 
+  filter(LINEARID == "1105598909781")
+
+# Create custom icons of highway shields
+I89 <- tmap_icons(file = "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/I-89.svg/200px-I-89.svg.png")
+I91 <- tmap_icons("https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/I-91.svg/200px-I-91.svg.png")
+I95 <- tmap_icons(file = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/I-95.svg/200px-I-95.svg.png")
+I93 <- tmap_icons("https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/I-93.svg/200px-I-93.svg.png")
+
+# # recode routes to match NHPTA categories
+# nh_busroutes_sf <- nh_busroutes_sf %>% 
+#   mutate(type = case_when(
+#     ROUTE %in% c(3,4,6,13,17,18,19,21,22,29,30,32,33,34,35,40,49,51,55,57,58,63,64,67,72,73,75,76,78,80,87) ~ "Urban Service",
+#     ROUTE == 11 ~ "Rapid Line",
+#     ROUTE %in% c(8,9,10,12,14,54,59,60,61,62,65,66,95) ~ "Express Service",
+#     ROUTE %in% c(1,20,27,28,31,50,56,71,92) ~ "Key Corridor",
+#     ROUTE %in% c(16,203,204,210,231,242,281,282,301) ~ "Flex Service"))
+
+# Calculate totals of populations of concern for use in computing percentages in later tables
+# Calculate tract populations by state
+statepopsdf_tracts <- nh_tracts_sf %>% 
+  as.data.frame() %>% 
+  group_by(STATE) %>% 
+  summarize(TotalDisabled = sum(disabledOver18E, na.rm = TRUE),
+            TotalOver18 = sum(Over18E, na.rm = TRUE),
+            TotalNoCar = sum(HHnoCarE, na.rm = TRUE))
+
+statepopsdf <- nh_blkgrps_sf %>% 
+  as.data.frame() %>% 
+  group_by(STATE) %>% 
+  summarize(TotalPop = sum(totalpopE, na.rm = TRUE),
+            TotalHH = sum(householdsE, na.rm = TRUE),
+            TotalLEH = sum(eng_limitE, na.rm = TRUE),
+            TotalMin = sum(minorityE, na.rm = TRUE),
+            TotalLowInc = sum(num2povE, na.rm = TRUE),
+            TotalNoHS = sum(lthsE, na.rm = TRUE),
+            TotalOver64 = sum(over64E, na.rm = TRUE),
+            TotalUnder5 = sum(under5E, na.rm = TRUE),
+            TotalUnder18 = sum(under18E, na.rm = TRUE)) %>% 
+  left_join(., statepopsdf_tracts,by="STATE")
+
+# nh_towns_sf <- ne_towns_sf %>% 
+#   dplyr::select(GEOID,NAME) %>% 
+#   st_transform(., crs = 2823)
+
+nh_towns_sf <- county_subdivisions(state = "NH", cb = TRUE) %>% 
+  st_transform(., crs = 2823)
+
+townpopsdf_tracts <- nh_tracts_sf %>% 
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  group_by(NAME) %>% 
+  summarize(TotalDisabled = sum(disabledOver18E, na.rm = TRUE),
+            TotalOver18 = sum(Over18E, na.rm = TRUE),
+            TotalNoCar = sum(HHnoCarE, na.rm = TRUE))
+
+townpopsdf <- nh_blkgrps_sf %>% 
+  dplyr::select(-GEOID) %>% 
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>%
+  group_by(NAME) %>% 
+  summarize(GEOID = unique(GEOID),
+            TotalPop = sum(totalpopE, na.rm = TRUE),
+            TotalHH = sum(householdsE, na.rm = TRUE),
+            TotalLEH = sum(eng_limitE, na.rm = TRUE),
+            TotalMin = sum(minorityE, na.rm = TRUE),
+            TotalLowInc = sum(num2povE, na.rm = TRUE),
+            TotalNoHS = sum(lthsE, na.rm = TRUE),
+            TotalOver64 = sum(over64E, na.rm = TRUE),
+            TotalUnder5 = sum(under5E, na.rm = TRUE),
+            TotalUnder18 = sum(under18E, na.rm = TRUE)) %>% 
+  left_join(.,townpopsdf_tracts,by="NAME")
+
+nh_state_sf_cb <- ne_states_sf_cb %>% 
+  filter(NAME == "New Hampshire") %>% 
+  st_transform(., crs = st_crs(nh_blkgrps_sf))
+
+
+# # Identify areas >= 1 mile from bus stops
+# # Create a 1 mile buffer around bus stops
+# nh_busBuff1mile <- st_buffer(nh_stops_sf_Bus,dist = 1609.34) %>% 
+#   st_union() %>% 
+#   st_as_sf()
+# # identify block groups that do not intersect with 1 mile from bus stop
+# nh_blkgrps_sf_noBus <- nh_blkgrps_developed %>% 
+#   filter(st_disjoint(.,nh_busBuff1mile,sparse = FALSE))
+# # Identify tracts that do not intersect with buffer
+# nh_tracts_sf_noBus <- nh_tracts_developed %>% 
+#   filter(st_disjoint(.,nh_busBuff1mile,sparse = FALSE))
+# # create simplified versions for faster mapping
+# nh_blkgrps_sf_noBus_simple <- nh_blkgrps_sf_noBus %>% 
+#   st_simplify(., dTolerance = 100) %>% 
+#   filter(!st_is_empty(.)) %>% 
+#   st_make_valid()
+# nh_tracts_sf_noBus_simple <- nh_tracts_sf_noBus %>% 
+#   st_simplify(., dTolerance = 100) %>% 
+#   filter(!st_is_empty(.)) %>% 
+#   st_make_valid()
+# 
+# # Identify areas >= 10 miles from park-in-ride stops
+# nh_prBuff10mile <- nh_parknride_sf %>% 
+#   st_buffer(., dist = (10*1609.34)) %>% 
+#   st_union() %>% 
+#   st_as_sf()
+# # identify block groups that do not intersect with 10 mile buffer
+# nh_blkgrps_sf_noPR <- nh_blkgrps_developed %>% 
+#   filter(st_disjoint(.,nh_prBuff10mile,sparse = FALSE))
+# # create simplified version of block groups for faster mapping
+# nh_blkgrps_sf_noPR_simple <- nh_blkgrps_sf_noPR %>% 
+#   select(NewPop:NewLths) %>% 
+#   st_simplify(., dTolerance = 100) %>% 
+#   filter(!st_is_empty(.)) %>% 
+#   st_make_valid()
+# 
+# # identify tracts that do not intersect with 10 mile buffer
+# nh_tracts_sf_noPR <- nh_tracts_developed %>% 
+#   filter(st_disjoint(.,nh_prBuff10mile,sparse = FALSE))
+# # create simplified version of tracts for faster mapping
+# nh_tracts_sf_noPR_simple <- nh_tracts_sf_noPR %>% 
+#   select(NewDisabled:NewHHNoCar) %>% 
+#   st_simplify(., dTolerance = 100) %>% 
+#   filter(!st_is_empty(.)) %>% 
+#   st_make_valid()
+# 
+# # Identify areas with no access to any type of transit stop. Union all buffers to create one buffer and clip to state boundary. 
+# nh_transitBuffAll <- rbind(nh_busBuff1mile,
+#                              nh_prBuff10mile) %>% 
+#   st_union() %>% 
+#   st_as_sf() %>% 
+#   tmaptools::crop_shape(.,nh_state_sf_cb,polygon = TRUE)
+# 
+# # identify block groups that do not intersect with any transit buffer
+# nh_blkgrps_sf_noTransit <- nh_blkgrps_developed %>% 
+#   filter(st_disjoint(.,nh_transitBuffAll,sparse = FALSE))
+# # identify tracts that do not intersect with 5 mile buffer
+# nh_tracts_sf_noTransit <- nh_tracts_developed %>% 
+#   filter(st_disjoint(.,nh_transitBuffAll,sparse = FALSE))
+# # create simplified versions for faster mapping
+# nh_blkgrps_sf_noTransit_simple <- nh_blkgrps_sf_noTransit %>% 
+#   st_simplify(., dTolerance = 100) %>% 
+#   filter(!st_is_empty(.)) %>% 
+#   st_make_valid()
+# nh_tracts_sf_noTransit_simple <- nh_tracts_sf_noTransit %>% 
+#   st_simplify(., dTolerance = 100) %>% 
+#   filter(!st_is_empty(.)) %>% 
+#   st_make_valid()
+```
+
+## Walkability
+
+More walkable communities are positively associated with a variety of quality of life and public health benefits. Conversely, less walkable communities are associated with a range of public health challenges, including higher rates of cardiovascular disease and diabetes.[^WalkCardio] The walkability of neighborhoods is increasingly regarded as an important component of healthier and more sustainable communities, particularly with regard to reducing motor vehicle travel and promoting alternative modes of transport that are more affordable, accessible, and less polluting.  
+
+The National Walkability Index is a nationwide geographic data resource produced by the U.S. Environmental Protection Agency that ranks Census Block Groups according to their relative walkability.[^Walkability] Walkability was modeled based on characteristics of the built environment that influence the likelihood of walking being used as a mode of travel. These characteristics of Block Groups include:
+
+* mix of employment types (greater mix = more walkable)
+* amount or density of occupied housing (higher density = more walkable)
+* street intersection density (higher density = more walkable)
+* proportion of workers who carpool (more carpooling = more walkable)
+
+```{r walkabilityData, include=FALSE}
+# Analyze Walkability Index for NH. See https://edg.epa.gov/metadata/catalog/search/resource/details.page?uuid=%7B251AFDD9-23A7-4068-9B27-A3048A7E6012%7D
+# Import walkability layer
+walkability <- st_read(dsn = "DATA/Walkability/Natl_WI_SHP",
+        layer = "Natl_WI") 
+
+# Join NatWalkIndex values to other block group variables
+nh_blkgrp_walkability_sf <- walkability %>% 
+  as.data.frame() %>% 
+  select(GEOID10,SFIPS,CFIPS,TRFIPS,NatWalkInd) %>% 
+  left_join(nh_blkgrps_sf,., by = c("GEOID" = "GEOID10"))
+
+# Aggregate NatWalkIndex values to tract level sf
+nh_tract_walkability_sf <- nh_blkgrp_walkability_sf %>% 
+  as.data.frame() %>% 
+  select(SFIPS,CFIPS,TRFIPS,NatWalkInd) %>% 
+  mutate(TRACTID = paste0(SFIPS,CFIPS,TRFIPS)) %>% 
+  group_by(TRACTID) %>% 
+  summarize(NatWalkInd = mean(NatWalkInd)) %>% 
+  left_join(nh_tracts_sf,., by = c("GEOID" = "TRACTID"))
+
+# Create summarized df of population weighted avg walkability by tract pop
+nh_tract_walkability_df <- nh_tract_walkability_sf %>% 
+  as.data.frame() %>% 
+  transmute(Disabled = disabledOver18E,
+            `No Car HH` = HHnoCarE,
+            NatWalkInd) %>% 
+  gather(key = Group, value = Pop, Disabled:`No Car HH`) %>% 
+  group_by(Group) %>% 
+  summarize(wNatWalkIndex = weighted.mean(NatWalkInd, Pop, na.rm = TRUE))
+
+# Populated-Weighted Average Walkability Index for Populations of Concern
+nh_wAvgWalkability_df <- nh_blkgrp_walkability_sf %>% 
+  as.data.frame() %>% 
+  transmute(`Total Pop` = totalpopE,
+            Minority = minorityE,
+            `Low Income` = num2povE,
+            `Under 5` = under5E,
+            `Under 18` = under18E,
+            `Over 64` = over64E,
+            `Limited English HH` = eng_limitE,
+            `No HS Dip` = lthsE,
+            NatWalkInd) %>% 
+  gather(key = Group, value = Pop, `Total Pop`:`No HS Dip`) %>% 
+  group_by(Group) %>% 
+  summarize(wNatWalkIndex = weighted.mean(NatWalkInd, Pop, na.rm = TRUE)) %>% 
+  rbind(., nh_tract_walkability_df)
+```
+
+Figure \@ref(fig:mapWalkability) shows walkability scores by Census Block Group across New Hampshire. The population-weighted average walkability score across New Hampshire is `r round(nh_wAvgWalkability_df %>% filter(Group == "Total Pop") %>% select(wNatWalkIndex) %>% pull(),1)`. Walkability varies across the state, although most of the state is classified as below average to least walkable. Walkability is highest in portions of Nashua, Manchester, Concord, Laconia, Keene, and Portsmouth.
+
+```{r mapWalkability, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Walkability Index scores for Census Block Groups across New Hampshire."}
+m <- tm_shape(nh_blkgrp_walkability_sf, unit = "mi") +
+  tm_fill(col = "NatWalkInd", alpha = 0.8, style = "equal", n = 4,
+          colorNA = "white", colorNULL = "gray", title = "Walkability Index",
+          legend.format = list(fun = function(x) formatC(x, digits = 1, format = "f")), palette = c("#FECC61","#FEF6BA","#B9E293","#238443"), 
+          labels = c("1 - 5.8 (Least Walkable)",
+                     "5.8 - 10.5 (Below Avg Walkable)",
+                     "10.5 - 15.2 (Above Avg Walkable)",
+                     "15.2 - 20 (Most Walkable)")) +
+  tm_shape(nh_towns_sf, unit = "mi") + 
+  tm_borders(col = "gray", lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.15) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.15) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.15) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Walkability", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/NH/figures/nh_walk.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/NH/figures/nh_walk.png")
+```
+
+Walkability varies for different population groups across the state. Figure \@ref(fig:loliWalkability) below compares population-weighted average walkability index scores for different populations. Most groups live in communities with below average walkability index scores that are also at or above that of the general population. However, persons under 18, children under 5, and persons over age 64 tend to live in communities with walkability scores below the state average. 
+
+```{r loliWalkability, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="population-weighted average walkability index scores for groups across New Hampshire."}
+# Create lollipop graph of pop-weighted average walk index
+nh_wAvgWalkability_df %>% 
+  ggplot(aes(x = reorder(Group,-wNatWalkIndex), y = wNatWalkIndex)) +
+  geom_segment(aes(x = reorder(Group,-wNatWalkIndex), 
+                   xend = reorder(Group,-wNatWalkIndex),
+                   y = pull(nh_wAvgWalkability_df[6,2]), yend = wNatWalkIndex), 
+               color = "green4") +
+  geom_point(color = "green", size = 4, alpha = 0.8) +
+  coord_flip() + xlab("") + ylab("Walk Index") + ggtitle("Population-Weighted Walkability Index") + theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
+  geom_text(aes(x = Group, y = wNatWalkIndex + 0.2 * sign(wNatWalkIndex), 
+                label = round(wNatWalkIndex,1)), 
+            hjust = 2.5, vjust=-0.8, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  geom_hline(yintercept = pull(nh_wAvgWalkability_df[6,2]), linetype = "dashed") +
+  geom_text(aes(x = "Total Pop", y = 7.4, label = "Above state\naverage"),
+            color = "gray48") +
+  geom_text(aes(x = "Total Pop", y = 6.3, label = "Below state\naverage"),
+            color = "gray48") +
+  expand_limits(y = c(6,8))
+```
+```{r lowWalk, include=FALSE}
+# Isolate least walkable block groups and tracts and add area variable
+leastWalkable <- nh_blkgrp_walkability_sf %>% 
+  filter(NatWalkInd <= 5.8) %>% 
+  mutate(SqKm = bg_area_m2/10^6)
+
+leastWalkableTract <- nh_tract_walkability_sf %>% 
+  filter(NatWalkInd <= 5.8) %>% 
+  mutate(SqKm = as.numeric(st_area(.))/10^6)
+
+leastWalkable1 <- leastWalkable %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Under 18` = sum(under18E,na.rm = TRUE),
+            `Pct of Under 18` = round(sum(under18E)/max(TotalUnder18)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
+  arrange(desc(`Under 18`))
+
+leastWalkable2 <- leastWalkable %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Over 64` = sum(over64E,na.rm = TRUE),
+            `Pct of Over 64` = round(sum(over64E)/max(TotalOver64)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
+  arrange(desc(`Over 64`))
+```
+The population-weighted average walkability scores provide a glimpse of average walkability across the state for different population groups. However, walkability also varies for specific communities. Indeed, it is important to consider populations of concern that reside in communities with low walkability. Figures \@ref(fig:mapLowWalkU18) and  \@ref(fig:mapLowWalkO64) below highlight Census Block Groups across New Hampshire that are least walkable and the numbers of persons under 18 or over 64 that live there. Tables \@ref(tab:tabLowWalkU18) and \@ref(tab:tabLowWalkO64) show breakdowns by municipality. For example, Table \@ref(tab:tabLowWalkU18) shows that `r formatC(as.numeric(leastWalkable1[1,3]),big.mark=",")` people under 18 across `r leastWalkable1[1,2]` Block Groups in `r leastWalkable1[1,1]` resided in the least walkable areas. These people represented `r leastWalkable1[1,4]` of people under 18 in `r leastWalkable1[1,1]`. Similarly, Table \@ref(tab:tabLowWalkO64) shows that `r formatC(as.numeric(leastWalkable2[1,3]),big.mark=",")` people over 64 across `r leastWalkable2[1,2]` Block Groups in `r leastWalkable2[1,1]` resided the least walkable areas. These people represented `r leastWalkable2[1,4]` of people over 64 in `r leastWalkable2[1,1]`.
+Maps and tables of other populations of concern in the least walkable Block Groups can be found in Appendix B.
+
+```{r mapLowWalkU18, fig.align = "center", fig.cap="Persons under 18 per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+leastWalkable18 <- leastWalkable %>% 
+  select(under18E,SqKm) %>% 
+  filter(under18E > 0)
+
+m <- tm_shape(nh_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(leastWalkable, unit = "mi") +
+  tm_fill(col = "under18E", alpha = 0.9, style = "fisher",
+          colorNA = "white", colorNULL = "gray", title = "Persons Under 18\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(nh_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.15) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.15) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.15) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Persons Under 18\nin Least Walkable\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/NH/figures/nh_walkU18.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/NH/figures/nh_walkU18.png")
+```
+
+```{r tabLowWalkU18, fig.align = "center", fig.cap="Persons under 18 by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+leastWalkable %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Under 18` = sum(under18E,na.rm = TRUE),
+            `Pct of Under 18` = round(sum(under18E)/max(TotalUnder18)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Under 18` > 0 & `Pct of Under 18` > 0) %>% 
+  mutate(`Pct of Under 18` = if_else(`Pct of Under 18` > 100, 100, `Pct of Under 18`)) %>% 
+  mutate(`Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
+  arrange(desc(`Under 18`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Persons Under 18 in Least Walkable Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Under 18 in Block Groups","Pct of Under 18 in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapLowWalkO64, fig.align = "center", fig.cap="Persons over 64 per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+m <- tm_shape(nh_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(leastWalkable, unit = "mi") +
+  tm_fill(col = "over64E", alpha = 0.9, style = "fisher",
+          colorNA = "white", colorNULL = "gray", title = "Persons Over 64\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(nh_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.15) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.15) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.15) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Persons Over 64\nin Least Walkable\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/NH/figures/nh_walkO64.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/NH/figures/nh_walkO64.png")
+```
+
+```{r tabLowWalkO64, fig.align = "center", fig.cap="Persons over 64 by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+leastWalkable %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Over 64` = sum(over64E,na.rm = TRUE),
+            `Pct of Over 64` = round(sum(over64E)/max(TotalOver64)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Over 64` > 0 & `Pct of Over 64` > 0) %>% 
+  mutate(`Pct of Over 64` = if_else(`Pct of Over 64` > 100, 100, `Pct of Over 64`)) %>% 
+  mutate(`Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
+  arrange(desc(`Over 64`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Persons Over 64 in Least Walkable Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Over 64 in Block Groups","Pct of Over 64 in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+
+
+## Transportation Cost Burden
+
+Transportation is the second-largest expenditure category for American households, approximately 16% of annual expenditures on average between 2015 and 2018.[^Expenditures] Only housing costs (~32%) exceed those of transportation. The high cost of transportation is due in large part to the costs of dependence on private vehicle ownership, including purchase and financing, insurance, maintenance, and fuel costs. Households without reasonable access to other modes of transportation typically experience higher transportation costs.[^CostBurden] Transportation costs can be significant economic burdens for moderate and lower income households and for communities where destinations are distant or limited. For many working-class and rural households, transportation costs exceed housing costs. 
+
+The Location Affordability Index (LAI) is a nationwide geographic data resource developed by the U.S. Department of Housing and Urban Development (HUD) in collaboration with the U.S. Department of Transportation under the federal Partnership for Sustainable Communities.[^LAIabout] The LAI was developed as a way of integrating both housing and transportation costs into estimates of the affordability of specific neighborhoods and cities. The LAI provides estimated total expenses from transportation, whether transit or motor vehicle, as well as transportation cost as a percentage of household income, for eight different household types — which vary by household income, size, and number of commuters — at the Census Tract level. For the purposes of this analysis, transportation costs as a percentage of income for moderate-income households (households with one commuter making 80% or less of area median household income) was used as a proxy to represent transportation cost burden for all areas. LAI data were also downscaled to the Block Group level for the purpose of demographic analyses and comparisons (see Appendix B Data and Methodology). 
+
+```{r TcostBurden, include=FALSE}
+# Read in Location Affordability Index data. Using Version 3 based on ACS 2012-2016 data at Tract level. Downloaded from https://hudgis-hud.opendata.arcgis.com/datasets/location-affordability-index-v-3?selectedAttribute=avg_hh_size_renters
+lai_ri <- st_read("DATA/transport/Location_Affordability_Index_v.3", "Location_Affordability_Index_v.3") %>% 
+  filter(STUSAB == "NH") %>% 
+  st_make_valid() %>% 
+  st_transform(., crs = 2823)
+
+# Downscale LAI to Block Group by assigning tract value to all overlapping block groups (i.e. block groups with same tract GEOID prefix)
+lai_nh_blkgrp <- nh_blkgrps_sf %>% 
+  mutate(GEOIDT = str_sub(GEOID,1,11)) %>% 
+  left_join(., as.data.frame(lai_ri),by=c("GEOIDT"="GEOID"))
+
+# Join LAI to tracts
+lai_nh_tract <- nh_tracts_sf %>% 
+  left_join(., as.data.frame(lai_ri),by="GEOID")
+
+# create summarized df of population weighted average transportation cost burden by tract pop
+lai_nh_tract_df <- lai_nh_tract %>% 
+  as.data.frame() %>% 
+  transmute(Disabled = disabledOver18E,
+            `No Car HH` = HHnoCarE,
+            hh7_t) %>% 
+  gather(key = Group, value = Pop, Disabled:`No Car HH`) %>% 
+  group_by(Group) %>% 
+  summarize(wTBurden = weighted.mean(hh7_t, Pop, na.rm = TRUE))
+
+# Population-weighted average transportation cost burden for populations of concern
+lai_nh_df <- lai_nh_blkgrp %>% 
+  as.data.frame() %>% 
+  transmute(`Total Pop` = totalpopE,
+            Minority = minorityE,
+            `Low Income` = num2povE,
+            `Under 5` = under5E,
+            `Under 18` = under18E,
+            `Over 64` = over64E,
+            `Limited English HH` = eng_limitE,
+            `No HS Dip` = lthsE,
+            hh7_t) %>% 
+  gather(key = Group, value = Pop, `Total Pop`:`No HS Dip`) %>% 
+  group_by(Group) %>% 
+  summarize(wTBurden = weighted.mean(hh7_t, Pop, na.rm = TRUE)) %>% 
+  rbind(., lai_nh_tract_df)
+
+# isolate places where transportation cost as a percentage of income exceeds housing as a percentage of income
+lai_ToverH <- lai_ri %>%
+  filter(hh7_t > hh7_h)
+```
+
+Figure \@ref(fig:mapLAI) below shows transportation cost burden (i.e., transportation cost as a percentage of household income) by Census Tract across New Hampshire. Transportation cost burden varies across the state. It is lowest in and around Salem, Nashua, Manchester, Concord, and Portsmouth. In `r nrow(lai_ToverH)` Census Tracts, the transportation cost burden exceeds the cost burden of housing. 
+
+```{r mapLAI, fig.align = "center", fig.cap="Transportation cost burden for Census Tracts across New Hampshire."}
+m <- tm_shape(lai_ri) +
+  tm_fill(col = "hh7_t", alpha = 0.8, style = "quantile", title = "Transportation as\nPercent of Income", showNA = FALSE,
+          legend.format = list(fun = function(x) formatC(x, digits = 1, format = "f"))) +
+  tm_shape(lai_ToverH) + tm_dots(col = "gray", shape = 8, size = 0.5) +
+  tm_shape(nh_towns_sf, unit = "mi") + 
+  tm_borders(col = "gray", lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.15) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.15) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.15) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_add_legend(type = "symbol",labels = "Transport burden > housing burden", shape = 8, size = 0.5, col = "gray") +
+  tm_layout(title = "Transportation\nCost Burden", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/NH/figures/nh_tburden.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/NH/figures/nh_tburden.png")
+````
+
+Transportation cost burden varies for different population groups across the state. Figure \@ref(fig:loliLAI) below compares population-weighted average transportation cost burden for different populations. Most groups live in communities with transportation cost burdens that are below that of the general population. However, persons over age 64 and disabled persons tend to live in communities with transportation cost burdens that exceed that of the general population of the state. 
+
+```{r loliLAI, fig.align = "center", fig.cap="Population-weighted average transportation cost burden for groups across New Hampshire."}
+# Create lollipop graph of pop-weighted average LAI
+lai_nh_df %>% 
+  ggplot(aes(x = reorder(Group,wTBurden), y = wTBurden)) +
+  geom_segment(aes(x = reorder(Group,wTBurden), 
+                   xend = reorder(Group,wTBurden),
+                   y = pull(lai_nh_df[6,2]), yend = wTBurden), 
+               color = "coral4") +
+  geom_point(color = "coral3", size = 4, alpha = 0.8) +
+  coord_flip() + xlab("") + ylab("Transportation as Percent of Income") + ggtitle("Population-Weighted Transportation Cost Burden") + theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
+  geom_text(aes(x = Group, y = wTBurden + 0.2 * sign(wTBurden), 
+                label = round(wTBurden,1)), 
+            hjust = 0.6, vjust=-0.8, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = pull(lai_nh_df[6,2]), linetype = "dashed") +
+  geom_text(aes(x = "Total Pop", y = 24.5, label = "Above state\naverage"),
+            color = "gray48") +
+  geom_text(aes(x = "Total Pop", y = 22, label = "Below state\naverage"),
+            color = "gray48") +
+  expand_limits(y = c(19,25))
+```
+```{r HiBurden, include=FALSE}
+# Isolate highest transport burden block groups and tracts and add area variable
+HiBurden <- lai_nh_blkgrp %>% 
+  filter(percent_rank(hh7_t) > 0.8) %>% 
+  mutate(SqKm = bg_area_m2/10^6)
+
+HiBurdenTract <- lai_nh_tract %>% 
+  filter(percent_rank(hh7_t) > 0.8) %>% 
+  mutate(SqKm = as.numeric(st_area(.))/10^6)
+
+HiBurden1 <- HiBurden %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Over 64` = sum(over64E,na.rm = TRUE),
+            `Pct of Over 64` = round(sum(over64E)/max(TotalOver64)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
+  arrange(desc(`Over 64`))
+
+HiBurden2 <- HiBurdenTract %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Disabled` = sum(disabledOver18E,na.rm = TRUE),
+            `Pct of Disabled` = round(sum(disabledOver18E)/max(TotalDisabled)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  mutate(`Pct of Disabled` = paste0(`Pct of Disabled`,"%")) %>% 
+  arrange(desc(`Disabled`))
+```
+The population-weighted average transportation cost burden values provide a glimpse of average transportation cost burden across the state for different population groups. However, transportation cost burden also varies for specific communities. Indeed, it is important to consider populations of concern that reside in communities with a high transportation cost burden. Figures \@ref(fig:mapHiBurdenO64) and \@ref(fig:mapHiBurdenDisabled) below highlight Census Block Groups across New Hampshire where the transportation cost burden is in the highest quintile (i.e., 80th percentile) and the numbers of persons over 64 or disabled that live there. Tables \@ref(tab:tabHiBurdenO64) and \@ref(tab:tabHiBurdenDisabled) show breakdowns by municipality. For example, Table \@ref(tab:tabHiBurdenO64) shows that `r formatC(as.numeric(HiBurden1[1,3]),big.mark=",")` people over 64 across `r HiBurden1[1,2]` Block Groups in `r HiBurden1[1,1]` resided in areas with the highest transportation cost burden. These people represented `r HiBurden1[1,4]` of people over 64 in `r HiBurden1[1,1]`. Similarly, Table \@ref(tab:tabHiBurdenDisabled) shows that `r formatC(as.numeric(HiBurden2[1,3]),big.mark=",")` disabled persons across `r HiBurden2[1,2]` Block Groups in `r HiBurden2[1,1]` resided in areas with the highest transportation cost burden. These people represented `r HiBurden2[1,4]` of disabled persons in `r HiBurden2[1,1]`.
+Maps and tables of other populations of concern in areas with the highest transportation cost burden can be found in Appendix B.
+
+```{r mapHiBurdenO64, fig.align = "center", fig.cap="Persons over 64 per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+m <- tm_shape(nh_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(HiBurden, unit = "mi") +
+  tm_fill(col = "over64E", alpha = 0.9, style = "fisher",
+          colorNA = "white", colorNULL = "gray", title = "Persons Over 64\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(nh_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.15) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.15) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.15) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Persons Over 64\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/NH/figures/nh_HiBurdenO64.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/NH/figures/nh_HiBurdenO64.png")
+```
+
+```{r tabHiBurdenO64, fig.align = "center", fig.cap="Persons over 64 by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+HiBurden %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Over 64` = sum(over64E,na.rm = TRUE),
+            `Pct of Over 64` = round(sum(over64E)/max(TotalOver64)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Over 64` > 0 & `Pct of Over 64` > 0) %>%
+  mutate(`Pct of Over 64` = if_else(`Pct of Over 64` > 100, 100, `Pct of Over 64`)) %>% 
+  mutate(`Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
+  arrange(desc(`Over 64`)) %>% 
+  filter(`Over 64` > 0) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Persons Over 64 in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Over 64 in Block Groups","Pct of Over 64 in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHiBurdenDisabled, fig.align = "center", fig.cap="Disabled persons per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+m <- tm_shape(nh_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(HiBurdenTract, unit = "mi") +
+  tm_fill(col = "disabledOver18E", alpha = 0.9, style = "fisher",
+          colorNA = "white", colorNULL = "gray", title = "Disabled Persons\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(nh_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.15) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.15) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.15) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Disabled Persons\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/NH/figures/nh_HiBurdenDisabled.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/NH/figures/nh_HiBurdenDisabled.png")
+```
+
+```{r tabHiBurdenDisabled, fig.align = "center", fig.cap="Disabled persons by municipality in Census Tracts with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+HiBurdenTract %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Tracts` = n(),
+            `Disabled` = sum(disabledOver18E,na.rm = TRUE),
+            `Pct of Disabled` = round(sum(disabledOver18E)/max(TotalDisabled)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Disabled` > 0 & `Pct of Disabled` > 0) %>%
+  mutate(`Pct of Disabled` = if_else(`Pct of Disabled` > 100, 100, `Pct of Disabled`)) %>% 
+  mutate(`Pct of Disabled` = paste0(`Pct of Disabled`,"%")) %>% 
+  arrange(desc(`Disabled`)) %>%  
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Disabled Persons in Highest Transportation Cost Burden Census Tracts", align = "r", col.names = c(names(.)[1:2],"Number of Disabled in Census Tracts","Pct of Disabled in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+
+
+[^Dasymetric]: Areal apportionment of populations for mapping and analysis, also known as dasymetric mapping, is commonly used method to improve risk assessment of flooding. See for example Yi Qiang. 2019. "Disparities of population exposed to flood hazards in the United States." *Journal of Environmental Management* 232:295-304; Yi Qiang, Nina S. N. Lam, Heng Cai, and Lei Zou. 2017. "Changes in Exposure to Flood Hazards in the United States." *Annals of the American Association of Geographers* 107(6):1332-1350. https://doi.org/10.1080/24694452.2017.1320214
+
+[^NLCD2016]: See MRLC NLCD 2016 Land Cover (CONUS). https://www.mrlc.gov/data/nlcd-2016-land-cover-conus.
+
+[^NLCDdetails]: See Collin Homer, Jon Dewitz, Suming Jin, George Xian, Catherine Costello, Patrick Danielson, Leila Gass, Michelle Funk, James Wickham, Stephen Stehman, Roger Auch, and Kurt Riitters. 2020. "Conterminous United States land cover change patterns 2001–2016 from the 2016 National Land Cover Database." *ISPRS Journal of Photogrammetry and Remote Sensing* 162: 184-199. https://doi.org/10.1016/j.isprsjprs.2020.02.019.
+
+[^headways]: TransitWiki. Headway. https://www.transitwiki.org/TransitWiki/index.php/Headway
+
+[^mindGap]: Mind the Gap: Best practices in bus headway management. https://www.metro-magazine.com/10002870/mind-the-gap-best-practices-in-bus-headway-management
+
+[^headwayReal]: Note that headways analyzed here are based on static schedules provided by the transit agency through the General Transit Feed System (GTFS). Scheduled headways likely differ from actual vehicle frequency due to traffic, dispatch management, accidents or breakdowns, and other issues. For an analysis of the difference between headways based on static schedules and actually observed headways, see Nate Wessel and Steven Farber. 2019. "On the accuracy of schedule-based GTFS for measuring accessibility." *The Journal of Transport and Land Use* 12(1):475-500. 
+
+[^GTFSStaticOverview]: See Google Transit APIs. "GTFS Static Overview." https://developers.google.com/transit/gtfs
+
+[^WalkCardio]: See Nicholas A. Howell, Jack V. Tu, Rahim Moineddin, Anna Chu, and Gillian L. Booth. 2019. "Association Between Neighborhood Walkability and Predicted 10‐Year Cardiovascular Disease Risk: The CANHEART (Cardiovascular Health in Ambulatory Care Research Team) Cohort." *Journal of the American Heart Association* 8(21). https://doi.org/10.1161/JAHA.119.013146; also see  Rachel C. Colley, Tanya Christidis, Isabelle Michaud, Michael Tjepkema and Nancy A. Ross. 2019. "The association between walkable neighbourhoods and physical activity across the lifespan." *Health Reports* 30(9).  http://dx.doi.org/10.25318/82-003-x201900900001-eng; see also Hao Wang and Yuqi Yang. 2019. "Neighbourhood walkability: A review and bibliometric analysis." *Cities* 93:43-61. https://doi.org/10.1016/j.cities.2019.04.015
+
+[^Walkability]: See US EPA National Walkability Index. https://www.epa.gov/smartgrowth/smart-location-mapping#walkability; Also see Kathleen B. Watson, Geoffrey P. Whitfield, John V. Thomas, David Berrigan, Janet E. Fulton, and Susan A. Carlson. 2020. "Associations between the National Walkability Index and walking among US Adults — National Health Interview Survey, 2015." *Preventive Medicine* 137. https://doi.org/10.1016/j.ypmed.2020.106122.
+
+[^Expenditures]: See U.S. Bureau of Labor Statistics. 2020. "Consumer Expenditures in 2018." BLS Reports May 2020.  https://www.bls.gov/opub/reports/consumer-expenditures/2018/home.htm; see also Thomas W. Sanchez, Carrie Makarewicz, Peter Haas, and Casey J. Dawkins. 2006. "Transportation costs, inequities, and tradeoffs." https://www.researchgate.net/profile/Thomas_Sanchez/publication/278017364_Transportation_Costs_Inequities_and_Tradeoffs/links/5578577e08aeb6d8c01f1382/Transportation-Costs-Inequities-and-Tradeoffs.pdf
+
+[^CostBurden]: See Thomas W. Sanchez, Carrie Makarewicz, Peter Haas, and Casey J. Dawkins. 2006. "Transportation costs, inequities, and tradeoffs." https://www.researchgate.net/profile/Thomas_Sanchez/publication/278017364_Transportation_Costs_Inequities_and_Tradeoffs/links/5578577e08aeb6d8c01f1382/Transportation-Costs-Inequities-and-Tradeoffs.pdf
+
+[^LAIabout]: See U.S. Department of Housing and Urban Development - HUD Exchange. "About the Location Affordability Index."  https://www.hudexchange.info/programs/location-affordability-index/about/
+
+[^TransitDistance]: See C.K. Ayvalik and C.J. Khisty. 2002. "Heuristic analysis of impacts of commuter rail station consolidation on pedestrian access." *Transportation Research Record* 1793:47–54; E.A. Beimborn, M.J. Greenwald, and X. Jin. 2003. "Accessibility, connectivity, and captivity: impacts on transit choice." *Transportation Research Record* 1835: 1–9; S. Biba. 2010. "A new method for determining the population with walking access to transit." *International Journal of Geographical Information Science* 24(3): 347-364; J.E. Burkhardt. 2003. "Critical measures of transit service quality in the eyes of older travelers." *Transportation Research Record* 1835: 84–92; J. Dill. 2003. "Transit use and proximity to rail: results from large employment sites in the San Francisco, California, bay area." *Transportation Research Record* 1835:19–24; J.E. Evans, V. Perincherry, and G.B.I. Douglas. 1997. "Transit friendliness factor: approach to quantifying transit access environment in a transportation planning model." *Transportation Research Record* 1604: 32–39; S. Hsiao et al., 1997. "Use of geographic information system for analysis of transit pedestrian access." *Transportation Research Record* 1604: 50–59; D.R. Loutzenheiser. 1997. "Pedestrian access to transit: model of walk trips and their design and urban form determinants around bar area rapid transit stations." *Transportation Research Record* 1604: 40–49; W.A. O’Neill, R.D. Ramsey, and J. Chou. 1992. "Analysis of transit service areas using geographic information systems." *Transportation Research Record* 1364: 131–138; S.  O’Sullivan and J. Morrall. 1996. "Walking distances to and from light-rail transit stations." *Transportation Research Record* 1538: 19–26; C.G. Phillips  and H.R. Edwards. 2002. "Socioeconomic, community-based approach for developing integrated mass transit systems application to city of Baltimore, Maryland." *Transportation Research Record* 1797: 71–79; F. Zhao et al., 2003. "Forecasting transit walk accessibility – regression model alternative to buffer method." *Transportation Research Record* 1835: 34–41.
+
+
+\pagebreak
+# Appendix A: Data and Methodology {-}
+
+The analyses presented here are based on data from six sources:
+
+* US EPA Walkability Index
+* US Department of Housing and Urban Development Location Affordability Index
+* American Community Survey 5-year Estimates
+  + Population demographics
+
+
+## US EPA Walkability Index {-}
+
+The National Walkability Index is a nationwide geographic data resource produced by the U.S. Environmental Protection Agency that ranks Census Block Groups according to their relative walkability.[^Walkability] Walkability was modeled based on characteristics of the built environment that influence the likelihood of walking being used as a mode of travel. These characteristics of Block Groups include:
+
+* mix of employment types (greater mix = more walkable)
+* amount or density of occupied housing (higher density = more walkable)
+* street intersection density (higher density = more walkable)
+* proportion of workers who carpool (more carpooling = more walkable)
+
+The Walkability Index was downloaded as a shapefile from the US EPA's Smart Location Mapping website at https://www.epa.gov/smartgrowth/smart-location-mapping#walkability. To compare walkability index values with disabled populations and households without a car, Block Group walkability index values were aggregated to the overlying Census Tract as simple averages. Population-weighted averages for the walkability index were also computed for Block Groups and Tracts to compare population groups. 
+
+
+## US Department of Housing and Urban Development Location Affordability Index {-}
+
+The Location Affordability Index (LAI) is a nationwide geographic data resource developed by the U.S. Department of Housing and Urban Development (HUD) in collaboration with the U.S. Department of Transportation under the federal Partnership for Sustainable Communities.[^LAIabout] The LAI was developed as a way of integrating both housing and transportation costs into estimates of the affordability of specific neighborhoods and cities. The LAI provides estimated total expenses from transportation, whether transit or motor vehicle, as well as transportation cost as a percentage of household income, for eight different household types — which vary by household income, size, and number of commuters — at the Census Tract level. For this analysis Location Affordability Index Model Version 3 (LAIM Version 3 or LAIM3), released in March 2019, was used. LAIM Version 3 estimates housing and transportation costs for eight different household profiles, to focus on the impact of the built environment on these costs by holding demographic characteristics constant. These household profiles are described in Table \@ref(tab:tabLAIprofiles). The LAI can be interpreted as the percentage of the specified household profile’s income that would be needed to cover housing, transportation, or combined costs if that household type were to live in the specified Census Tract. So, for example, a household profile (such as single-parent family) with a housing LAI of 40% would be expected to pay 40% of their income for housing if they lived in the specified location. Details on how housing and transportation costs were modeled are descrbed in the Location Affordability Index Version 3 Data and Methodology document. 
+
+```{r tabLAIprofiles}
+data.frame(hhProfile = c("Median-Income Family", "Very Low-Income Individual", "Working Individual", "Single Professional", "Retired Couple", "Single-Parent Family", "Moderate-Income Family", "Dual-Professional Family"),
+hhhIncome = c("MHHI", "National poverty line", "50% of MHHI", "135% of MHHI", "80% of MHHI", "50% of MHHI", "80% of MHHI", "150% of MHHI"),
+hhSize = c(4,1,1,1,2,3,3,4),
+Commuters = c(2,1,1,1,0,1,1,2)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T, 
+                    caption = "Location Affordability Index Household Profiles", 
+                    align = "l",
+                    col.names = c("Household Profile","Income","Household Size","Commuters")) %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped")) %>% 
+  kableExtra::footnote(., general = "MHHI = Median household income for a given area (CBSA or County)")
+```
+
+For the purposes of this analysis, transportation costs as a percentage of income for moderate-income households (three-member households with one commuter making 80% or less of area median household income) was used as a proxy to represent transportation cost burden for all areas. LAI data were also downscaled to the Block Group level for the purpose of demographic analyses and comparisons. Census Block Groups belonging to a given Census Tract were assigned the same value as the overlying Tract. 
+
+
+## American Community Survey 5-year Estimates {-}
+
+The American Community Survey (ACS) is an ongoing survey by the U.S. Census Bureau that provides information on a yearly basis about the U.S. and its people. The ACS provides detailed information on economic, housing, and demographic characteristics about the population that are not captured by the decennial Census. 
+
+The ACS provides greater demographic detail and temporal resolution than the decennial Census, but its geographic resolution is more limited. While the decennial Census is based on an enumeration (i.e., a total count) of everyone in the U.S. once every decade, the ACS is based on a statistical sample of approximately 3.5 million addresses across the country each year. As a result of this sampling approach, the ACS estimates must be pooled, or combined, across multiple years in order to provide reliable estimates for smaller areas (i.e. areas with less than 20,000 people), such as at the Tract or Block Group levels. While it is possible to know the number of low income households across the U.S. annually, one may only know this about a Tract or Block Group based on 5-year estimates. Since 2010, the ACS has published 5-year data (beginning with 2005–2009 estimates) for all geographic areas down to the census Tract and Block Group levels. For more detail on the ACS, see Understanding and Using American Community Survey Data: What All Data Users Need to Know at https://www.census.gov/programs-surveys/acs/guidance/handbooks/general.html.
+
+All data was analyzed or aggregated geographically by Census Tract and Block Group. A Census Tract is a small, relatively permanent statistical subdivision of a county that contains between 1,200 and 8,000 people. The entire area of a county is covered by Census Tracts, just as the entire area of a state is covered by counties or county equivalents. Census Tracts range in areal size depending on the population density; areal size is smaller in denser areas and larger in less densely populated areas. Census Block Groups are subdivisions of Census Tracts that contain between 600 and 3,000 people. Like Tracts, Block Groups range in areal size depending on the population density of the area. Block Groups are the smallest geographic unit at which detailed demographic and household data from the American Community Survey is made available by the Census. 
+
+For the purposes of this analysis ACS 5-year estimates for the period 2013 - 2017 for Census Tracts and Block Groups in New Hampshire, as well as their associated TIGER/Line spatial files, were downloaded from the Census Bureau via API using the `tigris` package in R. Demographic variables consistent with those used by the EPA in EJSCREEN were chosen, as well as environmental justice population thresholds used by states where available. Table \@ref(tab:ACSvariables) below lists the demographic variables that were downloaded directly or computed from ACS variables:
+
+```{r ACSvariables}
+ACSvDF <- data.frame(Variable = c("Total Population",
+                                  "Minority",
+                                  "Low Income",
+                                  "Limited English Household",
+                                  "Less than High School Education",
+                                  "Under 5",
+                                  "Under 18",
+                                  "Over 64",
+                                  "Disabled",
+                                  "No Car Household",
+                                  "CT Income",
+                                  "MA Income",
+                                  "MA Limited English Household",
+                                  "MA Minority",
+                                  "MA Income",
+                                  "MA Minority"),
+                     Description = c("Total population",
+                                     "Persons of Hispanic or Latino origin or persons who are not White",
+                                     "People in households where the household income is less than or equal to twice the federal poverty level",
+                                     "People in households where all adults speak English less than \"very well\"",
+                                     "Adults 25 years+ with less than a high school education",
+                                     "Persons under 5 years of age",
+                                     "Persons under 18 years of age",
+                                     "Persons over 64 years of age",
+                                     "Persons 18 years+ with a disability",
+                                     "Households with no vehicle available",
+                                     "New Hampshire Low Income threshold: 30% or more people in households where the household income is less than or equal to twice the federal poverty level",
+                                     "New Hampshire Low Income threshold: 25% or more of households with median household incomes below 65% statewide median",
+                                     "New Hampshire Language Isolation threshold: 25% or more people in households where all adults speak English less than \"very well\"",
+                                     "New Hampshire Minority threshold: 25% or more are persons of Hispanic or Latino origin or persons who are not White",
+                                     "New Hampshire Low Income threshold: highest 15% of block groups with people in households where the household income is less than or equal to twice the federal poverty level",
+                                     "New Hampshire Minority threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
+                     'ACS Table ID' = c("B03002: Hispanic or Latino Origin by Race",
+                                "B03002: Hispanic or Latino Origin by Race",
+                                "C17002: Ratio of Income to Poverty Level",
+                                "C16002: Household Language by Household Limited English Speaking Status",
+                                "B15002: Sex by Educational Attainment",
+                                "B01001: Sex by Age",
+                                "B01001: Sex by Age",
+                                "B01001: Sex by Age",
+                                "B18101: Sex by Age by Disability Status",
+                                "B08201: Household Size by Vehicles Available",
+                                "C17002: Ratio of Income to Poverty Level",
+                                "B19001: Household Income",
+                                "C16002: Household Language by Household Limited English Speaking Status",
+                                "B03002: Hispanic or Latino Origin by Race",
+                                "C17002: Ratio of Income to Poverty Level",
+                                "B03002: Hispanic or Latino Origin by Race"),
+                     Geography = c("Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Tract",
+                                   "Tract",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group",
+                                   "Block Group"))
+
+ACSvDF %>% 
+  kableExtra::kable(longtable = T, booktabs = T, 
+                    caption = "Demographic Variables", align = "l",
+                    col.names = c("Variable","Description","ACS Table ID","Geography")) %>% 
+  kableExtra::column_spec(2:3, width = "3cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+  
+```
+
+## Population-weighted averages {-}
+
+Wherever feasible, averages are reported as population-weighted averages. A population weighted-average is equivalent to a weighted mean in which the raw values for which a mean (or average) is calculated are multiplied by a weight factor. For example, we are interested in knowing whether Minorities experience longer headways than the general or Total Population. Consider the table below.
+
+```{r wmean1}
+data.frame(BG = c("BG1","BG2","BG3","BG4"),
+           Headway = c(65,75,85,70),
+           Minority = c(5,10,20,10),
+           NonMinority = c(20,12,5,10)) %>% 
+  mutate(TotalPop = Minority + NonMinority) %>% 
+  kableExtra::kable(longtable = T, booktabs = T, 
+                    caption = "Block Group Populations and Headways", align = "l") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+```
+
+Population numbers of minorities, as well as the total population, and headways, are each reported by Block Group. Since each Block Group is associated with one headway value, we might assume (incorrectly) that everyone is equally exposed to the average headways of all Block Groups (`r round(mean(c(65,75,85,70)),2)`). However, not all Block Groups have the same number or categories of people, which means that each headway value is associated with a different number of people. Do Minorities occupy Block Groups with higher headways than the simple average would indicate?
+
+To calculate the population-weighted average headway for Minorities, the number of Minorities in each Block Group is used as a 'weight'. The headway of each Block Group is multiplied by its respective number of Minorities. See the table below. 
+
+```{r wmean2}
+data.frame(BG = c("BG1","BG2","BG3","BG4"),
+           Headway = c(65,75,85,70),
+           Minority = c(5,10,20,10),
+           NonMinority = c(20,12,5,10)) %>% 
+  mutate(TotalPop = Minority + NonMinority,
+         HeadwayxMinority = Headway*Minority) %>% 
+  bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
+  kableExtra::kable(longtable = T, booktabs = T, 
+                    caption = "Block Group Populations and Headway", 
+                    align = "l") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header")) %>% 
+  kableExtra::row_spec(5, bold = TRUE) %>% 
+  kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
+```
+
+The total or sum of the products (i.e., Minority pop x Headway) is then divided by the sum of the weights (i.e., total Minority population), so that 3475/45 = `r round(3475/45,2)`. The result is a weighted average headway that is influenced by the number of minorities. 
+
+This process is repeated for the Total Population so that the two population-weighted average headways can be compared. Below is the calculation of population-weighted calculation for the total population. 
+
+```{r wmean3}
+data.frame(BG = c("BG1","BG2","BG3","BG4"),
+           Headway = c(65,75,85,70),
+           Minority = c(5,10,20,10),
+           NonMinority = c(20,12,5,10)) %>% 
+  mutate(TotalPop = Minority + NonMinority,
+         TempxTotalPop = Headway*TotalPop) %>% 
+  bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
+  kableExtra::kable(longtable = T, booktabs = T, 
+                    caption = "Block Group Populations and Headway", 
+                    align = "l") %>% 
+  kableExtra::kable_styling(latex_options = c("repeat_header")) %>% 
+  kableExtra::row_spec(5, bold = TRUE) %>% 
+  kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
+```
+
+For the TotalPop, the population-weighted average headway is 6800/92 = `r round(6800/92,2)`. Thus we can see that Minorities experience a higher population-weighted average headway than the general or total population. 
+
+
+\pagebreak
+# Appendix B: Supplementary Figures {-}
+
+## Low Walkability and Populations of Concern {-}
+```{r mapLowWalkU5, fig.align = "center", fig.cap="Children under 5 per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+m <- tm_shape(nh_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(leastWalkable, unit = "mi") +
+  tm_fill(col = "under5E", alpha = 0.9, style = "fisher",
+          colorNA = "white", colorNULL = "gray", title = "Children Under 5\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(nh_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.15) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.15) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.15) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Children Under 5\nin Least Walkable\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/NH/figures/nh_walkU5.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/NH/figures/nh_walkU5.png")
+```
+
+```{r tabLowWalkU5, fig.align = "center", fig.cap="Children under 5 by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+leastWalkable %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Under 5` = sum(under5E,na.rm = TRUE),
+            `Pct of Under 5` = round(sum(under5E)/max(TotalUnder5)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Under 5` > 0 & `Pct of Under 5` > 0) %>% 
+  mutate(`Pct of Under 5` = if_else(`Pct of Under 5` > 100, 100, `Pct of Under 5`)) %>% 
+  mutate(`Pct of Under 5` = paste0(`Pct of Under 5`,"%")) %>% 
+  arrange(desc(`Under 5`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Children Under 5 in Least Walkable Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Under 5 in Block Groups","Pct of Under 5 in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapLowWalkLTHS, fig.align = "center", fig.cap="Adults without a high school diploma per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+m <- tm_shape(nh_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(leastWalkable, unit = "mi") +
+  tm_fill(col = "lthsE", alpha = 0.9, style = "fisher",
+          colorNA = "white", colorNULL = "gray", title = "Adults without a\nHigh School\nDiploma\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(nh_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.15) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.15) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.15) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Adults without a\nHigh School\nDiploma\nin Least Walkable\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/NH/figures/nh_walkLTHS.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/NH/figures/nh_walkLTHS.png")
+```
+
+```{r tabLowWalkLTHS, fig.align = "center", fig.cap="Adults without a high school diploma by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+leastWalkable %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `No HS Dip` = sum(lthsE,na.rm = TRUE),
+            `Pct of No HS Dip` = round(sum(lthsE)/max(TotalNoHS)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`No HS Dip` > 0 & `Pct of No HS Dip` > 0) %>% 
+  mutate(`Pct of No HS Dip` = if_else(`Pct of No HS Dip` > 100, 100, `Pct of No HS Dip`)) %>% 
+  mutate(`Pct of No HS Dip` = paste0(`Pct of No HS Dip`,"%")) %>% 
+  arrange(desc(`No HS Dip`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Adults without a High School Diploma in Least Walkable Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of No HS Dip in Block Groups","Pct of No HS Dip in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapLowWalkDisabled, fig.align = "center", fig.cap="Disabled persons per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+m <- tm_shape(nh_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(leastWalkableTract, unit = "mi") +
+  tm_fill(col = "disabledOver18E", alpha = 0.9, style = "fisher",
+          colorNA = "white", colorNULL = "gray", title = "Disabled Persons\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(nh_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.15) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.15) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.15) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Disabled Persons\nin Least Walkable\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/NH/figures/nh_walkDisabled.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/NH/figures/nh_walkDisabled.png")
+```
+
+```{r tabLowWalkDisabled, fig.align = "center", fig.cap="Disabled persons by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+leastWalkableTract %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Disabled` = sum(disabledOver18E,na.rm = TRUE),
+            `Pct of Disabled` = round(sum(disabledOver18E)/max(TotalDisabled)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Disabled` > 0 & `Pct of Disabled` > 0) %>% 
+  mutate(`Pct of Disabled` = if_else(`Pct of Disabled` > 100, 100, `Pct of Disabled`)) %>% 
+  mutate(`Pct of Disabled` = paste0(`Pct of Disabled`,"%")) %>% 
+  arrange(desc(`Disabled`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Disabled Persons in Least Walkable Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Disabled in Block Groups","Pct of Disabled in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapLowWalkINC, fig.align = "center", fig.cap="Low income persons per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+m <- tm_shape(nh_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(leastWalkable, unit = "mi") +
+  tm_fill(col = "num2povE", alpha = 0.9, style = "fisher",
+          colorNA = "white", colorNULL = "gray", title = "Low Income\nPersons\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(nh_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.15) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.15) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.15) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Low Income\nPersons\nin Least Walkable\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/NH/figures/nh_walkINC.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/NH/figures/nh_walkINC.png")
+```
+
+```{r tabLowWalkINC, fig.align = "center", fig.cap="Low income persons by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+leastWalkable %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Low Income` = sum(num2povE,na.rm = TRUE),
+            `Pct of Low Income` = round(sum(num2povE)/max(TotalLowInc)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Low Income` > 0 & `Pct of Low Income` > 0) %>% 
+  mutate(`Pct of Low Income` = if_else(`Pct of Low Income` > 100, 100, `Pct of Low Income`)) %>% 
+  mutate(`Pct of Low Income` = paste0(`Pct of Low Income`,"%")) %>% 
+  arrange(desc(`Low Income`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Low Income Persons in Least Walkable Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Low Income in Block Groups","Pct of Low Income in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapLowWalkMIN, fig.align = "center", fig.cap="Minority persons per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+m <- tm_shape(nh_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(leastWalkable, unit = "mi") +
+  tm_fill(col = "minorityE", alpha = 0.9, style = "fisher",
+          colorNA = "white", colorNULL = "gray", title = "Minority Persons\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(nh_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.15) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.15) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.15) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Minority Persons\nin Least Walkable\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/NH/figures/nh_walkMIN.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/NH/figures/nh_walkMIN.png")
+```
+
+```{r tabLowWalkMIN, fig.align = "center", fig.cap="Minority persons by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+leastWalkable %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Minority` = sum(minorityE,na.rm = TRUE),
+            `Pct of Minority` = round(sum(minorityE)/max(TotalMin)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Minority` > 0 & `Pct of Minority` > 0) %>% 
+  mutate(`Pct of Minority` = if_else(`Pct of Minority` > 100, 100, `Pct of Minority`)) %>% 
+  mutate(`Pct of Minority` = paste0(`Pct of Minority`,"%")) %>% 
+  arrange(desc(`Minority`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Minority Persons in Least Walkable Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Minority in Block Groups","Pct of Minority in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapLowWalkLEH, fig.align = "center", fig.cap="Limited English speaking households per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+m <- tm_shape(nh_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(leastWalkable, unit = "mi") +
+  tm_fill(col = "eng_limitE", alpha = 0.9, style = "fisher",
+          colorNA = "white", colorNULL = "gray", title = "Limited English\nSpeaking Households\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(nh_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.15) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.15) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.15) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Limited English\nSpeaking\nHouseholds\nin Least Walkable\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/NH/figures/nh_walkLEH.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/NH/figures/nh_walkLEH.png")
+```
+
+```{r tabLowWalkLEH, fig.align = "center", fig.cap="Limited English speaking households by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+leastWalkable %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Limited English Households` = sum(eng_limitE,na.rm = TRUE),
+            `Pct of Limited English Households` = round(sum(eng_limitE)/max(TotalLEH)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Limited English Households` > 0 & `Pct of Limited English Households` > 0) %>% 
+  mutate(`Pct of Limited English Households` = if_else(`Pct of Limited English Households` > 100, 100, `Pct of Limited English Households`)) %>% 
+  mutate(`Pct of Limited English Households` = paste0(`Pct of Limited English Households`,"%")) %>% 
+  arrange(desc(`Limited English Households`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Limited English Speaking Households in Least Walkable Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Limited English Households in Block Groups","Pct of Limited English Households in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapLowWalkNoCarHH, fig.align = "center", fig.cap="Households without a car per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+m <- tm_shape(nh_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(leastWalkableTract, unit = "mi") +
+  tm_fill(col = "HHnoCarE", alpha = 0.9, style = "fisher",
+          colorNA = "white", colorNULL = "gray", title = "No Car Households\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(nh_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.15) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.15) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.15) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "No Car Households\nin Least Walkable\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/NH/figures/nh_walkNoCarHH.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/NH/figures/nh_walkNoCarHH.png")
+```
+
+```{r tabLowWalkNoCarHH, fig.align = "center", fig.cap="Households without a car by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+leastWalkableTract %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `No Car Households` = sum(HHnoCarE,na.rm = TRUE),
+            `Pct of No Car Households` = round(sum(HHnoCarE)/max(TotalNoCar)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`No Car Households` > 0 & `Pct of No Car Households` > 0) %>% 
+  mutate(`Pct of No Car Households` = if_else(`Pct of No Car Households` > 100, 100, `Pct of No Car Households`)) %>% 
+  mutate(`Pct of No Car Households` = paste0(`Pct of No Car Households`,"%")) %>% 
+  arrange(desc(`No Car Households`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "No Car Households in Least Walkable Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of No Car Households in Block Groups","Pct of No Car Households in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+
+## Highest Transportation Cost Burden and Populations of Concern {-}
+```{r mapHiBurdenLTHS, fig.align = "center", fig.cap="Adults without a high school diploma per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+m <- tm_shape(nh_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(HiBurden, unit = "mi") +
+  tm_fill(col = "lthsE", alpha = 0.9, style = "fisher",
+          colorNA = "white", colorNULL = "gray", title = "Adults without a\nHigh School\nDiploma\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(nh_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.15) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.15) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.15) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Adults without a\nHigh School\nDiploma\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/NH/figures/nh_HiBurdenLTHS.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/NH/figures/nh_HiBurdenLTHS.png")
+```
+
+```{r tabHiBurdenLTHS, fig.align = "center", fig.cap="Adults without a high school diploma by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+HiBurden %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `No HS Dip` = sum(lthsE,na.rm = TRUE),
+            `Pct of No HS Dip` = round(sum(lthsE)/max(TotalNoHS)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`No HS Dip` > 0 & `Pct of No HS Dip` > 0) %>%
+  mutate(`Pct of No HS Dip` = if_else(`Pct of No HS Dip` > 100, 100, `Pct of No HS Dip`)) %>% 
+  mutate(`Pct of No HS Dip` = paste0(`Pct of No HS Dip`,"%")) %>% 
+  arrange(desc(`No HS Dip`)) %>%  
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Adults without a High School Diploma in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of No HS Dip in Block Groups","Pct of No HS Dip in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHiBurdenU18, fig.align = "center", fig.cap="Persons under 18 per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+m <- tm_shape(nh_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(HiBurden, unit = "mi") +
+  tm_fill(col = "under18E", alpha = 0.9, style = "fisher",
+          colorNA = "white", colorNULL = "gray", title = "Persons Under 18\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(nh_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.15) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.15) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.15) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Persons Under 18\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/NH/figures/nh_HiBurdenU18.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/NH/figures/nh_HiBurdenU18.png")
+```
+
+```{r tabHiBurdenU18, fig.align = "center", fig.cap="Persons under 18 by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+HiBurden %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Under 18` = sum(under18E,na.rm = TRUE),
+            `Pct of Under 18` = round(sum(under18E)/max(TotalUnder18)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Under 18` > 0 & `Pct of Under 18` > 0) %>%
+  mutate(`Pct of Under 18` = if_else(`Pct of Under 18` > 100, 100, `Pct of Under 18`)) %>% 
+  mutate(`Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
+  arrange(desc(`Under 18`)) %>%  
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Persons Under 18 in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Under 18 in Block Groups","Pct of Under 18 in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHiBurdenU5, fig.align = "center", fig.cap="Children under 5 per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+m <- tm_shape(nh_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(HiBurden, unit = "mi") +
+  tm_fill(col = "under5E", alpha = 0.9, style = "fisher",
+          colorNA = "white", colorNULL = "gray", title = "Children Under 5\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(nh_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.15) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.15) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.15) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Children Under 5\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/NH/figures/nh_HiBurdenU5.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/NH/figures/nh_HiBurdenU5.png")
+```
+
+```{r tabHiBurdenU5, fig.align = "center", fig.cap="Children under 5 by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+HiBurden %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Under 5` = sum(under5E,na.rm = TRUE),
+            `Pct of Under 5` = round(sum(under5E)/max(TotalUnder5)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Under 5` > 0 & `Pct of Under 5` > 0) %>%
+  mutate(`Pct of Under 5` = if_else(`Pct of Under 5` > 100, 100, `Pct of Under 5`)) %>% 
+  mutate(`Pct of Under 5` = paste0(`Pct of Under 5`,"%")) %>% 
+  arrange(desc(`Under 5`)) %>%  
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Children Under 5 in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Under 5 in Block Groups","Pct of Under 5 in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHiBurdenINC, fig.align = "center", fig.cap="Low income persons per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+m <- tm_shape(nh_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(HiBurden, unit = "mi") +
+  tm_fill(col = "num2povE", alpha = 0.9, style = "fisher",
+          colorNA = "white", colorNULL = "gray", title = "Low Income\nPersons\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(nh_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.15) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.15) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.15) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Low Income\nPersons\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/NH/figures/nh_HiBurdenINC.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/NH/figures/nh_HiBurdenINC.png")
+```
+
+```{r tabHiBurdenINC, fig.align = "center", fig.cap="Low income persons by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+HiBurden %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Low Income` = sum(num2povE,na.rm = TRUE),
+            `Pct of Low Income` = round(sum(num2povE)/max(TotalLowInc)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Low Income` > 0 & `Pct of Low Income` > 0) %>%
+  mutate(`Pct of Low Income` = if_else(`Pct of Low Income` > 100, 100, `Pct of Low Income`)) %>% 
+  mutate(`Pct of Low Income` = paste0(`Pct of Low Income`,"%")) %>% 
+  arrange(desc(`Low Income`)) %>%  
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Low Income Persons in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Low Income in Block Groups","Pct of Low Income in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHiBurdenNoCarHH, fig.align = "center", fig.cap="Households without a car per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+m <- tm_shape(nh_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(HiBurdenTract, unit = "mi") +
+  tm_fill(col = "HHnoCarE", alpha = 0.9, style = "fisher",
+          colorNA = "white", colorNULL = "gray", title = "No Car Households\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(nh_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.15) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.15) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.15) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "No Car Households\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/NH/figures/nh_HiBurdenNoCarHH.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/NH/figures/nh_HiBurdenNoCarHH.png")
+```
+
+```{r tabHiBurdenNoCarHH, fig.align = "center", fig.cap="Households without a car by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+HiBurdenTract %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `No Car Households` = sum(HHnoCarE,na.rm = TRUE),
+            `Pct of No Car Households` = round(sum(HHnoCarE)/max(TotalNoCar)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`No Car Households` > 0 & `Pct of No Car Households` > 0) %>%
+  mutate(`Pct of No Car Households` = if_else(`Pct of No Car Households` > 100, 100, `Pct of No Car Households`)) %>% 
+  mutate(`Pct of No Car Households` = paste0(`Pct of No Car Households`,"%")) %>% 
+  arrange(desc(`No Car Households`)) %>%  
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "No Car Households in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of No Car Households in Block Groups","Pct of No Car Households in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHiBurdenMIN, fig.align = "center", fig.cap="Minority persons per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+m <- tm_shape(nh_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(HiBurden, unit = "mi") +
+  tm_fill(col = "minorityE", alpha = 0.9, style = "fisher",
+          colorNA = "white", colorNULL = "gray", title = "Minority Persons\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(nh_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.15) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.15) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.15) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Minority Persons\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/NH/figures/nh_HiBurdenMIN.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/NH/figures/nh_HiBurdenMIN.png")
+```
+
+```{r tabHiBurdenMIN, fig.align = "center", fig.cap="Minority persons by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+HiBurden %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Minority` = sum(minorityE,na.rm = TRUE),
+            `Pct of Minority` = round(sum(minorityE)/max(TotalMin)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Minority` > 0 & `Pct of Minority` > 0) %>%
+  mutate(`Pct of Minority` = if_else(`Pct of Minority` > 100, 100, `Pct of Minority`)) %>% 
+  mutate(`Pct of Minority` = paste0(`Pct of Minority`,"%")) %>% 
+  arrange(desc(`Minority`)) %>%  
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Minority Persons in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Minority in Block Groups","Pct of Minority in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
+
+```{r mapHiBurdenLEH, fig.align = "center", fig.cap="Limited English speaking households per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+m <- tm_shape(nh_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(HiBurden, unit = "mi") +
+  tm_fill(col = "eng_limitE", alpha = 0.9, style = "fisher",
+          colorNA = "white", colorNULL = "gray", title = "Limited English\nHouseholds\nPer Square Kilometer",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
+  tm_shape(nh_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  # tm_shape(nh_highways2nd) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(I89roadSegment) +
+  tm_symbols(shape = I89, border.lwd = NA, size = 0.15) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.15) +
+  tm_shape(I93roadSegment) +
+  tm_symbols(shape = I93, border.lwd = NA, size = 0.15) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.15) +
+  tm_shape(nh_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+               position = c("left","TOP")) +
+  tm_layout(title = "Limited English\nHouseholds\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/NH/figures/nh_HiBurdenLEH.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/NH/figures/nh_HiBurdenLEH.png")
+```
+
+```{r tabHiBurdenLEH, fig.align = "center", fig.cap="Limited English speaking households by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+HiBurden %>%
+  st_centroid(.) %>% 
+  st_intersection(nh_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Limited English Households` = sum(eng_limitE,na.rm = TRUE),
+            `Pct of Limited English Households` = round(sum(eng_limitE)/max(TotalLEH)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Limited English Households` > 0 & `Pct of Limited English Households` > 0) %>%
+  mutate(`Pct of Limited English Households` = if_else(`Pct of Limited English Households` > 100, 100, `Pct of Limited English Households`)) %>% 
+  mutate(`Pct of Limited English Households` = paste0(`Pct of Limited English Households`,"%")) %>% 
+  arrange(desc(`Limited English Households`)) %>%  
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Limited English Households in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Limited English Households in Block Groups","Pct of Limited English Households in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+```
