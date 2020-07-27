@@ -30,7 +30,7 @@ library(lwgeom)
 
 \pagebreak
 
-# Analysis of adequacy of public transit and walkability in Connecticut
+# Analysis of adequacy of public transit, walkability, and transportation cost burden in Connecticut
 
 This is an analysis of access to public transit and walkability in Connecticut.
 
@@ -808,44 +808,44 @@ regional public transit agencies and three rail services. Amtrak train service p
 # bbox_new <- bbox_new %>%  # take the bounding box ...
 #   st_as_sfc() # ... and make it a sf polygon
 
-m <- tm_shape(ct_towns_sf, unit = "mi") +
-  tm_borders(col = "gray", lwd = 0.2) +
-  tm_shape(ct_blkgrps_developed_simple) +
-  tm_fill(col = "NewPopAcre", style = "quantile",
-          colorNA = "white", colorNULL = "gray", title = "Pop per Acre",
-          legend.format = list(fun = function(x) formatC(x, digits = 1, format = "f")), palette = "YlGn") +
-  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
-  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
-  tm_shape(ct_highways) + tm_lines(col = "seashell4", alpha = 0.7) +
-  tm_shape(ct_busRoutesAll_sf) + tm_lines(col = "coral", lwd = 1) +
-  tm_shape(Railroad_sf) + tm_lines(lty = "twodash", lwd = 0.5) +
-  tm_shape(ct_stops_sf_Rail) + tm_dots(col = "red", size = 0.1) +
-  tm_shape(I95roadSegment) +
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-  tm_shape(I95roadSegment2) +
-  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-  tm_shape(I395roadSegment) +
-  tm_symbols(shape = I395, border.lwd = NA, size = 0.1) +
-  tm_shape(I91roadSegment) +
-  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
-  tm_shape(I84roadSegment) +
-  tm_symbols(shape = I84, border.lwd = NA, size = 0.1) +
-  tm_shape(ct_towns_sf_pts) + tm_dots() +
-  tm_text("NAME", size = 0.5, col = "black",
-          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
-               position = c(0.6,0.005)) +
-  tm_add_legend(type = "line", labels = "Bus Routes", col = "coral") +
-  tm_add_legend(type = "line", lty = "twodash", labels = "Rail") +
-  tm_add_legend(type = "symbol", labels = "Rail Stops", col = "red", size = 0.2) +
-  tm_layout(title = "Connecticut\nTransit Routes\nand Population\nDensity",
-            frame = FALSE, main.title.size = 0.8,
-            legend.outside = TRUE,
-            legend.title.size = 0.8,
-            legend.outside.position = c("right", "top"))
-
-tmap_save(m, "DATA/transport/CT/figures/ct_transit.png",
-          height = 4, width = 8, units = "in", dpi = 600)
+# m <- tm_shape(ct_towns_sf, unit = "mi") +
+#   tm_borders(col = "gray", lwd = 0.2) +
+#   tm_shape(ct_blkgrps_developed_simple) +
+#   tm_fill(col = "NewPopAcre", style = "quantile",
+#           colorNA = "white", colorNULL = "gray", title = "Pop per Acre",
+#           legend.format = list(fun = function(x) formatC(x, digits = 1, format = "f")), palette = "YlGn") +
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+#   tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+#   tm_shape(ct_highways) + tm_lines(col = "seashell4", alpha = 0.7) +
+#   tm_shape(ct_busRoutesAll_sf) + tm_lines(col = "coral", lwd = 1) +
+#   tm_shape(Railroad_sf) + tm_lines(lty = "twodash", lwd = 0.5) +
+#   tm_shape(ct_stops_sf_Rail) + tm_dots(col = "red", size = 0.1) +
+#   tm_shape(I95roadSegment) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I95roadSegment2) +
+#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+#   tm_shape(I395roadSegment) +
+#   tm_symbols(shape = I395, border.lwd = NA, size = 0.1) +
+#   tm_shape(I91roadSegment) +
+#   tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
+#   tm_shape(I84roadSegment) +
+#   tm_symbols(shape = I84, border.lwd = NA, size = 0.1) +
+#   tm_shape(ct_towns_sf_pts) + tm_dots() +
+#   tm_text("NAME", size = 0.5, col = "black",
+#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+#   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
+#                position = c(0.6,0.005)) +
+#   tm_add_legend(type = "line", labels = "Bus Routes", col = "coral") +
+#   tm_add_legend(type = "line", lty = "twodash", labels = "Rail") +
+#   tm_add_legend(type = "symbol", labels = "Rail Stops", col = "red", size = 0.2) +
+#   tm_layout(title = "Connecticut\nTransit Routes\nand Population\nDensity",
+#             frame = FALSE, main.title.size = 0.8,
+#             legend.outside = TRUE,
+#             legend.title.size = 0.8,
+#             legend.outside.position = c("right", "top"))
+# 
+# tmap_save(m, "DATA/transport/CT/figures/ct_transit.png",
+#           height = 4, width = 8, units = "in", dpi = 600)
 
 knitr::include_graphics("DATA/transport/CT/figures/ct_transit.png")
 ```
@@ -1156,7 +1156,7 @@ ct_blkgrps_sf_noCR %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
 
-```{r mapTransitAccessO64, fig.align = "center", fig.cap="Persons over 64 without reasonable access to any form of transit by Census Block Group."}
+```{r mapTransitAccessO64, fig.align = "center", fig.cap="Persons over 64 without reasonable access to any form of transit by Census Block Group based on reasonable distances for each mode."}
 m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(ct_blkgrps_sf_noTransit_simple, unit = "mi") +
@@ -1223,7 +1223,7 @@ ct_blkgrps_sf_noTransit %>%
 
 
 ## Frequency of Transit Service
-The quality of access to public transit can also be assessed by the level or frequency of service, which is measured by "headway." Headway describes the time between transit vehicle arrivals at a transit stop. For example, a bus route with a 15 minute headway would mean that the bus arrives at a given stop four times an hour (it's frequency), or once every 15 minutes. Transit headways are affected by the scheduled frequency of service, the number of vehicles on a given route, traffic delays, and dispatch management of vehicle spacing.[^mindGap] Headways are significant because they affect the desirability and useability of transit service.[^headways] Headways can affect:
+The quality of access to public transit can also be assessed by the level or frequency of service, which is measured by "headway." Headway describes the scheduled or observed time between transit vehicle arrivals at a transit stop. For example, a bus route with a 15 minute headway would mean that the bus is scheduled or actually arrives at a given stop four times an hour (it's frequency), or once every 15 minutes. Transit headways are affected by the scheduled frequency of service, the number of vehicles on a given route, traffic delays, and dispatch management of vehicle spacing.[^mindGap] Headways are significant because they affect the desirability and useability of transit service.[^headways] Headways can affect:
 
 * average wait times
 * the amount of planning and preparation needed to use transit and stay on schedule
@@ -1398,7 +1398,7 @@ ct_stops_sf_Bus %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliBusHeadway) below compares the population-weighted average bus headways for different groups across the state. Most groups have average headways lower than the general population. However, persons over age 64 and disabled persons have headways that exceed that of the general population (`r round(ct_busHeadwayPops_df %>% filter(Group == "Over 64") %>% select(AvgWHeadway) %>% pull(),1)` and `r round(ct_busHeadwayPops_df %>% filter(Group == "Disabled") %>% select(AvgWHeadway) %>% pull(),1)` minutes, respectively). The shortest population-weighted average headway, experienced by low income groups, as defined by Connecticut environmental justice policy, is `r round(ct_busHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),0)` minutes.
+However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliBusHeadway) below compares the population-weighted average bus headways for different groups across the state. Most groups have average headways shorter than the general population. However, persons over age 64 and disabled persons have headways that exceed that of the general population (`r round(ct_busHeadwayPops_df %>% filter(Group == "Over 64") %>% select(AvgWHeadway) %>% pull(),1)` and `r round(ct_busHeadwayPops_df %>% filter(Group == "Disabled") %>% select(AvgWHeadway) %>% pull(),1)` minutes, respectively). The shortest population-weighted average headway, experienced by low income groups, as defined by Connecticut environmental justice policy, is `r round(ct_busHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),0)` minutes.
 
 ```{r loliBusHeadway, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average bus headways for groups within 400 meters of a bus stop across Connecticut."}
 ct_busHeadwayPops_df %>% 
@@ -1425,7 +1425,7 @@ ct_busHeadwayPops_df %>%
   expand_limits(y = c(115,145))
 ```
 
-Headways for commuter rail routes are not much different on average than bus routes. Figure \@ref(fig:mapGTFScommuterRail) shows average headways by stop, and Table \@ref(tab:tabGTFSrapidCommuterRail) shows a breakdown of headway times by route. The average population-weighted headway for all commuter rail routes is `r round(ct_CRHeadwayPops_df %>% filter(Group == "Total Pop") %>% select(AvgWHeadway) %>% pull(),1)` minutes. However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliCRHeadway) below compares the population-weighted average commuter rail headways for different groups within 3 miles (4800m) of stops. Most groups have average headways higher than the general population. Low income groups, as defined by state environmental justice policy, show the highest population-weighted headways for commuter rail (`r round(ct_CRHeadwayPops_df %>% filter(Group == "CT Low Income") %>% select(AvgWHeadway) %>% pull(),1)` minutes). The shortest population-weighted average headway, experienced by persons over 64, is `r round(ct_CRHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),1)` minutes.
+Headways for commuter rail routes are not much different on average than bus routes. Figure \@ref(fig:mapGTFScommuterRail) shows average headways by stop, and Table \@ref(tab:tabGTFSrapidCommuterRail) shows a breakdown of headway times by route. The average population-weighted headway for all commuter rail routes is `r round(ct_CRHeadwayPops_df %>% filter(Group == "Total Pop") %>% select(AvgWHeadway) %>% pull(),1)` minutes. However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliCRHeadway) below compares the population-weighted average commuter rail headways for different groups within 3 miles (4800m) of stops. Most groups have average headways longer than the general population. Low income groups, as defined by state environmental justice policy, show the longest population-weighted headways for commuter rail (`r round(ct_CRHeadwayPops_df %>% filter(Group == "CT Low Income") %>% select(AvgWHeadway) %>% pull(),1)` minutes). The shortest population-weighted average headway, experienced by persons over 64, is `r round(ct_CRHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),1)` minutes.
 
 ```{r mapGTFScommuterRail, fig.align = "center", fig.cap="Mean headways by commuter rail route for Connecticut routes running Monday through Friday, from 6am - 9pm."}
 # arrange row order descending so that higher frequency lines are on top
@@ -1557,13 +1557,15 @@ headway80_commuterRail <- headway80thblkgrps_CR %>%
   left_join(., townpopsdf,by="NAME") %>%
   group_by(NAME) %>%
   summarize(`Block Groups` = n(),
-            `Over 64` = sum(NewOver64,na.rm = TRUE),
-            `Pct of Over 64` = round(sum(NewOver64)/max(TotalOver64)*100,1)) %>% 
+            `CT Low Income` = sum(NewCT_LOWINC,na.rm = TRUE),
+            `Pct of CT Low Income` = round(sum(NewCT_LOWINC)/max(TotalCT_LOWINC)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
-  mutate(`Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
-  arrange(desc(`Over 64`))
+  filter(`Pct of CT Low Income` > 0) %>% 
+  mutate(`Pct of CT Low Income` = if_else(`Pct of CT Low Income` > 100, 100, `Pct of CT Low Income`)) %>% 
+  mutate(`Pct of CT Low Income` = paste0(`Pct of CT Low Income`,"%")) %>% 
+  arrange(desc(`CT Low Income`))
 ```
-The population-weighted average headways above provide a glimpse of average headways across the state for different population groups and for different transit modes. However, headways also vary for specific communities. Indeed, it is important to consider populations of concern or transportation-limited populations that experience excessively large headways or low service frequency. Figures \@ref(fig:mapHeadwayOver64bus) and \@ref(fig:mapHeadwayOver64CR) below highlight communities of persons over 64 who are within reasonable distance of bus stops (i.e., 400m or 1/4 mile) and commuter rail stops (i.e., 4800m or 3 miles), but where the mean headway for these stops exceeds the 80th percentile of mean route headways for the state. Tables \@ref(tab:tabHeadwayOver64bus) and \@ref(tab:tabHeadwayOver64commuterRail) show breakdowns by municipality. For example, Table \@ref(tab:tabHeadwayOver64bus) shows that `r formatC(as.numeric(headway80_bus[1,3]),big.mark=",")` people over 64 across `r headway80_bus[1,2]` Block Groups in `r headway80_bus[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ct_routes_sf_Bus$mean_headways,0.8)` minutes. These people represented `r headway80_bus[1,4]` of people over 64 in `r headway80_bus[1,1]`. Similarly, Table \@ref(tab:tabHeadwayOver64commuterRail) shows that `r formatC(as.numeric(headway80_commuterRail[1,3]),big.mark=",")` people over 64 across `r headway80_commuterRail[1,2]` Block Groups in `r headway80_commuterRail[1,1]` resided in areas where the average headway of accessible commuter rail stops exceeded `r quantile(ct_stops_sf_Rail$headway,.8)` minutes. These people represented `r headway80_commuterRail[1,4]` of people over 64 in `r headway80_commuterRail[1,1]`.
+The population-weighted average headways above provide a glimpse of average headways across the state for different population groups and for different transit modes. However, headways also vary for specific communities. Indeed, it is important to consider populations of concern or transportation-limited populations that experience excessively large headways or low service frequency. Figures \@ref(fig:mapHeadwayOver64bus) and \@ref(fig:mapHeadwayCTINCrail) below highlight communities of persons over 64 who are within reasonable distance of bus stops (i.e., 400m or 1/4 mile) and low income groups, as defined by state environmental justice policy, who are within reasonable distance of commuter rail stops (i.e., 4800m or 3 miles), but where the mean headway for these stops exceeds the 80th percentile of mean route headways for the state. Tables \@ref(tab:tabHeadwayOver64bus) and \@ref(tab:tabHeadwayCTINCrail) show breakdowns by municipality. For example, Table \@ref(tab:tabHeadwayOver64bus) shows that `r formatC(as.numeric(headway80_bus[1,3]),big.mark=",")` people over 64 across `r headway80_bus[1,2]` Block Groups in `r headway80_bus[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ct_routes_sf_Bus$mean_headways,0.8)` minutes. These people represented `r headway80_bus[1,4]` of people over 64 in `r headway80_bus[1,1]`. Similarly, Table \@ref(tab:tabHeadwayCTINCrail) shows that `r formatC(as.numeric(headway80_commuterRail[1,3]),big.mark=",")` low income people across `r headway80_commuterRail[1,2]` Block Groups in `r headway80_commuterRail[1,1]` resided in areas where the average headway of accessible commuter rail stops exceeded `r quantile(ct_stops_sf_Rail$headway,.8)` minutes. These people represented `r headway80_commuterRail[1,4]` of low income people, as defined by state environmental justice policy, in `r headway80_commuterRail[1,1]`.
 Maps and tables of other populations of concern with excessive headways can be found in Appendix B. 
 
 ```{r mapHeadwayOver64bus, fig.align = "center", fig.cap="Persons over 64 within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -1628,7 +1630,7 @@ headway80thblkgrps_bus %>%
 
 ```
 
-```{r mapHeadwayOver64CR, fig.align = "center", fig.cap="Persons over 64 within 4800m or 3 miles of commuter rail stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r mapHeadwayCTINCrail, fig.align = "center", fig.cap="Low income persons, as defined by state environmental justice policy, within 4800m or 3 miles of commuter rail stops in which the mean headway for these stops is above the 80th percentile for the state."}
 m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(ct_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -1636,9 +1638,9 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
   tm_shape(ct_highways) + tm_lines(col = "seashell4", alpha = 0.7) +
   tm_shape(headway80thblkgrps_CR) +
-  tm_fill(col = "NewOver64", style = "quantile",
+  tm_fill(col = "NewCT_LOWINC", style = "equal",
           colorNA = "white", colorNULL = "gray",
-          title = "Number of\nPersons Over 64",
+          title = "Number of\nCT Low Income",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(I95roadSegment) +
   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
@@ -1655,20 +1657,20 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
-  # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Commuter Rail Route", col = "purple") +
-  tm_layout(title = paste("Persons Over 64","with Commuter Rail", "Headways Over",paste0(quantile(ct_stops_sf_Rail$headway,0.8)," Minutes"),sep = "\n"),
+  # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
+  tm_layout(title = paste("CT Low Income","with Commuter", "Rail Headways",paste0("Over ",quantile(ct_stops_sf_Rail$headway,0.8)," Minutes"),sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/CT/figures/ct_headwayOver64cr.png",
+tmap_save(m, "DATA/transport/CT/figures/ct_headwayCTINC.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/CT/figures/ct_headwayOver64cr.png")
+knitr::include_graphics("DATA/transport/CT/figures/ct_headwayCTINC.png")
 ```
 
-```{r tabHeadwayOver64commuterRail, fig.align = "center", fig.cap="Persons over 64 within 800m or 1/2 mile of commuter rail stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r tabHeadwayCTINCrail, fig.align = "center", fig.cap="Low income persons, as defined by state environmental justice policy, within 4800m or 3 miles of commuter rail stops in which the mean headway for these stops is above the 80th percentile for the state."}
 headway80thblkgrps_CR %>%
   st_centroid(.) %>% 
   st_intersection(ct_towns_sf,.) %>% 
@@ -1676,15 +1678,16 @@ headway80thblkgrps_CR %>%
   left_join(., townpopsdf,by="NAME") %>%
   group_by(NAME) %>%
   summarize(`Block Groups` = n(),
-            `Over 64` = sum(NewOver64,na.rm = TRUE),
-            `Pct of Over 64` = round(sum(NewOver64)/max(TotalOver64)*100,1)) %>% 
+            `CT Low Income` = sum(NewCT_LOWINC,na.rm = TRUE),
+            `Pct of CT Low Income` = round(sum(NewCT_LOWINC)/max(TotalCT_LOWINC)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
-  mutate(`Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
-  arrange(desc(`Over 64`)) %>% 
+  filter(`Pct of CT Low Income` > 0) %>% 
+  mutate(`Pct of CT Low Income` = paste0(`Pct of CT Low Income`,"%")) %>% 
+  arrange(desc(`CT Low Income`)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = paste("Persons Over 64","with Average Headways",paste0("Over ",quantile(ct_stops_sf_Rail$headway,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of Over 64 in Block Groups","Pct of Over 64 in City/Town")) %>% 
+                    caption = paste("CT Low Income","with Average Headways",paste0("Over ",quantile(ct_stops_sf_Rail$headway,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of CT Low Income in Block Groups","Pct of CT Low Income in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 
@@ -1754,7 +1757,7 @@ ct_wAvgWalkability_df <- ct_blkgrp_walkability_sf %>%
   rbind(., ct_tract_walkability_df)
 ```
 
-Figure \@ref(fig:mapWalkability) shows walkability scores by Census Block Group across Connecticut.  Walkability varies across the state, although most of the state is classified as below average to least walkable. Waliability is highest in the corridor from Greenwich to New Haven.
+Figure \@ref(fig:mapWalkability) shows walkability scores by Census Block Group across Connecticut.  Average population-weighted walkability for Connecticut is `r round(ct_wAvgWalkability_df %>% filter(Group == "Total Pop") %>% select(wNatWalkIndex) %>% pull(),1)`. Walkability varies across the state, although most of the state is classified as below average to least walkable. Waliability is highest in the corridor from Greenwich to New Haven.
 
 ```{r mapWalkability, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Walkability Index scores for Census Block Groups across Connecticut."}
 m <- tm_shape(ct_blkgrp_walkability_sf) +
@@ -2033,15 +2036,15 @@ lai_ct_df <- lai_ct_blkgrp %>%
   group_by(Group) %>% 
   summarize(wTBurden = weighted.mean(hh7_t, Pop, na.rm = TRUE)) %>% 
   rbind(., lai_ct_tract_df)
-```
 
-Figure \@ref(fig:mapLAI) below shows transportation cost burden (i.e., transportation cost as a percentage of household income) by Census Tract across Connecticut. Transportation cost burden varies across the state. It is lowest along the I-95 corridor from Greenwich to New Haven, and in the cities of Danbury, New Britain, and Hartford. 
-
-```{r mapLAI, fig.align = "center", fig.cap="Transpotation cost burden for Census Tracts across Connecticut."}
 # isolate places where transportation cost as a percentage of income exceeds housing as a percentage of income
 lai_ToverH <- lai_ri %>%
   filter(hh7_t > hh7_h)
+```
 
+Figure \@ref(fig:mapLAI) below shows transportation cost burden (i.e., transportation cost as a percentage of household income) by Census Tract across Connecticut. Transportation cost burden is generally high across the state but does vary. It is lowest along the I-95 corridor from Greenwich to New Haven, and in the cities of Danbury, Waterbury, New Britain, and Hartford. 
+
+```{r mapLAI, fig.align = "center", fig.cap="Transportation cost burden for Census Tracts across Connecticut."}
 m <- tm_shape(lai_ri) +
   tm_fill(col = "hh7_t", alpha = 0.8, style = "quantile", title = "Transportation as\nPercent of Income", showNA = FALSE,
           legend.format = list(fun = function(x) formatC(x, digits = 1, format = "f"))) +
@@ -2081,7 +2084,7 @@ knitr::include_graphics("DATA/transport/CT/figures/ct_tburden.png")
 
 Transportation cost burden varies for different population groups across the state. Figure \@ref(fig:loliLAI) below compares population-weighted average transportation cost burden for different populations. Most groups live in communities with transportation cost burdens that are below that of the general population. However, persons over age 64 tend to live in communities with transportation cost burdens that exceed the state average. 
 
-```{r loliLAI, fig.align = "center", fig.cap="Population-weighted average transportation cost burden for groups across Connecticut."}
+```{r loliLAI, fig.align = "center", fig.cap="Population-weighted average transportation cost burden as a percentage of household income for groups across Connecticut."}
 # Create lollipop graph of pop-weighted average LAI
 lai_ct_df %>% 
   ggplot(aes(x = reorder(Group,wTBurden), y = wTBurden)) +
@@ -5257,7 +5260,7 @@ headway80thblkgrps_CR %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapHeadwayCTINCrail, fig.align = "center", fig.cap="Low income persons, as defined by state environmental justice policy, within 4800m or 3 miles of commuter rail stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r mapHeadwayOver64CR, fig.align = "center", fig.cap="Persons over 64 within 4800m or 3 miles of commuter rail stops in which the mean headway for these stops is above the 80th percentile for the state."}
 m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(ct_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
@@ -5265,9 +5268,9 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
   tm_shape(ct_highways) + tm_lines(col = "seashell4", alpha = 0.7) +
   tm_shape(headway80thblkgrps_CR) +
-  tm_fill(col = "NewCT_LOWINC", style = "equal",
+  tm_fill(col = "NewOver64", style = "quantile",
           colorNA = "white", colorNULL = "gray",
-          title = "Number of\nCT Low Income",
+          title = "Number of\nPersons Over 64",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(I95roadSegment) +
   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
@@ -5284,20 +5287,20 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
-  # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
-  tm_layout(title = paste("CT Low Income","with Commuter", "Rail Headways",paste0("Over ",quantile(ct_stops_sf_Rail$headway,0.8)," Minutes"),sep = "\n"),
+  # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Commuter Rail Route", col = "purple") +
+  tm_layout(title = paste("Persons Over 64","with Commuter Rail", "Headways Over",paste0(quantile(ct_stops_sf_Rail$headway,0.8)," Minutes"),sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/CT/figures/ct_headwayCTINC.png",
+tmap_save(m, "DATA/transport/CT/figures/ct_headwayOver64cr.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/CT/figures/ct_headwayCTINC.png")
+knitr::include_graphics("DATA/transport/CT/figures/ct_headwayOver64cr.png")
 ```
 
-```{r tabHeadwayCTINCrail, fig.align = "center", fig.cap="Low income persons, as defined by state environmental justice policy, within 4800m or 3 miles of commuter rail stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r tabHeadwayOver64commuterRail, fig.align = "center", fig.cap="Persons over 64 within 800m or 1/2 mile of commuter rail stops in which the mean headway for these stops is above the 80th percentile for the state."}
 headway80thblkgrps_CR %>%
   st_centroid(.) %>% 
   st_intersection(ct_towns_sf,.) %>% 
@@ -5305,19 +5308,17 @@ headway80thblkgrps_CR %>%
   left_join(., townpopsdf,by="NAME") %>%
   group_by(NAME) %>%
   summarize(`Block Groups` = n(),
-            `CT Low Income` = sum(NewCT_LOWINC,na.rm = TRUE),
-            `Pct of CT Low Income` = round(sum(NewCT_LOWINC)/max(TotalCT_LOWINC)*100,1)) %>% 
+            `Over 64` = sum(NewOver64,na.rm = TRUE),
+            `Pct of Over 64` = round(sum(NewOver64)/max(TotalOver64)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
-  filter(`Pct of CT Low Income` > 0) %>% 
-  mutate(`Pct of CT Low Income` = paste0(`Pct of CT Low Income`,"%")) %>% 
-  arrange(desc(`CT Low Income`)) %>% 
+  mutate(`Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
+  arrange(desc(`Over 64`)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = paste("CT Low Income","with Average Headways",paste0("Over ",quantile(ct_stops_sf_Rail$headway,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of CT Low Income in Block Groups","Pct of CT Low Income in City/Town")) %>% 
+                    caption = paste("Persons Over 64","with Average Headways",paste0("Over ",quantile(ct_stops_sf_Rail$headway,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of Over 64 in Block Groups","Pct of Over 64 in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
-
 ```
 
 
