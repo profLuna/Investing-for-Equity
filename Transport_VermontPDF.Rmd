@@ -30,7 +30,7 @@ library(lwgeom)
 
 \pagebreak
 
-# Analysis of adequacy of public transit and walkability in Vermont
+# Analysis of adequacy of public transit, walkability, and transportation cost burden in Vermont
 
 This is an analysis of access to public transit and walkability in Vermont.
 
@@ -768,8 +768,8 @@ vt_transitAccessPops_df %>%
         panel.border = element_blank(),
         axis.ticks.y = element_blank()) +
   geom_text(aes(x = Group, y = PctAllTransit + 0.2 * sign(PctAllTransit), 
-                label = paste0(round(PctAllTransit,0),"%")), 
-            hjust = -0.2, vjust = -.4, size = 3,
+                label = paste0(round(PctAllTransit,1),"%")), 
+            hjust = 0, vjust = -.4, size = 3,
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = vt_transitAccessPops_df[1,8], linetype = "dashed") +
@@ -777,7 +777,7 @@ vt_transitAccessPops_df %>%
             color = "gray48") +
   geom_text(aes(x = "Total Pop", y = 36, label = "Below state\naverage"),
             color = "gray48") +
-  expand_limits(y = c(35,50))
+  expand_limits(y = c(35,51))
 ```
 
 Specific values of the same can be seen in Table \@ref(tab:statsTransitDist) below.
@@ -961,7 +961,7 @@ vt_blkgrps_sf_noTransit %>%
 
 
 ## Frequency of Transit Service
-The quality of access to public transit can also be assessed by the level or frequency of service, which is measured by "headway." Headway describes the time between transit vehicle arrivals at a transit stop. For example, a bus route with a 15 minute headway would mean that the bus arrives at a given stop four times an hour (it's frequency), or once every 15 minutes. Transit headways are affected by the scheduled frequency of service, the number of vehicles on a given route, traffic delays, and dispatch management of vehicle spacing.[^mindGap] Headways are significant because they affect the desirability and useability of transit service.[^headways] Headways can affect:
+The quality of access to public transit can also be assessed by the level or frequency of service, which is measured by "headway." Headway describes the scheduled or observed time between transit vehicle arrivals at a transit stop. For example, a bus route with a 15 minute headway would mean that the bus arrives at a given stop four times an hour (it's frequency), or once every 15 minutes. Transit headways are affected by the scheduled frequency of service, the number of vehicles on a given route, traffic delays, and dispatch management of vehicle spacing.[^mindGap] Headways are significant because they affect the desirability and useability of transit service.[^headways] Headways can affect:
 
 * average wait times
 * the amount of planning and preparation needed to use transit and stay on schedule
@@ -1088,7 +1088,7 @@ vt_stops_sf_Bus %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliBusHeadway) below compares the population-weighted average bus headways for different groups across the state. Most groups have average headways lower than the general population. However, children under 5, persons under 18, disabled persons, and adults without a high school diploma have headways that exceed that of the general population. The shortest population-weighted average headway, experienced by limited English speaking households is `r round(vt_busHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),0)` minutes.
+However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliBusHeadway) below compares the population-weighted average bus headways for different groups across the state. Most groups have average headways shorter than the general population. However, persons under 18, disabled persons, and adults without a high school diploma have headways that exceed that of the general population. The shortest population-weighted average headway, experienced by limited English speaking households is `r round(vt_busHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),0)` minutes.
 
 ```{r loliBusHeadway, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average bus headways for groups within 400 meters of a bus stop across Vermont."}
 vt_busHeadwayPops_df %>% 
@@ -1152,7 +1152,7 @@ headway80_2 <- headway80thblkgrps_bus %>%
   mutate(`Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
   arrange(desc(`Under 18`))
 ```
-The population-weighted average headways above provide a glimpse of average headways across the state for different population groups. However, headways also vary for specific communities. Indeed, it is important to consider populations of concern or transportation-limited populations that experience excessively large headways or low service frequency. Figures \@ref(fig:mapHeadwayUnder5bus) and \@ref(fig:mapHeadwayUnder18bus) below highlight communities of persons under 5 and under 18 who are within reasonable distance of bus stops (i.e., 400m or 1/4 mile), but where the mean headway for these stops exceeds the 80th percentile of mean route headways for the state. Tables \@ref(tab:tabHeadwayUnder5bus) and \@ref(tab:tabHeadwayUnder18bus) show breakdowns by municipality. For example, Table \@ref(tab:tabHeadwayUnder5bus) shows that `r formatC(as.numeric(headway80_1[1,3]),big.mark=",")` children under 5 across `r headway80_1[1,2]` Block Groups in `r headway80_1[1,1]` resided in areas where the average headway of accessible bus stops exceeded `r quantile(vt_routes_sf_Bus$mean_headways,0.8)` minutes. These people represented `r headway80_1[1,4]` of children under 5 in `r headway80_1[1,1]`. Similarly, Table \@ref(tab:tabHeadwayUnder18bus) shows that `r formatC(as.numeric(headway80_2[1,3]),big.mark=",")` persons under 18 across `r headway80_2[1,2]` Block Groups in `r headway80_2[1,1]` resided in areas where the average headway of accessible bus stops exceeded `r quantile(vt_stops_sf_Bus$headway,.8)` minutes. These people represented `r headway80_2[1,4]` of persons under 18 in `r headway80_2[1,1]`.
+The population-weighted average headways above provide a glimpse of average headways across the state for different population groups. However, headways also vary for specific communities. Indeed, it is important to consider populations of concern or transportation-limited populations that experience excessively long headways or low service frequency. Figures \@ref(fig:mapHeadwayUnder5bus) and \@ref(fig:mapHeadwayUnder18bus) below highlight communities of persons under 5 and under 18 who are within reasonable distance of bus stops (i.e., 400m or 1/4 mile), but where the mean headway for these stops exceeds the 80th percentile of mean route headways for the state. Tables \@ref(tab:tabHeadwayUnder5bus) and \@ref(tab:tabHeadwayUnder18bus) show breakdowns by municipality. For example, Table \@ref(tab:tabHeadwayUnder5bus) shows that `r formatC(as.numeric(headway80_1[1,3]),big.mark=",")` children under 5 across `r headway80_1[1,2]` Block Groups in `r headway80_1[1,1]` resided in areas where the average headway of accessible bus stops exceeded `r quantile(vt_routes_sf_Bus$mean_headways,0.8)` minutes. These people represented `r headway80_1[1,4]` of children under 5 in `r headway80_1[1,1]`. Similarly, Table \@ref(tab:tabHeadwayUnder18bus) shows that `r formatC(as.numeric(headway80_2[1,3]),big.mark=",")` persons under 18 across `r headway80_2[1,2]` Block Groups in `r headway80_2[1,1]` resided in areas where the average headway of accessible bus stops exceeded `r quantile(vt_stops_sf_Bus$headway,.8)` minutes. These people represented `r headway80_2[1,4]` of persons under 18 in `r headway80_2[1,1]`.
 Maps and tables of other populations of concern with excessive headways can be found in Appendix B. 
 
 ```{r mapHeadwayUnder5bus, fig.align = "center", fig.cap="Children under 5 within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
@@ -1345,7 +1345,7 @@ vt_wAvgWalkability_df <- vt_blkgrp_walkability_sf %>%
   rbind(., vt_travt_walkability_df)
 ```
 
-Figure \@ref(fig:mapWalkability) shows walkability scores by Census Block Group across Vermont.  Walkability varies across the state, although most of the state is classified as below average to least walkable. Walkability is highest in portions of Burlington and Rutland.
+Figure \@ref(fig:mapWalkability) shows walkability scores by Census Block Group across Vermont.  The population-weighted average walkability score across the state is `r round(vt_wAvgWalkability_df %>% filter(Group == "Total Pop") %>% select(wNatWalkIndex) %>% pull(),1)`. Walkability varies across the state, although most of the state is classified as below average to least walkable. Walkability is highest in portions of Burlington, Montpelier, Fairhaven, and Rutland.
 
 ```{r mapWalkability, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Walkability Index scores for Census Block Groups across Vermont."}
 m <- tm_shape(vt_blkgrp_walkability_sf) +
@@ -1638,7 +1638,7 @@ lai_ToverH <- lai_ri %>%
 
 Figure \@ref(fig:mapLAI) below shows transportation cost burden (i.e., transportation cost as a percentage of household income) by Census Tract across Vermont. Transportation cost burden varies across the state. It is lowest around Burlington, Middlebury and St. Albans. In `r nrow(lai_ToverH)` Census Tracts, the transportation cost burden exceeds the cost burden of housing. 
 
-```{r mapLAI, fig.align = "center", fig.cap="Transpotation cost burden for Census Tracts across Vermont."}
+```{r mapLAI, fig.align = "center", fig.cap="Transportation cost burden for Census Tracts across Vermont."}
 m <- tm_shape(lai_ri) +
   tm_fill(col = "hh7_t", alpha = 0.8, style = "quantile", title = "Transportation as\nPercent of Income", showNA = FALSE,
           legend.format = list(fun = function(x) formatC(x, digits = 1, format = "f"))) +
@@ -1676,9 +1676,9 @@ tmap_save(m, "DATA/transport/VT/figures/vt_tburden.png",
 knitr::include_graphics("DATA/transport/VT/figures/vt_tburden.png")
 ````
 
-Transportation cost burden varies for different population groups across the state. Figure \@ref(fig:loliLAI) below compares population-weighted average transportation cost burden for different populations. Most groups live in communities with transportation cost burdens that are above that of the general population. Persons over age 64 tend to live in communities with the highest transportation cost burdens. 
+Transportation cost burden varies for different population groups across the state. Figure \@ref(fig:loliLAI) below compares population-weighted average transportation cost burden for different populations. Most groups live in communities with transportation cost burdens as a percentage of household income that are greater than the general population. Persons over age 64 tend to live in communities with the highest transportation cost burdens as a percentage of household income. 
 
-```{r loliLAI, fig.align = "center", fig.cap="Population-weighted average transportation cost burden for groups across Vermont."}
+```{r loliLAI, fig.align = "center", fig.cap="Population-weighted average transportation cost burden as a percentagae of household income for groups across Vermont."}
 # Create lollipop graph of pop-weighted average LAI
 lai_vt_df %>% 
   ggplot(aes(x = reorder(Group,wTBurden), y = wTBurden)) +
@@ -1723,6 +1723,8 @@ HiBurden1 <- HiBurden %>%
             `Over 64` = sum(over64E,na.rm = TRUE),
             `Pct of Over 64` = round(sum(over64E)/max(TotalOver64)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of Over 64` > 0) %>% 
+  mutate(`Pct of Over 64` = if_else(`Pct of Over 64` > 100, 100, `Pct of Over 64`)) %>% 
   mutate(`Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
   arrange(desc(`Over 64`))
 
@@ -1736,6 +1738,8 @@ HiBurden2 <- HiBurden %>%
             `No HS Dip` = sum(lthsE,na.rm = TRUE),
             `Pct of No HS Dip` = round(sum(lthsE)/max(TotalNoHS)*100,1)) %>% 
   rename("City/Town" = NAME) %>% 
+  filter(`Pct of No HS Dip` > 0) %>% 
+  mutate(`Pct of No HS Dip` = if_else(`Pct of No HS Dip` > 100, 100, `Pct of No HS Dip`)) %>%
   mutate(`Pct of No HS Dip` = paste0(`Pct of No HS Dip`,"%")) %>% 
   arrange(desc(`No HS Dip`))
 ```
