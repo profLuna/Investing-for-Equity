@@ -30,9 +30,9 @@ library(lwgeom)
 
 \pagebreak
 
-# Analysis of walkability and transportation cost burden in Maine
+# Analysis of transit access, walkability, and transportation cost burden in Maine
 
-This is an analysis of walkability and transportation cost burden in Maine.
+This is an analysis of transit access, walkability, and transportation cost burden in Maine.
 
 ```{r data, include=FALSE}
 ### Analysis of Maine transportation options
@@ -57,13 +57,52 @@ rm(ne_blkgrp_sf,ne_tracts_sf,ne_blkgrp_sf90)
 
 
 # # Read in route linework by Bradford Newton
-# 
-# # read in park-in-ride lots from Maine Open Geodata Portal at https://geodata.vermont.gov/ . Keep only park-in-rides that are serviced by public transit. 
-# me_parknride_sf <- st_read(dsn = "DATA/transport/ME/ME_Park_and_Rides",
-#                            layer = "ME_Park_and_Rides") %>% 
-#   filter(TRANSIT != "NONE") %>% 
-#   st_transform(., crs = 2802) %>% 
-#   st_make_valid()
+# create vector of directory paths
+dir_list <- list.dirs(path = "DATA/transport/BRADFORD/Maine", 
+                      full.names = TRUE, recursive = TRUE) %>% 
+  .[-1]  # get rid of top level directory path
+
+
+# create function to list layers in each path, extract layer names from each directory as a character vector, read layers in, and create common variables
+getLayers <- function(x) {
+  lnames <- st_layers(x)
+  lnames <- lnames$name
+  lapply(lnames, function (y) 
+    st_read(dsn = x, layer = y) %>% 
+      transmute(AGENCY = sub(".*ME - ", "", x), ROUTE = y))
+}
+
+# apply function
+me_transit_list <- lapply(dir_list, getLayers)
+
+# unlist nested lists of transit layers
+me_transit_list <- unlist(me_transit_list, recursive = FALSE)
+
+# combine into one sf layer
+me_transit_sf <- do.call(rbind, me_transit_list) %>% 
+  st_transform(crs = 2802) %>% 
+  st_make_valid()
+
+
+# Read in GTFS data for Greater Portland Metro from Open Mobility Data at https://openmobilitydata.org/p/greater-portland-metro/1151
+
+# Use previously downloaded GTFS for June 2019
+me_transit_gtfs <- read_gtfs("DATA/transport/ME/ME_gtfs_files/gtfsAug2019.zip") %>% 
+  gtfs_as_sf()
+
+# Convert stops to points for mapping
+me_transit_stops_sf <- stops_as_sf(me_transit_gtfs$stops)
+
+# get_route_geometry needs a gtfs object that includes shapes as simple feature data frames and join route descriptive info
+me_routes_sf <- get_route_geometry(me_transit_gtfs) %>% 
+  left_join(., me_transit_gtfs$routes, by = "route_id") %>% 
+  st_transform(crs = 2802)
+
+# join all linework together
+me_transit_sf <- me_routes_sf %>% 
+  transmute(AGENCY = "Greater Portland Metro", ROUTE = route_id) %>% 
+  rbind(me_transit_sf,.) %>% 
+  st_make_valid()
 
 
 # Use dasymetric mapping to calculate populations with access to transit. Approach follows method used by Qiang (2019) to eliminate unpopulated areas of census polygons and then reallocate populations to developed areas as identified in National Land Cover Dataset (NLCD). 
@@ -74,226 +113,126 @@ rm(ne_blkgrp_sf,ne_tracts_sf,ne_blkgrp_sf90)
 # Erase areas of block groups and tracts that overlap with undeveloped areas in NLCD shapefiles. Compute OldArea of erased polygons in sqm to identify area of developed polygons remaining. 
 
 ##### Return to working in R ######
-# # read in processed me_blkgrps and me_tracts
-# st_layers(dsn = "DATA/FEMA/ME")
-# me_blkgrps_developed <- st_read(dsn = "DATA/FEMA/ME",
-#                                 layer = "me_blkgrps_developed") 
-# 
-# me_blkgrps_developed <- me_blkgrps_sf %>% 
-#   as.data.frame() %>% 
-#   dplyr::select(-geometry) %>%
-#   left_join(me_blkgrps_developed, ., by = "GEOID") %>% 
-#   st_transform(., crs = 2802) %>% 
-#   mutate(NewArea = st_area(.)) %>%
-#   st_make_valid() %>% 
-#   mutate(Proportion = as.numeric(NewArea/OldArea),
-#          NewPop = totalpopE*Proportion,
-#          NewMinority = minorityE*Proportion,
-#          NewUnder5 = under5E*Proportion,
-#          NewOver64 = over64E*Proportion,
-#          NewUnder18 = under18E*Proportion,
-#          NewEng_limit = eng_limitE*Proportion,
-#          NewPov = num2povE*Proportion,
-#          NewLths = lthsE*Proportion,
-#          NewPopAcre = NewPop/(NewArea*0.000247105))
-# 
-# me_tracts_developed <- st_read(dsn = "DATA/FEMA/ME",
-#                                 layer = "me_tracts_developed") %>% 
-#   left_join(., as.data.frame(me_tracts_sf), by = "GEOID") %>% 
-#   st_transform(., crs = 2802) %>% 
-#   mutate(NewArea = st_area(.)) %>%
-#   st_make_valid() %>% 
-#   mutate(Proportion = as.numeric(NewArea/OldArea),
-#          NewDisabled = disabledOver18E*Proportion,
-#          NewOver18 = Over18E*Proportion,
-#          NewHHNoCar = HHnoCarE*Proportion)
-# 
-# # create a simplified version for faster mapping
-# me_blkgrps_developed_simple <- st_simplify(me_blkgrps_developed,
-#                                            dTolerance = 100) %>% 
-#   filter(!st_is_empty(.)) %>% 
-#   st_make_valid()
-# # repeat for tracts
-# me_tracts_developed_simple <- st_simplify(me_tracts_developed, 
-#                                           dTolerance = 100) %>% 
-#   filter(!st_is_empty(.)) %>% 
-#   st_make_valid()
+# read in processed nh_blkgrps and nh_tracts
+# st_layers(dsn = "DATA/FEMA/NH")
+me_blkgrps_developed <- st_read(dsn = "DATA/FEMA/ME",
+                                layer = "me_blkgrps_developed")
 
-# # Create a 400m buffer around bus stops
-# me_busBuff400m <- st_buffer(me_stops_sf_Bus,dist = 400) %>% 
-#   st_union() %>% 
-#   st_as_sf()
-# 
-# # Create buffers around park-in-ride stops (4800m)
-# me_prBuff4800m <- st_buffer(me_parknride_sf, dist = 4800) %>% 
-#   st_union() %>% 
-#   st_as_sf()
-# 
-# me_transitAllBuff <- rbind(me_busBuff400m,
-#                            me_prBuff4800m) %>% 
-#   st_union() %>% 
-#   st_as_sf() %>% 
-#   mutate(Sqm = st_area(.))
-# 
-# # Use areal interpolation to calculate populations of concern within buffer of accessibility
-# me_busBuff400m_sf <- me_blkgrps_developed %>% 
-#   select(GEOID,NewArea:NewLths) %>% 
-#   mutate(OldArea = NewArea) %>% 
-#   st_intersection(me_busBuff400m,.) %>% 
-#   mutate(NewArea = st_area(.),
-#          Proportion = NewArea/OldArea,
-#          NewPop = as.integer(NewPop*Proportion),
-#          NewMinority = as.integer(NewMinority*Proportion),
-#          NewUnder5 = as.integer(NewUnder5*Proportion),
-#          NewOver64 = as.integer(NewOver64*Proportion),
-#          NewUnder18 = as.integer(NewUnder18*Proportion),
-#          NewEng_limit = as.integer(NewEng_limit*Proportion),
-#          NewPov = as.integer(NewPov*Proportion),
-#          NewLths = as.integer(NewLths*Proportion))
-# 
-# me_prBuff4800m_sf <- me_blkgrps_developed %>% 
-#   select(GEOID,NewArea:NewLths) %>% 
-#   mutate(OldArea = NewArea) %>% 
-#   st_intersection(me_prBuff4800m,.) %>% 
-#   mutate(NewArea = st_area(.),
-#          Proportion = NewArea/OldArea,
-#          NewPop = as.integer(NewPop*Proportion),
-#          NewMinority = as.integer(NewMinority*Proportion),
-#          NewUnder5 = as.integer(NewUnder5*Proportion),
-#          NewOver64 = as.integer(NewOver64*Proportion),
-#          NewUnder18 = as.integer(NewUnder18*Proportion),
-#          NewEng_limit = as.integer(NewEng_limit*Proportion),
-#          NewPov = as.integer(NewPov*Proportion),
-#          NewLths = as.integer(NewLths*Proportion))
-# 
-# me_TransitAllBuff_sf <- me_blkgrps_developed %>% 
-#   select(GEOID,NewArea:NewLths) %>% 
-#   mutate(OldArea = NewArea) %>% 
-#   st_intersection(me_transitAllBuff,.) %>% 
-#   mutate(NewArea = st_area(.),
-#          Proportion = NewArea/OldArea,
-#          NewPop = as.integer(NewPop*Proportion),
-#          NewMinority = as.integer(NewMinority*Proportion),
-#          NewUnder5 = as.integer(NewUnder5*Proportion),
-#          NewOver64 = as.integer(NewOver64*Proportion),
-#          NewUnder18 = as.integer(NewUnder18*Proportion),
-#          NewEng_limit = as.integer(NewEng_limit*Proportion),
-#          NewPov = as.integer(NewPov*Proportion),
-#          NewLths = as.integer(NewLths*Proportion))
-# 
-# # Repeat for tracts
-# me_busBuff400mTracts_sf <- me_tracts_developed %>% 
-#   select(GEOID,NewDisabled:NewHHNoCar) %>% 
-#   mutate(OldArea = st_area(.)) %>% 
-#   st_intersection(me_busBuff400m,.) %>% 
-#   mutate(NewArea = st_area(.),
-#          Proportion = NewArea/OldArea,
-#          NewDisabled = as.integer(NewDisabled*Proportion),
-#          NewNoCar = as.integer(NewHHNoCar*Proportion))
-# 
-# me_prBuff4800mTracts_sf <- me_tracts_developed %>% 
-#   select(GEOID,NewDisabled:NewHHNoCar) %>% 
-#   mutate(OldArea = st_area(.)) %>% 
-#   st_intersection(me_prBuff4800m,.) %>% 
-#   mutate(NewArea = st_area(.),
-#          Proportion = NewArea/OldArea,
-#          NewDisabled = as.integer(NewDisabled*Proportion),
-#          NewNoCar = as.integer(NewHHNoCar*Proportion))
-# 
-# me_TransitAllBuffTracts_sf <- me_tracts_developed %>% 
-#   select(GEOID,NewDisabled:NewHHNoCar) %>% 
-#   mutate(OldArea = st_area(.)) %>% 
-#   st_intersection(me_transitAllBuff,.) %>% 
-#   mutate(NewArea = st_area(.),
-#          Proportion = NewArea/OldArea,
-#          NewDisabled = as.integer(NewDisabled*Proportion),
-#          NewNoCar = as.integer(NewHHNoCar*Proportion))
-# 
-# # Compute total block group populations within transit stop buffers
-# me_busBuff400m_df <- me_busBuff400m_sf %>% 
-#   as.data.frame() %>% 
-#   summarize(`Total Pop` = sum(NewPop),
-#             Minority = sum(NewMinority),
-#             `Under 5` = sum(NewUnder5),
-#             `Over 64` = sum(NewOver64),
-#             `Under 18` = sum(NewUnder18),
-#             `Limited English HH` = sum(NewEng_limit),
-#             `Low Income` = sum(NewPov),
-#             `No HS Dip` = sum(NewLths)) %>% 
-#   gather(key = Group, value = BusPop)
-# 
-# me_prBuff4800m_df <- me_prBuff4800m_sf  %>% 
-#   as.data.frame() %>% 
-#   summarize(`Total Pop` = sum(NewPop),
-#             Minority = sum(NewMinority),
-#             `Under 5` = sum(NewUnder5),
-#             `Over 64` = sum(NewOver64),
-#             `Under 18` = sum(NewUnder18),
-#             `Limited English HH` = sum(NewEng_limit),
-#             `Low Income` = sum(NewPov),
-#             `No HS Dip` = sum(NewLths)) %>% 
-#   gather(key = Group, value = ParknRidePop)
-# 
-# me_TransitAllBuff_df <- me_TransitAllBuff_sf %>% 
-#   as.data.frame() %>% 
-#   summarize(`Total Pop` = sum(NewPop),
-#             Minority = sum(NewMinority),
-#             `Under 5` = sum(NewUnder5),
-#             `Over 64` = sum(NewOver64),
-#             `Under 18` = sum(NewUnder18),
-#             `Limited English HH` = sum(NewEng_limit),
-#             `Low Income` = sum(NewPov),
-#             `No HS Dip` = sum(NewLths)) %>% 
-#   gather(key = Group, value = TransitPop)
-# 
-# # Compute total tract populations within bus stop buffer
-# me_busBuff400mTracts_df <- me_busBuff400mTracts_sf %>% 
-#   as.data.frame() %>% 
-#   summarize(`Disabled` = sum(NewDisabled),
-#             `No Car HH` = sum(NewNoCar)) %>% 
-#   gather(key = Group, value = BusPop)
-# 
-# me_prBuff4800mTracts_df <- me_prBuff4800mTracts_sf %>% 
-#   as.data.frame() %>% 
-#   summarize(`Disabled` = sum(NewDisabled),
-#             `No Car HH` = sum(NewNoCar)) %>% 
-#   gather(key = Group, value = ParknRidePop)
-# 
-# me_TransitAllBuffTracts_df <- me_TransitAllBuffTracts_sf %>% 
-#   as.data.frame() %>% 
-#   summarize(`Disabled` = sum(NewDisabled),
-#             `No Car HH` = sum(NewNoCar)) %>% 
-#   gather(key = Group, value = TransitPop)
-# 
-# # Compute total tract populations within the state for same groups
-# me_tract_pops_df <- me_tracts_sf %>% 
-#   as.data.frame() %>% 
-#   summarize(`Disabled` = sum(disabledOver18E),
-#             `No Car HH` = sum(HHnoCarE)) %>% 
-#   gather(key = Group, value = MEPop) %>% 
-#   left_join(.,me_busBuff400mTracts_df, by = "Group") %>% 
-#   left_join(.,me_prBuff4800mTracts_df, by = "Group") %>% 
-#   left_join(.,me_TransitAllBuffTracts_df, by = "Group")
-# 
-# # Compute populations for state, join with buffer pops
-# me_transitAccessPops_df <- me_blkgrps_sf %>% 
-#   as.data.frame() %>%  
-#   summarize(`Total Pop` = sum(totalpopE),
-#             Minority = sum(minorityE),
-#             `Under 5` = sum(under5E),
-#             `Over 64` = sum(over64E),
-#             `Under 18` = sum(under18E),
-#             `Limited English HH` = sum(eng_limitE),
-#             `Low Income` = sum(num2povE),
-#             `No HS Dip` = sum(lthsE)) %>% 
-#   gather(key = Group, value = MEPop) %>% 
-#   left_join(., me_busBuff400m_df, by = "Group") %>% 
-#   left_join(., me_prBuff4800m_df, by = "Group") %>% 
-#   left_join(., me_TransitAllBuff_df, by = "Group") %>% 
-#   rbind(.,me_tract_pops_df) %>% 
-#   mutate(PctBus = BusPop/MEPop*100,
-#          PctParknRide = ParknRidePop/MEPop*100,
-#          PctAllTransit = TransitPop/MEPop*100)
+me_blkgrps_developed <- me_blkgrps_sf %>%
+  as.data.frame() %>%
+  dplyr::select(-geometry) %>%
+  left_join(me_blkgrps_developed, ., by = "GEOID") %>%
+  st_transform(., crs = 2802) %>%
+  mutate(NewArea = st_area(.)) %>%
+  st_make_valid() %>%
+  mutate(Proportion = as.numeric(NewArea/OldArea),
+         NewPop = totalpopE*Proportion,
+         NewMinority = minorityE*Proportion,
+         NewUnder5 = under5E*Proportion,
+         NewOver64 = over64E*Proportion,
+         NewUnder18 = under18E*Proportion,
+         NewEng_limit = eng_limitE*Proportion,
+         NewPov = num2povE*Proportion,
+         NewLths = lthsE*Proportion,
+         NewPopAcre = NewPop/(NewArea*0.000247105))
+
+me_tracts_developed <- st_read(dsn = "DATA/FEMA/ME",
+                                layer = "me_tracts_developed") %>%
+  left_join(., as.data.frame(me_tracts_sf), by = "GEOID") %>%
+  st_transform(., crs = 2802) %>%
+  mutate(NewArea = st_area(.)) %>%
+  st_make_valid() %>%
+  mutate(Proportion = as.numeric(NewArea/OldArea),
+         NewDisabled = disabledOver18E*Proportion,
+         NewOver18 = Over18E*Proportion,
+         NewHHNoCar = HHnoCarE*Proportion)
+
+# create a simplified version for faster mapping
+me_blkgrps_developed_simple <- st_simplify(me_blkgrps_developed,
+                                           dTolerance = 100) %>%
+  filter(!st_is_empty(.)) %>%
+  st_make_valid()
+# repeat for tracts
+me_tracts_developed_simple <- st_simplify(me_tracts_developed,
+                                          dTolerance = 100) %>%
+  filter(!st_is_empty(.)) %>%
+  st_make_valid()
+
+# Create a 400m buffer around bus routes
+me_busBuff400m <- st_buffer(me_transit_sf,dist = 400) %>%
+  st_union() %>%
+  st_as_sf()
+
+# Use areal interpolation to calculate populations of concern within buffer of accessibility
+me_busBuff400m_sf <- me_blkgrps_developed %>%
+  select(GEOID,NewArea:NewLths) %>%
+  mutate(OldArea = NewArea) %>%
+  st_intersection(me_busBuff400m,.) %>%
+  mutate(NewArea = st_area(.),
+         Proportion = NewArea/OldArea,
+         NewPop = as.integer(NewPop*Proportion),
+         NewMinority = as.integer(NewMinority*Proportion),
+         NewUnder5 = as.integer(NewUnder5*Proportion),
+         NewOver64 = as.integer(NewOver64*Proportion),
+         NewUnder18 = as.integer(NewUnder18*Proportion),
+         NewEng_limit = as.integer(NewEng_limit*Proportion),
+         NewPov = as.integer(NewPov*Proportion),
+         NewLths = as.integer(NewLths*Proportion))
+
+# Repeat for tracts
+me_busBuff400mTracts_sf <- me_tracts_developed %>%
+  select(GEOID,NewDisabled:NewHHNoCar) %>%
+  mutate(OldArea = st_area(.)) %>%
+  st_intersection(me_busBuff400m,.) %>%
+  mutate(NewArea = st_area(.),
+         Proportion = NewArea/OldArea,
+         NewDisabled = as.integer(NewDisabled*Proportion),
+         NewNoCar = as.integer(NewHHNoCar*Proportion))
+
+# Compute total block group populations within transit buffers
+me_busBuff400m_df <- me_busBuff400m_sf %>%
+  as.data.frame() %>%
+  summarize(`Total Pop` = sum(NewPop),
+            Minority = sum(NewMinority),
+            `Under 5` = sum(NewUnder5),
+            `Over 64` = sum(NewOver64),
+            `Under 18` = sum(NewUnder18),
+            `Limited English HH` = sum(NewEng_limit),
+            `Low Income` = sum(NewPov),
+            `No HS Dip` = sum(NewLths)) %>%
+  gather(key = Group, value = BusPop)
+
+# Compute total tract populations within bus transit buffer
+me_busBuff400mTracts_df <- me_busBuff400mTracts_sf %>%
+  as.data.frame() %>%
+  summarize(`Disabled` = sum(NewDisabled),
+            `No Car HH` = sum(NewNoCar)) %>%
+  gather(key = Group, value = BusPop)
+
+# Compute total tract populations within the state for same groups
+me_tract_pops_df <- me_tracts_sf %>%
+  as.data.frame() %>%
+  summarize(`Disabled` = sum(disabledOver18E),
+            `No Car HH` = sum(HHnoCarE)) %>%
+  gather(key = Group, value = MEPop) %>%
+  left_join(.,me_busBuff400mTracts_df, by = "Group")
+
+# Compute populations for state, join with buffer pops
+me_transitAccessPops_df <- me_blkgrps_sf %>%
+  as.data.frame() %>%
+  summarize(`Total Pop` = sum(totalpopE),
+            Minority = sum(minorityE),
+            `Under 5` = sum(under5E),
+            `Over 64` = sum(over64E),
+            `Under 18` = sum(under18E),
+            `Limited English HH` = sum(eng_limitE),
+            `Low Income` = sum(num2povE),
+            `No HS Dip` = sum(lthsE)) %>%
+  gather(key = Group, value = MEPop) %>%
+  left_join(., me_busBuff400m_df, by = "Group") %>%
+  rbind(.,me_tract_pops_df) %>%
+  mutate(PctBus = BusPop/MEPop*100)
+
 
 # create point layer of towns for context
 me_towns_sf_pts <- county_subdivisions(state = "ME", cb = TRUE) %>% 
@@ -412,75 +351,286 @@ me_state_sf_cb <- ne_states_sf_cb %>%
   st_transform(., crs = st_crs(me_blkgrps_sf))
 
 
-# # Identify areas >= 1 mile from bus stops
-# # Create a 1 mile buffer around bus stops
-# me_busBuff1mile <- st_buffer(me_stops_sf_Bus,dist = 1609.34) %>% 
-#   st_union() %>% 
-#   st_as_sf()
-# # identify block groups that do not intersect with 1 mile from bus stop
-# me_blkgrps_sf_noBus <- me_blkgrps_developed %>% 
-#   filter(st_disjoint(.,me_busBuff1mile,sparse = FALSE))
-# # Identify tracts that do not intersect with buffer
-# me_tracts_sf_noBus <- me_tracts_developed %>% 
-#   filter(st_disjoint(.,me_busBuff1mile,sparse = FALSE))
-# # create simplified versions for faster mapping
-# me_blkgrps_sf_noBus_simple <- me_blkgrps_sf_noBus %>% 
-#   st_simplify(., dTolerance = 100) %>% 
-#   filter(!st_is_empty(.)) %>% 
-#   st_make_valid()
-# me_tracts_sf_noBus_simple <- me_tracts_sf_noBus %>% 
-#   st_simplify(., dTolerance = 100) %>% 
-#   filter(!st_is_empty(.)) %>% 
-#   st_make_valid()
-# 
-# # Identify areas >= 10 miles from park-in-ride stops
-# me_prBuff10mile <- me_parknride_sf %>% 
-#   st_buffer(., dist = (10*1609.34)) %>% 
-#   st_union() %>% 
-#   st_as_sf()
-# # identify block groups that do not intersect with 10 mile buffer
-# me_blkgrps_sf_noPR <- me_blkgrps_developed %>% 
-#   filter(st_disjoint(.,me_prBuff10mile,sparse = FALSE))
-# # create simplified version of block groups for faster mapping
-# me_blkgrps_sf_noPR_simple <- me_blkgrps_sf_noPR %>% 
-#   select(NewPop:NewLths) %>% 
-#   st_simplify(., dTolerance = 100) %>% 
-#   filter(!st_is_empty(.)) %>% 
-#   st_make_valid()
-# 
-# # identify tracts that do not intersect with 10 mile buffer
-# me_tracts_sf_noPR <- me_tracts_developed %>% 
-#   filter(st_disjoint(.,me_prBuff10mile,sparse = FALSE))
-# # create simplified version of tracts for faster mapping
-# me_tracts_sf_noPR_simple <- me_tracts_sf_noPR %>% 
-#   select(NewDisabled:NewHHNoCar) %>% 
-#   st_simplify(., dTolerance = 100) %>% 
-#   filter(!st_is_empty(.)) %>% 
-#   st_make_valid()
-# 
-# # Identify areas with no access to any type of transit stop. Union all buffers to create one buffer and clip to state boundary. 
-# me_transitBuffAll <- rbind(me_busBuff1mile,
-#                              me_prBuff10mile) %>% 
-#   st_union() %>% 
-#   st_as_sf() %>% 
-#   tmaptools::crop_shape(.,me_state_sf_cb,polygon = TRUE)
-# 
-# # identify block groups that do not intersect with any transit buffer
-# me_blkgrps_sf_noTransit <- me_blkgrps_developed %>% 
-#   filter(st_disjoint(.,me_transitBuffAll,sparse = FALSE))
-# # identify tracts that do not intersect with 5 mile buffer
-# me_tracts_sf_noTransit <- me_tracts_developed %>% 
-#   filter(st_disjoint(.,me_transitBuffAll,sparse = FALSE))
-# # create simplified versions for faster mapping
-# me_blkgrps_sf_noTransit_simple <- me_blkgrps_sf_noTransit %>% 
-#   st_simplify(., dTolerance = 100) %>% 
-#   filter(!st_is_empty(.)) %>% 
-#   st_make_valid()
-# me_tracts_sf_noTransit_simple <- me_tracts_sf_noTransit %>% 
-#   st_simplify(., dTolerance = 100) %>% 
-#   filter(!st_is_empty(.)) %>% 
-#   st_make_valid()
+# Identify areas >= 1 mile from bus routes
+# Create a 1 mile buffer around bus routes
+me_busBuff1mile <- st_buffer(me_transit_sf,dist = 1609.34) %>%
+  st_union() %>%
+  st_as_sf()
+# identify block groups that do not intersect with 1 mile from bus route
+me_blkgrps_sf_noBus <- me_blkgrps_developed %>%
+  filter(st_disjoint(.,me_busBuff1mile,sparse = FALSE))
+# Identify tracts that do not intersect with buffer
+me_tracts_sf_noBus <- me_tracts_developed %>%
+  filter(st_disjoint(.,me_busBuff1mile,sparse = FALSE))
+# create simplified versions for faster mapping
+me_blkgrps_sf_noBus_simple <- me_blkgrps_sf_noBus %>%
+  st_simplify(., dTolerance = 100) %>%
+  filter(!st_is_empty(.)) %>%
+  st_make_valid()
+me_tracts_sf_noBus_simple <- me_tracts_sf_noBus %>%
+  st_simplify(., dTolerance = 100) %>%
+  filter(!st_is_empty(.)) %>%
+  st_make_valid()
 ```
+
+
+## Access to Public Transit
+
+This analysis seeks to identify communities that are underserved by access to public transit. Access to transit is measured in terms of distance to local fixed bus routes. This analysis does not consider flex-route, eligibility-specific (e.g., paratransit), or ride request transit services.
+
+Maine is served by `r length(unique(me_transit_sf$AGENCY))` fixed-route local bus service agencies that are open to the general public and for which route maps are publicly available. Amtrak train service passes through Maine as well, but it is not considered in this analysis because it is not managed by the state of Maine. Figure \@ref(fig:transitMap) shows `r me_transit_sf %>% group_by(ROUTE) %>% summarize() %>% nrow()` fixed bus routes across the state along with population density.
+
+```{r transitMap, fig.align = "center", fig.cap="Bus service and population density in Maine."}
+# bbox_new <- st_bbox(me_blkgrps_sf) # current bounding box
+# 
+# xrange <- bbox_new$xmax - bbox_new$xmin # range of x values
+# yrange <- bbox_new$ymax - bbox_new$ymin # range of y values
+# 
+# # bbox_new[1] <- bbox_new[1] - (2.2 * xrange) # xmin - left
+# # bbox_new[3] <- bbox_new[3] + (2 * xrange) # xmax - right
+# bbox_new[2] <- bbox_new[2] - (0.2 * yrange) # ymin - bottom
+# # bbox_new[4] <- bbox_new[4] + (2 * yrange) # ymax - top
+# 
+# bbox_new <- bbox_new %>%  # take the bounding box ...
+#   st_as_sfc() # ... and make it a sf polygon
+
+# # create simplified version to speed up mapping
+# me_blkgrps_developed_simple <- st_simplify(me_blkgrps_developed, dTolerance = 100)
+
+m <- tm_shape(me_towns_sf, unit = "mi") + 
+  tm_borders(col = "gray", lwd = 0.2) +
+  tm_shape(me_blkgrps_developed_simple) +
+  tm_fill(col = "NewPopAcre", style = "quantile",
+          colorNA = "white", colorNULL = "gray", title = "Pop per Acre",
+          legend.format = list(fun = function(x) formatC(x, digits = 1, format = "f")), palette = "YlGn") +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 0.2) +
+  tm_shape(me_transit_sf) + 
+  tm_lines(col = "AGENCY", colorNA = NULL, 
+           title.col = "Transit Agency", lwd = 2) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(me_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
+               position = c("center","bottom")) +
+  tm_layout(title = "Maine\nLocal Bus Routes\nand Population\nDensity", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ME/figures/me_transit.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ME/figures/me_transit.png")
+```
+
+Approximately `r paste0(round(me_transitAccessPops_df %>% filter(Group == "Total Pop") %>% dplyr::select(PctBus) %>% pull(),1),"%")` of the state population lives within reasonable walking distance of a fixed bus route (defined as approximately 400 meters or 1/4 mile). 
+
+However, this access varies by population group. Figure \@ref(fig:loliBusDist) below compares the percentages of different population groups living within reasonable walking distance of bus routes across the state. Most populations of concern, including transit-dependent groups, have access similar to or better than the general population. However, note that people over age 64 and under 18 have less access on average compared to the general population.
+
+```{r loliBusDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Percentage of population groups within 1/4 mile (400 meters) of a bus routes across Maine."}
+me_transitAccessPops_df %>% 
+  ggplot(aes(x = reorder(Group,-PctBus), 
+             y = PctBus)) +
+  geom_segment(aes(x = reorder(Group,-PctBus), xend = reorder(Group,-PctBus),
+                   y = me_transitAccessPops_df[1,4], yend = PctBus), 
+               color = "skyblue") +
+  geom_point(color = "blue", size = 4, alpha = 0.8) +
+  coord_flip() + xlab("") + ylab("") + ggtitle("Maine Populations within Walking Distance (400m) \nof Bus Routes") + theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
+  geom_text(aes(x = Group, y = PctBus + 0.2 * sign(PctBus), 
+                label = paste0(round(PctBus,0),"%")), 
+            hjust = -0.1, vjust = -.8, size = 3,
+            color=rgb(100,100,100, maxColorValue=255)) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  geom_hline(yintercept = me_transitAccessPops_df[1,4], linetype = "dashed") +
+  geom_text(aes(x = "Total Pop", y = 30, label = "Above state\naverage"),
+            color = "gray48") +
+  geom_text(aes(x = "Total Pop", y = 18, label = "Below state\naverage"),
+            color = "gray48") +
+  expand_limits(y = c(15,45))
+```
+
+Specific values of the same can be seen in Table \@ref(tab:statsBusDist) below.
+
+```{r statsBusDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Maine populations living within 1/4 mile (400 meters) of a bus route. Based on ACS 2017 Block Group data."}
+# See table of distance by group
+me_transitAccessPops_df %>% 
+  mutate(`% Bus Access` = paste0(round(PctBus,1),"%")) %>% 
+  select(-PctBus) %>% 
+  kableExtra::kable(longtable = T, booktabs = T, 
+                    format.args = list(big.mark = ','), align = "r",
+                    caption = "Populations Living within 400m of Bus Routes", col.names = c("Group","ME Pop","Pop with Bus Access","Pct Pop with Bus Access")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
+  
+```
+
+The population percentages above provide a glimpse of average access to public transit across the state for different population groups. However, access also varies for specific communities. Indeed, it is important to consider vulnerable populations or transportation-limited populations that do not have reasonable access to transit. 
+
+```{r TransitNoAccess, include=FALSE}
+TransitNoAccess1 <- me_blkgrps_sf_noBus %>%
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Over 64` = sum(NewOver64,na.rm = TRUE),
+            `Pct of Over 64` = round(sum(NewOver64)/max(TotalOver64)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Pct of Over 64` > 0) %>% 
+  mutate(`Pct of Over 64` = if_else(`Pct of Over 64` > 100, 100, `Pct of Over 64`)) %>% 
+  mutate(`Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
+  arrange(desc(`Over 64`))
+
+TransitNoAccess2 <- me_blkgrps_sf_noBus %>%
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Under 18` = sum(NewUnder18,na.rm = TRUE),
+            `Pct of Under 18` = round(sum(NewUnder18)/max(TotalUnder18)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Pct of Under 18` > 0 ) %>% 
+  mutate(`Pct of Under 18` = if_else(`Pct of Under 18` > 100, 100, `Pct of Under 18`)) %>% 
+  mutate(`Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
+  arrange(desc(`Under 18`))
+```
+Figures \@ref(fig:mapTransitAccessO64) and \@ref(fig:mapTransitAccessU18) below highlight developed portions of Census Block Groups across Maine which are more than 1 mile from a bus route and the numbers of persons over 64 or under 18 who live there. Tables \@ref(tab:tabTransitAccessO64) and \@ref(tab:tabTransitAccessU18) show breakdowns by municipality. For example, Table \@ref(tab:tabTransitAccessO64) shows that `r formatC(as.numeric(TransitNoAccess1[1,3]),big.mark=",")` people over 64 across `r TransitNoAccess1[1,2]` Block Groups in `r TransitNoAccess1[1,1]` resided one or more miles from the nearest bus route. These people represented `r TransitNoAccess1[1,4]` of people over 64 in `r TransitNoAccess1[1,1]`. Similarly, Table \@ref(tab:tabTransitAccessDisabled) shows that `r formatC(as.numeric(TransitNoAccess2[1,3]),big.mark=",")` people under 18 across `r TransitNoAccess1[1,2]` Census Block Groups in `r TransitNoAccess2[1,1]` resided one or more miles from the nearest bus route. These people represented `r TransitNoAccess2[1,4]` of people under 18 in `r TransitNoAccess2[1,1]`.
+Maps and tables of other populations of concern without access to transit can be found in Appendix B.
+
+```{r mapTransitAccessO64, fig.align = "center", fig.cap="Persons over 64 who are one or more miles from the nearest bus route by Census Block Group."}
+m <- tm_shape(me_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(me_blkgrps_sf_noBus_simple, unit = "mi") +
+  tm_fill(col = "NewOver64", alpha = 0.9, style = "quantile",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nPersons Over 64",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
+  tm_shape(me_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 0.2) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(me_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
+               position = c("center","bottom")) +
+  # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Bus Route") +
+  tm_layout(title = "Persons Over 64\n1+ Miles from\nNearest Bus\nRoute", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ME/figures/me_transitO64access.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ME/figures/me_transitO64access.png")
+```
+
+```{r tabTransitAccessO64, fig.align = "center", fig.cap="Persons over 64 in Census Block Groups one or more miles from the nearest bus route."}
+me_blkgrps_sf_noBus %>%
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Over 64` = sum(NewOver64,na.rm = TRUE),
+            `Pct of Over 64` = round(sum(NewOver64)/max(TotalOver64)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Pct of Over 64` > 0) %>% 
+  mutate(`Pct of Over 64` = if_else(`Pct of Over 64` > 100, 100, `Pct of Over 64`)) %>% 
+  mutate(`Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
+  arrange(desc(`Over 64`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Persons Over 64 One or More Miles from Nearest Bus Route", align = "r", 
+                    col.names = c(names(.)[1:2],"Number of Over 64 in Block Groups","Pct of Over 64 in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
+```
+
+```{r mapTransitAccessU18, fig.align = "center", fig.cap="Persons under 18 who are one or more miles from the nearest bus route by Census Block Group."}
+m <- tm_shape(me_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(me_blkgrps_sf_noBus_simple, unit = "mi") +
+  tm_fill(col = "NewUnder18", alpha = 0.9, style = "quantile",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nPersons Under 18",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
+  tm_shape(me_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 0.2) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(me_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
+               position = c("center","bottom")) +
+  # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Bus Route") +
+  tm_layout(title = "Persons Under 18\n1+ Miles from\nNearest Bus\nRoute", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ME/figures/me_transitU18access.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ME/figures/me_transitU18access.png")
+```
+
+```{r tabTransitAccessU18, fig.align = "center", fig.cap="Persons under 18 in Census Block Groups one or more miles from the nearest bus route."}
+me_blkgrps_sf_noBus %>%
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Under 18` = sum(NewUnder18,na.rm = TRUE),
+            `Pct of Under 18` = round(sum(NewUnder18)/max(TotalUnder18)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Pct of Under 18` > 0) %>% 
+  mutate(`Pct of Under 18` = if_else(`Pct of Under 18` > 100, 100, `Pct of Under 18`)) %>% 
+  mutate(`Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
+  arrange(desc(`Under 18`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Persons Under 18 One or More Miles from Nearest Bus Route", align = "r", 
+                    col.names = c(names(.)[1:2],"Number of Under 18 in Block Groups","Pct of Under 18 in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
+```
+
+
 
 ## Walkability
 
@@ -1069,11 +1219,15 @@ HiBurdenTract %>%
 
 The analyses presented here are based on data from six sources:
 
+* Maine Bus Routes
 * US EPA Walkability Index
 * US Department of Housing and Urban Development Location Affordability Index
 * American Community Survey 5-year Estimates
   + Population demographics
 
+## Maine Bus Routes {-}
+
+Most of the geospatial data for local bus routes in Maine used in this analysis were manually digitized from online route maps distributed by their respective transit agencies. At the time of this analysis, most of the geospatial data on transit routes in Maine were not otherwise publicly available. Special thanks to Bradford Newton for digitizing this data. Routes for Greater Portland Metro and South Portland bus are available as General Transit Feed Specification (GTFS) data from the Southern Maine Transit Tracker at https://smttracker.com/gtfs/. 
 
 ## US EPA Walkability Index {-}
 
@@ -1252,6 +1406,420 @@ For the TotalPop, the population-weighted average headway is 6800/92 = `r round(
 
 \pagebreak
 # Appendix B: Supplementary Figures {-}
+## No Transit Access and Populations of Concner {-}
+```{r mapTransitAccessDisabled, fig.align = "center", fig.cap="Disabled persons who are one or more miles from the nearest bus route by Census Tract."}
+m <- tm_shape(me_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(me_tracts_sf_noBus_simple, unit = "mi") +
+  tm_fill(col = "NewDisabled", alpha = 0.9, style = "quantile",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nDisabled Persons",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
+  tm_shape(me_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 0.2) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(me_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
+               position = c("center","bottom")) +
+  # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Bus Route") +
+  tm_layout(title = "Disabled Persons\n1+ Miles from\nNearest Bus\nRoute", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ME/figures/me_transitDisabledaccess.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ME/figures/me_transitDisabledaccess.png")
+```
+
+```{r tabTransitAccessDisabled, fig.align = "center", fig.cap="Disabled persons in Census Tracts one or more miles from the nearest bus route."}
+me_tracts_sf_noBus %>%
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Tracts` = n(),
+            `Disabled` = sum(NewDisabled,na.rm = TRUE),
+            `Pct of Disabled` = round(sum(NewDisabled)/max(TotalDisabled)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Pct of Disabled` > 0) %>% 
+  mutate(`Pct of Disabled` = if_else(`Pct of Disabled` > 100, 100, `Pct of Disabled`)) %>% 
+  mutate(`Pct of Disabled` = paste0(`Pct of Disabled`,"%")) %>% 
+  arrange(desc(`Disabled`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Disabled Persons One or More Miles from Nearest Bus Route", align = "r", 
+                    col.names = c(names(.)[1:2],"Number of Disabled in Tracts","Pct of Disabled in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
+```
+
+```{r mapTransitAccessU5, fig.align = "center", fig.cap="Children under 5 who are one or more miles from the nearest bus route by Census Block Group."}
+m <- tm_shape(me_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(me_blkgrps_sf_noBus_simple, unit = "mi") +
+  tm_fill(col = "NewUnder5", alpha = 0.9, style = "quantile",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nChildren Under 5",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
+  tm_shape(me_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 0.2) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(me_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
+               position = c("center","bottom")) +
+  # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Bus Route") +
+  tm_layout(title = "Children Under 5\n1+ Miles from\nNearest Bus\nRoute", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ME/figures/me_transitU5access.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ME/figures/me_transitU5access.png")
+```
+
+```{r tabTransitAccessU5, fig.align = "center", fig.cap="Children under 5 in Census Block Groups one or more miles from the nearest bus route."}
+me_blkgrps_sf_noBus %>%
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Under 5` = sum(NewUnder5,na.rm = TRUE),
+            `Pct of Under 5` = round(sum(NewUnder5)/max(TotalUnder5)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Pct of Under 5` > 0) %>% 
+  mutate(`Pct of Under 5` = if_else(`Pct of Under 5` > 100, 100, `Pct of Under 5`)) %>% 
+  mutate(`Pct of Under 5` = paste0(`Pct of Under 5`,"%")) %>% 
+  arrange(desc(`Under 5`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Children Under 5 One or More Miles from Nearest Bus Route", align = "r", 
+                    col.names = c(names(.)[1:2],"Number of Under 5 in Block Groups","Pct of Under 5 in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
+```
+
+```{r mapTransitAccessLTHS, fig.align = "center", fig.cap="Adults without a high school diploma who are one or more miles from the nearest bus route by Census Block Group."}
+m <- tm_shape(me_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(me_blkgrps_sf_noBus_simple, unit = "mi") +
+  tm_fill(col = "NewLths", alpha = 0.9, style = "quantile",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nAdults without a High School Diploma",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
+  tm_shape(me_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 0.2) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(me_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
+               position = c("center","bottom")) +
+  # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Bus Route") +
+  tm_layout(title = "Adults without a\nHigh School\nDiploma\n1+ Miles from\nNearest Bus\nRoute", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ME/figures/me_transitLTHSaccess.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ME/figures/me_transitLTHSaccess.png")
+```
+
+```{r tabTransitAccessLTHS, fig.align = "center", fig.cap="Adults without a high school diploma in Census Block Groups one or more miles from the nearest bus route."}
+me_blkgrps_sf_noBus %>%
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `No HS Dip` = sum(NewLths,na.rm = TRUE),
+            `Pct of No HS Dip` = round(sum(NewLths)/max(TotalNoHS)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Pct of No HS Dip` > 0) %>% 
+  mutate(`Pct of No HS Dip` = if_else(`Pct of No HS Dip` > 100, 100, `Pct of No HS Dip`)) %>% 
+  mutate(`Pct of No HS Dip` = paste0(`Pct of No HS Dip`,"%")) %>% 
+  arrange(desc(`No HS Dip`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Adults without a High School Diploma One or More Miles from Nearest Bus Route", align = "r", 
+                    col.names = c(names(.)[1:2],"Number of No HS Dip in Block Groups","Pct of No HS Dip in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
+```
+
+```{r mapTransitAccessINC, fig.align = "center", fig.cap="Low income persons who are one or more miles from the nearest bus route by Census Block Group."}
+m <- tm_shape(me_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(me_blkgrps_sf_noBus_simple, unit = "mi") +
+  tm_fill(col = "NewPov", alpha = 0.9, style = "quantile",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nLow Income Persons",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
+  tm_shape(me_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 0.2) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(me_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
+               position = c("center","bottom")) +
+  # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Bus Route") +
+  tm_layout(title = "Low Income\nPersons\n1+ Miles from\nNearest Bus\nRoute", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ME/figures/me_transitINCaccess.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ME/figures/me_transitINCaccess.png")
+```
+
+```{r tabTransitAccessINC, fig.align = "center", fig.cap="Low income persons in Census Block Groups one or more miles from the nearest bus route."}
+me_blkgrps_sf_noBus %>%
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Low Income` = sum(NewPov,na.rm = TRUE),
+            `Pct of Low Income` = round(sum(NewPov)/max(TotalLowInc)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Pct of Low Income` > 0) %>% 
+  mutate(`Pct of Low Income` = if_else(`Pct of Low Income` > 100, 100, `Pct of Low Income`)) %>% 
+  mutate(`Pct of Low Income` = paste0(`Pct of Low Income`,"%")) %>% 
+  arrange(desc(`Low Income`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Low Income Persons One or More Miles from Nearest Bus Route", align = "r", 
+                    col.names = c(names(.)[1:2],"Number of Low Income in Block Groups","Pct of Low Income in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
+```
+
+```{r mapTransitAccessNoCarHH, fig.align = "center", fig.cap="Households without a car who are one or more miles from the nearest bus route by Census Block Group."}
+m <- tm_shape(me_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(me_tracts_sf_noBus_simple, unit = "mi") +
+  tm_fill(col = "NewHHNoCar", alpha = 0.9, style = "quantile",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nNo Car Households",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
+  tm_shape(me_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 0.2) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(me_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
+               position = c("center","bottom")) +
+  # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Bus Route") +
+  tm_layout(title = "No Car\nHouseholds\n1+ Miles from\nNearest Bus\nRoute", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ME/figures/me_transitNoCarHHaccess.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ME/figures/me_transitNoCarHHaccess.png")
+```
+
+```{r tabTransitAccessNoCarHH, fig.align = "center", fig.cap="Households without a car in Census Block Groups one or more miles from the nearest bus route."}
+me_tracts_sf_noBus %>%
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Tracts` = n(),
+            `No Car Households` = sum(NewHHNoCar,na.rm = TRUE),
+            `Pct of No Car Households` = round(sum(NewHHNoCar)/max(TotalNoCar)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Pct of No Car Households` > 0) %>% 
+  mutate(`Pct of No Car Households` = if_else(`Pct of No Car Households` > 100, 100, `Pct of No Car Households`)) %>% 
+  mutate(`Pct of No Car Households` = paste0(`Pct of No Car Households`,"%")) %>% 
+  arrange(desc(`No Car Households`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "No Car Households One or More Miles from Nearest Bus Route", align = "r", 
+                    col.names = c(names(.)[1:2],"Number of No Car Households in Census Tracts","Pct of No Car Households in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
+```
+
+```{r mapTransitAccessMIN, fig.align = "center", fig.cap="Minority persons who are one or more miles from the nearest bus route by Census Block Group."}
+m <- tm_shape(me_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(me_blkgrps_sf_noBus_simple, unit = "mi") +
+  tm_fill(col = "NewMinority", alpha = 0.9, style = "quantile",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nMinority Persons",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
+  tm_shape(me_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 0.2) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(me_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
+               position = c("center","bottom")) +
+  # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Bus Route") +
+  tm_layout(title = "Minority Persons\n1+ Miles from\nNearest Bus\nRoute", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ME/figures/me_transitMINaccess.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ME/figures/me_transitMINaccess.png")
+```
+
+```{r tabTransitAccessMIN, fig.align = "center", fig.cap="Minority persons in Census Block Groups one or more miles from the nearest bus route."}
+me_blkgrps_sf_noBus %>%
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Minority` = sum(NewMinority,na.rm = TRUE),
+            `Pct of Minority` = round(sum(NewMinority)/max(TotalMin)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Pct of Minority` > 0) %>% 
+  mutate(`Pct of Minority` = if_else(`Pct of Minority` > 100, 100, `Pct of Minority`)) %>% 
+  mutate(`Pct of Minority` = paste0(`Pct of Minority`,"%")) %>% 
+  arrange(desc(`Minority`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Minority Persons One or More Miles from Nearest Bus Route", align = "r", 
+                    col.names = c(names(.)[1:2],"Number of Minority in Block Groups","Pct of Minority in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
+```
+
+```{r mapTransitAccessLEH, fig.align = "center", fig.cap="Limited English speaking households who are one or more miles from the nearest bus route by Census Block Group."}
+m <- tm_shape(me_state_sf_cb, unit = "mi") + 
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(me_blkgrps_sf_noBus_simple, unit = "mi") +
+  tm_fill(col = "NewEng_limit", alpha = 0.9, style = "equal",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nLimited English\nSpeaking Households",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
+  tm_shape(me_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(me_highways2nd) + tm_lines(col = "seashell4", lwd = 0.2) +
+  tm_shape(I295roadSegment) +
+  tm_symbols(shape = I295, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(me_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black", 
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
+               position = c("center","bottom")) +
+  # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Bus Route") +
+  tm_layout(title = "Limited English\nSpeaking\nHouseholds\n1+ Miles from\nNearest Bus\nRoute", 
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/ME/figures/me_transitLEHaccess.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/transport/ME/figures/me_transitLEHaccess.png")
+```
+
+```{r tabTransitAccessLEH, fig.align = "center", fig.cap="Limited English speaking households in Census Block Groups one or more miles from the nearest bus route."}
+me_blkgrps_sf_noBus %>%
+  st_centroid(.) %>% 
+  st_intersection(me_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  left_join(., townpopsdf,by="NAME") %>%
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n(),
+            `Limited English Households` = sum(NewEng_limit,na.rm = TRUE),
+            `Pct of Limited English Households` = round(sum(NewEng_limit)/max(TotalLEH)*100,1)) %>% 
+  rename("City/Town" = NAME) %>% 
+  filter(`Pct of Limited English Households` > 0) %>% 
+  mutate(`Pct of Limited English Households` = if_else(`Pct of Limited English Households` > 100, 100, `Pct of Limited English Households`)) %>% 
+  mutate(`Pct of Limited English Households` = paste0(`Pct of Limited English Households`,"%")) %>% 
+  arrange(desc(`Limited English Households`)) %>% 
+  kableExtra::kable(longtable = T, booktabs = T,
+                    format.args = list(big.mark = ','), 
+                    digits = 1,
+                    caption = "Limited English Speaking Households One or More Miles from Nearest Bus Route", align = "r", 
+                    col.names = c(names(.)[1:2],"Number of Limited English Households in Block Groups","Pct of Limited English Households in City/Town")) %>% 
+  kableExtra::column_spec(3:4, width = "4cm") %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
+```
+
 
 ## Low Walkability and Populations of Concern {-}
 ```{r mapLowWalkU5, fig.align = "center", fig.cap="Children under 5 per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
