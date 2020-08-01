@@ -242,7 +242,7 @@ vt_blkgrp_sf %>%
                     caption = "Annual 2016 PM2.5 concentrations (micrograms per cubic meter) by Census block group for the state.", align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
-```{r CO2outliers, include=FALSE}
+```{r PM25outliers, include=FALSE}
 # download municipal polygons
 vt_towns_sf <- county_subdivisions("VT") %>% 
   select(NAME) %>% 
@@ -679,7 +679,7 @@ There is a statistically significant hot spot of Ozone (O~3~) centered on Bennin
 
 These ozone levels vary significantly across the state (see Table \@ref(tab:statsO3) and Figure \@ref(fig:boxplotO3)). See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality.
 
-```{r statsPM, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual ozone concentrations at Census Block Group level for the state."}
+```{r statsO3, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual ozone concentrations at Census Block Group level for the state."}
 vt_blkgrp_sf %>% 
   as.data.frame() %>% 
   # group_by(STATE) %>% 
@@ -1616,7 +1616,7 @@ Most air toxics originate from transportation and industry, including automobile
 
 The analysis of air toxics cancer risk presented here is based on data from the EPA's EJSCREEN.[^EJSCREEN] EJSCREEN data provides lifetime cancer risk from inhalation of air toxics, as risk-in-1 million, at the Census Block Group level for 2014, the latest year of data available from the National Air Toxics Assessment. 
 
-Cancer risks are concentrated in the northwest, in and around Burliington and also along the southern stretch of I-91 (see Figure \@ref(fig:mapATCNE) below).
+Cancer risks are concentrated in the northwest, in and around Burlington and also along the southern stretch of I-91 (see Figure \@ref(fig:mapATCNE) below).
 
 ```{r mapATCNE, fig.align = "center", fig.cap="Map of 2014 lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Vermont at Census Block Group level."}
 
