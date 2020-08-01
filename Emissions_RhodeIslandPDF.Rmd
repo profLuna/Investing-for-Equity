@@ -230,7 +230,7 @@ ri_blkgrp_sf %>%
                     caption = "Annual 2016 PM2.5 concentrations (micrograms per cubic meter) by Census block group for the state.", align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
-```{r CO2outliers, include=FALSE}
+```{r PM25outliers, include=FALSE}
 # download municipal polygons
 ri_towns_sf <- county_subdivisions("RI") %>% 
   select(NAME) %>% 
@@ -687,7 +687,7 @@ ri_blkgrp_sf %>%
                     caption = "Annual 2016 PM2.5 concentrations (micrograms per cubic meter) by Census block group for the state.", align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
-```{r CO2outliers, include=FALSE}
+```{r O3outliers, include=FALSE}
 # # download municipal polygons
 # ri_towns_sf <- county_subdivisions("RI") %>% 
 #   select(NAME) %>% 
