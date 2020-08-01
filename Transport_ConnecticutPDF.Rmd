@@ -3689,10 +3689,10 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/CT/figures/ct_railU18access.png",
+tmap_save(m, "DATA/transport/CT/figures/ct_transitU18access.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/CT/figures/ct_railU18access.png")
+knitr::include_graphics("DATA/transport/CT/figures/ct_transitU18access.png")
 ```
 
 ```{r tabTransitAccessU18, fig.align = "center", fig.cap="Persons under 18 in Census Block Groups without reasonable access to any form of transit."}
@@ -3751,10 +3751,10 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/CT/figures/ct_railDisabledaccess.png",
+tmap_save(m, "DATA/transport/CT/figures/ct_transitDisabledaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/CT/figures/ct_railDisabledaccess.png")
+knitr::include_graphics("DATA/transport/CT/figures/ct_transitDisabledaccess.png")
 ```
 
 ```{r tabTransitAccessDisabled, fig.align = "center", fig.cap="Disabled persons in Census Block Groups without reasonable access to any form of transit."}
@@ -3813,10 +3813,10 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/CT/figures/ct_railU5access.png",
+tmap_save(m, "DATA/transport/CT/figures/ct_transitU5access.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/CT/figures/ct_railU5access.png")
+knitr::include_graphics("DATA/transport/CT/figures/ct_transitU5access.png")
 ```
 
 ```{r tabTransitAccessU5, fig.align = "center", fig.cap="Children under 5 in Census Block Groups without reasonable access to any form of transit."}
@@ -3875,10 +3875,10 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/CT/figures/ct_railLTHSaccess.png",
+tmap_save(m, "DATA/transport/CT/figures/ct_transitLTHSaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/CT/figures/ct_railLTHSaccess.png")
+knitr::include_graphics("DATA/transport/CT/figures/ct_transitLTHSaccess.png")
 ```
 
 ```{r tabTransitAccessLTHS, fig.align = "center", fig.cap="Adults without a high school diploma in Census Block Groups without reasonable access to any form of transit."}
@@ -3937,10 +3937,10 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/CT/figures/ct_railINCaccess.png",
+tmap_save(m, "DATA/transport/CT/figures/ct_transitINCaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/CT/figures/ct_railINCaccess.png")
+knitr::include_graphics("DATA/transport/CT/figures/ct_transitINCaccess.png")
 ```
 
 ```{r tabTransitAccessINC, fig.align = "center", fig.cap="Low income persons in Census Block Groups without reasonable access to any form of transit."}
@@ -3999,10 +3999,10 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/CT/figures/ct_railMINaccess.png",
+tmap_save(m, "DATA/transport/CT/figures/ct_transitMINaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/CT/figures/ct_railMINaccess.png")
+knitr::include_graphics("DATA/transport/CT/figures/ct_transitMINaccess.png")
 ```
 
 ```{r tabTransitAccessMIN, fig.align = "center", fig.cap="Minority persons in Census Block Groups without reasonable access to any form of transit."}
@@ -4061,10 +4061,10 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/CT/figures/ct_railNoCarHHaccess.png",
+tmap_save(m, "DATA/transport/CT/figures/ct_transitNoCarHHaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/CT/figures/ct_railNoCarHHaccess.png")
+knitr::include_graphics("DATA/transport/CT/figures/ct_transitNoCarHHaccess.png")
 ```
 
 ```{r tabTransitAccessNoCarHH, fig.align = "center", fig.cap="Households without a car in Census Block Groups without reasonable access to any form of transit."}
@@ -4123,10 +4123,10 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/CT/figures/ct_railLEHaccess.png",
+tmap_save(m, "DATA/transport/CT/figures/ct_transitLEHaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/CT/figures/ct_railLEHaccess.png")
+knitr::include_graphics("DATA/transport/CT/figures/ct_transitLEHaccess.png")
 ```
 
 ```{r tabTransitAccessLEH, fig.align = "center", fig.cap="Limited English speaking households in Census Block Groups without reasonable access to any form of transit."}
@@ -4185,10 +4185,10 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/transport/CT/figures/ct_railCTINCaccess.png",
+tmap_save(m, "DATA/transport/CT/figures/ct_transitCTINCaccess.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/transport/CT/figures/ct_railCTINCaccess.png")
+knitr::include_graphics("DATA/transport/CT/figures/ct_transitCTINCaccess.png")
 ```
 
 ```{r tabTransitAccessCTINC, fig.align = "center", fig.cap="Low income persons, as defined by state environmental justice policy, in Census Block Groups without reasonable access to any form of transit."}
