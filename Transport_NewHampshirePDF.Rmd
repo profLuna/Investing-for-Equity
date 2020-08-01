@@ -931,7 +931,7 @@ leastWalkable %>%
 ```
 
 
-
+\pagebreak
 ## Transportation Cost Burden
 
 Transportation is the second-largest expenditure category for American households, approximately 16% of annual expenditures on average between 2015 and 2018.[^Expenditures] Only housing costs (~32%) exceed those of transportation. The high cost of transportation is due in large part to the costs of dependence on private vehicle ownership, including purchase and financing, insurance, maintenance, and fuel costs. Households without reasonable access to other modes of transportation typically experience higher transportation costs.[^CostBurden] Transportation costs can be significant economic burdens for moderate and lower income households and for communities where destinations are distant or limited. For many working-class and rural households, transportation costs exceed housing costs. 
@@ -1434,7 +1434,7 @@ For the TotalPop, the population-weighted average headway is 6800/92 = `r round(
 
 \pagebreak
 # Appendix B: Supplementary Figures {-}
-## No Transit Access and Populations of Concner {-}
+## No Transit Access and Populations of Concern {-}
 ```{r mapTransitAccessDisabled, fig.align = "center", fig.cap="Disabled persons who are one or more miles from the nearest bus route by Census Tract."}
 m <- tm_shape(nh_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
