@@ -792,7 +792,7 @@ ct_tracts_sf_noTransit_simple <- ct_tracts_sf_noTransit %>%
 This analysis seeks to identify communities that are underserved by access to public transit. Access to transit is measured in terms of distance to transit boarding stops and in terms of frequency of service. 
 
 Connecticut is served by 19 local bus agencies or transit districts, four rail lines, ferries, and two private inter-city bus services. The analysis presented here only considers transit services for which publicly available geospatial data is available, which includes `r length(unique(ct_busStopsAll_sf$agency))`
-regional public transit agencies and three rail services. Amtrak train service passes through Connecticut as well. Ferry services, water taxis, and other seasonal transportation services are not considered in this analysis. Figure \@ref(fig:transitMap) shows `r formatC(nrow(ct_busRoutesAll_sf),big.mark = ",")` fixed public transit routes across the state along with population density.
+regional public transit agencies and two rail services. Amtrak train service passes through Connecticut as well. Ferry services, water taxis, and other seasonal transportation services are not considered in this analysis. Figure \@ref(fig:transitMap) shows `r formatC(nrow(ct_busRoutesAll_sf),big.mark = ",")` fixed public transit routes across the state along with population density.
 
 ```{r transitMap, fig.align = "center", fig.cap="Transit service and population density in Connecticut."}
 # bbox_new <- st_bbox(ct_blkgrps_sf) # current bounding box
