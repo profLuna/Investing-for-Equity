@@ -897,7 +897,8 @@ regional public transit agencies, as well as a number of private operators. Thes
 knitr::include_graphics("DATA/transport/MA/figures/ma_transit.png")
 ```
 
-Approximately `r paste0(round(ma_transitAccessPops_df %>% filter(Group == "Total Pop") %>% dplyr::select(PctBus) %>% pull(),1),"%")` of the state population lives within reasonable walking distance of a bus stop (defined as approximately 400 meters or 1/4 mile). 
+Approximately `r paste0(round(ma_transitAccessPops_df %>% filter(Group == "Total Pop") %>% dplyr::select(PctBus) %>% pull(),1),"%")` of the state population lives within reasonable walking distance of a bus stop (defined as approximately 400 meters or 1/4 mile), 
+ `r paste0(round(ma_transitAccessPops_df %>% filter(Group == "Total Pop") %>% dplyr::select(PctRapidTransit) %>% pull(),1),"%")` live within 1/2 mile of a rapid transit stop, `r paste0(round(ma_transitAccessPops_df %>% filter(Group == "Total Pop") %>% dplyr::select(PctCommuter) %>% pull(),1),"%")` live within 3 miles of a commuter rail stop, and `r paste0(round(ma_transitAccessPops_df %>% filter(Group == "Total Pop") %>% dplyr::select(PctAllTransit) %>% pull(),1),"%")` live within reasonable distance of any transit. 
 
 However, this access varies by population group and by mode of transit. Figures \@ref(fig:loliBusDist) to \@ref(fig:loliAllTransitDist) below compare the percentages of different population groups living within reasonable walking distance of bus stops (1/4 mile), rapid transit (1/2 mile), and commuter rail or park-in-ride stops (3 miles) across the state, respectively. Most populations of concern, including transit-dependent groups, have access similar to or better than the general population. However, note that people over age 64 and under 18 have consistently less access to transit on average compared to the general population.
 
@@ -2806,7 +2807,7 @@ The Location Affordability Index (LAI) is a nationwide geographic data resource 
 
 ```{r TcostBurden, include=FALSE}
 # Read in Location Affordability Index data. Using Version 3 based on ACS 2012-2016 data at Tract level. Downloaded from https://hudgis-hud.opendata.arcgis.com/datasets/location-affordability-index-v-3?selectedAttribute=avg_hh_size_renters
-lai_ri <- st_read("DATA/transport/Location_Affordability_Index_v.3", "Location_Affordability_Index_v.3") %>% 
+lai_ma <- st_read("DATA/transport/Location_Affordability_Index_v.3", "Location_Affordability_Index_v.3") %>% 
   filter(STUSAB == "MA") %>% 
   st_make_valid() %>% 
   st_transform(., crs = 26986)
@@ -2814,11 +2815,11 @@ lai_ri <- st_read("DATA/transport/Location_Affordability_Index_v.3", "Location_A
 # Downscale LAI to Block Group by assigning tract value to all overlapping block groups (i.e. block groups with same tract GEOID prefix)
 lai_ma_blkgrp <- ma_blkgrps_sf %>% 
   mutate(GEOIDT = str_sub(GEOID,1,11)) %>% 
-  left_join(., as.data.frame(lai_ri),by=c("GEOIDT"="GEOID"))
+  left_join(., as.data.frame(lai_ma),by=c("GEOIDT"="GEOID"))
 
 # Join LAI to tracts
 lai_ma_tract <- ma_tracts_sf %>% 
-  left_join(., as.data.frame(lai_ri),by="GEOID")
+  left_join(., as.data.frame(lai_ma),by="GEOID")
 
 # create summarized df of population weighted average transportation cost burden by tract pop
 lai_ma_tract_df <- lai_ma_tract %>% 
@@ -2855,17 +2856,16 @@ lai_ma_df <- lai_ma_blkgrp %>%
   group_by(Group) %>% 
   summarize(wTBurden = weighted.mean(hh7_t, Pop, na.rm = TRUE)) %>% 
   rbind(., lai_ma_tract_df)
+
+# isolate places where transportation cost as a percentage of income exceeds housing as a percentage of income
+lai_ToverH <- lai_ma %>% 
+  filter(hh7_t > hh7_h)
 ```
 
-
-Figure \@ref(fig:mapLAI) below shows transportation cost burden (i.e., transportation cost as a percentage of household income) by Census Tract across Massachusetts. Transportation cost burden varies across the state. It is lowest in and around the state's major urban centers, and it is highest in central and western parts of the state. 
+Figure \@ref(fig:mapLAI) below shows transportation cost burden (i.e., transportation cost as a percentage of household income) by Census Tract across Massachusetts. Transportation cost burden varies across the state. It is lowest in and around the state's major urban centers, and it is highest in central and western parts of the state. In `r nrow(lai_ToverH)` Census Tracts, the transportation cost burden exceeds the cost burden of housing. 
 
 ```{r mapLAI, fig.align = "center", fig.cap="Transportation cost burden for Census Tracts across Massachusetts."}
-# isolate places where transportation cost as a percentage of income exceeds housing as a percentage of income
-lai_ToverH <- lai_ri %>% 
-  filter(hh7_t > hh7_h)
-
-m <- tm_shape(lai_ri) +
+m <- tm_shape(lai_ma) +
   tm_fill(col = "hh7_t", alpha = 0.8, style = "quantile", title = "Transportation as\nPercent of Income", showNA = FALSE,
           legend.format = list(fun = function(x) formatC(x, digits = 1, format = "f"))) +
   tm_shape(lai_ToverH) + tm_dots(col = "gray", shape = 8, size = 0.5) +
