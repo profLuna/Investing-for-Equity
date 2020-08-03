@@ -1418,16 +1418,16 @@ lai_ri_df <- lai_ri_blkgrp %>%
   group_by(Group) %>% 
   summarize(wTBurden = weighted.mean(hh7_t, Pop, na.rm = TRUE)) %>% 
   rbind(., lai_ri_tract_df)
-```
 
-
-Figure \@ref(fig:mapLAI) below shows transportation cost burden (i.e., transportation cost as a percentage of household income) by Census Tract across Rhode Island. Transportation cost burden varies across the state. It is lowest in and around the state's major urban centers, such as Providence, Pawtucket, Woonsocket, and Newport, and highest in most of the rest of the state. In Little Compton, transportation costs as a percentage of income exceeds housing costs. 
-
-```{r mapLAI, fig.align = "center", fig.cap="Transportation cost burden for Census Tracts across Rhode Island."}
 # isolate places where transportation cost as a percentage of income exceeds housing as a percentage of income
 lai_ToverH <- lai_ri %>% 
   filter(hh7_t > hh7_h)
+```
 
+
+Figure \@ref(fig:mapLAI) below shows transportation cost burden (i.e., transportation cost as a percentage of household income) by Census Tract across Rhode Island. Transportation cost burden varies across the state. It is lowest in and around the state's major urban centers, such as Providence, Pawtucket, Woonsocket, and Newport, and highest in most of the rest of the state. In `r nrow(lai_ToverH)` Census Tract, the transportation cost burden exceeds the cost burden of housing. 
+
+```{r mapLAI, fig.align = "center", fig.cap="Transportation cost burden for Census Tracts across Rhode Island."}
 m <- tm_shape(lai_ri) +
   tm_fill(col = "hh7_t", alpha = 0.8, style = "quantile", title = "Transportation as\nPercent of Income", showNA = FALSE,
           legend.format = list(fun = function(x) formatC(x, digits = 1, format = "f"))) +
