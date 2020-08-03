@@ -695,7 +695,7 @@ me_wAvgWalkability_df <- me_blkgrp_walkability_sf %>%
 Figure \@ref(fig:mapWalkability) shows walkability scores by Census Block Group across Maine. The population-weighted average walkability across Maine is `r round(me_wAvgWalkability_df %>% filter(Group == "Total Pop") %>% select(wNatWalkIndex) %>% pull(),1)`. Walkability varies across the state, although most of the state is classified as below average to least walkable. Walkability is highest in portions of Kittery, York, Bangor, and Portland.
 
 ```{r mapWalkability, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Walkability Index scores for Census Block Groups across Maine."}
-m <- tm_shape(me_blkgrp_walkability_sf) +
+m <- tm_shape(me_blkgrp_walkability_sf, unit = "mi") +
   tm_fill(col = "NatWalkInd", alpha = 0.8, style = "equal", n = 4,
           colorNA = "white", colorNULL = "gray", title = "Walkability Index",
           legend.format = list(fun = function(x) formatC(x, digits = 1, format = "f")), palette = c("#FECC61","#FEF6BA","#B9E293","#238443"), 
@@ -717,7 +717,7 @@ m <- tm_shape(me_blkgrp_walkability_sf) +
   tm_shape(me_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   tm_layout(title = "Walkability", 
             frame = FALSE, main.title.size = 0.8,
@@ -821,7 +821,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
   tm_shape(me_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   tm_layout(title = "Persons Under 18\nin Least Walkable\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
@@ -878,7 +878,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
   tm_shape(me_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   tm_layout(title = "Persons Over 64\nin Least Walkable\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
@@ -974,7 +974,7 @@ lai_ToverH <- lai_ri %>%
 Figure \@ref(fig:mapLAI) below shows transportation cost burden (i.e., transportation cost as a percentage of household income) by Census Tract across Maine. Transportation cost burden varies across the state. It is lowest in the southern end of the state, from Kittery to Brunswick. In `r nrow(lai_ToverH)` Census Tracts, the transportation cost burden exceeds the cost burden of housing. 
 
 ```{r mapLAI, fig.align = "center", fig.cap="Transportation cost burden for Census Tracts across Maine."}
-m <- tm_shape(lai_ri) +
+m <- tm_shape(lai_ri, unit = "mi") +
   tm_fill(col = "hh7_t", alpha = 0.8, style = "quantile", title = "Transportation as\nPercent of Income", showNA = FALSE,
           legend.format = list(fun = function(x) formatC(x, digits = 1, format = "f"))) +
   tm_shape(lai_ToverH) + tm_dots(col = "gray", shape = 8, size = 0.5) +
@@ -992,7 +992,7 @@ m <- tm_shape(lai_ri) +
   tm_shape(me_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   tm_add_legend(type = "symbol",labels = "Transport burden > housing burden", shape = 8, size = 0.5, col = "gray") +
   tm_layout(title = "Transportation\nCost Burden", 
@@ -1093,7 +1093,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
   tm_shape(me_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   tm_layout(title = "Adults without a\nHigh School\nDiploma\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
@@ -1150,7 +1150,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
   tm_shape(me_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   tm_layout(title = "Disabled Persons\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
@@ -1842,7 +1842,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
   tm_shape(me_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   tm_layout(title = "Children Under 5\nin Least Walkable\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
@@ -1899,7 +1899,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
   tm_shape(me_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   tm_layout(title = "Adults without a\nHigh School\nDiploma\nin Least Walkable\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
@@ -1956,7 +1956,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
   tm_shape(me_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   tm_layout(title = "Disabled Persons\nin Least Walkable\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
@@ -2013,7 +2013,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
   tm_shape(me_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   tm_layout(title = "Low Income\nPersons\nin Least Walkable\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
@@ -2070,7 +2070,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
   tm_shape(me_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   tm_layout(title = "Minority Persons\nin Least Walkable\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
@@ -2127,7 +2127,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
   tm_shape(me_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   tm_layout(title = "Limited English\nSpeaking\nHouseholds\nin Least Walkable\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
@@ -2184,7 +2184,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
   tm_shape(me_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   tm_layout(title = "No Car Households\nin Least Walkable\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
@@ -2244,7 +2244,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
   tm_shape(me_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   tm_layout(title = "Persons Over 64\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
@@ -2302,7 +2302,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
   tm_shape(me_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   tm_layout(title = "Persons Under 18\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
@@ -2359,7 +2359,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
   tm_shape(me_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   tm_layout(title = "Children Under 5\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
@@ -2416,7 +2416,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
   tm_shape(me_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   tm_layout(title = "Low Income\nPersons\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
@@ -2473,7 +2473,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
   tm_shape(me_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   tm_layout(title = "No Car Households\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
@@ -2530,7 +2530,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
   tm_shape(me_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   tm_layout(title = "Minority Persons\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
@@ -2587,7 +2587,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
   tm_shape(me_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.5, col = "black", 
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+  tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   tm_layout(title = "Limited English\nHouseholds\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
