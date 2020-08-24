@@ -815,6 +815,10 @@ ma_tracts_sf_noTransit_simple <- ma_tracts_sf_noTransit %>%
   st_simplify(., dTolerance = 100) %>% 
   filter(!st_is_empty(.)) %>% 
   st_make_valid()
+
+# # write out to file for later analysis
+# save(ma_blkgrps_sf_noTransit, ma_tracts_sf_noTransit, 
+#      file = "DATA/transport/MA/noTransit.Rds")
 ```
 
 ## Access to Public Transit
@@ -840,22 +844,22 @@ regional public transit agencies, as well as a number of private operators. Thes
 
 # # create simplified version to speed up mapping
 # ma_blkgrps_developed_simple <- st_simplify(ma_blkgrps_developed, dTolerance = 100)
-
-# m <- tm_shape(ma_towns_sf, unit = "mi") + 
+# 
+# m <- tm_shape(ma_towns_sf, unit = "mi") +
 #   tm_borders(col = "gray", lwd = 0.2) +
 #   tm_shape(ma_blkgrps_developed_simple) +
 #   tm_fill(col = "NewPopAcre", style = "quantile",
 #           colorNA = "white", colorNULL = "gray", title = "Pop per Acre",
 #           legend.format = list(fun = function(x) formatC(x, digits = 1, format = "f")), palette = "YlGn") +
-#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
+#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
 #   tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
 #   tm_shape(ma_highways) + tm_lines(col = "seashell4", lwd = 1) +
 #   tm_shape(ma_highways2nd) + tm_lines(col = "seashell4", lwd = 1) +
-#   tm_shape(ma_busRoutesAll_sf_simple) + 
+#   tm_shape(ma_busRoutesAll_sf_simple) +
 #   tm_lines(col = "coral", alpha = 0.5, lwd = 1) +
-#   tm_shape(mbta_rtRoutes_sf) + 
+#   tm_shape(mbta_rtRoutes_sf) +
 #   tm_lines(col = "darkblue", alpha = 0.5, lwd = 1) +
-#   tm_shape(mbta_trainRoutes_sf) + 
+#   tm_shape(mbta_trainRoutes_sf) +
 #   tm_lines(col = "red", alpha = 0.5, lwd = 1) +
 #   tm_shape(ma_parknride_sf) + tm_dots(col = "red") +
 #   tm_shape(I95roadSegment) +
@@ -877,15 +881,15 @@ regional public transit agencies, as well as a number of private operators. Thes
 #   tm_shape(I90roadSegment2) +
 #   tm_symbols(shape = I90, border.lwd = NA, size = .1) +
 #   tm_shape(ma_towns_sf_pts) + tm_dots() +
-#   tm_text("NAME", size = 0.5, col = "black", 
+#   tm_text("NAME", size = 0.5, col = "black",
 #           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-#   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
+#   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
 #                position = c(0.6,0.005)) +
 #   tm_add_legend(type = "line", labels = "Bus Routes", col = "coral") +
 #   tm_add_legend(type = "line", labels = "Rapid Transit", col = "darkblue") +
 #   tm_add_legend(type = "line", labels = "Commuter Rail", col = "red") +
 #   tm_add_legend(type = "symbol", labels = "Park-in-Ride Lots", col = "red", size = 0.2) +
-#   tm_layout(title = "Massachusetts\nTransit Routes\nand Population\nDensity", 
+#   tm_layout(title = "Massachusetts\nTransit Routes\nand Population\nDensity",
 #             frame = FALSE, main.title.size = 0.8,
 #             legend.outside = TRUE,
 #             legend.title.size = 0.8,
@@ -1207,51 +1211,51 @@ ma_blkgrps_sf_noBus %>%
 ```
 
 ```{r mapRTAccessO64, fig.align = "center", fig.cap="Persons over 64 who are one or more miles from the nearest rapid transit stop by Census Block Group."}
-# m <- tm_shape(ma_state_sf_cb, unit = "mi") +
-#   tm_fill(col = "gray",alpha = 0.2) +
-#   tm_shape(ma_blkgrps_sf_noRT_simple, unit = "mi") +
-#   tm_fill(col = "NewOver64", style = "quantile",
-#           colorNA = "white", colorNULL = "gray", title = "Number of\nPersons Over 64",
-#           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
-#   tm_shape(ma_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
-#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
-#   tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
-#   tm_shape(ma_highways) + tm_lines(col = "seashell4", lwd = 1) +
-#   tm_shape(ma_highways2nd) + tm_lines(col = "seashell4", lwd = 1) +
-#   # tm_shape(mbta_rtRoutes_sf) +
-#   # tm_lines(lwd = 2, alpha = 0.5, col = "darkblue") +
-#   tm_shape(I95roadSegment) +
-#   tm_symbols(shape = I95, border.lwd = NA, size = .1) +
-#   tm_shape(I95roadSegment2) +
-#   tm_symbols(shape = I95, border.lwd = NA, size = .1) +
-#   tm_shape(I395roadSegment) +
-#   tm_symbols(shape = I395, border.lwd = NA, size = .1) +
-#   tm_shape(I91roadSegment) +
-#   tm_symbols(shape = I91, border.lwd = NA, size = .1) +
-#   tm_shape(I495roadSegment) +
-#   tm_symbols(shape = I495, border.lwd = NA, size = .1) +
-#   tm_shape(I495roadSegment2) +
-#   tm_symbols(shape = I495, border.lwd = NA, size = .1) +
-#   tm_shape(I495roadSegment3) +
-#   tm_symbols(shape = I495, border.lwd = NA, size = .1) +
-#   tm_shape(I90roadSegment) +
-#   tm_symbols(shape = I90, border.lwd = NA, size = .1) +
-#   tm_shape(I90roadSegment2) +
-#   tm_symbols(shape = I90, border.lwd = NA, size = .1) +
-#   tm_shape(ma_towns_sf_pts) + tm_dots() +
-#   tm_text("NAME", size = 0.5, col = "black",
-#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-#   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
-#                position = c(0.6,0.005)) +
-#   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Rapid Transit Route", col = "darkblue") +
-#   tm_layout(title = "Persons Over 64\n1+ Miles from\nNearest Rapid\nTransit Stop",
-#             frame = FALSE, main.title.size = 0.8,
-#             legend.outside = TRUE,
-#             legend.title.size = 0.8,
-#             legend.outside.position = c("right", "top"))
-# 
-# tmap_save(m, "DATA/transport/MA/figures/ma_RTO64access.png",
-#           height = 4, width = 8, units = "in", dpi = 600)
+m <- tm_shape(ma_state_sf_cb, unit = "mi") +
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(ma_blkgrps_sf_noRT_simple, unit = "mi") +
+  tm_fill(col = "NewOver64", style = "quantile",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nPersons Over 64",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
+  tm_shape(ma_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ma_highways) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(ma_highways2nd) + tm_lines(col = "seashell4", lwd = 1) +
+  # tm_shape(mbta_rtRoutes_sf) +
+  # tm_lines(lwd = 2, alpha = 0.5, col = "darkblue") +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = .1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = .1) +
+  tm_shape(I395roadSegment) +
+  tm_symbols(shape = I395, border.lwd = NA, size = .1) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment2) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment3) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I90roadSegment) +
+  tm_symbols(shape = I90, border.lwd = NA, size = .1) +
+  tm_shape(I90roadSegment2) +
+  tm_symbols(shape = I90, border.lwd = NA, size = .1) +
+  tm_shape(ma_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black",
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
+               position = c(0.6,0.005)) +
+  # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Rapid Transit Route", col = "darkblue") +
+  tm_layout(title = "Persons Over 64\n1+ Miles from\nNearest Rapid\nTransit Stop",
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/MA/figures/ma_RTO64access.png",
+          height = 4, width = 8, units = "in", dpi = 600)
 
 knitr::include_graphics("DATA/transport/MA/figures/ma_RTO64access.png")
 ```
@@ -1280,53 +1284,53 @@ ma_blkgrps_sf_noRT %>%
 ```
 
 ```{r mapCRPRAccessO64, fig.align = "center", fig.cap="Persons over 64 who are ten or more miles from the nearest commuter rail stop or park-in-ride lot by Census Block Group."}
-# m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
-#   tm_fill(col = "gray",alpha = 0.2) +
-#   tm_shape(ma_blkgrps_sf_noCRPR_simple, unit = "mi") +
-#   tm_fill(col = "NewOver64", style = "quantile",
-#           colorNA = "white", colorNULL = "gray", title = "Number of\nPersons Over 64",
-#           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
-#   tm_shape(ma_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
-#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
-#   tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
-#   tm_shape(ma_highways) + tm_lines(col = "seashell4", lwd = 1) +
-#   tm_shape(ma_highways2nd) + tm_lines(col = "seashell4", lwd = 1) +
-#   tm_shape(mbta_trainRoutes_sf) +
-#   tm_lines(lwd = 2, alpha = 0.5, col = "darkblue") +
-#   tm_shape(ma_parknride_sf) + tm_dots(col = "darkblue") +
-#   tm_shape(I95roadSegment) +
-#   tm_symbols(shape = I95, border.lwd = NA, size = .1) +
-#   tm_shape(I95roadSegment2) +
-#   tm_symbols(shape = I95, border.lwd = NA, size = .1) +
-#   tm_shape(I395roadSegment) +
-#   tm_symbols(shape = I395, border.lwd = NA, size = .1) +
-#   tm_shape(I91roadSegment) +
-#   tm_symbols(shape = I91, border.lwd = NA, size = .1) +
-#   tm_shape(I495roadSegment) +
-#   tm_symbols(shape = I495, border.lwd = NA, size = .1) +
-#   tm_shape(I495roadSegment2) +
-#   tm_symbols(shape = I495, border.lwd = NA, size = .1) +
-#   tm_shape(I495roadSegment3) +
-#   tm_symbols(shape = I495, border.lwd = NA, size = .1) +
-#   tm_shape(I90roadSegment) +
-#   tm_symbols(shape = I90, border.lwd = NA, size = .1) +
-#   tm_shape(I90roadSegment2) +
-#   tm_symbols(shape = I90, border.lwd = NA, size = .1) +
-#   tm_shape(ma_towns_sf_pts) + tm_dots() +
-#   tm_text("NAME", size = 0.5, col = "black", 
-#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-#   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
-#                position = c(0.6,0.005)) +
-#   tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Commuter Rail Route", col = "darkblue") +
-#   tm_add_legend(type = "symbol", size=0.2, alpha = 0.5, labels = "Park-in-Ride Lot", col = "darkblue") +
-#   tm_layout(title = "Persons Over 64\n10+ Miles from\nNearest Commuter\nRail Stop\nor Park-in-Ride Lot", 
-#             frame = FALSE, main.title.size = 0.8,
-#             legend.outside = TRUE,
-#             legend.title.size = 0.8,
-#             legend.outside.position = c("right", "top"))
-# 
-# tmap_save(m, "DATA/transport/MA/figures/ma_CRPRO64access.png",
-#           height = 4, width = 8, units = "in", dpi = 600)
+m <- tm_shape(ma_state_sf_cb, unit = "mi") +
+  tm_fill(col = "gray",alpha = 0.2) +
+  tm_shape(ma_blkgrps_sf_noCRPR_simple, unit = "mi") +
+  tm_fill(col = "NewOver64", style = "quantile",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nPersons Over 64",
+          legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
+  tm_shape(ma_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ma_highways) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(ma_highways2nd) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(mbta_trainRoutes_sf) +
+  tm_lines(lwd = 2, alpha = 0.5, col = "darkblue") +
+  tm_shape(ma_parknride_sf) + tm_dots(col = "darkblue") +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = .1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = .1) +
+  tm_shape(I395roadSegment) +
+  tm_symbols(shape = I395, border.lwd = NA, size = .1) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment2) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment3) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I90roadSegment) +
+  tm_symbols(shape = I90, border.lwd = NA, size = .1) +
+  tm_shape(I90roadSegment2) +
+  tm_symbols(shape = I90, border.lwd = NA, size = .1) +
+  tm_shape(ma_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black",
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
+               position = c(0.6,0.005)) +
+  tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Commuter Rail Route", col = "darkblue") +
+  tm_add_legend(type = "symbol", size=0.2, alpha = 0.5, labels = "Park-in-Ride Lot", col = "darkblue") +
+  tm_layout(title = "Persons Over 64\n10+ Miles from\nNearest Commuter\nRail Stop\nor Park-in-Ride Lot",
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m, "DATA/transport/MA/figures/ma_CRPRO64access.png",
+          height = 4, width = 8, units = "in", dpi = 600)
 
 knitr::include_graphics("DATA/transport/MA/figures/ma_CRPRO64access.png")
 ```
@@ -2045,9 +2049,9 @@ ma_RTHeadwayPops_df %>%
              linetype = "dashed") +
   geom_text(aes(x = "Under 18", y = 11, label = "Above state\naverage"),
             color = "gray48") +
-  geom_text(aes(x = "Under 18", y = 7.5, label = "Below state\naverage"),
+  geom_text(aes(x = "Under 18", y = 6.5, label = "Below state\naverage"),
             color = "gray48") +
-  expand_limits(y = c(6,13))
+  expand_limits(y = c(6,12))
 ```
 
 Headways for commuter rail routes are slightly shorter on average than bus routes. Figure \@ref(fig:mapGTFScommuterRail) shows average headways by line and Table \@ref(tab:tabGTFSrapidCommuterRail) shows a breakdown of headway times by route. The average population-weighted headway for all commuter rail routes in the state is `r round(ma_CRHeadwayPops_df %>% filter(Group == "Total Pop") %>% select(AvgWHeadway) %>% pull(),1)` minutes. However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliCRHeadway) below compares the population-weighted average commuter rail headways for different groups within 3 miles (4800m) of stops. Most groups have average headways shorter than the general population. However, persons over 64 have population-weighted average headways longer than the general population (`r round(ma_CRHeadwayPops_df %>% filter(Group == "Over 64") %>% select(AvgWHeadway) %>% pull(),1)` minutes). The shortest population-weighted average headway, experienced by limited English speaking households, as defined by Massachusetts environmental justice policy, is `r round(ma_CRHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),1)` minutes.
@@ -2244,6 +2248,21 @@ headway80_commuterRail <- headway80thblkgrps_CR %>%
   rename("City/Town" = NAME) %>% 
   mutate(`Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
   arrange(desc(`Over 64`))
+
+# # write out to file for use in later analysis
+# save(headway80thblkgrps_bus,
+#      headway80thtracts_bus,
+#      headway80thblkgrps_RT,
+#      headway80thtracts_RT,
+#      headway80thblkgrps_CR,
+#      headway80thtracts_CR, file = "DATA/transport/MA/headway80th.Rds")
+
+# st_write(headway80thblkgrps_bus,"DATA/transport/MA/headway80thblkgrps_bus.shp")
+# st_write(headway80thtracts_bus, "DATA/transport/MA/headway80thtracts_bus.shp")
+# st_write(headway80thblkgrps_RT,"DATA/transport/MA/headway80thblkgrps_RT.shp")
+# st_write(headway80thtracts_RT,"DATA/transport/MA/headway80thtracts_RT.shp")
+# st_write(headway80thblkgrps_CR,"DATA/transport/MA/headway80thblkgrps_CR.shp")
+# st_write(headway80thtracts_CR,"DATA/transport/MA/headway80thtracts_CR.shp")
 ```
 The population-weighted average headways above provide a glimpse of average headways across the state for different population groups and for different transit modes. However, headways also vary for specific communities. Indeed, it is important to consider populations of concern or transportation-limited populations that experience excessively long headways or low service frequency. Figures \@ref(fig:mapHeadwayOver64bus) to \@ref(fig:mapHeadwayOver64CR) below highlight communities of persons over 64 and adults without a high school diploma who are within reasonable distance of bus stops (i.e., 400m or 1/4 mile), rapid transit stops (i.e., 800m or 1/2 mile), and commuter rail stops (i.e., 4800m or 3 miles), but where the mean headway for these stops exceeds the 80th percentile of mean route headways for the state. Tables \@ref(tab:tabHeadwayOver64bus) to \@ref(tab:tabHeadwayOver64commuterRail) show breakdowns by municipality. For example, Table \@ref(tab:tabHeadwayOver64bus) shows that `r formatC(as.numeric(headway80_bus[1,3]),big.mark=",",digits = 5)` people over 64 across `r headway80_bus[1,2]` Block Groups in `r headway80_bus[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ma_routes_sf_Bus$mean_headways,0.8)` minutes. These people represented `r headway80_bus[1,4]` of people over 64 in `r headway80_bus[1,1]`. Similarly, Table \@ref(tab:tabHeadwayDisabledRT) shows that `r formatC(as.numeric(headway80_rapidTransit[1,3]),big.mark=",")` people with disabilities across `r headway80_rapidTransit[1,2]` Census Tracts in `r headway80_rapidTransit[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ma_routes_sf_RT$mean_headways,0.8)` minutes. These people represented `r headway80_rapidTransit[1,4]` of people with disabilities in `r headway80_rapidTransit[1,1]`.
 Maps and tables of other populations of concern with excessive headways can be found in Appendix B. 
@@ -2534,6 +2553,11 @@ ma_wAvgWalkability_df <- ma_blkgrp_walkability_sf %>%
   group_by(Group) %>% 
   summarize(wNatWalkIndex = weighted.mean(NatWalkInd, Pop, na.rm = TRUE)) %>% 
   rbind(., ma_tract_walkability_df)
+
+# # save data for later analysis
+# save(ma_blkgrp_walkability_sf,
+#      ma_tract_walkability_sf,
+#      file = "DATA/transport/MA/walkability.Rds")
 ```
 
 Figure \@ref(fig:mapWalkability) shows walkability scores by Census Block Group across Massachusetts.  Walkability varies across the state. It is highest in and around the state's major urban centers, such as the Boston area, Springfield, Holyoke, Lawrence, Lowell, Pittsfield, and urbanized areas of the Cape.
@@ -2856,6 +2880,11 @@ lai_ma_df <- lai_ma_blkgrp %>%
   group_by(Group) %>% 
   summarize(wTBurden = weighted.mean(hh7_t, Pop, na.rm = TRUE)) %>% 
   rbind(., lai_ma_tract_df)
+
+# # save data for later analysis
+# save(lai_ma_blkgrp,
+#      lai_ma_tract,
+#      file = "DATA/transport/MA/costBurden.Rds")
 
 # isolate places where transportation cost as a percentage of income exceeds housing as a percentage of income
 lai_ToverH <- lai_ma %>% 
