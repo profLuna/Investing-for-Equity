@@ -48,7 +48,7 @@ ne_blkgrp_sf90 <- list.files(path = "DATA/shapefiles/nhgis0001_shape",
                     GISJOIN2 = as.character(GISJOIN2))
          }) %>%
   do.call(rbind, .) %>% 
-  lwgeom::st_make_valid()
+  st_make_valid()
 
 # Join demographics to geometry
 ne_blkgrp_sf90 <- ne_blkgrp_sf90 %>% 
