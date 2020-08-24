@@ -10,7 +10,7 @@ options(tigris_use_cache = TRUE, tigris_class = "sf")
 census_api_key("f2776fbc29cf847505de9308a82c8d65290d16b3")
 
 # Load list of variables to identify tables of interest
-v17 <- load_variables(2017, "acs5", cache = TRUE)
+v18 <- load_variables(2018, "acs5", cache = TRUE)
 
 # tidycensus df with stat codes
 # unique(fips_codes$state)
@@ -25,7 +25,8 @@ ne_blkgrp_sf <- reduce(
   map(ne_states, function(x) {
     get_acs(geography = "block group", 
             variables = c(totalpop = "B03002_001", 
-                          medhhinc = "B19013_001"),
+                          medhhinc = "B19013_001",
+                          households = "B19001_001"),
             state = x, output = "wide", geometry = TRUE)
     }),
   rbind
@@ -82,11 +83,20 @@ VT_MED_HHINC <- ne_states_df %>%
   dplyr::select(medhhincE) %>% 
   pull()
 
+# Isolate MA statewide median hh income
+MA_MED_HHINC <- ne_states_df %>% 
+  filter(NAME == "Massachusetts") %>% 
+  dplyr::select(medhhincE) %>% 
+  pull()
+
 # add variables to identify EJ criteria thresholds
 ne_towns_df <- ne_towns_df %>% 
   mutate(VT_INCOME = if_else(medhhincE < VT_MED_HHINC, "I", NULL),
          VT_INCOME_UC = if_else(medhhincE_UC < VT_MED_HHINC, "I", NULL),
-         VT_INCOME_LC = if_else(medhhincE_LC < VT_MED_HHINC, "I", NULL))
+         VT_INCOME_LC = if_else(medhhincE_LC < VT_MED_HHINC, "I", NULL),
+         MA_INC_BELOW150 = if_else(medhhincE <= 1.5*MA_MED_HHINC,"Y","N"),
+         MA_INC_BELOW150_UC = if_else(medhhincE_UC <= 1.5*MA_MED_HHINC,"Y","N"),
+         MA_INC_BELOW150_LC = if_else(medhhincE_LC <= 1.5*MA_MED_HHINC,"Y","N"))
 
 # acquire the polygons for county subdivisions for ne_towns using tigris::rbind_tigris
 ne_towns_sf <- rbind_tigris(
@@ -109,48 +119,63 @@ rm(ne_towns_df, VT_MED_HHINC)
 ###### DEMOGRAPHIC DATA FRAMES ##############
 
 ### HOUSEHOLDS BY INCOME
-# download table of counts of household income categories, sum up households in categories below 65% of MA statewide median
-B19001 <- map_df(ne_states, function(x) {
-  get_acs(geography = "block group", table = "B19001", state = x)})
-# Isolate estimate of total households
-medhhinc_total <- B19001 %>% 
-  filter(variable == "B19001_001") %>% 
-  transmute(GEOID = GEOID,
-            householdsE = estimate,
-            householdsM = moe)
-# Isolate household counts less than 65% of MA statewide median of $74,167, which is $48,208. Closest range is 45 - 49,9.
-# create vector of patterns for medhhinc levels below 50k
-med_strings <- rep(c(2:10)) %>% 
-  formatC(width = 3, format = "d", flag = "0") # add leading 0s
-# filter cases by patterns, compute derived sum estimates and MOEs
-medhhinclt50 <- B19001 %>% 
-  filter(str_detect(variable,paste(med_strings,collapse = "|"))) %>% 
-  group_by(GEOID) %>% 
-  summarize(medhhinclt50E = sum(estimate),
-            medhhinclt50M = moe_sum(moe, estimate)) %>% 
-  mutate(medhhinclt50_UC = medhhinclt50E + medhhinclt50M,
-         medhhinclt50_LC = ifelse(
-           medhhinclt50E < medhhinclt50M, 0, medhhinclt50E - medhhinclt50M))
-# Join total households and compute derived proportions
-medhhinclt50_pct <- medhhinclt50 %>% 
-  left_join(., medhhinc_total, by = "GEOID") %>% 
-  mutate(r2medhhincE = ifelse(householdsE <= 0, 0, medhhinclt50E/householdsE),
-    r2medhhincM = moe_prop(medhhinclt50E,householdsE,medhhinclt50M,householdsM),
-    pct_medhhinclt50E = r2medhhincE*100,
-    pct_medhhinclt50M = r2medhhincM*100,
-    pct_medhhinclt50E_UC = pct_medhhinclt50E + pct_medhhinclt50M,
-    pct_medhhinclt50E_LC = ifelse(
-      pct_medhhinclt50E < pct_medhhinclt50M, 0, 
-      pct_medhhinclt50E - pct_medhhinclt50M)) %>% 
-  select(-starts_with("r2m"))
-# add variables to identify EJ criteria thresholds
-medhhinclt50_pct <- medhhinclt50_pct %>% 
-  mutate(MA_INCOME = if_else(pct_medhhinclt50E >= 25, "I", NULL),
-         MA_INCOME_UC = if_else(pct_medhhinclt50E_UC >= 25, "I", NULL),
-         MA_INCOME_LC = if_else(pct_medhhinclt50E_LC >= 25, "I", NULL))
-# clean up
-rm(B19001,med_strings,medhhinc_total,medhhinclt50)
+# # this is for 2017 MA EJ Policy
+# # download table of counts of household income categories, sum up households in categories below 65% of MA statewide median
+# B19001 <- map_df(ne_states, function(x) {
+#   get_acs(geography = "block group", table = "B19001", state = x)})
+# # Isolate estimate of total households
+# medhhinc_total <- B19001 %>% 
+#   filter(variable == "B19001_001") %>% 
+#   transmute(GEOID = GEOID,
+#             householdsE = estimate,
+#             householdsM = moe)
+# # Isolate household counts less than 65% of MA statewide median of $74,167, which is $48,208. Closest range is 45 - 49,9.
+# # create vector of patterns for medhhinc levels below 50k
+# med_strings <- rep(c(2:10)) %>% 
+#   formatC(width = 3, format = "d", flag = "0") # add leading 0s
+# # filter cases by patterns, compute derived sum estimates and MOEs
+# medhhinclt50 <- B19001 %>% 
+#   filter(str_detect(variable,paste(med_strings,collapse = "|"))) %>% 
+#   group_by(GEOID) %>% 
+#   summarize(medhhinclt50E = sum(estimate),
+#             medhhinclt50M = moe_sum(moe, estimate)) %>% 
+#   mutate(medhhinclt50_UC = medhhinclt50E + medhhinclt50M,
+#          medhhinclt50_LC = ifelse(
+#            medhhinclt50E < medhhinclt50M, 0, medhhinclt50E - medhhinclt50M))
+# # Join total households and compute derived proportions
+# medhhinclt50_pct <- medhhinclt50 %>% 
+#   left_join(., medhhinc_total, by = "GEOID") %>% 
+#   mutate(r2medhhincE = ifelse(householdsE <= 0, 0, medhhinclt50E/householdsE),
+#     r2medhhincM = moe_prop(medhhinclt50E,householdsE,medhhinclt50M,householdsM),
+#     pct_medhhinclt50E = r2medhhincE*100,
+#     pct_medhhinclt50M = r2medhhincM*100,
+#     pct_medhhinclt50E_UC = pct_medhhinclt50E + pct_medhhinclt50M,
+#     pct_medhhinclt50E_LC = ifelse(
+#       pct_medhhinclt50E < pct_medhhinclt50M, 0, 
+#       pct_medhhinclt50E - pct_medhhinclt50M)) %>% 
+#   select(-starts_with("r2m"))
+# # add variables to identify EJ criteria thresholds
+# medhhinclt50_pct <- medhhinclt50_pct %>% 
+#   mutate(MA_INCOME = if_else(pct_medhhinclt50E >= 25, "I", NULL),
+#          MA_INCOME_UC = if_else(pct_medhhinclt50E_UC >= 25, "I", NULL),
+#          MA_INCOME_LC = if_else(pct_medhhinclt50E_LC >= 25, "I", NULL))
+# # clean up
+# rm(B19001,med_strings,medhhinc_total,medhhinclt50)
 
+
+# join town data with MA income threshold to block groups in order to allow for definition of minority threshold for 2020 MA EJ POLICY
+ne_blkgrp_sf <- ne_towns_sf %>% 
+  transmute(TOWN = NAME, MA_INC_BELOW150 = MA_INC_BELOW150, 
+            MA_INC_BELOW150_UC = MA_INC_BELOW150_UC,
+            MA_INC_BELOW150_LC = MA_INC_BELOW150_LC) %>% 
+  st_join(ne_blkgrp_sf, ., largest = TRUE)
+# add variables to identify EJ criteria thresholds
+ne_blkgrp_sf <- ne_blkgrp_sf %>%
+  mutate(medhhincE_UC = medhhincE + medhhincM,
+         medhhincE_LC = medhhincE - medhhincM,
+         MA_INCOME = if_else(medhhincE <= .65*MA_MED_HHINC, "I", NULL),
+         MA_INCOME_UC = if_else(medhhincE_UC <= .65*MA_MED_HHINC, "I", NULL),
+         MA_INCOME_LC = if_else(medhhincE_LC <= .65*MA_MED_HHINC, "I", NULL))
 
 ### RATIO OF INCOME TO POVERTY LEVEL
 # Download ratio of income to poverty level in the past 12 months to calculate the number or percent of a block group’s population in households where the household income is less than or equal to twice the federal “poverty level.” More precisely, percent low-income is calculated as a percentage of those for whom the poverty ratio was known, as reported by the Census Bureau, which may be less than the full population in some block groups. More information on the federally-defined poverty threshold is available at http://www.census.gov/hhes/www/poverty/methods/definitions.html. Note also that poverty status is not determined for people living in institutional group quarters (i.e. prisons, college dormitories, military barracks, nursing homes), so these populations are not included in the poverty estimates (https://www.census.gov/topics/income-poverty/poverty/guidance/poverty-measures.html).
@@ -264,9 +289,9 @@ minority_pct <- minority_pct %>%
   mutate(minority_pctile = percent_rank(minority_pctE),
          minority_pctile_UC = percent_rank(minority_pctE_UC),
          minority_pctile_LC = percent_rank(minority_pctE_LC),
-         MA_MINORITY = if_else(minority_pctE >= 25, "M", NULL),
-         MA_MINORITY_UC = if_else(minority_pctE_UC >= 25, "M", NULL),
-         MA_MINORITY_LC = if_else(minority_pctE_LC >= 25, "M", NULL),
+         # MA_MINORITY = if_else(minority_pctE >= 25, "M", NULL),
+         # MA_MINORITY_UC = if_else(minority_pctE_UC >= 25, "M", NULL),
+         # MA_MINORITY_LC = if_else(minority_pctE_LC >= 25, "M", NULL),
          RI_MINORITY = if_else(minority_pctile >= 0.85, "M", NULL),
          RI_MINORITY_UC = if_else(minority_pctile_UC >= 0.85, "M", NULL),
          RI_MINORITY_LC = if_else(minority_pctile_LC >= 0.85, "M", NULL))
@@ -567,7 +592,18 @@ ne_blkgrp_sf <- ne_blkgrp_sf %>%
   left_join(., eng_limited_pct, by = "GEOID") %>% 
   left_join(., poverty_pct, by = "GEOID") %>% 
   left_join(., lths_pct, by = "GEOID") %>% 
-  left_join(., medhhinclt50_pct, by = "GEOID")
+  # left_join(., medhhinclt50_pct, by = "GEOID") %>% 
+  mutate(MA_MINORITY = 
+           if_else(minority_pctE >= 40 | (minority_pctE >= 25 & 
+                                          MA_INC_BELOW150 == "Y"), "M", NULL),
+         MA_MINORITY_UC = 
+           if_else(minority_pctE_UC >= 40 | (minority_pctE_UC >= 25 & 
+                                            MA_INC_BELOW150_UC == "Y"), 
+                   "M", NULL),
+         MA_MINORITY_LC = 
+           if_else(minority_pctE_LC >= 40 | (minority_pctE_LC >= 25 & 
+                                               MA_INC_BELOW150_LC == "Y"), 
+                   "M", NULL))
 
 # join demographic df to tracts
 ne_tracts_sf <- ne_tracts_sf %>% 
