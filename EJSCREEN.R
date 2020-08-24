@@ -9,6 +9,8 @@ library(rgdal)
 library(RColorBrewer)
 library(sp)
 library(CGPfunctions) # for slope graphs
+library(tigris)
+options(tigris_class = "sf")
 
 load("DATA/ne_layers.rds")
 
@@ -125,15 +127,12 @@ rm(EJSCREEN_15_19)
 
 # Assemble state boundaries and select cities for mapping
 # Download cartographic boundary file of states from tigris
-library(tigris)
 ne_states_sf_cb <- states(cb = TRUE) %>% 
   st_as_sf() %>% 
   filter(STUSPS %in% ne_states)
 # tm_shape(ne_states_sp) + tm_borders()
 
 # Create point layer of state capitols for context
-library(tigris)
-options(tigris_class = "sf")
 # Note cb=FALSE is necessary for extracting centroids from town polygons. Otherwise, if cb=TRUE, cannot extract centroids from multipolygon features.
 ne_towns_sf_pts <- ne_towns_sf <- rbind_tigris(
   lapply(
