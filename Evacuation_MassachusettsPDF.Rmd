@@ -236,6 +236,10 @@ townpopsdf <- ma_blkgrp_2805 %>%
 ma_state_sf_cb <- ne_states_sf_cb %>% 
   filter(NAME == "Massachusetts") %>% 
   st_transform(., crs = st_crs(ma_blkgrp_2805))
+
+# # save data for later analysis
+# save(ma_blkgrps_nfhza,ma_tracts_nfhza,
+#      file = "DATA/FEMA/MA/nfhza_census.Rds")
 ```
 
 As a humid, coastal state, a significant portion of Massachusetts's land area and population are exposed to the risk of flooding from overbanking of inland water bodies (e.g., ponds and rivers) or from coastal storm surge and sea level rise. 
@@ -908,6 +912,10 @@ ma_HevacPops_df <- ma_blkgrp_2805 %>%
   left_join(., ma_hevac_blkgrp_df, by = "Group") %>%
   rbind(.,ma_trama_hevac_pops_df) %>%
   mutate(PctHevac = HevacPop/MAPop*100)
+
+# save data for later analysis
+save(ma_blkgrps_hevac, ma_tracts_hevac, 
+     file = "DATA/FEMA/MA/hevac_census.Rds")
 ```
 
 Massachusetts is subject to significant hurricane risk. Since 1900, Massachusetts has been struck by hurricanes 8 times, and 3 of those were major hurricanes (i.e., Category 3 or higher). The most recent hurricane to hit Massachusetts directly was [Hurricane Bob in 1991](https://www.mass.gov/service-details/the-worst-massachusetts-hurricanes-of-the-20th-century),[^HurricaneBob] a Category 2 storm when it struck the Cape and Islands and south shore of Massachusetts. The latter caused over $39 million in damage in Massachusetts alone and left 60% of the state without power. Hurricane Sandy in 2012 did not hit Massachusetts directly, but nevertheless resulted in flooding of Massachusetts coastal communities. In general, the Cape and Islands of Massachusetts are subject to a [hurricane return period of approximately 13 - 16 years](https://www.nhc.noaa.gov/climo/#returns),[^HurricaneReturn] a level of risk comparable to the Gulf Coast states including Texas, Louisiana, and Florida. Boston Harbor is subject to a hurricane return period of approximately 30 years. 
