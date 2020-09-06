@@ -1,7 +1,7 @@
 ---
 title: "Transportation Burdens and Emissions in Massachusetts"
 author: "Marcos Luna and Neenah Estrella-Luna"
-date: "6/27/2020"
+date: "`r Sys.Date()`"
 output: 
   bookdown::pdf_document2:
     toc: true
@@ -1040,9 +1040,9 @@ ma_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "No HS Dip", y = 0.7, label = "Above state\naverage"),
+  geom_text(aes(x = "No HS Dip", y = 0.8, label = "Above state\naverage"),
             color = "gray48") +
-  geom_text(aes(x = "No HS Dip", y = -0.7, label = "Below state\naverage"),
+  geom_text(aes(x = "No HS Dip", y = -0.4, label = "Below state\naverage"),
             color = "gray48") +
   # geom_segment(aes(x = "Minority", xend = "Minority", y = 0.1, yend = 0.75), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
@@ -1376,15 +1376,33 @@ knitr::include_graphics("DATA/EJSCREEN/ma_CO2change.png")
 At the state level the differences in these changes are also apparent, although less extreme than at the Census block group level. Table \@ref(tab:changeCO2MA) shows summary statistics of CO~2~ emissions for the state as a whole. Figure \@ref(fig:linegraphCO2MA) shows annual CO~2~ emissions between 1990 and 2017. Total on-road CO~2~ emissions for the state increased dramatically between 1990 and and 2005. Since 2005 emissions have shown a slight downward trend. 
 
 ```{r changeCO2MA, fig.align = "center", fig.cap="Annual 2017 CO2 emissions (mtons) and Percent Change by state at Census Block Group level."}
-# acquire table of 1990 state pop values
+# acquire table of 2017 statewide values
 library(tidycensus)
 census_api_key("f2776fbc29cf847505de9308a82c8d65290d16b3")
-ne_states_df90 <- map_df(ne_states, function(x) {
-    get_decennial(geography = "state", 
-            variables = c(pop90 = "P0010001"),
-            state = x, output = "wide", year = 1990)
-  }) %>% 
-  select(-GEOID)
+ne_states_df <- map_df(ne_states, function(x) {
+  get_acs(geography = "state", 
+          variables = c(totalpop = "B03002_001",
+                        medhhinc = "B19013_001"),
+          state = x, output = "wide")
+})
+
+# acquire table of 1990 state pop values
+# ne_states_df90 <- map_df(ne_states, function(x) {
+#     get_decennial(geography = "state", 
+#             variables = c(pop90 = "P0010001"),
+#             state = x, output = "wide", year = 1990)
+#   }) %>% 
+#   select(-GEOID)
+
+# bring in 1990 state level decennial census data from census ftp because API has changed as of 9/4/20
+library(foreign)
+# note ues of method="curl" otherwise renames columns
+download.file("https://www2.census.gov/census_1990/CD90_1A_1/stf1a0ma.dbf",
+              destfile = "DATA/stf1a0ma.dbf", method = "curl")
+# reformat df to work in code below
+ne_states_df90 <- read.dbf("DATA/stf1a0ma.dbf", as.is = TRUE) %>% 
+  transmute(NAME = ANPSADPI, pop90 = P0010001) %>% 
+  slice(1)
 
 ma_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -1779,9 +1797,9 @@ ma_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "MA Low Income", y = 12, label = "Above state\naverage"),
+  geom_text(aes(x = "MA Low Income", y = 25, label = "Above state\naverage"),
             color = "gray48") +
-  geom_text(aes(x = "MA Low Income", y = -12, label = "Below state\naverage"),
+  geom_text(aes(x = "MA Low Income", y = -10, label = "Below state\naverage"),
             color = "gray48") +
   # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1, yend = 15), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
@@ -2071,9 +2089,9 @@ ma_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "Under 5", y = 4, label = "Above state\naverage"),
+  geom_text(aes(x = "No HS Dip", y = 4.5, label = "Above state\naverage"),
             color = "gray48") +
-  geom_text(aes(x = "Under 5", y = -2.8, label = "Below state\naverage"),
+  geom_text(aes(x = "No HS Dip", y = -2.8, label = "Below state\naverage"),
             color = "gray48") +
   # geom_segment(aes(x = "MA Low Income", xend = "MA Low Income", y = 1, yend = 5), arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-4,13))
@@ -2361,9 +2379,9 @@ ma_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "Under 5", y = 5, label = "Above state\naverage"),
+  geom_text(aes(x = "Low Income", y = 7, label = "Above state\naverage"),
             color = "gray48") +
-  geom_text(aes(x = "Under 5", y = -4.1, label = "Below state\naverage"),
+  geom_text(aes(x = "Low Income", y = -4.1, label = "Below state\naverage"),
             color = "gray48") +
   # geom_segment(aes(x = "MA Low Income", xend = "MA Low Income", y = 1, yend = 7), arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-6,20))
@@ -2637,9 +2655,9 @@ ma_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "No HS Dip", y = 40, label = "Above state\naverage"),
+  geom_text(aes(x = "Low Income", y = 41, label = "Above state\naverage"),
             color = "gray48") +
-  geom_text(aes(x = "No HS Dip", y = -20, label = "Below state\naverage"),
+  geom_text(aes(x = "Low Income", y = -20, label = "Below state\naverage"),
             color = "gray48") +
   # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1, yend = 30), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
@@ -2772,7 +2790,7 @@ The American Community Survey (ACS) is an ongoing survey by the U.S. Census Bure
 
 The ACS provides greater demographic detail and temporal resolution than the decennial Census, but its geographic resolution is more limited. While the decennial Census is based on an enumeration (i.e., a total count) of everyone in the U.S. once every decade, the ACS is based on a statistical sample of approximately 3.5 million addresses across the country each year. As a result of this sampling approach, the ACS estimates must be pooled, or combined, across multiple years in order to provide reliable estimates for smaller areas (i.e. areas with less than 20,000 people), such as at the Tract or Block Group levels. While it is possible to know the number of low income households across the U.S. annually, one may only know this about a Tract or Block Group based on 5-year estimates. Since 2010, the ACS has published 5-year data (beginning with 2005–2009 estimates) for all geographic areas down to the census Tract and Block Group levels. For more detail on the ACS, see Understanding and Using American Community Survey Data: What All Data Users Need to Know at https://www.census.gov/programs-surveys/acs/guidance/handbooks/general.html.
 
-For the purposes of this analysis ACS 5-year estimates for the period 2013 - 2017 for Census Tracts and Block Groups in New England, as well as their associated TIGER/Line spatial files, were downloaded from the Census Bureau via API using the tigris package in R. Demographic variables consistent with those used by the EPA in EJSCREEN were chosen, as well as environmental justice population thresholds used by states where available. Table \@ref(tab:ACSvariables) below lists the demographic variables that were downloaded directly or computed from ACS variables:
+For the purposes of this analysis ACS 5-year estimates for the period 2014 - 2018 for Census Tracts and Block Groups in New England, as well as their associated TIGER/Line spatial files, were downloaded from the Census Bureau via API using the tigris package in R. Demographic variables consistent with those used by the EPA in EJSCREEN were chosen, as well as environmental justice population thresholds used by states where available. Table \@ref(tab:ACSvariables) below lists the demographic variables that were downloaded directly or computed from ACS variables:
 ```{r ACSvariables}
 ACSvDF <- data.frame(Variable = c("Total Population",
                                   "Minority",
