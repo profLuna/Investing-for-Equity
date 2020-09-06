@@ -7,7 +7,7 @@ library(sf)
 library(tigris)
 options(tigris_use_cache = TRUE, tigris_class = "sf")
 
-census_api_key("f2776fbc29cf847505de9308a82c8d65290d16b3")
+census_api_key("f2776fbc29cf847505de9308a82c8d65290d16b3", install = TRUE)
 
 # Load list of variables to identify tables of interest
 v18 <- load_variables(2018, "acs5", cache = TRUE)
@@ -102,7 +102,7 @@ ne_towns_df <- ne_towns_df %>%
 ne_towns_sf <- rbind_tigris(
   lapply(
     ne_states, function(x){
-      county_subdivisions(state = x, cb = TRUE)
+      county_subdivisions(state = x, cb = TRUE, year = 2019)
     }
   )
 )
