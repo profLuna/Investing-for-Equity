@@ -1,7 +1,7 @@
 ---
 title: "Evacuation Risks in Massachusetts"
 author: "Marcos Luna and Neenah Estrella-Luna"
-date: "3/22/2020"
+date: "`r Sys.Date()`"
 output: 
   bookdown::pdf_document2:
     toc: true
@@ -244,7 +244,7 @@ ma_state_sf_cb <- ne_states_sf_cb %>%
 
 As a humid, coastal state, a significant portion of Massachusetts's land area and population are exposed to the risk of flooding from overbanking of inland water bodies (e.g., ponds and rivers) or from coastal storm surge and sea level rise. 
 
-The analysis of flood exposure presented here is based on the Federal Emergency Management Agency's (FEMA) National Flood Hazard Layer (NFHL), a digital version of FEMA's most recent flood maps.[^NFHL]  FEMA identifies areas subject to varying levels of flood risk through its Flood Insurance Rate Maps (FIRMs), which are produced for most parts of the country to identify areas subject to flooding. FEMA's FIRMs are a national standard used by all federal agencies for the purposes of requiring and rating the purchase of flood insurance and regulating new development.  Population data comes from the American Community Survey (ACS) 2017 5-year estimates at the census tract and block group levels. 
+The analysis of flood exposure presented here is based on the Federal Emergency Management Agency's (FEMA) National Flood Hazard Layer (NFHL), a digital version of FEMA's most recent flood maps.[^NFHL]  FEMA identifies areas subject to varying levels of flood risk through its Flood Insurance Rate Maps (FIRMs), which are produced for most parts of the country to identify areas subject to flooding. FEMA's FIRMs are a national standard used by all federal agencies for the purposes of requiring and rating the purchase of flood insurance and regulating new development.  Population data comes from the American Community Survey (ACS) 2018 5-year estimates at the census tract and block group levels. 
 
 A significant proportion of Massachusetts's population lives near the coast or near inland water bodies. As a result, a significant proportion of the population lives near or within known flood zones. Figure \@ref(fig:mapNFHZAPop) below shows the population distribution and areas subject to floods with an Annual Exceedance Probability (AEP) of 1% (also known as a '100-year' flood) and areas subject to 0.2% AEP (also known as a '500-year' flood). Areas within the 1% AEP flood zone are designated by FEMA as Special Flood Hazard Areas, and development within those zones must be covered by flood insurance. Areas within the 0.2% AEP are not currently regulated, but these areas are nevertheless subject to flood risk under more extreme, albeit less frequent, flooding circumstances. Coastal areas within the 0.2% AEP zone are a reasonable proxy measure for the risks of sea level rise. Note that portions of northwest and northeast Massachusetts are not currently mapped for flooding risk by FEMA. 
 ```{r mapNFHZAdata, include=FALSE}
@@ -922,7 +922,7 @@ Massachusetts is subject to significant hurricane risk. Since 1900, Massachusett
 
 Hurricane intensity is ranked from 1 to 5 on the Saffir-Simpson scale, which is based on sustained wind speeds. However the most destructive and deadly aspects of hurricanes are due to storm surge - ocean water pushed inland by the high winds. This coastal storm surge may be combined with intense rainfall which can exacerbate flooding. As a result, coastal evacuation may be necessary as a hurricane approaches.
 
-The analysis of hurricane evacuation risk presented here is based on Hurricane Evacuation Maps produced by the U.S. Army Corps of Engineers for New England. The maps show Hurricane Evacuation Zones that are recommended to be evacuated  during potential worst-case hurricane storm surge inundation. These evacuation zones are based on [storm surge modeling by the National Weather Service's National Hurricane Center](https://www.nhc.noaa.gov/nationalsurge/) using the hydrodynamic Sea, Lake, and Overland Surges from Hurricanes (SLOSH) model to simulate storm surge from tropical cyclones.[^NHCsloshMaps] These data products are provided to federal, state, and local government agencies to assist in planning, risk assessment studies, and operational decision-making. Population data comes from the American Community Survey (ACS) 2017 5-year estimates at the census tract and block group levels. 
+The analysis of hurricane evacuation risk presented here is based on Hurricane Evacuation Maps produced by the U.S. Army Corps of Engineers for New England. The maps show Hurricane Evacuation Zones that are recommended to be evacuated  during potential worst-case hurricane storm surge inundation. These evacuation zones are based on [storm surge modeling by the National Weather Service's National Hurricane Center](https://www.nhc.noaa.gov/nationalsurge/) using the hydrodynamic Sea, Lake, and Overland Surges from Hurricanes (SLOSH) model to simulate storm surge from tropical cyclones.[^NHCsloshMaps] These data products are provided to federal, state, and local government agencies to assist in planning, risk assessment studies, and operational decision-making. Population data comes from the American Community Survey (ACS) 2018 5-year estimates at the census tract and block group levels. 
 
 A significant proportion of Massachusetts's population lives near the coast and is therefore within these hurricane evacuation zones. Figure \@ref(fig:mapHEVACPop) below shows the population distribution and areas within Hurricane Evacuation Zones. Evacuation Zone “A” is recommended to be evacuated prior to an expected category 1 or 2 hurricane.  Evacuation Zone “B” is recommended to be evacuated prior to an expected category 3 or 4 hurricane.
 
@@ -1062,9 +1062,9 @@ ma_HevacPops_df %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = ma_HevacPops_df[1,4], linetype = "dashed") +
-  geom_text(aes(x = "MA Low Income", y = 21, label = "Above state\naverage"),
+  geom_text(aes(x = "MA Low Income", y = 24, label = "Above state\naverage"),
             color = "gray48") +
-  geom_text(aes(x = "MA Low Income", y = 8, label = "Below state\naverage"),
+  geom_text(aes(x = "MA Low Income", y = 8.5, label = "Below state\naverage"),
             color = "gray48") +
   # geom_segment(aes(x = "Total Pop", xend = "Total Pop", y = 15, yend = 22), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
@@ -1391,7 +1391,7 @@ The ACS provides greater demographic detail and temporal resolution than the dec
 
 All data was analyzed or aggregated geographically by Census Tract and Block Group. A Census Tract is a small, relatively permanent statistical subdivision of a county that contains between 1,200 and 8,000 people. The entire area of a county is covered by Census Tracts, just as the entire area of a state is covered by counties or county equivalents. Census Tracts range in areal size depending on the population density; areal sizes are smaller in denser areas and larger in less densely populated areas. Census Block Groups are subdivisions of Census Tracts that contain between 600 and 3,000 people. Like Tracts, Block Groups range in areal size depending on the population density of the area. Block Groups are the smallest geographic unit at which detailed demographic and household data from the American Community Survey is made available by the U.S. Census Bureau. 
 
-For the purposes of this analysis ACS 5-year estimates for the period 2013 - 2017 for Census Tracts and Block Groups in New England, as well as their associated TIGER/Line spatial files, were downloaded from the Census Bureau via API using the `tigris` package in R. Demographic variables consistent with those used by the EPA in EJSCREEN were chosen, as well as environmental justice population thresholds used by states where available. Table \@ref(tab:ACSvariables) below lists the demographic variables that were downloaded directly or computed from ACS variables:
+For the purposes of this analysis ACS 5-year estimates for the period 2014 - 2018 for Census Tracts and Block Groups in New England, as well as their associated TIGER/Line spatial files, were downloaded from the Census Bureau via API using the `tigris` package in R. Demographic variables consistent with those used by the EPA in EJSCREEN were chosen, as well as environmental justice population thresholds used by states where available. Table \@ref(tab:ACSvariables) below lists the demographic variables that were downloaded directly or computed from ACS variables:
 
 ```{r ACSvariables}
 ACSvDF <- data.frame(Variable = c("Total Population",
