@@ -1,7 +1,7 @@
 ---
 title: "Heat Risk in Massachusetts"
 author: "Marcos Luna and Neenah Estrella-Luna"
-date: "5/30/2020"
+date: "`r Sys.Date()`"
 output: 
   bookdown::pdf_document2:
     toc: true
