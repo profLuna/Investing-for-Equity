@@ -1071,7 +1071,7 @@ ma_HevacPops_df %>%
   expand_limits(y = c(6,40))
 ```
 
-The maps below (Figures \@ref(fig:mapHEVACPopConcern1) and \@ref(fig:mapHEVACPopConcern2)) show limited English speaking households and households without a car which are disproportionately exposed to hurricane evacuation risk. Maps for other populations of concern can be found in Figures \@ref(fig:mapHEVACPopConcern3) to \@ref(fig:mapHEVACPopConcern12) as well as breakdowns by municipality in Tables \@ref(tab:tabHEVACMALEH) to \@ref(tab:mapHEVACU18) in Appendix B.
+The maps below (Figures \@ref(fig:mapHEVACPopConcern1) and \@ref(fig:mapHEVACPopConcern2)) show limited English speaking households and households without a car which are disproportionately exposed to hurricane evacuation risk. Maps for other populations of concern can be found in Figures \@ref(fig:mapHEVACPopConcern3) to \@ref(fig:mapHEVACPopConcern12) as well as breakdowns by municipality in Tables \@ref(tab:tabHEVACMALEH) to \@ref(tab:tabHEVACU18) in Appendix B.
 
 ```{r mapHEVACPopConcern, include=FALSE}
 # # Create a dot density map of over-represented populations in hurricane evacuation zones
