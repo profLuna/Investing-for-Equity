@@ -597,7 +597,7 @@ m <- tm_shape(ma_blkgrpLST_sf, unit = "mi") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Day-Night Average\nLand Surface\nTemperatures\nJuly-Aug 2019", 
+  tm_layout(title = "Day-Night Avg\nLand Surface\nTemperatures\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -690,7 +690,7 @@ m <- tm_shape(ma_blkgrpLST_sf, unit = "mi") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Day-Night Average\nUrban Heat Island\nJuly-Aug 2019", 
+  tm_layout(title = "Day-Night Avg\nUrban Heat\nIsland\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -850,7 +850,7 @@ LST24hrPopTab <- ma_blkgrpLST_sf %>%
                        paste0(round(Pct,2),"%")))
 ```
 
-In addition to variations in the general geography of Land Surface Temperatures (LST), temperature exposure also varies demographically. Figure \@ref(fig:plotLST24hrTempPopAvgMA) and Table \@ref(tab:tabLST24hrPopAvgMA) show population-weighted exposures for populations of concern relative to the day-night average LST for the state of `r round(mean(ma_blkgrpLST_sf$meanAvgLST,na.rm=TRUE),1)`°. For example, limited English speaking households in Massachusetts, as defined by the state's environmental justice policy, were exposed to a population-weighted day-night average LST of `r round(max(LST24hrPop$LST24hrwMean),1)`°, approximately `r round(max(LST24hrPop$LST24hrwMean) - max(LST24hrPop$LST24hrMean),1)`° (`r LST24hrPopTab[1,4]`) above the state day-night average LST. Similarly, minorities, as defined by the state's environmental justice policy,  were exposed to a population-weighted day-night average LST of `r LST24hrPop %>% filter(Group == "MA Minority") %>% summarize(round(max(LST24hrwMean),1)) %>% pull()`°, over `r round(LST24hrPop %>% filter(Group == "MA Minority") %>% summarize(max(LST24hrwMean)) %>% pull() - max(LST24hrPop$LST24hrMean),1)`° (`r LST24hrPopTab[3,4]`) above the state day-night average LST. By contrast, persons over age 64 were, on average, exposed to population-weighted day-night average LSTs of `r LST24hrPopTab[8,3]` below the state average.
+In addition to variations in the general geography of Land Surface Temperatures (LST), temperature exposure also varies demographically. Figure \@ref(fig:plotLST24hrTempPopAvgMA) and Table \@ref(tab:tabLST24hrPopAvgMA) show population-weighted exposures for populations of concern relative to the day-night average LST for the state of `r round(mean(ma_blkgrpLST_sf$meanAvgLST,na.rm=TRUE),1)`°. For example, limited English speaking households in Massachusetts, as defined by the state's environmental justice policy, were exposed to a population-weighted day-night average LST of `r round(max(LST24hrPop$LST24hrwMean),1)`°, approximately `r round(max(LST24hrPop$LST24hrwMean) - max(LST24hrPop$LST24hrMean),1)`° (`r LST24hrPopTab[3,4]`) above the state day-night average LST. Similarly, minorities, as defined by the state's environmental justice policy,  were exposed to a population-weighted day-night average LST of `r LST24hrPop %>% filter(Group == "MA Minority") %>% summarize(round(max(LST24hrwMean),1)) %>% pull()`°, over `r round(LST24hrPop %>% filter(Group == "MA Minority") %>% summarize(max(LST24hrwMean)) %>% pull() - max(LST24hrPop$LST24hrMean),1)`° (`r LST24hrPopTab[5,4]`) above the state day-night average LST. By contrast, persons over age 64 were, on average, exposed to population-weighted day-night average LSTs of `r LST24hrPopTab[8,3]` below the state average.
 
 ```{r plotLST24hrTempPopAvgMA, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average temperatures for populations of concern in Massachusetts relative to the state average."}
 LST24hrPop %>% 
@@ -1005,7 +1005,7 @@ UHI24hrPopTab <- ma_blkgrpLST_sf %>%
                        paste0(round(Pct,2),"%")))
 ```
 
-Figure \@ref(fig:plotUHI24hrTempPopAvgMA) and Table \@ref(tab:tabUHI24hrPopAvgMA) show population-weighted exposures for populations of concern relative to the day-night average Urban Heat Island (UHI) effect for Massachusetts. All populations of concern are exposed to the UHI effect on average. Indeed, the average UHI effect across Massachusetts is approximately `r round(mean(ma_blkgrpLST_sf$UHI24avg,na.rm=TRUE),1)`°. However, some populations experience significantly higher UHI effects. For example, limited English speaking households in Massachusetts, as defined by the state's environmental justice policy, were exposed to a population-weighted day-night average UHI effect of `r round(max(UHI24hrPop$UHI24hrwMean),1)`° above the rural average. This value is more than `r round(max(UHI24hrPop$UHI24hrwMean) - max(UHI24hrPop$UHI24hrMean),1)`° (`r UHI24hrPopTab[1,4]`) above the state day-night average UHI. Similarly, minorities, as defined by the state's environmental justice policy, were exposed to a population-weighted day-night average UHI effect of `r UHI24hrPop %>% filter(Group == "MA Minority") %>% summarize(round(max(UHI24hrwMean),1)) %>% pull()`°, approximately `r round(UHI24hrPop %>% filter(Group == "MA Minority") %>% summarize(max(UHI24hrwMean)) %>% pull() - max(UHI24hrPop$UHI24hrMean),1)`° (`r UHI24hrPopTab[5,4]`) above the state day-night average UHI. By contrast, persons over age 64 were, on average, were exposed to a population-weighted day-night average UHI `r UHI24hrPopTab[8,3]` (`r UHI24hrPopTab[8,4]`) below the state average.
+Figure \@ref(fig:plotUHI24hrTempPopAvgMA) and Table \@ref(tab:tabUHI24hrPopAvgMA) show population-weighted exposures for populations of concern relative to the day-night average Urban Heat Island (UHI) effect for Massachusetts. All populations of concern are exposed to the UHI effect on average. Indeed, the average UHI effect across Massachusetts is approximately `r round(mean(ma_blkgrpLST_sf$UHI24avg,na.rm=TRUE),1)`°. However, some populations experience significantly higher UHI effects. For example, limited English speaking households in Massachusetts, as defined by the state's environmental justice policy, were exposed to a population-weighted day-night average UHI effect of `r round(max(UHI24hrPop$UHI24hrwMean),1)`° above the rural average. This value is more than `r round(max(UHI24hrPop$UHI24hrwMean) - max(UHI24hrPop$UHI24hrMean),1)`° (`r UHI24hrPopTab[3,4]`) above the state day-night average UHI. Similarly, minorities, as defined by the state's environmental justice policy, were exposed to a population-weighted day-night average UHI effect of `r UHI24hrPop %>% filter(Group == "MA Minority") %>% summarize(round(max(UHI24hrwMean),1)) %>% pull()`°, approximately `r round(UHI24hrPop %>% filter(Group == "MA Minority") %>% summarize(max(UHI24hrwMean)) %>% pull() - max(UHI24hrPop$UHI24hrMean),1)`° (`r UHI24hrPopTab[5,4]`) above the state day-night average UHI. By contrast, persons over age 64 were, on average, were exposed to a population-weighted day-night average UHI `r UHI24hrPopTab[8,3]` (`r UHI24hrPopTab[8,4]`) below the state average.
 
 ```{r plotUHI24hrTempPopAvgMA, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average Urban Heat Island effect for populations of concern in Massachusetts."}
 UHI24hrPop %>% 
@@ -1235,12 +1235,13 @@ m <- tm_shape(LST24MinorityMA5, unit = "mi", bbox = bbox_new) + tm_fill(col = "r
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Day-Night Avg\nTemps for\nMA Minorities\nJuly-Aug 2019", 
+  tm_layout(title = "Highest\nExposure and\nVulnerability\nto Day-Night\nAvg Temps for\nMA Minorities\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"),
-            legend.hist.width = 0.9)
+            legend.hist.width = 0.9,
+            legend.text.size = 0.5)
 
 tmap_save(m, "DATA/LST/ma_LST24MinorityMA5.png",
           height = 5, width = 8, units = "in", dpi = 600)
@@ -1411,7 +1412,7 @@ m <- tm_shape(ma_blkgrpLST_sf, unit = "mi") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Daytime\nUrban Heat Island\nJuly-Aug 2019", 
+  tm_layout(title = "Daytime\nUrban Heat\nIsland\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1728,7 +1729,7 @@ UHIDayPopTab <- ma_blkgrpLST_sf %>%
                        paste0(round(Pct,2),"%")))
 ```
 
-Figure \@ref(fig:plotUHIDayTempPopAvgMA) and Table \@ref(tab:tabUHIDayPopAvgMA) show population-weighted exposures for populations of concern relative to the average daytime average Urban Heat Island (UHI) effect for the state. All populations of concern are exposed to the UHI effect on average. Indeed, the average UHI effect across the state is approximately `r round(mean(ma_blkgrpLST_sf$UHIDay,na.rm=TRUE),1)`°. However, some populations experience significantly higher UHI effects. For example, limited English speaking households in Massachusetts, as defined by the state's environmental justice policy, were exposed to a population-weighted daytime average UHI effect of `r round(max(UHIDayPop$UHIDaywMean),1)`° above the rural average. This value is more than `r round(max(UHIDayPop$UHIDaywMean) - max(UHIDayPop$UHIDayMean),1)`° (`r UHIDayPopTab[3,4]`) above the state daytime average UHI. Similarly, minorities, as defined by the state's environmental justice policy, were exposed to a population-weighted daytime average UHI effect of `r UHIDayPop %>% filter(Group == "MA Minority") %>% summarize(round(max(UHIDaywMean),1)) %>% pull()`°, approximately `r round(UHIDayPop %>% filter(Group == "MA Minority") %>% summarize(max(UHIDaywMean)) %>% pull() - max(UHIDayPop$UHIDayMean),1)`° (`r UHIDayPopTab[5,4]`) above the state daytime average UHI. By contrast, persons over age 64 were, on average, exposed to population-weighted daytime average UHI `r UHIDayPopTab[8,3]`° (`r UHIDayPopTab[8,4]`) below the state average.
+Figure \@ref(fig:plotUHIDayTempPopAvgMA) and Table \@ref(tab:tabUHIDayPopAvgMA) show population-weighted exposures for populations of concern relative to the average daytime average Urban Heat Island (UHI) effect for the state. All populations of concern are exposed to the UHI effect on average. Indeed, the average UHI effect across the state is approximately `r round(mean(ma_blkgrpLST_sf$UHIDay,na.rm=TRUE),1)`°. However, some populations experience significantly higher UHI effects. For example, limited English speaking households in Massachusetts, as defined by the state's environmental justice policy, were exposed to a population-weighted daytime average UHI effect of `r round(max(UHIDayPop$UHIDaywMean),1)`° above the rural average. This value is more than `r round(max(UHIDayPop$UHIDaywMean) - max(UHIDayPop$UHIDayMean),1)`° (`r UHIDayPopTab[3,4]`) above the state daytime average UHI. Similarly, minorities, as defined by the state's environmental justice policy, were exposed to a population-weighted daytime average UHI effect of `r UHIDayPop %>% filter(Group == "MA Minority") %>% summarize(round(max(UHIDaywMean),1)) %>% pull()`°, approximately `r round(UHIDayPop %>% filter(Group == "MA Minority") %>% summarize(max(UHIDaywMean)) %>% pull() - max(UHIDayPop$UHIDayMean),1)`° (`r UHIDayPopTab[5,4]`) above the state daytime average UHI. By contrast, persons over age 64 were, on average, exposed to population-weighted daytime average UHI `r UHIDayPopTab[8,3]` (`r UHIDayPopTab[8,4]`) below the state average.
 
 ```{r plotUHIDayTempPopAvgMA, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to daytime Urban Heat Island effect for populations of concern in Massachusetts."}
 UHIDayPop %>% 
@@ -1962,12 +1963,13 @@ bbox_new <- bbox_new %>%  # take the bounding box ...
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) + 
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Daytime Avg\nTemps for\nMA Minorities\nJuly-Aug 2019", 
+  tm_layout(title = "Highest\nExposure and\nVulnerability to\nDaytime Avg\nTemps for\nMA Minorities\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"),
-            legend.hist.width = 0.9)
+            legend.hist.width = 0.9, 
+            legend.text.size = 0.5)
  
  tmap_save(m, "DATA/LST/ma_LSTDayMinorityMA5.png",
           height = 5, width = 8, units = "in", dpi = 600)
@@ -2137,7 +2139,7 @@ m <- tm_shape(ma_blkgrpLST_sf, unit = "mi") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Nighttime\nUrban Heat Island\nJuly-Aug 2019", 
+  tm_layout(title = "Nighttime\nUrban Heat\nIsland\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2453,7 +2455,7 @@ UHINightPopTab <- ma_blkgrpLST_sf %>%
                        paste0(round(Pct,2),"%")))
 ```
 
-Figure \@ref(fig:plotUHINightTempPopAvgMA) and Table \@ref(tab:tabUHINightPopAvgMA) show population-weighted exposures for populations of concern relative to the average daytime average Urban Heat Island (UHI) effect for the state. All populations of concern are exposed to the UHI effect on average. Indeed, the average UHI effect across the state is approximately `r round(mean(ma_blkgrpLST_sf$UHINight,na.rm=TRUE),1)`°. However, some populations experience significantly higher UHI effects. For example, limited English speaking households in Massachusetts, as defined by the state's environmental justice policy, were exposed to a population-weighted daytime average UHI effect of `r round(max(UHINightPop$UHINightwMean),1)`° above the rural average. This value is more than `r round(max(UHINightPop$UHINightwMean) - max(UHINightPop$UHINightMean),1)`° (`r UHINightPopTab[3,4]`) above the state daytime average UHI. Similarly, minorities were exposed to a population-weighted daytime average UHI effect of `r UHINightPop %>% filter(Group == "MA Minority") %>% summarize(round(max(UHINightwMean),1)) %>% pull()`°, approximately `r round(UHINightPop %>% filter(Group == "MA Minority") %>% summarize(max(UHINightwMean)) %>% pull() - max(UHINightPop$UHINightMean),1)`° (`r UHINightPopTab[5,4]`) above the state daytime average UHI. By contrast, persons over age 64 were, on average, exposed to population-weighted daytime average UHI of `r UHINightPop %>% filter(Group == "Over 64") %>% summarize(round(max(UHINightwMean),1)) %>% pull()`° (`r UHINightPopTab[8,4]`) below the state average.
+Figure \@ref(fig:plotUHINightTempPopAvgMA) and Table \@ref(tab:tabUHINightPopAvgMA) show population-weighted exposures for populations of concern relative to the average daytime average Urban Heat Island (UHI) effect for the state. All populations of concern are exposed to the UHI effect on average. Indeed, the average UHI effect across the state is approximately `r round(mean(ma_blkgrpLST_sf$UHINight,na.rm=TRUE),1)`°. However, some populations experience significantly higher UHI effects. For example, limited English speaking households in Massachusetts, as defined by the state's environmental justice policy, were exposed to a population-weighted daytime average UHI effect of `r round(max(UHINightPop$UHINightwMean),1)`° above the rural average. This value is more than `r round(max(UHINightPop$UHINightwMean) - max(UHINightPop$UHINightMean),1)`° (`r UHINightPopTab[3,4]`) above the state daytime average UHI. Similarly, minorities, as defined by the state's environmental justice policy, were exposed to a population-weighted daytime average UHI effect of `r UHINightPop %>% filter(Group == "MA Minority") %>% summarize(round(max(UHINightwMean),1)) %>% pull()`°, approximately `r round(UHINightPop %>% filter(Group == "MA Minority") %>% summarize(max(UHINightwMean)) %>% pull() - max(UHINightPop$UHINightMean),1)`° (`r UHINightPopTab[5,4]`) above the state daytime average UHI. By contrast, persons over age 64 were, on average, exposed to population-weighted daytime average UHI of `r UHINightPop %>% filter(Group == "Over 64") %>% summarize(round(max(UHINightwMean),1)) %>% pull()`° (`r UHINightPopTab[8,4]`) below the state average.
 
 ```{r plotUHINightTempPopAvgMA, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to nighttime Urban Heat Island effect for populations of concern in Massachusetts."}
 UHINightPop %>% 
@@ -2591,12 +2593,12 @@ m <- LSTNightEngLangMA5 %>%
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) + 
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Nighttime Avg\nTemps for MA\nLimited English\nSpeaking\nHouseholds\nJuly-Aug 2019", 
+  tm_layout(title = "Highest\nExposure and\nVulnerability to\nNighttime Avg\nTemps for MA\nLimited English\nSpeaking\nHouseholds\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
-            legend.title.size = 0.8,
             legend.outside.position = c("right", "top"),
-            legend.hist.width = 0.9)
+            legend.hist.width = 0.9,
+            legend.title.size = 0.5)
 
 tmap_save(m, "DATA/LST/ma_LSTNightEngLangMA5.png",
           height = 5, width = 8, units = "in", dpi = 600)
@@ -2687,12 +2689,13 @@ m <- LSTNightMinorityMA5 %>%
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) + 
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Nighttime Avg\nTemps for\nMA Minorities\nJuly-Aug 2019", 
+  tm_layout(title = "Highest\nExposure and\nVulnerability to\nNighttime Avg\nTemps for\nMA Minorities\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"),
-            legend.hist.width = 0.9)
+            legend.hist.width = 0.9,
+            legend.text.size = 0.5)
 
 tmap_save(m, "DATA/LST/ma_LSTNightMinorityMA5.png",
           height = 5, width = 8, units = "in", dpi = 600)
@@ -3132,12 +3135,13 @@ m <- tm_shape(LST24EngLang5, unit = "mi" , bbox = bbox_new) + tm_fill(col = "red
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Day-Night Avg\nTemps for Limited\nEnglish Speaking\nHouseholds\nJuly-Aug 2019", 
+  tm_layout(title = "Highest\nExposure and\nVulnerability to\nDay-Night Avg\nTemps for\nLimited\nEnglish\nSpeaking\nHouseholds\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"),
-            legend.hist.width = 0.9)
+            legend.hist.width = 0.9,
+            legend.text.size = 0.5)
 
 tmap_save(m, "DATA/LST/ma_LST24EngLang5.png",
           height = 5, width = 8, units = "in", dpi = 600)
@@ -3223,12 +3227,13 @@ m <- tm_shape(LST24Minority5, unit = "mi", bbox = bbox_new) + tm_fill(col = "red
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Day-Night Avg\nTemps for\nMinorities\nJuly-Aug 2019", 
+  tm_layout(title = "Highest\nExposure and\nVulnerability to\nDay-Night Avg\nTemps for\nMinorities\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"),
-            legend.hist.width = 0.9)
+            legend.hist.width = 0.9,
+            legend.text.size = 0.5)
 
 tmap_save(m, "DATA/LST/ma_LST24Minority5.png",
           height = 5, width = 8, units = "in", dpi = 600)
@@ -3315,12 +3320,13 @@ m <- tm_shape(LST24LowIncMA5, unit = "mi" , bbox = bbox_new) + tm_fill(col = "re
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Day-Night Avg\nTemps for MA Low\nIncome Persons\nJuly-Aug 2019", 
+  tm_layout(title = "Highest\nExposure and\nVulnerability to\nDay-Night Avg\nTemps for MA\nLow Income\nPersons\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"),
-            legend.hist.width = 0.9)
+            legend.hist.width = 0.9,
+            legend.text.size = 0.5)
 
 tmap_save(m, "DATA/LST/ma_LST24LowIncMA5.png",
           height = 5, width = 8, units = "in", dpi = 600)
@@ -3407,12 +3413,13 @@ m <- tm_shape(LST24LowInc5, unit = "mi" , bbox = bbox_new) + tm_fill(col = "red"
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Day-Night Avg\nTemps for Low\nIncome Persons\nJuly-Aug 2019", 
+  tm_layout(title = "Highest\nExposure and\nVulnerability to\nDay-Night Avg\nTemps for Low\nIncome Persons\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"),
-            legend.hist.width = 0.9)
+            legend.hist.width = 0.9,
+            legend.text.size = 0.5)
 
 tmap_save(m, "DATA/LST/ma_LST24LowInc5.png",
           height = 5, width = 8, units = "in", dpi = 600)
@@ -3498,12 +3505,13 @@ m <- tm_shape(LST24NoHSDip5, unit = "mi" , bbox = bbox_new) + tm_fill(col = "red
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Day-Night Avg\nTemps for Adults\nwithout a High\nSchool Diploma\nJuly-Aug 2019", 
+  tm_layout(title = "Highest\nExposure and\nVulnerability to\nDay-Night Avg\nTemps for Adults\nwithout a High\nSchool Diploma\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"),
-            legend.hist.width = 0.9)
+            legend.hist.width = 0.9,
+            legend.text.size = 0.5)
 
 tmap_save(m, "DATA/LST/ma_LST24NoHSDip5.png",
           height = 5, width = 8, units = "in", dpi = 600)
@@ -3590,12 +3598,13 @@ m <- tm_shape(LST24Over645, unit = "mi" , bbox = bbox_new) + tm_fill(col = "red"
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Day-Night Avg\nTemps for Persons\nOver Age 64\nJuly-Aug 2019", 
+  tm_layout(title = "Highest\nExposure and\nVulnerability to\nDay-Night Avg\nTemps for\nPersons Over\nAge 64\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"),
-            legend.hist.width = 0.9)
+            legend.hist.width = 0.9,
+            legend.text.size = 0.5)
 
 tmap_save(m, "DATA/LST/ma_LST24Over645.png",
           height = 5, width = 8, units = "in", dpi = 600)
@@ -3682,12 +3691,13 @@ m <- tm_shape(LST24Under55, unit = "mi" , bbox = bbox_new) + tm_fill(col = "red"
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Day-Night Avg\nTemps for Children\nUnder Age 5\nJuly-Aug 2019", 
+  tm_layout(title = "Highest\nExposure and\nVulnerability to\nDay-Night Avg\nTemps for\nChildren Under\nAge 5\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"),
-            legend.hist.width = 0.9)
+            legend.hist.width = 0.9,
+            legend.text.size = 0.5)
 
 tmap_save(m, "DATA/LST/ma_LST24Under55.png",
           height = 5, width = 8, units = "in", dpi = 600)
@@ -4331,12 +4341,13 @@ m <- tm_shape(LSTDayUnder55, unit = "mi" , bbox = bbox_new) + tm_fill(col = "red
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Daytime Avg\nTemps for Children\nUnder Age 5\nJuly-Aug 2019", 
+  tm_layout(title = "Highest\nExposure and\nVulnerability to\nDaytime Avg\nTemps for\nChildren Under\nAge 5\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"),
-            legend.hist.width = 0.9)
+            legend.hist.width = 0.9,
+            legend.text.size = 0.5)
 
 tmap_save(m, "DATA/LST/ma_LSTDayUnder55.png",
           height = 5, width = 8, units = "in", dpi = 600)
@@ -4428,12 +4439,13 @@ m <- LSTNightEngLang5 %>%
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) + 
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Nighttime Avg\nTemps for Limited\nEnglish Speaking\nHouseholds\nJuly-Aug 2019", 
+  tm_layout(title = "Highest\nExposure and\nVulnerability to\nNighttime Avg\nTemps for\nLimited\nEnglish\nSpeaking\nHouseholds\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"),
-            legend.hist.width = 0.9)
+            legend.hist.width = 0.9,
+            legend.text.size = 0.5)
 
 tmap_save(m, "DATA/LST/ma_LSTNightEngLang5.png",
           height = 5, width = 8, units = "in", dpi = 600)
@@ -4522,12 +4534,13 @@ m <- LSTNightMinority5 %>%
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) + 
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Nighttime Avg\nTemps for\nMinorities\nJuly-Aug 2019", 
+  tm_layout(title = "Highest\nExposure and\nVulnerability to\nNighttime Avg\nTemps for\nMinorities\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"),
-            legend.hist.width = 0.9)
+            legend.hist.width = 0.9,
+            legend.text.size = 0.5)
 
 tmap_save(m, "DATA/LST/ma_LSTNightMinority5.png",
           height = 5, width = 8, units = "in", dpi = 600)
@@ -4612,12 +4625,13 @@ m <- tm_shape(LSTNightLowIncMA5, unit = "mi" , bbox = bbox_new) + tm_fill(col = 
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Nighttime Avg\nTemps for MA Low\nIncome Persons\nJuly-Aug 2019", 
+  tm_layout(title = "Highest\nExposure and\nVulnerability to\nNighttime Avg\nTemps for MA\nLow Income\nPersons\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"),
-            legend.hist.width = 0.9)
+            legend.hist.width = 0.9,
+            legend.text.size = 0.5)
 
 tmap_save(m, "DATA/LST/ma_LSTNightLowIncMA5.png",
           height = 5, width = 8, units = "in", dpi = 600)
@@ -4705,12 +4719,13 @@ m <- tm_shape(LSTNightLowInc5, unit = "mi" , bbox = bbox_new) + tm_fill(col = "r
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Nighttime Avg\nTemps for Low\nIncome Persons\nJuly-Aug 2019", 
+  tm_layout(title = "Highest\nExposure and\nVulnerability to\nNighttime Avg\nTemps for\nLow Income\nPersons\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"),
-            legend.hist.width = 0.9)
+            legend.hist.width = 0.9,
+            legend.text.size = 0.5)
 
 tmap_save(m, "DATA/LST/ma_LSTNightLowInc5.png",
           height = 5, width = 8, units = "in", dpi = 600)
@@ -4798,12 +4813,13 @@ m <- tm_shape(LSTNightNoHSDip5, unit = "mi" , bbox = bbox_new) + tm_fill(col = "
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Nighttime Avg\nTemps for Adults\nwithout a High\nSchool Diploma\nJuly-Aug 2019", 
+  tm_layout(title = "Highest\nExposure and\nVulnerability to\nNighttime Avg\nTemps for Adults\nwithout a High\nSchool Diploma\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"),
-            legend.hist.width = 0.9)
+            legend.hist.width = 0.9,
+            legend.text.size = 0.5)
 
 tmap_save(m, "DATA/LST/ma_LSTNightNoHSDip5.png",
           height = 5, width = 8, units = "in", dpi = 600)
@@ -4890,12 +4906,13 @@ m <- tm_shape(LSTNightOver645, unit = "mi" , bbox = bbox_new) + tm_fill(col = "r
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Nighttime Avg\nTemps for Persons\nOver Age 64\nJuly-Aug 2019", 
+  tm_layout(title = "Highest\nExposure and\nVulnerability to\nNighttime Avg\nTemps for\nPersons Over\nAge 64\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"),
-            legend.hist.width = 0.9)
+            legend.hist.width = 0.9,
+            legend.text.size = 0.5)
 
 tmap_save(m, "DATA/LST/ma_LSTNightOver645.png",
           height = 5, width = 8, units = "in", dpi = 600)
@@ -4982,12 +4999,13 @@ m <- tm_shape(LSTNightUnder55, unit = "mi" , bbox = bbox_new) + tm_fill(col = "r
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Nighttime Avg\nTemps for Children\nUnder Age 5\nJuly-Aug 2019", 
+  tm_layout(title = "Highest\nExposure and\nVulnerability to\nNighttime Avg\nTemps for\nChildren Under\nAge 5\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"),
-            legend.hist.width = 0.9)
+            legend.hist.width = 0.9,
+            legend.text.size = 0.5)
 
 tmap_save(m, "DATA/LST/ma_LSTNightUnder55.png",
           height = 5, width = 8, units = "in", dpi = 600)
