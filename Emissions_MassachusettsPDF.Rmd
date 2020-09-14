@@ -468,7 +468,7 @@ newggslopegraph(dataframe = PM11_16wSTAvg_actual,
 
 ### PM~2.5~ in Massachusetts and Populations of Concern
 
-In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvgMA) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the state. For example, minorities in Massachusetts are exposed to PM~2.5~ concentrations that are approximately 2.3% above concentrations for the state as a whole. Similarly, limited English households are exposed to concentrations over 2% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of PM~2.5~ almost 1% below the state average. 
+In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvgMA) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the state. For example, limited English speaking households in Massachusetts, as defined by state environmental justice policy, are exposed to PM~2.5~ concentrations that are approximately 2.3% above concentrations for the state as a whole. Similarly, minorities, as defined by state environmental justice policy, are exposed to concentrations over 2% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of PM~2.5~ almost 1% below the state average. 
 
 ```{r barplotPM25PopAvgMA, fig.align = "center", fig.cap="Population-weighted average exposures to PM2.5 for populations of concern in Massachusetts relative to the state average."}
 # Pop Weighted avg of PM2.5 for all Groups in Massachusetts relative to state average
@@ -545,7 +545,7 @@ ma_blkgrp_sf %>%
   expand_limits(y = c(-1,2.5))
 ```
 
-Like the state as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that all populations of concern, except for persons over 64, continue to experience exposures greater than the state average, with minorities and children under 5 leading on this measure. 
+Like the state as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that all populations of concern, except for persons over 64, continue to experience exposures greater than the state average, with limited English speaking households and minorities leading on this measure. 
 
 ```{r slopegraphPM25PopAvgNE, fig.align = "center", fig.cap="Change in population-weighted exposure to PM2.5 for populations of concern between 2011 and 2016."}
 # Pop Weighted avg of PM2.5 EXPOSURE CHANGE 2011 - 2016 for all Groups in Massachusetts relative to NE average. 
@@ -970,7 +970,7 @@ newggslopegraph(dataframe = O311_16wSTAvg_actual,
 
 ### Ozone (O~3~) in Massachusetts and Populations of Concern
 
-In addition to variations in the general geography of Ozone (O~3~) concentrations, exposure to this pollutant also varies demographically. Figure \@ref(fig:barplotO3PopAvgMA) below shows population-weighted exposures for populations of concern relative to average Ozone concentrations for the region. For example, low income persons, as identified by Massachusetts Environmental Justice policy, and people over age 64 in Massachusetts are exposed to summer Ozone concentrations that are 0.22% above concentrations for the region as a whole. Similarly, low income households and adults without a high school education are exposed to concentrations 0.15% above the regional average. By contrast, limited English speaking households are, on average, exposed to concentrations of Ozone at or below the regional average. 
+In addition to variations in the general geography of Ozone (O~3~) concentrations, exposure to this pollutant also varies demographically. Figure \@ref(fig:barplotO3PopAvgMA) below shows population-weighted exposures for populations of concern relative to average Ozone concentrations for the region. For example, low income persons, as identified by Massachusetts Environmental Justice policy, are exposed to summer Ozone concentrations that are 0.5% above concentrations for the region as a whole. Similarly, persons over age 64 are exposed to concentrations 0.2% above the regional average. By contrast, limited English speaking households are, on average, exposed to concentrations of Ozone at or below the regional average. 
 
 ```{r barplotO3PopAvgMA, fig.align = "center", fig.cap="Population-weighted average exposures to Ozone for populations of concern in Massachusetts relative to the state average."}
 # Pop Weighted avg of O3 for all Groups in Massachusetts relative to NE average
@@ -1727,7 +1727,7 @@ ma_blkgrp_sf %>%
 
 ### Diesel Particulate Matter in Massachusetts and Populations of Concern
 
-In addition to variations in the general geography of DPM concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvgMA) below shows population-weighted exposures for populations of concern relative to average DPM concentrations for the state. For example, limited English speaking households in Massachusetts are exposed to  DPM concentrations that are more than 20% above concentrations for the region as a whole. Similarly, low income persons, as identified by Massachusetts Environmental Justice policy, are exposed to concentrations more than 16% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of DPM 10% below the state average. 
+In addition to variations in the general geography of DPM concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvgMA) below shows population-weighted exposures for populations of concern relative to average DPM concentrations for the state. For example, limited English speaking households in Massachusetts, as defined by state environmental justice policy, are exposed to DPM concentrations that are more than 54% above concentrations for the region as a whole. Similarly, minorities, as identified by Massachusetts Environmental Justice policy, are exposed to concentrations more than 24% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of DPM 10% below the state average. 
 
 ```{r barplotDPMPopAvgMA, fig.align = "center", fig.cap="Population-weighted average exposures to annual average ambient concentrations of Diesel Particulate Matter across Massachusetts relative to the state average."}
 # Pop Weighted avg of DPM for all Groups in Massachusetts relative to NE average
@@ -2019,7 +2019,7 @@ ma_blkgrp_sf %>%
 
 ### Lifetime Cancer Risk from Inhalation of Air Toxics in Massachusetts and Populations of Concern
 
-In addition to variations in the general geography of cancer risk, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvgMA) below shows population-weighted exposures for populations of concern relative to the average cancer risk for the state. For example, limited English speaking households in Massachusetts experience lifetime cancer risks from inhalation of air toxics that are 12.2% above the state as a whole. Similarly, minorities, as identified by Massachusetts Environmental Justice policy, experience lifetime cancer risks of 8.4% above the state average. By contrast, persons over age 64 are, on average, exposed to cancer risk 2.7% below the state average. 
+In addition to variations in the general geography of cancer risk, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvgMA) below shows population-weighted exposures for populations of concern relative to the average cancer risk for the state. For example, limited English speaking households in Massachusetts, as defined by state environmental justice policy, experience lifetime cancer risks from inhalation of air toxics that are 12.5% above the state as a whole. Similarly, minorities, as identified by Massachusetts Environmental Justice policy, experience lifetime cancer risks of 8.3% above the state average. By contrast, persons over age 64 are, on average, exposed to cancer risk 2.7% below the state average. 
 
 ```{r barplotATCPopAvgMA, fig.align = "center", fig.cap="Population-weighted average lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Massachusetts at Census Block Group level relative to the state average."}
 # Pop Weighted avg of DPM for all Groups in Massachusetts relative to NE average
@@ -2223,7 +2223,7 @@ m15 <- tm_shape(local_g, unit = "mi",) +
                 col = c("#B2182B","#EF8A62","#FDDBC7","#F7F7F7",
                         "#D1E5F0","#67A9CF","#2166AC"),
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Hot Spot Map of \nRespiratory \nHazard Index \nfor Massachusetts", 
+  tm_layout(title = "Hot Spot\nMap of \nRespiratory\nHazard\nIndex for\nMassachusetts", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2309,7 +2309,7 @@ ma_blkgrp_sf %>%
 
 ### Respiratory Hazard Index from Inhalation of Air Toxics in Massachusetts and Populations of Concern
 
-In addition to variations in the general geography of the respiratory hazard index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvgMA) below shows population-weighted exposures for populations of concern relative to the average hazard index for the state. For example, limited English speaking households in Massachusetts, as identified by Massachusetts Environmental Justice policy, experience respiratory hazard indices from inhalation of air toxics that are 18.3% above the state as a whole. Similarly, minorities, as identified by Massachusetts Environmental Justice policy, experience lifetime hazard index values more than 10.9% above the state average. By contrast, persons over age 64 are, on average, exposed to respiratory hazard indices over 3.9% below the state average. 
+In addition to variations in the general geography of the respiratory hazard index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvgMA) below shows population-weighted exposures for populations of concern relative to the average hazard index for the state. For example, limited English speaking households in Massachusetts, as identified by Massachusetts Environmental Justice policy, experience respiratory hazard indices from inhalation of air toxics that are 19% above the state as a whole. Similarly, minorities, as identified by Massachusetts Environmental Justice policy, experience lifetime hazard index values more than 11.8% above the state average. By contrast, persons over age 64 are, on average, exposed to respiratory hazard indices over 3.9% below the state average. 
 
 ```{r barplotRHIPopAvgMA, fig.align = "center", fig.cap="Population-weighted average respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Massachusetts at Census Block Group level relative to the state average."}
 # Pop Weighted avg of RHI for all Groups in Massachusetts relative to NE average
@@ -2513,7 +2513,7 @@ m17 <- tm_shape(local_g, unit = "mi",) +
                 col = c("#B2182B","#EF8A62","#FDDBC7","#F7F7F7",
                         "#D1E5F0","#67A9CF","#2166AC"),
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Hot Spot Map of \nTraffic Proximity \nand Volume \nfor Massachusetts", 
+  tm_layout(title = "Hot Spot Map\nof Traffic\nProximity and\nVolume for\nMassachusetts", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2565,7 +2565,7 @@ ma_town_minTraffic <- ma_blkgrp_sf %>%
 
 The Block Group with highest Traffic Proximity and Volume value in the state is found in `r ma_town_maxTraffic` and the lowest is found in `r ma_town_minTraffic`. See Table \@ref(tab:PollutantByTown) in Appendix B for values by municipality.
 
-Figure \@ref(fig:boxplotTPVMA) is a boxplot of Traffic Proximity and Volume values by Block Group . The box represents values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median Traffic Proximity and Volume value for all Block Groups, which in this case is `r round(median(ma_blkgrp_sf$PTRAF_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large black dots represent outliers, or unusually high values.  
+Figure \@ref(fig:boxplotTPVMA) is a boxplot of Traffic Proximity and Volume values by Block Group . The box represents values ranging between the 25th and 75th percentiles. The line that divides the box into 2 parts represents the median Traffic Proximity and Volume value for all Block Groups, which in this case is `r round(median(ma_blkgrp_sf$PTRAF_19, na.rm = TRUE),2)`. Half of the state's Block Groups are below the median and half are above the median. Each dot represents an individual Block Group. The large black dots represent outliers, or unusually high values. These outliers are concentrated in Boston, and along major highways radiating out to I-95.
 
 ```{r boxplotTPVMA, fig.align = "center", fig.cap="Boxplot of 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Massachusetts at Census Block Group level."}
 # boxplot of traffic proximity and volume by state for 2017
@@ -2585,7 +2585,7 @@ ma_blkgrp_sf %>%
 
 ### Traffic Proximity and Volume Exposure in Massachusetts and Populations of Concern
 
-In addition to variations in the general geography of the traffic proximity and volume exposure, this exposure also varies demographically. Figure \@ref(fig:barplotTPVPopAvgNE) below shows population-weighted exposures for populations of concern relative to average traffic proximity and volume for the state. For example, limited English speaking households, as identified by Massachusetts Environmental Justice policy, are exposed to traffic proximity and volume more than 123% above the state as a whole. Similarly, minorities, as identified by Massachusetts Environmental Justice policy, are exposed to traffic proximity and volume more than 52% above the state average. By contrast, persons over age 64 are, on average, are exposed to Traffic Proximity and Volume of more than 20% below the state average. 
+In addition to variations in the general geography of the traffic proximity and volume exposure, this exposure also varies demographically. Figure \@ref(fig:barplotTPVPopAvgNE) below shows population-weighted exposures for populations of concern relative to average traffic proximity and volume for the state. For example, limited English speaking households, as identified by Massachusetts Environmental Justice policy, are exposed to traffic proximity and volume more than 118% above the state as a whole. Similarly, minorities, as identified by Massachusetts Environmental Justice policy, are exposed to traffic proximity and volume approximately 55% above the state average. By contrast, persons over age 64 are, on average, are exposed to Traffic Proximity and Volume of more than 20% below the state average. 
 
 ```{r barplotTPVPopAvgNE, fig.align = "center", fig.cap="Population-weighted average Traffic Proximity and Volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Massachusetts at Census Block Group level relative to the state average."}
 # Pop Weighted avg of TPV for all Groups in Massachusetts relative to NE average
