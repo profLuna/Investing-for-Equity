@@ -1323,7 +1323,7 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
                position = c(0.6,0.005)) +
   tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Commuter Rail Route", col = "darkblue") +
   tm_add_legend(type = "symbol", size=0.2, alpha = 0.5, labels = "Park-in-Ride Lot", col = "darkblue") +
-  tm_layout(title = "Persons Over 64\n10+ Miles from\nNearest Commuter\nRail Stop\nor Park-in-Ride Lot",
+  tm_layout(title = "Persons Over 64\n10+ Miles from\nNearest\nCommuter Rail\nStop or\nPark-in-Ride\nLot",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1401,7 +1401,7 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Bus/Rapid Transit Route", col = "black") +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Commuter Rail Route", col = "darkblue") +
   # tm_add_legend(type = "symbol", size=0.2, alpha = 0.5, labels = "Park-in-Ride Lot", col = "darkblue") +
-  tm_layout(title = "Persons Over 64\nwithout Reasonable\nAccess to any\nMode of Transit",
+  tm_layout(title = "Persons Over 64\nwithout\nReasonable\nAccess to any\nMode of Transit",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1940,7 +1940,7 @@ ma_busHeadwayPops_df %>%
   expand_limits(y = c(75,105))
 ```
 
-Rapid transit routes, which are localized to Boston and adjacent municipalities, show considerably shorter average headways than bus routes. Figure \@ref(fig:mapGTFSrapidTransit) shows average headways by line, and Table \@ref(tab:tabGTFSrapidTransit) shows a breakdown of headway times by route. The average population-weighted headway for all rapid transit routes in the state is `r round(ma_RTHeadwayPops_df %>% filter(Group == "Total Pop") %>% select(AvgWHeadway) %>% pull(),1)` minutes. However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliRTHeadway) below compares the population-weighted average rapid transit headways for different groups within reasonable walking distance of stops. More than half of the groups have average headways longer than the general population. Adults without a high school diploma have the longest population-weighted average headways (`r round(ma_RTHeadwayPops_df %>% filter(Group == "No HS Dip") %>% select(AvgWHeadway) %>% pull(),1)` minutes). The shortest population-weighted average headway, experienced by limited English speaking households, as defined by Massachusetts environmental justice policy, is `r round(ma_RTHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),1)` minutes.
+Rapid transit routes, which are localized to Boston and adjacent municipalities, show considerably shorter average headways than bus routes. Figure \@ref(fig:mapGTFSrapidTransit) shows average headways by line, and Table \@ref(tab:tabGTFSrapidTransit) shows a breakdown of headway times by route. The average population-weighted headway for all rapid transit routes in the state is `r round(ma_RTHeadwayPops_df %>% filter(Group == "Total Pop") %>% select(AvgWHeadway) %>% pull(),1)` minutes. However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliRTHeadway) below compares the population-weighted average rapid transit headways for different groups within reasonable walking distance of stops. More than half of the groups have average headways longer than the general population. Adults without a high school diploma have the longest population-weighted average headways (`r round(ma_RTHeadwayPops_df %>% filter(Group == "No HS Dip") %>% select(AvgWHeadway) %>% pull(),1)` minutes). The shortest population-weighted average headway, experienced by low income persons, as defined by Massachusetts environmental justice policy, is `r round(ma_RTHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),1)` minutes.
 
 ```{r mapGTFSrapidTransit, fig.align = "center", fig.cap="Mean headways by rapid transit route for Massachusetts routes running Monday through Friday, from 6am - 9pm."}
 # arrange row order descending so that higher frequency lines are on top
@@ -2054,7 +2054,7 @@ ma_RTHeadwayPops_df %>%
   expand_limits(y = c(6,12))
 ```
 
-Headways for commuter rail routes are slightly shorter on average than bus routes. Figure \@ref(fig:mapGTFScommuterRail) shows average headways by line and Table \@ref(tab:tabGTFSrapidCommuterRail) shows a breakdown of headway times by route. The average population-weighted headway for all commuter rail routes in the state is `r round(ma_CRHeadwayPops_df %>% filter(Group == "Total Pop") %>% select(AvgWHeadway) %>% pull(),1)` minutes. However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliCRHeadway) below compares the population-weighted average commuter rail headways for different groups within 3 miles (4800m) of stops. Most groups have average headways shorter than the general population. However, persons over 64 have population-weighted average headways longer than the general population (`r round(ma_CRHeadwayPops_df %>% filter(Group == "Over 64") %>% select(AvgWHeadway) %>% pull(),1)` minutes). The shortest population-weighted average headway, experienced by limited English speaking households, as defined by Massachusetts environmental justice policy, is `r round(ma_CRHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),1)` minutes.
+Headways for commuter rail routes are slightly shorter on average than bus routes. Figure \@ref(fig:mapGTFScommuterRail) shows average headways by line and Table \@ref(tab:tabGTFSrapidCommuterRail) shows a breakdown of headway times by route. The average population-weighted headway for all commuter rail routes in the state is `r round(ma_CRHeadwayPops_df %>% filter(Group == "Total Pop") %>% select(AvgWHeadway) %>% pull(),1)` minutes. However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliCRHeadway) below compares the population-weighted average commuter rail headways for different groups within 3 miles (4800m) of stops. Most groups have average headways shorter than the general population. However, children under 5 have population-weighted average headways longer than the general population (`r round(ma_CRHeadwayPops_df %>% filter(Group == "Under 5") %>% select(AvgWHeadway) %>% pull(),1)` minutes). The shortest population-weighted average headway, experienced by limited English speaking households, as defined by Massachusetts environmental justice policy, is `r round(ma_CRHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),1)` minutes.
 
 ```{r mapGTFScommuterRail, fig.align = "center", fig.cap="Mean headways by commuter rail route for Massachusetts routes running Monday through Friday, from 6am - 9pm."}
 # arrange row order descending so that higher frequency lines are on top
@@ -2305,7 +2305,7 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
-  tm_layout(title = paste("Persons Over 64","with Bus Headways",paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
+  tm_layout(title = paste("Persons Over 64","with Bus","Headways Over",paste0(quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2567,7 +2567,10 @@ m <- tm_shape(ma_blkgrp_walkability_sf) +
   tm_fill(col = "NatWalkInd", alpha = 0.8, style = "equal", n = 4,
           colorNA = "white", colorNULL = "gray", title = "Walkability Index",
           legend.format = list(fun = function(x) formatC(x, digits = 1, format = "f")), palette = c("#FECC61","#FEF6BA","#B9E293","#238443"), 
-          labels = c("1 - 5.8 (Least Walkable)","5.8 - 10.5 (Below Avg Walkable)","10.5 - 15.2 (Above Avg Walkable)","15.2 - 20 (Most Walkable)")) +
+          labels = c("1 - 5.8 (Least Walkable)",
+                     "5.8 - 10.5 (Below Avg)",
+                     "10.5 - 15.2 (Above Avg)",
+                     "15.2 - 20 (Most Walkable)")) +
   tm_shape(ma_towns_sf, unit = "mi") + 
   tm_borders(col = "gray", lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -2597,7 +2600,7 @@ m <- tm_shape(ma_blkgrp_walkability_sf) +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Walkability", 
+  tm_layout(title = "Walkability",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2789,7 +2792,8 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
-            legend.outside.position = c("right", "top"))
+            legend.outside.position = c("right", "top"),
+            inner.margins = c(0.02,0,0.02,0.05))
 
 tmap_save(m, "DATA/transport/MA/figures/ma_walkU18.png",
           height = 4, width = 8, units = "in", dpi = 600)
@@ -2927,7 +2931,7 @@ m <- tm_shape(lai_ma) +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_add_legend(type = "symbol",labels = "Transport burden > housing burden", shape = 8, size = 0.5, col = "gray") +
+  tm_add_legend(type = "symbol",labels = "Transport > Housing burden", shape = 8, size = 0.5, col = "gray") +
   tm_layout(title = "Transportation\nCost Burden", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
