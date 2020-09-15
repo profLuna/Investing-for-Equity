@@ -626,7 +626,7 @@ I91roadSegment <- ct_highways %>%
   filter(LINEARID == "1104470395750")
 
 I95roadSegment <- ct_highways %>% 
-  filter(LINEARID == "1105068628699")
+  filter(LINEARID == "11013782168181")
 
 I95roadSegment2 <- ct_highways %>% 
   filter(LINEARID == "1105281377007")
@@ -931,7 +931,7 @@ ct_transitAccessPops_df %>%
 
 Specific values of the same can be seen in Table \@ref(tab:statsTransitDist) below.
 
-```{r statsTransitDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut populations living within 1/4 mile (400 meters) of a bus stop. Based on ACS 2017 Block Group data."}
+```{r statsTransitDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut populations living within 1/4 mile (400 meters) of a bus stop. Based on ACS 2018 Block Group data."}
 # See table of distance by group
 ct_transitAccessPops_df %>% 
   mutate(PctBus = paste0(round(PctBus,1),"%"),
@@ -1122,7 +1122,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Commuter Rail Route", col = "darkblue") +
   # tm_add_legend(type = "symbol", size=0.2, alpha = 0.5, labels = "Park-in-Ride Lot", col = "darkblue") +
-  tm_layout(title = "Persons Over 64\n10+ Miles from\nNearest Commuter\nRail Stop",
+  tm_layout(title = "Persons Over 64\n10+ Miles from\nNearest\nCommuter\nRail Stop",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1185,7 +1185,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Bus/Rapid Transit Route", col = "black") +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Commuter Rail Route", col = "darkblue") +
   # tm_add_legend(type = "symbol", size=0.2, alpha = 0.5, labels = "Park-in-Ride Lot", col = "darkblue") +
-  tm_layout(title = "Persons Over 64\nwithout Reasonable\nAccess to any\nMode of Transit",
+  tm_layout(title = "Persons Over 64\nwithout\nReasonable\nAccess to any\nMode of Transit",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1511,9 +1511,9 @@ ct_CRHeadwayPops_df %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   geom_hline(yintercept = pull(ct_CRHeadwayPops_df[7,2]), 
              linetype = "dashed") +
-  geom_text(aes(x = "Under 18", y = 130, label = "Above state\naverage"),
+  geom_text(aes(x = "Total Pop", y = 135, label = "Above state\naverage"),
             color = "gray48") +
-  geom_text(aes(x = "Under 18", y = 109, label = "Below state\naverage"),
+  geom_text(aes(x = "Total Pop", y = 109, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(100,150))
 ```
@@ -1596,7 +1596,8 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
-  tm_layout(title = paste("Persons Over 64","with Bus Headways",paste0("Over ",quantile(ct_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
+  tm_layout(title = paste("Persons Over 64","with Bus", "Headways Over",paste0(quantile(ct_routes_sf_Bus$mean_headways,0.8)," Minutes"),
+                          sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1764,7 +1765,10 @@ m <- tm_shape(ct_blkgrp_walkability_sf) +
   tm_fill(col = "NatWalkInd", alpha = 0.8, style = "equal", n = 4,
           colorNA = "white", colorNULL = "gray", title = "Walkability Index",
           legend.format = list(fun = function(x) formatC(x, digits = 1, format = "f")), palette = c("#FECC61","#FEF6BA","#B9E293","#238443"), 
-          labels = c("1 - 5.8 (Least Walkable)","5.8 - 10.5 (Below Avg Walkable)","10.5 - 15.2 (Above Avg Walkable)","15.2 - 20 (Most Walkable)")) +
+          labels = c("1 - 5.8 (Least Walkable)",
+                     "5.8 - 10.5 (Below Avg)",
+                     "10.5 - 15.2 (Above Avg)",
+                     "15.2 - 20 (Most Walkable)")) +
   tm_shape(ct_towns_sf, unit = "mi") + 
   tm_borders(col = "gray", lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -1814,7 +1818,7 @@ ct_wAvgWalkability_df %>%
         axis.ticks.y = element_blank()) +
   geom_text(aes(x = Group, y = wNatWalkIndex + 0.2 * sign(wNatWalkIndex), 
                 label = round(wNatWalkIndex,1)), 
-            hjust = 0, vjust=-0.8, size = 3,
+            hjust = 2, vjust=-0.8, size = 3,
             color=rgb(100,100,100, maxColorValue=255)) +
   geom_hline(yintercept = pull(ct_wAvgWalkability_df[7,2]), linetype = "dashed") +
   geom_text(aes(x = "Under 18", y = 8, label = "Above state\naverage"),
@@ -2396,7 +2400,7 @@ The ACS provides greater demographic detail and temporal resolution than the dec
 
 All data was analyzed or aggregated geographically by Census Tract and Block Group. A Census Tract is a small, relatively permanent statistical subdivision of a county that contains between 1,200 and 8,000 people. The entire area of a county is covered by Census Tracts, just as the entire area of a state is covered by counties or county equivalents. Census Tracts range in areal size depending on the population density; areal size is smaller in denser areas and larger in less densely populated areas. Census Block Groups are subdivisions of Census Tracts that contain between 600 and 3,000 people. Like Tracts, Block Groups range in areal size depending on the population density of the area. Block Groups are the smallest geographic unit at which detailed demographic and household data from the American Community Survey is made available by the Census. 
 
-For the purposes of this analysis ACS 5-year estimates for the period 2013 - 2017 for Census Tracts and Block Groups in Connecticut, as well as their associated TIGER/Line spatial files, were downloaded from the Census Bureau via API using the `tigris` package in R. Demographic variables consistent with those used by the EPA in EJSCREEN were chosen, as well as environmental justice population thresholds used by states where available. Table \@ref(tab:ACSvariables) below lists the demographic variables that were downloaded directly or computed from ACS variables:
+For the purposes of this analysis ACS 5-year estimates for the period 2014 - 2018 for Census Tracts and Block Groups in Connecticut, as well as their associated TIGER/Line spatial files, were downloaded from the Census Bureau via API using the `tigris` package in R. Demographic variables consistent with those used by the EPA in EJSCREEN were chosen, as well as environmental justice population thresholds used by states where available. Table \@ref(tab:ACSvariables) below lists the demographic variables that were downloaded directly or computed from ACS variables:
 
 ```{r ACSvariables}
 ACSvDF <- data.frame(Variable = c("Total Population",
@@ -2749,7 +2753,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.7, labels = "Bus Route", col = "darkblue") +
-  tm_layout(title = "Adults without a\nHigh School Diploma\n1+ Miles from\nNearest Bus\nStop",
+  tm_layout(title = "Adults without a\nHigh School\nDiploma 1+ Miles\nfrom Nearest\nBus Stop",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -3123,7 +3127,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.7, labels = "Bus Route", col = "darkblue") +
-  tm_layout(title = "Persons Under 18\n10+ Miles from\nNearest Commuter\nRail Stop",
+  tm_layout(title = "Persons Under 18\n10+ Miles from\nNearest\nCommuter\nRail Stop",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -3185,7 +3189,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.7, labels = "Bus Route", col = "darkblue") +
-  tm_layout(title = "Disabled Persons\n10+ Miles from\nNearest Commuter\nRail Stop",
+  tm_layout(title = "Disabled Persons\n10+ Miles from\nNearest\nCommuter\nRail Stop",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -3247,7 +3251,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.7, labels = "Bus Route", col = "darkblue") +
-  tm_layout(title = "Children Under 5\n10+ Miles from\nNearest Commuter\nRail Stop",
+  tm_layout(title = "Children Under 5\n10+ Miles from\nNearest\nCommuter\nRail Stop",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -3309,7 +3313,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.7, labels = "Bus Route", col = "darkblue") +
-  tm_layout(title = "Adults without a\nHigh School Diploma\n10+ Miles from\nNearest Commuter\nRail Stop",
+  tm_layout(title = "Adults without a\nHigh School\nDiploma 10+ Miles\nfrom Nearest\nCommuter\nRail Stop",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -3371,7 +3375,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.7, labels = "Bus Route", col = "darkblue") +
-  tm_layout(title = "Low Income Persons\n10+ Miles from\nNearest Commuter\nRail Stop",
+  tm_layout(title = "Low Income\nPersons\n10+ Miles from\nNearest\nCommuter\nRail Stop",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -3433,7 +3437,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.7, labels = "Bus Route", col = "darkblue") +
-  tm_layout(title = "Minority Persons\n10+ Miles from\nNearest Commuter\nRail Stop",
+  tm_layout(title = "Minority Persons\n10+ Miles from\nNearest\nCommuter\nRail Stop",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -3495,7 +3499,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.7, labels = "Bus Route", col = "darkblue") +
-  tm_layout(title = "Housewholds\nwithout a Car\n10+ Miles from\nNearest Commuter\nRail Stop",
+  tm_layout(title = "Households\nwithout a Car\n10+ Miles from\nNearest\nCommuter\nRail Stop",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -3557,7 +3561,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.7, labels = "Bus Route", col = "darkblue") +
-  tm_layout(title = "Limited English\nHousesholds\n10+ Miles from\nNearest Commuter\nRail Stop",
+  tm_layout(title = "Limited English\nHousesholds\n10+ Miles from\nNearest\nCommuter\nRail Stop",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -3619,7 +3623,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.7, labels = "Bus Route", col = "darkblue") +
-  tm_layout(title = "CT Low Income\nPersons\n10+ Miles from\nNearest Commuter\nRail Stop",
+  tm_layout(title = "CT Low Income\nPersons\n10+ Miles from\nNearest\nCommuter\nRail Stop",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -3683,7 +3687,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.7, labels = "Bus Route", col = "darkblue") +
-  tm_layout(title = "Persons Under 18\nwithout Reasonable\nAccess to any\nMode of Transit",
+  tm_layout(title = "Persons Under 18\nwithout\nReasonable\nAccess to any\nMode of Transit",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -3745,7 +3749,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.7, labels = "Bus Route", col = "darkblue") +
-  tm_layout(title = "Disabled Persons\nwithout Reasonable\nAccess to any\nMode of Transit",
+  tm_layout(title = "Disabled Persons\nwithout\nReasonable\nAccess to any\nMode of Transit",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -3807,7 +3811,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.7, labels = "Bus Route", col = "darkblue") +
-  tm_layout(title = "Children Under 5\nwithout Reasonable\nAccess to any\nMode of Transit",
+  tm_layout(title = "Children Under 5\nwithout\nReasonable\nAccess to any\nMode of Transit",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -3869,7 +3873,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.7, labels = "Bus Route", col = "darkblue") +
-  tm_layout(title = "Adults without a\nHigh School\nDiploma\nwithout Reasonable\nAccess to any\nMode of Transit",
+  tm_layout(title = "Adults without a\nHigh School\nDiploma\nwithout\nReasonable\nAccess to any\nMode of Transit",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -3993,7 +3997,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.7, labels = "Bus Route", col = "darkblue") +
-  tm_layout(title = "Minority Persons\nwithout Reasonable\nAccess to any\nMode of Transit",
+  tm_layout(title = "Minority Persons\nwithout\nReasonable\nAccess to any\nMode of Transit",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -4055,7 +4059,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.7, labels = "Bus Route", col = "darkblue") +
-  tm_layout(title = "Housewholds\nwithout a Car\nwithout Reasonable\nAccess to any\nMode of Transit",
+  tm_layout(title = "Households\nwithout a Car\nwithout\nReasonable\nAccess to any\nMode of Transit",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -4117,7 +4121,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.7, labels = "Bus Route", col = "darkblue") +
-  tm_layout(title = "Limited English\nHousesholds\nwithout Reasonable\nAccess to any\nMode of Transit",
+  tm_layout(title = "Limited English\nHouseholds\nwithout\nReasonable\nAccess to any\nMode of Transit",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -4179,7 +4183,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.7, labels = "Bus Route", col = "darkblue") +
-  tm_layout(title = "CT Low Income\nPersons\nwithout Reasonable\nAccess to any\nMode of Transit",
+  tm_layout(title = "CT Low Income\nPersons\nwithout\nReasonable\nAccess to any\nMode of Transit",
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -4245,7 +4249,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
-  tm_layout(title = paste("Persons Under 18","with Bus Headways",paste0("Over ",quantile(ct_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
+  tm_layout(title = paste("Persons Under 18","with Bus", "Headways Over",paste0(quantile(ct_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -4306,7 +4310,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
-  tm_layout(title = paste("Disabled Persons","with Bus Headways",paste0("Over ",quantile(ct_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
+  tm_layout(title = paste("Disabled Persons","with Bus", "Headways Over",paste0(quantile(ct_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -4367,7 +4371,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
-  tm_layout(title = paste("Children Under 5","with Bus Headways",paste0("Over ",quantile(ct_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
+  tm_layout(title = paste("Children Under 5","with Bus", "Headways Over",paste0(quantile(ct_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -4428,7 +4432,8 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
-  tm_layout(title = paste("Adults without a","High School", "Diploma with", "Bus Headways",paste0("Over ",quantile(ct_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
+  tm_layout(title = paste("Adults without a","High School", "Diploma with", "Bus Headways",paste0("Over ",quantile(ct_routes_sf_Bus$mean_headways,0.8)),
+                          "Minutes",sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -4550,7 +4555,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
-  tm_layout(title = paste("Minority Persons","with Bus Headways",paste0("Over ",quantile(ct_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
+  tm_layout(title = paste("Minority Persons","with Bus", "Headways Over",paste0(quantile(ct_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -4611,7 +4616,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
-  tm_layout(title = paste("No Car Households","with Bus Headways",paste0("Over ",quantile(ct_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
+  tm_layout(title = paste("No Car", "Households","with Bus","Headways Over",paste0(quantile(ct_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -4672,7 +4677,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
-  tm_layout(title = paste("Limited English", "Households","with Bus Headways",paste0("Over ",quantile(ct_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
+  tm_layout(title = paste("Limited English", "Households","with Bus","Headways Over",paste0(quantile(ct_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -4733,7 +4738,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
-  tm_layout(title = paste("CT Low Income","with Bus Headways",paste0("Over ",quantile(ct_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
+  tm_layout(title = paste("CT Low Income","with Bus","Headways Over",paste0(quantile(ct_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -5165,7 +5170,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
-  tm_layout(title = paste("No Car Households","with Commuter", "Rail Headways",paste0("Over ",quantile(ct_stops_sf_Rail$headway,0.8)," Minutes"),sep = "\n"),
+  tm_layout(title = paste("No Car","Households","with Commuter", "Rail Headways",paste0("Over ",quantile(ct_stops_sf_Rail$headway,0.8)," Minutes"),sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -5288,7 +5293,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Commuter Rail Route", col = "purple") +
-  tm_layout(title = paste("Persons Over 64","with Commuter Rail", "Headways Over",paste0(quantile(ct_stops_sf_Rail$headway,0.8)," Minutes"),sep = "\n"),
+  tm_layout(title = paste("Persons Over 64","with Commuter", "Rail Headways",paste0("Over ",quantile(ct_stops_sf_Rail$headway,0.8)," Minutes"),sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -5651,7 +5656,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "No Car Households\nin Least Walkable\nBlock Groups", 
+  tm_layout(title = "No Car\nHouseholds in\nLeast Walkable\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -6134,7 +6139,7 @@ m <- tm_shape(ct_state_sf_cb, unit = "mi") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "No Car Households\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+  tm_layout(title = "No Car\nHouseholds\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
