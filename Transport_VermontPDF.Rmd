@@ -782,7 +782,7 @@ vt_transitAccessPops_df %>%
 
 Specific values of the same can be seen in Table \@ref(tab:statsTransitDist) below.
 
-```{r statsTransitDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont populations living within 1/4 mile (400 meters) of a bus stop or 3 miles (4800m) of a park-in-ride lot. Based on ACS 2017 Block Group data."}
+```{r statsTransitDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont populations living within 1/4 mile (400 meters) of a bus stop or 3 miles (4800m) of a park-in-ride lot. Based on ACS 2018 Block Group data."}
 # See table of distance by group
 vt_transitAccessPops_df %>% 
   mutate(PctBus = paste0(round(PctBus,1),"%"),
@@ -1110,7 +1110,7 @@ vt_busHeadwayPops_df %>%
              linetype = "dashed") +
   geom_text(aes(x = "Total Pop", y = 305, label = "Above state\naverage"),
             color = "gray48") +
-  geom_text(aes(x = "Total Pop", y = 280, label = "Below state\naverage"),
+  geom_text(aes(x = "Total Pop", y = 277, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(270,315))
 ```
@@ -1183,7 +1183,7 @@ m <- tm_shape(vt_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
-  tm_layout(title = paste("Children Under 5","with Bus Headways",paste0("Over ",quantile(vt_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
+  tm_layout(title = paste("Children Under 5","with Bus Headways",paste0("Over ",round(quantile(vt_routes_sf_Bus$mean_headways,0.8),0)," Minutes"),sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1213,7 +1213,7 @@ headway80thblkgrps_bus %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = paste("Children Under 5","with Average Headways",paste0("Over ",quantile(vt_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of Under 5 in Block Groups","Pct of Under 5 in City/Town")) %>% 
+                    caption = paste("Children Under 5","with Average Headways",paste0("Over ",round(quantile(vt_routes_sf_Bus$mean_headways,0.8),0)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of Under 5 in Block Groups","Pct of Under 5 in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 
@@ -1247,7 +1247,7 @@ m <- tm_shape(vt_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
-  tm_layout(title = paste("Persons Under 18","with Bus Headways",paste0("Over ",quantile(vt_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
+  tm_layout(title = paste("Persons Under 18","with Bus Headways",paste0("Over ",round(quantile(vt_routes_sf_Bus$mean_headways,0.8),0)," Minutes"),sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1277,7 +1277,7 @@ headway80thblkgrps_bus %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = paste("Persons Under 18","with Average Headways",paste0("Over ",quantile(vt_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of Under 18 in Block Groups","Pct of Under 18 in City/Town")) %>% 
+                    caption = paste("Persons Under 18","with Average Headways",paste0("Over ",round(quantile(vt_routes_sf_Bus$mean_headways,0.8),0)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of Under 18 in Block Groups","Pct of Under 18 in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 
@@ -1353,8 +1353,8 @@ m <- tm_shape(vt_blkgrp_walkability_sf) +
           colorNA = "white", colorNULL = "gray", title = "Walkability Index",
           legend.format = list(fun = function(x) formatC(x, digits = 1, format = "f")), palette = c("#FECC61","#FEF6BA","#B9E293","#238443"), 
           labels = c("1 - 5.8 (Least Walkable)",
-                     "5.8 - 10.5 (Below Avg Walkable)",
-                     "10.5 - 15.2 (Above Avg Walkable)",
+                     "5.8 - 10.5 (Below Avg)",
+                     "10.5 - 15.2 (Above Avg)",
                      "15.2 - 20 (Most Walkable)")) +
   tm_shape(vt_towns_sf, unit = "mi") + 
   tm_borders(col = "gray", lwd = 0.2) +
@@ -1663,7 +1663,7 @@ m <- tm_shape(lai_ri) +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_add_legend(type = "symbol",labels = "Transport burden > housing burden", shape = 8, size = 0.5, col = "gray") +
+  tm_add_legend(type = "symbol",labels = "Transport > Housing burden", shape = 8, size = 0.5, col = "gray") +
   tm_layout(title = "Transportation\nCost Burden", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
@@ -1995,7 +1995,7 @@ The ACS provides greater demographic detail and temporal resolution than the dec
 
 All data was analyzed or aggregated geographically by Census Tract and Block Group. A Census Tract is a small, relatively permanent statistical subdivision of a county that contains between 1,200 and 8,000 people. The entire area of a county is covered by Census Tracts, just as the entire area of a state is covered by counties or county equivalents. Census Tracts range in areal size depending on the population density; areal size is smaller in denser areas and larger in less densely populated areas. Census Block Groups are subdivisions of Census Tracts that contain between 600 and 3,000 people. Like Tracts, Block Groups range in areal size depending on the population density of the area. Block Groups are the smallest geographic unit at which detailed demographic and household data from the American Community Survey is made available by the Census. 
 
-For the purposes of this analysis ACS 5-year estimates for the period 2013 - 2017 for Census Tracts and Block Groups in Vermont, as well as their associated TIGER/Line spatial files, were downloaded from the Census Bureau via API using the `tigris` package in R. Demographic variables consistent with those used by the EPA in EJSCREEN were chosen, as well as environmental justice population thresholds used by states where available. Table \@ref(tab:ACSvariables) below lists the demographic variables that were downloaded directly or computed from ACS variables:
+For the purposes of this analysis ACS 5-year estimates for the period 2014 - 2018 for Census Tracts and Block Groups in Vermont, as well as their associated TIGER/Line spatial files, were downloaded from the Census Bureau via API using the `tigris` package in R. Demographic variables consistent with those used by the EPA in EJSCREEN were chosen, as well as environmental justice population thresholds used by states where available. Table \@ref(tab:ACSvariables) below lists the demographic variables that were downloaded directly or computed from ACS variables:
 
 ```{r ACSvariables}
 ACSvDF <- data.frame(Variable = c("Total Population",
@@ -2591,7 +2591,7 @@ m <- tm_shape(vt_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
-  tm_layout(title = paste("Disabled Persons","with Bus Headways",paste0("Over ",quantile(vt_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
+  tm_layout(title = paste("Disabled Persons","with Bus Headways",paste0("Over ",round(quantile(vt_routes_sf_Bus$mean_headways,0.8),0)," Minutes"),sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2621,7 +2621,7 @@ headway80thtracts_bus %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = paste("Disabled Persons","with Average Headways",paste0("Over ",quantile(vt_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of Disabled in Census Tracts","Pct of Disabled in City/Town")) %>% 
+                    caption = paste("Disabled Persons","with Average Headways",paste0("Over ",round(quantile(vt_routes_sf_Bus$mean_headways,0.8),0)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of Disabled in Census Tracts","Pct of Disabled in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
@@ -2654,7 +2654,7 @@ m <- tm_shape(vt_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
-  tm_layout(title = paste("Adults without a","High School","Diploma","with Bus Headways",paste0("Over ",quantile(vt_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
+  tm_layout(title = paste("Adults without a","High School","Diploma","with Bus Headways",paste0("Over ",round(quantile(vt_routes_sf_Bus$mean_headways,0.8),0)," Minutes"),sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2684,7 +2684,7 @@ headway80thblkgrps_bus %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = paste("Adults without a","High School","Diploma","with Bus Headways",paste0("Over ", quantile(vt_routes_sf_Bus$mean_headways,0.8), " Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of No HS Dip in Block Groups","Pct of No HS Dip in City/Town")) %>% 
+                    caption = paste("Adults without a","High School","Diploma","with Bus Headways",paste0("Over ", round(quantile(vt_routes_sf_Bus$mean_headways,0.8),0), " Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of No HS Dip in Block Groups","Pct of No HS Dip in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
@@ -2717,7 +2717,7 @@ m <- tm_shape(vt_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
-  tm_layout(title = paste("No Car Households","with Bus Headways",paste0("Over ",quantile(vt_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
+  tm_layout(title = paste("No Car Households","with Bus Headways",paste0("Over ",round(quantile(vt_routes_sf_Bus$mean_headways,0.8),0)," Minutes"),sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2747,7 +2747,7 @@ headway80thtracts_bus %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = paste("No Car Households","with Average Headways",paste0("Over ",quantile(vt_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of No Car Households in Block Groups","Pct of No Car Households in City/Town")) %>% 
+                    caption = paste("No Car Households","with Average Headways",paste0("Over ",round(quantile(vt_routes_sf_Bus$mean_headways,0.8),0)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of No Car Households in Block Groups","Pct of No Car Households in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
@@ -2780,7 +2780,7 @@ m <- tm_shape(vt_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
-  tm_layout(title = paste("Low Income","Persons","with Bus Headways",paste0("Over ",quantile(vt_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
+  tm_layout(title = paste("Low Income","Persons","with Bus Headways",paste0("Over ",round(quantile(vt_routes_sf_Bus$mean_headways,0.8),0)," Minutes"),sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2906,7 +2906,7 @@ m <- tm_shape(vt_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
-  tm_layout(title = paste("Persons Over 64","with Bus Headways",paste0("Over ",quantile(vt_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
+  tm_layout(title = paste("Persons Over 64","with Bus Headways",paste0("Over ",round(quantile(vt_routes_sf_Bus$mean_headways,0.8),0)," Minutes"),sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2969,7 +2969,7 @@ m <- tm_shape(vt_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Bus Route", col = "blue") +
-  tm_layout(title = paste("Limited English", "Households","with Bus Headways",paste0("Over ",quantile(vt_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"),
+  tm_layout(title = paste("Limited English", "Households","with Bus Headways",paste0("Over ",round(quantile(vt_routes_sf_Bus$mean_headways,0.8),0)," Minutes"),sep = "\n"),
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
