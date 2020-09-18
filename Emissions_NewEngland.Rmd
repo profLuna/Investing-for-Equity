@@ -1,7 +1,7 @@
 ---
 title: "Transportation Emissions in New England"
 author: "Marcos Luna and Neenah Estrella-Luna"
-date: "5/5/2020"
+date: "`r Sys.Date()`"
 output: 
   bookdown::pdf_document2:
     toc: true
@@ -317,11 +317,14 @@ ne_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "Under 5", y = 2.5, label = "Above regional average"),
+  geom_text(aes(x = "Under 5", y = 2.5, label = "Above\nregional average"),
             color = "gray48") +
-  geom_segment(aes(x = "Low Income", xend = "Low Income", y = 0.5, yend = 2.5), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
-  expand_limits(y = c(-1.5,6))
+  geom_text(aes(x = "Under 5", y = -1.3, label = "Below\nregional average"),
+            color = "gray48") +
+  
+  # geom_segment(aes(x = "Low Income", xend = "Low Income", y = 0.5, yend = 2.5), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-2.5,6))
 ```
 
 Like the region as a whole, these populations have also experienced a decline in exposure since 2011. Note however that except for persons over age 64 and low income persons, all other populations of concern continue to experience exposures greater than the regional average, with minorities leading on this measure. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE).  
@@ -679,11 +682,13 @@ ne_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "Under 5", y = 2, label = "Above regional average"),
+  geom_text(aes(x = "Under 5", y = 2, label = "Above\nregional average"),
             color = "gray48") +
-  geom_segment(aes(x = "Over 64", xend = "Over 64", y = 0.5, yend = 2.5), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
-  expand_limits(y = c(-1,4))
+  geom_text(aes(x = "Under 5", y = -1, label = "Below\nregional average"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Over 64", xend = "Over 64", y = 0.5, yend = 2.5), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-2,4))
 ```
 
 Like the region as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvgNE). All populations of concern have experienced an increase in population-weighted exposure to Ozone, with minorities and persons in language-isolated households experiencing the greatest increase in exposure. 
@@ -976,15 +981,34 @@ newggslopegraph(dataframe = CO290_17ST_actual,
 The growth in CO~2~ emissions exceeds population growth across the region and in most states as is evident in the per capita emissions (see last three columns in Table \@ref(tab:changeCO2NE)). While New Hampshire leads in percentage growth of total emissions for the region, Maine leads in per capita growth. Only Vermont and Rhode Island showed declines in per capita emissions. 
 
 ```{r changeCO2NE, fig.align = "center", fig.cap="Annual 2017 CO2 emissions (mtons) and Percent Change by state at Census Block Group level."}
-# acquire table of 1990 state pop values
 library(tidycensus)
 census_api_key("f2776fbc29cf847505de9308a82c8d65290d16b3")
-ne_states_df90 <- map_df(ne_states, function(x) {
-    get_decennial(geography = "state", 
-            variables = c(pop90 = "P0010001"),
-            state = x, output = "wide", year = 1990)
-  }) %>% 
-  select(-GEOID)
+ne_states_df <- map_df(ne_states, function(x) {
+  get_acs(geography = "state", year = 2017,
+          variables = c(totalpop = "B03002_001",
+                        medhhinc = "B19013_001"),
+          state = x, output = "wide")
+})
+
+# # acquire table of 1990 state pop values
+# library(tidycensus)
+# census_api_key("f2776fbc29cf847505de9308a82c8d65290d16b3")
+# ne_states_df90 <- map_df(ne_states, function(x) {
+#     get_decennial(geography = "state", 
+#             variables = c(pop90 = "P0010001"),
+#             state = x, output = "wide", year = 1990)
+#   }) %>% 
+#   select(-GEOID)
+
+# acquire pop90 data previously downloaded dbf files from https://www2.census.gov/census_1990/CD90_1A_1/" because Census API endpoints changed and not working in tidycensus as of 9/18/2020
+library(foreign)
+# read in files and bind into one table
+ne_states_df90 <- list.files(path = "DATA", pattern = "\\.dbf$", 
+                               full.names = TRUE) %>% 
+  lapply(., function(x) read.dbf(x, as.is = TRUE)) %>% 
+  lapply(., function(x) transmute(x, NAME = ANPSADPI, pop90 = P0010001)) %>% 
+  lapply(., function(x) slice(x,1)) %>% 
+  do.call(rbind,.)
 
 ne_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -1207,10 +1231,12 @@ ne_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "Low Income", y = 20, label = "Above regional avg"),
+  geom_text(aes(x = "Low Income", y = 20, label = "Above\nregional avg"),
             color = "gray48") +
-  geom_segment(aes(x = "Under 5", xend = "Under 5", y = 5, yend = 25), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
+  geom_text(aes(x = "Low Income", y = -8, label = "Below\nregional avg"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 5, yend = 25), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-15,50))
 ```
 
@@ -1395,10 +1421,12 @@ ne_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "Under 5", y = 6, label = "Above regional average"),
+  geom_text(aes(x = "Under 5", y = 6, label = "Above\nregional average"),
             color = "gray48") +
-  geom_segment(aes(x = "Low Income", xend = "Low Income", y = 2, yend = 8), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
+  geom_text(aes(x = "Under 5", y = -3, label = "Below\nregional average"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Low Income", xend = "Low Income", y = 2, yend = 8), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-5,15))
 ```
 
@@ -1585,11 +1613,13 @@ ne_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "Low Income", y = 7, label = "Above regional average"),
+  geom_text(aes(x = "Low Income", y = 7, label = "Above\nregional average"),
             color = "gray48") +
-  geom_segment(aes(x = "Under 5", xend = "Under 5", y = 2, yend = 7), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
-  expand_limits(y = c(-4,16))
+  geom_text(aes(x = "Low Income", y = -3, label = "Below\nregional average"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 2, yend = 7), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
+  expand_limits(y = c(-5,16))
 ```
 
 Language isolated households and minorities experience higher respiratory hazard indices from inhalation of air toxics compared to the general population. There is a moderate to strong positive correlation between the proportions of minorities and respiratory hazard index, and a moderately strong positive correlation with language isolated households (see Appendix).
@@ -1753,10 +1783,12 @@ ne_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "No HS Dip", y = 60, label = "Above regional average"),
+  geom_text(aes(x = "No HS Dip", y = 60, label = "Above\nregional average"),
             color = "gray48") +
-  geom_segment(aes(x = "Low Income", xend = "Low Income", y = 30, yend = 70), 
-               arrow = arrow(length = unit(0.3,"cm"))) +
+  geom_text(aes(x = "No HS Dip", y = -22, label = "Below\nregional average"),
+            color = "gray48") +
+  # geom_segment(aes(x = "Low Income", xend = "Low Income", y = 30, yend = 70), 
+  #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-35,110))
 ```
 
@@ -1886,7 +1918,7 @@ The American Community Survey (ACS) is an ongoing survey by the U.S. Census Bure
 
 The ACS provides greater demographic detail and temporal resolution than the decennial Census, but its geographic resolution is more limited. While the decennial Census is based on an enumeration (i.e., a total count) of everyone in the U.S. once every decade, the ACS is based on a statistical sample of approximately 3.5 million addresses across the country each year. As a result of this sampling approach, the ACS estimates must be pooled, or combined, across multiple years in order to provide reliable estimates for smaller areas (i.e. areas with less than 20,000 people), such as at the Tract or Block Group levels. While it is possible to know the number of low income households across the U.S. annually, one may only know this about a Tract or Block Group based on 5-year estimates. Since 2010, the ACS has published 5-year data (beginning with 2005–2009 estimates) for all geographic areas down to the census Tract and Block Group levels. For more detail on the ACS, see Understanding and Using American Community Survey Data: What All Data Users Need to Know at https://www.census.gov/programs-surveys/acs/guidance/handbooks/general.html.
 
-For the purposes of this analysis ACS 5-year estimates for the period 2013 - 2017 for Census Tracts and Block Groups in New England, as well as their associated TIGER/Line spatial files, were downloaded from the Census Bureau via API using the tigris package in R. Demographic variables consistent with those used by the EPA in EJSCREEN were chosen, as well as environmental justice population thresholds used by states where available. Table \@ref(tab:ACSvariables) below lists the demographic variables that were downloaded directly or computed from ACS variables:
+For the purposes of this analysis ACS 5-year estimates for the period 2014 - 2018 for Census Tracts and Block Groups in New England, as well as their associated TIGER/Line spatial files, were downloaded from the Census Bureau via API using the tigris package in R. Demographic variables consistent with those used by the EPA in EJSCREEN were chosen, as well as environmental justice population thresholds used by states where available. Table \@ref(tab:ACSvariables) below lists the demographic variables that were downloaded directly or computed from ACS variables:
 ```{r ACSvariables}
 ACSvDF <- data.frame(Variable = c("Total Population",
                                   "Minority",
