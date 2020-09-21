@@ -371,6 +371,10 @@ me_tracts_sf_noBus_simple <- me_tracts_sf_noBus %>%
   st_simplify(., dTolerance = 100) %>%
   filter(!st_is_empty(.)) %>%
   st_make_valid()
+
+# write out to file for later analysis
+save(me_blkgrps_sf_noBus, me_tracts_sf_noBus,
+     file = "DATA/transport/ME/noTransit.Rds")
 ```
 
 
@@ -690,6 +694,11 @@ me_wAvgWalkability_df <- me_blkgrp_walkability_sf %>%
   group_by(Group) %>% 
   summarize(wNatWalkIndex = weighted.mean(NatWalkInd, Pop, na.rm = TRUE)) %>% 
   rbind(., me_tract_walkability_df)
+
+# save data for later analysis
+save(me_blkgrp_walkability_sf,
+     me_tract_walkability_sf,
+     file = "DATA/transport/ME/walkability.Rds")
 ```
 
 Figure \@ref(fig:mapWalkability) shows walkability scores by Census Block Group across Maine. The population-weighted average walkability across Maine is `r round(me_wAvgWalkability_df %>% filter(Group == "Total Pop") %>% select(wNatWalkIndex) %>% pull(),1)`. Walkability varies across the state, although most of the state is classified as below average to least walkable. Walkability is highest in portions of Kittery, York, Bangor, and Portland.
@@ -965,6 +974,11 @@ lai_me_df <- lai_me_blkgrp %>%
   group_by(Group) %>% 
   summarize(wTBurden = weighted.mean(hh7_t, Pop, na.rm = TRUE)) %>% 
   rbind(., lai_me_tract_df)
+
+# save data for later analysis
+save(lai_me_blkgrp,
+     lai_me_tract,
+     file = "DATA/transport/ME/costBurden.Rds")
 
 # isolate places where transportation cost as a percentage of income exceeds housing as a percentage of income
 lai_ToverH <- lai_ri %>%
