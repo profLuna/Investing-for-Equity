@@ -370,6 +370,10 @@ nh_tracts_sf_noBus_simple <- nh_tracts_sf_noBus %>%
   st_simplify(., dTolerance = 100) %>%
   filter(!st_is_empty(.)) %>%
   st_make_valid()
+
+# write out to file for later analysis
+save(nh_blkgrps_sf_noBus, nh_tracts_sf_noBus,
+     file = "DATA/transport/NH/noTransit.Rds")
 ```
 
 ## Access to Public Transit
@@ -697,6 +701,11 @@ nh_wAvgWalkability_df <- nh_blkgrp_walkability_sf %>%
   group_by(Group) %>% 
   summarize(wNatWalkIndex = weighted.mean(NatWalkInd, Pop, na.rm = TRUE)) %>% 
   rbind(., nh_tract_walkability_df)
+
+# save data for later analysis
+save(nh_blkgrp_walkability_sf,
+     nh_tract_walkability_sf,
+     file = "DATA/transport/NH/walkability.Rds")
 ```
 
 Figure \@ref(fig:mapWalkability) shows walkability scores by Census Block Group across New Hampshire. The population-weighted average walkability score across New Hampshire is `r round(nh_wAvgWalkability_df %>% filter(Group == "Total Pop") %>% select(wNatWalkIndex) %>% pull(),1)`. Walkability varies across the state, although most of the state is classified as below average to least walkable. Walkability is highest in portions of Nashua, Manchester, Concord, Laconia, Keene, and Portsmouth.
@@ -980,6 +989,11 @@ lai_nh_df <- lai_nh_blkgrp %>%
   group_by(Group) %>% 
   summarize(wTBurden = weighted.mean(hh7_t, Pop, na.rm = TRUE)) %>% 
   rbind(., lai_nh_tract_df)
+
+# save data for later analysis
+save(lai_nh_blkgrp,
+     lai_nh_tract,
+     file = "DATA/transport/NH/costBurden.Rds")
 
 # isolate places where transportation cost as a percentage of income exceeds housing as a percentage of income
 lai_ToverH <- lai_ri %>%
