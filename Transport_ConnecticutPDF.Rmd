@@ -1575,10 +1575,14 @@ save(headway80thblkgrps_bus,
      headway80thblkgrps_CR,
      headway80thtracts_CR, file = "DATA/transport/CT/headway80th.Rds")
 
-st_write(headway80thblkgrps_bus,"DATA/transport/CT/headway80thblkgrps_bus.shp")
-st_write(headway80thtracts_bus, "DATA/transport/CT/headway80thtracts_bus.shp")
-st_write(headway80thblkgrps_CR,"DATA/transport/CT/headway80thblkgrps_CR.shp")
-st_write(headway80thtracts_CR,"DATA/transport/CT/headway80thtracts_CR.shp")
+st_write(headway80thblkgrps_bus,"DATA/transport/CT/headway80thblkgrps_bus.shp",
+         delete_layer = TRUE)
+st_write(headway80thtracts_bus, "DATA/transport/CT/headway80thtracts_bus.shp",
+         delete_layer = TRUE)
+st_write(headway80thblkgrps_CR,"DATA/transport/CT/headway80thblkgrps_CR.shp",
+         delete_layer = TRUE)
+st_write(headway80thtracts_CR,"DATA/transport/CT/headway80thtracts_CR.shp",
+         delete_layer = TRUE)
 ```
 The population-weighted average headways above provide a glimpse of average headways across the state for different population groups and for different transit modes. However, headways also vary for specific communities. Indeed, it is important to consider populations of concern or transportation-limited populations that experience excessively large headways or low service frequency. Figures \@ref(fig:mapHeadwayOver64bus) and \@ref(fig:mapHeadwayCTINCrail) below highlight communities of persons over 64 who are within reasonable distance of bus stops (i.e., 400m or 1/4 mile) and low income groups, as defined by state environmental justice policy, who are within reasonable distance of commuter rail stops (i.e., 4800m or 3 miles), but where the mean headway for these stops exceeds the 80th percentile of mean route headways for the state. Tables \@ref(tab:tabHeadwayOver64bus) and \@ref(tab:tabHeadwayCTINCrail) show breakdowns by municipality. For example, Table \@ref(tab:tabHeadwayOver64bus) shows that `r formatC(as.numeric(headway80_bus[1,3]),big.mark=",")` people over 64 across `r headway80_bus[1,2]` Block Groups in `r headway80_bus[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ct_routes_sf_Bus$mean_headways,0.8)` minutes. These people represented `r headway80_bus[1,4]` of people over 64 in `r headway80_bus[1,1]`. Similarly, Table \@ref(tab:tabHeadwayCTINCrail) shows that `r formatC(as.numeric(headway80_commuterRail[1,3]),big.mark=",")` low income people across `r headway80_commuterRail[1,2]` Block Groups in `r headway80_commuterRail[1,1]` resided in areas where the average headway of accessible commuter rail stops exceeded `r quantile(ct_stops_sf_Rail$headway,.8)` minutes. These people represented `r headway80_commuterRail[1,4]` of low income people, as defined by state environmental justice policy, in `r headway80_commuterRail[1,1]`.
 Maps and tables of other populations of concern with excessive headways can be found in Appendix B. 
