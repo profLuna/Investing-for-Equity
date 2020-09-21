@@ -687,6 +687,10 @@ vt_tracts_sf_noTransit_simple <- vt_tracts_sf_noTransit %>%
   st_simplify(., dTolerance = 100) %>% 
   filter(!st_is_empty(.)) %>% 
   st_make_valid()
+
+# write out to file for later analysis
+save(vt_blkgrps_sf_noTransit, vt_tracts_sf_noTransit, 
+     file = "DATA/transport/VT/noTransit.Rds")
 ```
 
 ## Access to Public Transit
@@ -1151,6 +1155,13 @@ headway80_2 <- headway80thblkgrps_bus %>%
   rename("City/Town" = NAME) %>% 
   mutate(`Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
   arrange(desc(`Under 18`))
+
+# write out to file for use in later analysis
+save(headway80thblkgrps_bus,
+     headway80thtracts_bus,file = "DATA/transport/VT/headway80th.Rds")
+
+st_write(headway80thblkgrps_bus,"DATA/transport/VT/headway80thblkgrps_bus.shp")
+st_write(headway80thtracts_bus, "DATA/transport/VT/headway80thtracts_bus.shp")
 ```
 The population-weighted average headways above provide a glimpse of average headways across the state for different population groups. However, headways also vary for specific communities. Indeed, it is important to consider populations of concern or transportation-limited populations that experience excessively long headways or low service frequency. Figures \@ref(fig:mapHeadwayUnder5bus) and \@ref(fig:mapHeadwayUnder18bus) below highlight communities of persons under 5 and under 18 who are within reasonable distance of bus stops (i.e., 400m or 1/4 mile), but where the mean headway for these stops exceeds the 80th percentile of mean route headways for the state. Tables \@ref(tab:tabHeadwayUnder5bus) and \@ref(tab:tabHeadwayUnder18bus) show breakdowns by municipality. For example, Table \@ref(tab:tabHeadwayUnder5bus) shows that `r formatC(as.numeric(headway80_1[1,3]),big.mark=",")` children under 5 across `r headway80_1[1,2]` Block Groups in `r headway80_1[1,1]` resided in areas where the average headway of accessible bus stops exceeded `r quantile(vt_routes_sf_Bus$mean_headways,0.8)` minutes. These people represented `r headway80_1[1,4]` of children under 5 in `r headway80_1[1,1]`. Similarly, Table \@ref(tab:tabHeadwayUnder18bus) shows that `r formatC(as.numeric(headway80_2[1,3]),big.mark=",")` persons under 18 across `r headway80_2[1,2]` Block Groups in `r headway80_2[1,1]` resided in areas where the average headway of accessible bus stops exceeded `r quantile(vt_stops_sf_Bus$headway,.8)` minutes. These people represented `r headway80_2[1,4]` of persons under 18 in `r headway80_2[1,1]`.
 Maps and tables of other populations of concern with excessive headways can be found in Appendix B. 
@@ -1343,6 +1354,11 @@ vt_wAvgWalkability_df <- vt_blkgrp_walkability_sf %>%
   group_by(Group) %>% 
   summarize(wNatWalkIndex = weighted.mean(NatWalkInd, Pop, na.rm = TRUE)) %>% 
   rbind(., vt_travt_walkability_df)
+
+# save data for later analysis
+save(vt_blkgrp_walkability_sf,
+     vt_tract_walkability_sf,
+     file = "DATA/transport/VT/walkability.Rds")
 ```
 
 Figure \@ref(fig:mapWalkability) shows walkability scores by Census Block Group across Vermont.  The population-weighted average walkability score across the state is `r round(vt_wAvgWalkability_df %>% filter(Group == "Total Pop") %>% select(wNatWalkIndex) %>% pull(),1)`. Walkability varies across the state, although most of the state is classified as below average to least walkable. Walkability is highest in portions of Burlington, Montpelier, Fairhaven, and Rutland.
@@ -1630,6 +1646,11 @@ lai_vt_df <- lai_vt_blkgrp %>%
   group_by(Group) %>% 
   summarize(wTBurden = weighted.mean(hh7_t, Pop, na.rm = TRUE)) %>% 
   rbind(., lai_vt_travt_df)
+
+# save data for later analysis
+save(lai_vt_blkgrp,
+     lai_vt_tract,
+     file = "DATA/transport/VT/costBurden.Rds")
 
 # isolate places where transportation cost as a percentage of income exceeds housing as a percentage of income
 lai_ToverH <- lai_ri %>%
