@@ -335,6 +335,25 @@ cum_burden_df %>% kable(longtable = T, booktabs = T,
 # save to csv
 write_csv(cum_burden_df,"tables/cum_burden.csv")
 
+# create a stacked bar chart to compare cumulative burdens
+cum_burden_df %>% 
+  select(Group,PctB1:PctB4) %>% 
+  pivot_longer(.,cols = starts_with("Pct"), names_to = "Burdens") %>% 
+  mutate(Burdens = as.factor(Burdens)) %>% 
+  ggplot(aes(x = reorder(Group,value), y = value, fill = fct_rev(Burdens))) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(x = "", y = "Percentage", fill = "Burden\nCategories",
+       title = "Percentage of Massachusetts Population within\nCumulative Burden Categories") + 
+  theme_light() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank()) +
+  scale_fill_discrete(labels = c("4 categories", "3 categories", 
+                                 "2 categories", "1 category"))
+# save plot as png
+ggsave("images/CUM_BURDEN_Graph.png")
+
 
 # map showing block groups by number of cumulative burdens (i.e., high concentration of pop of concern & 1 or more burdens in 80th percentile)
 # tmap_mode("view")
@@ -442,7 +461,7 @@ m <- ma_blkgrps_sf %>%
   filter(BurdenCount > 0) %>% 
   tm_shape(., unit = "mi") + 
   tm_fill(col = "BurdenCount", palette = "YlOrRd", 
-          title = "Number of\nBurdens") +
+          title = "Number of\nBurden\nCategories") +
   tm_shape(ma_blkgrps_sf) + tm_borders(lwd = 0.1) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
   tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
@@ -479,6 +498,66 @@ m <- ma_blkgrps_sf %>%
 tmap_save(m, "images/CUM_BURDEN_map.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
+# replicate BG map for MA EJ only 
+mEJ <- ma_blkgrps_sf %>% 
+  filter(MA_MINORITY == "M" | MA_INCOME == "I" | MA_ENGLISH == "E") %>% 
+  filter(BurdenCount > 0) %>% 
+  tm_shape(., unit = "mi") + 
+  tm_fill(col = "BurdenCount", palette = "YlOrRd", 
+          title = "Number of\nBurdens") +
+  # tm_shape(ma_blkgrps_sf) + tm_borders(lwd = 0.1) +
+  tm_shape(ma_towns_sf) + tm_borders(lwd = 0.1) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ma_highways) + tm_lines(col = "seashell4", lwd = 1, alpha = 0.5) +
+  tm_shape(ma_highways2nd) + tm_lines(col = "seashell4", lwd = 1, alpha = 0.5) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = .1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = .1) +
+  tm_shape(I395roadSegment) +
+  tm_symbols(shape = I395, border.lwd = NA, size = .1) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment2) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment3) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I90roadSegment) +
+  tm_symbols(shape = I90, border.lwd = NA, size = .1) +
+  tm_shape(I90roadSegment2) +
+  tm_symbols(shape = I90, border.lwd = NA, size = .1) +
+  tm_shape(ma_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.4, col = "black",
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0,10,20), position = c(0.55,0.005)) +
+  tm_layout(title = "Cumulative\nBurdens\nby Census\nBlock Group for\nEJ Communities",
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(mEJ, "images/CUM_BURDEN_EJ_map.png",
+          height = 4, width = 8, units = "in", dpi = 600)
+
+# what percentage of EJ BGs have 1 or more burdens?
+EJbgs <- ma_blkgrps_sf %>% 
+  filter(MA_MINORITY == "M" | MA_INCOME == "I" | MA_ENGLISH == "E") %>% 
+  nrow()
+EJbgs1_4 <- ma_blkgrps_sf %>% 
+  filter(BurdenCount > 0 & 
+           (MA_MINORITY == "M" | MA_INCOME == "I" | MA_ENGLISH == "E")) %>% 
+  nrow()
+# wha percentage of EJ BGs are high burden?
+EJbgs1_4/EJbgs*100
+# what percentage of all high burden BGs are these?
+hiBurdenBGs <- ma_blkgrps_sf %>% 
+  filter(BurdenCount > 0) %>% 
+  nrow()
+hiBurdenBGs/nrow(ma_blkgrps_sf)*100
+EJbgs1_4/hiBurdenBGs*100
 
 # table showing how many and what percentage of each population of concern falls under each type of burden: Emissions, Transport, Heat, Evacuation (non-exclusive)
 Pburden <- ma_blkgrps_sf %>% 
@@ -572,7 +651,7 @@ burden_types_df %>% kable(longtable = T, booktabs = T,
 # save as csv
 write_csv(burden_types_df,"tables/burden_types.csv")
 
-# table showing percent and rank of block groups by town that have 1 - 4 burden categories
+# table showing towns with block groups with 3 or 4 burdens
 burdens_town_df <- ma_blkgrps_sf %>%
   transmute(BurdenCount = as.character(BurdenCount)) %>% 
   st_centroid(.) %>% 
@@ -583,24 +662,26 @@ burdens_town_df <- ma_blkgrps_sf %>%
   pivot_wider(id_cols = NAME, names_from = BurdenCount, 
               values_from = `Block Groups`) %>% 
   mutate(across(everything(), ~replace_na(.x, 0))) %>% 
-  rowwise() %>% 
-  mutate(Total = sum(c_across(2:5))) %>% 
+  # rowwise() %>% 
+  # mutate(Total = sum(c_across(2:5))) %>% 
   as.data.frame() %>% # coerce to df again otherwise percent_rank doesn't work!
-  mutate(Pct1 = `1`/Total*100,
-         Rank1 = round(percent_rank(Pct1)*100,0),
-         Pct2 = `2`/Total*100,
-         Rank2 = round(percent_rank(Pct2)*100,0),
-         Pct3 = `3`/Total*100,
-         Rank3 = round(percent_rank(Pct3)*100,0),
-         Pct4 = `4`/Total*100,
-         Rank4 = round(percent_rank(Pct4)*100,0)) %>% 
-  rename("City/Town" = NAME) %>% 
-  filter(`1` > 0 | `2` > 0 | `3` > 0 | `4` > 0) %>% 
-  select(`City/Town`,Pct1:Rank4)
+  # mutate(Pct1 = `1`/Total*100,
+  #        Rank1 = round(percent_rank(Pct1)*100,0),
+  #        Pct2 = `2`/Total*100,
+  #        Rank2 = round(percent_rank(Pct2)*100,0),
+  #        Pct3 = `3`/Total*100,
+  #        Rank3 = round(percent_rank(Pct3)*100,0),
+  #        Pct4 = `4`/Total*100,
+  #        Rank4 = round(percent_rank(Pct4)*100,0)) %>% 
+  transmute("City/Town" = NAME, `3 Burdens` = `3`, `4 Burdens` = `4`) %>% 
+  filter(`3 Burdens` > 0 | `4 Burdens` > 0) %>%
+  rowwise() %>% 
+  mutate(`3+ Burdens` = sum(c_across(2:3)))
+  # select(`City/Town`,Pct1:Rank4)
 burdens_town_df %>% kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Percent of Block Groups with 1+ Burdens and Percentile Rank by Municipality", align = "r") %>% 
+                    caption = "Municipalities with Block Groups meeting 3 or 4 Cumulative Burdens", align = "r") %>% 
                     # col.names = c(names(.)[1:2],"Number of Over 64 in Block Groups","Pct of Over 64 in City/Town")) %>% 
   # column_spec(3:4, width = "4cm") %>%
   kable_styling(latex_options = c("repeat_header","striped")) 
@@ -608,7 +689,104 @@ burdens_town_df %>% kable(longtable = T, booktabs = T,
 write_csv(burdens_town_df, "tables/burdens_town.csv")
 
 
-# table showing percent and rank of block groups by state senate district that have 1 - 4 burden categories
+# table showing EJ towns with block groups with 3 or 4 burdens
+burdens_EJtown_df <- ma_blkgrps_sf %>%
+  filter(MA_MINORITY == "M" | MA_INCOME == "I" | MA_ENGLISH == "E") %>%
+  transmute(BurdenCount = as.character(BurdenCount)) %>% 
+  st_centroid(.) %>% 
+  st_intersection(.,ma_towns_sf) %>% 
+  as.data.frame() %>% 
+  group_by(BurdenCount, NAME) %>%
+  summarize(`Block Groups` = n()) %>% 
+  pivot_wider(id_cols = NAME, names_from = BurdenCount, 
+              values_from = `Block Groups`) %>% 
+  mutate(across(everything(), ~replace_na(.x, 0))) %>% 
+  # rowwise() %>% 
+  # mutate(Total = sum(c_across(2:5))) %>% 
+  as.data.frame() %>% # coerce to df again otherwise percent_rank doesn't work!
+  # mutate(Pct1 = `1`/Total*100,
+  #        Rank1 = round(percent_rank(Pct1)*100,0),
+  #        Pct2 = `2`/Total*100,
+  #        Rank2 = round(percent_rank(Pct2)*100,0),
+  #        Pct3 = `3`/Total*100,
+  #        Rank3 = round(percent_rank(Pct3)*100,0),
+  #        Pct4 = `4`/Total*100,
+  #        Rank4 = round(percent_rank(Pct4)*100,0)) %>% 
+  transmute("EJ City/Town" = NAME, `3 Burdens` = `3`, `4 Burdens` = `4`) %>% 
+  filter(`3 Burdens` > 0 | `4 Burdens` > 0) %>%
+  rowwise() %>% 
+  mutate(`3+ Burdens` = sum(c_across(2:3)))
+# select(`City/Town`,Pct1:Rank4)
+burdens_EJtown_df %>% kable(longtable = T, booktabs = T,
+                          format.args = list(big.mark = ','), 
+                          digits = 1,
+                          caption = "Municipalities with Environmental Justice Block Groups meeting 3 or 4 Cumulative Burdens", align = "r") %>% 
+  # col.names = c(names(.)[1:2],"Number of Over 64 in Block Groups","Pct of Over 64 in City/Town")) %>% 
+  # column_spec(3:4, width = "4cm") %>%
+  kable_styling(latex_options = c("repeat_header","striped")) 
+# save as csv
+write_csv(burdens_EJtown_df, "tables/burdens_EJtown.csv")
+
+# how many EJ municipalities are there?
+EJtowns <- ma_blkgrps_sf %>%
+  select(-NAME) %>% 
+  filter(MA_MINORITY == "M" | MA_INCOME == "I" | MA_ENGLISH == "E") %>%
+  st_centroid(.) %>% 
+  st_intersection(.,ma_towns_sf) %>% 
+  as.data.frame() %>% 
+  group_by(NAME) %>%
+  summarize(`Block Groups` = n())
+# save as csv
+write_csv(EJtowns, "tables/EJtowns.csv")
+# what percentage of EJ municipalites have high burden BGs?
+nrow(burdens_EJtown_df)/nrow(EJtowns)*100
+
+
+# map of towns with block groups meeting 3 - 4 burdens
+tmap_mode("plot")
+m <- ma_towns_sf %>% 
+  right_join(.,burdens_town_df, by = c("NAME" = "City/Town")) %>% 
+  tm_shape(., unit = "mi", bbox = ma_towns_sf) + 
+  tm_fill(col = "red", alpha = 0.5) +
+  tm_shape(ma_towns_sf) + tm_borders(col = "gray", lwd = 0.2) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ma_highways) + tm_lines(col = "seashell4", lwd = 1, alpha = 0.5) +
+  tm_shape(ma_highways2nd) + tm_lines(col = "seashell4", lwd = 1, alpha = 0.5) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = .1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = .1) +
+  tm_shape(I395roadSegment) +
+  tm_symbols(shape = I395, border.lwd = NA, size = .1) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment2) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment3) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I90roadSegment) +
+  tm_symbols(shape = I90, border.lwd = NA, size = .1) +
+  tm_shape(I90roadSegment2) +
+  tm_symbols(shape = I90, border.lwd = NA, size = .1) +
+  tm_shape(ma_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.4, col = "black",
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0,10,20), position = c(0.55,0.005)) +
+  tm_layout(title = "Municipalities with Block Groups\nmeeting 3 - 4 Cumulative Burden\nCategories",
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            title.position = c("left", "bottom"))
+
+tmap_save(m, "images/CUM_BURDEN_TOWN_map.png",
+          height = 4, width = 8, units = "in", dpi = 600)
+
+
+# table showing state senate district that have 3 - 4 burden categories
 senate_districts <- st_read("DATA/shapefiles/senate2012",
                             "SENATE2012_POLY") %>% 
   st_transform(., crs = 26986) %>% 
@@ -624,31 +802,78 @@ burdens_senate_df <- ma_blkgrps_sf %>%
   pivot_wider(id_cols = SEN_DIST, names_from = BurdenCount, 
               values_from = `Block Groups`) %>% 
   mutate(across(everything(), ~replace_na(.x, 0))) %>% 
-  rowwise() %>% 
-  mutate(Total = sum(c_across(2:5))) %>% 
+  # rowwise() %>% 
+  # mutate(Total = sum(c_across(2:5))) %>% 
   as.data.frame() %>% # coerce to df again otherwise percent_rank doesn't work!
-  mutate(Pct1 = `1`/Total*100,
-         Rank1 = round(percent_rank(Pct1)*100,0),
-         Pct2 = `2`/Total*100,
-         Rank2 = round(percent_rank(Pct2)*100,0),
-         Pct3 = `3`/Total*100,
-         Rank3 = round(percent_rank(Pct3)*100,0),
-         Pct4 = `4`/Total*100,
-         Rank4 = round(percent_rank(Pct4)*100,0)) %>% 
-  rename(`Senate District` = SEN_DIST) %>% 
-  filter(`1` > 0 | `2` > 0 | `3` > 0 | `4` > 0) %>% 
-  select(`Senate District`,Pct1:Rank4)
+  # mutate(Pct1 = `1`/Total*100,
+  #        Rank1 = round(percent_rank(Pct1)*100,0),
+  #        Pct2 = `2`/Total*100,
+  #        Rank2 = round(percent_rank(Pct2)*100,0),
+  #        Pct3 = `3`/Total*100,
+  #        Rank3 = round(percent_rank(Pct3)*100,0),
+  #        Pct4 = `4`/Total*100,
+  #        Rank4 = round(percent_rank(Pct4)*100,0)) %>% 
+  transmute(`Senate District` = SEN_DIST, 
+            `3 Burdens` = `3`, `4 Burdens` = `4`) %>% 
+  filter(`3 Burdens` > 0 | `4 Burdens` > 0) %>%
+  rowwise() %>% 
+  mutate(`3+ Burdens` = sum(c_across(2:3)))
+
 burdens_senate_df %>% kable(longtable = T, booktabs = T,
         format.args = list(big.mark = ','), 
         digits = 1,
-        caption = "Percent of Block Groups with 1+ Burdens and Percentile Rank by State Senate District", align = "r") %>% 
+        caption = "State Senate District with Block Groups meeting 3 or 4 Cumulative Burdens", align = "r") %>% 
   # col.names = c(names(.)[1:2],"Number of Over 64 in Block Groups","Pct of Over 64 in City/Town")) %>% 
   # column_spec(3:4, width = "4cm") %>%
   kable_styling(latex_options = c("repeat_header","striped")) 
 # save as csv
 write_csv(burdens_senate_df, "tables/burdens_senate.csv")
 
-# table showing percent and rank of block groups by state house district that have 1 - 4 burden categories
+# map of senate districts with block groups meeting 3 - 4 burdens
+tmap_mode("plot")
+m <- senate_districts %>% 
+  right_join(.,burdens_senate_df, by = c("SEN_DIST" = "Senate District")) %>% 
+  tm_shape(., unit = "mi", bbox = senate_districts) + 
+  tm_fill(col = "red", alpha = 0.5) +
+  tm_shape(senate_districts) + tm_borders(col = "seashell4") +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ma_highways) + tm_lines(col = "gray", lwd = 1, alpha = 0.5) +
+  tm_shape(ma_highways2nd) + tm_lines(col = "gray", lwd = 1, alpha = 0.5) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = .1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = .1) +
+  tm_shape(I395roadSegment) +
+  tm_symbols(shape = I395, border.lwd = NA, size = .1) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment2) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment3) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I90roadSegment) +
+  tm_symbols(shape = I90, border.lwd = NA, size = .1) +
+  tm_shape(I90roadSegment2) +
+  tm_symbols(shape = I90, border.lwd = NA, size = .1) +
+  tm_shape(ma_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.4, col = "black",
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0,10,20), position = c(0.55,0.005)) +
+  tm_layout(title = "Senate Districts with Block Groups\nmeeting 3 - 4 Cumulative Burden\nCategories",
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"),
+            title.position = c("left","bottom"))
+
+tmap_save(m, "images/CUM_BURDEN_SENATE_map.png",
+          height = 4, width = 8, units = "in", dpi = 600)
+
+
+# table showing block groups by state house district that have 3 - 4 burden categories
 house_districts <- st_read("DATA/shapefiles/house2012",
                             "HOUSE2012_POLY") %>% 
   st_transform(., crs = 26986) %>% 
@@ -664,29 +889,80 @@ burdens_house_df <- ma_blkgrps_sf %>%
   pivot_wider(id_cols = REP_DIST, names_from = BurdenCount, 
               values_from = `Block Groups`) %>% 
   mutate(across(everything(), ~replace_na(.x, 0))) %>% 
-  rowwise() %>% 
-  mutate(Total = sum(c_across(2:5))) %>% 
+  # rowwise() %>% 
+  # mutate(Total = sum(c_across(2:5))) %>% 
   as.data.frame() %>% # coerce to df again otherwise percent_rank doesn't work!
-  mutate(Pct1 = `1`/Total*100,
-         Rank1 = round(percent_rank(Pct1)*100,0),
-         Pct2 = `2`/Total*100,
-         Rank2 = round(percent_rank(Pct2)*100,0),
-         Pct3 = `3`/Total*100,
-         Rank3 = round(percent_rank(Pct3)*100,0),
-         Pct4 = `4`/Total*100,
-         Rank4 = round(percent_rank(Pct4)*100,0)) %>% 
-  rename(`House District` = REP_DIST) %>% 
-  filter(`1` > 0 | `2` > 0 | `3` > 0 | `4` > 0) %>% 
-  select(`House District`,Pct1:Rank4)
+  # mutate(Pct1 = `1`/Total*100,
+  #        Rank1 = round(percent_rank(Pct1)*100,0),
+  #        Pct2 = `2`/Total*100,
+  #        Rank2 = round(percent_rank(Pct2)*100,0),
+  #        Pct3 = `3`/Total*100,
+  #        Rank3 = round(percent_rank(Pct3)*100,0),
+  #        Pct4 = `4`/Total*100,
+  #        Rank4 = round(percent_rank(Pct4)*100,0)) %>% 
+  transmute(`House District` = REP_DIST, 
+            `3 Burdens` = `3`, `4 Burdens` = `4`) %>% 
+  filter(`3 Burdens` > 0 | `4 Burdens` > 0) %>%
+  rowwise() %>% 
+  mutate(`3+ Burdens` = sum(c_across(2:3)))
+
 burdens_house_df %>% kable(longtable = T, booktabs = T,
         format.args = list(big.mark = ','), 
         digits = 1,
-        caption = "Percent of Block Groups with 1+ Burdens and Percentile Rank by State House District", align = "r") %>% 
+        caption = "State House District with Block Groups meeting 3 or 4 Cumulative Burdens", align = "r") %>% 
   # col.names = c(names(.)[1:2],"Number of Over 64 in Block Groups","Pct of Over 64 in City/Town")) %>% 
   # column_spec(3:4, width = "4cm") %>%
   kable_styling(latex_options = c("repeat_header","striped")) 
 # save as csv
 write_csv(burdens_house_df, "tables/burdens_house.csv")
+
+# map of house districts with block groups meeting 3 - 4 burdens
+tmap_mode("plot")
+m <- house_districts %>% 
+  right_join(.,burdens_house_df, by = c("REP_DIST" = "House District")) %>% 
+  tm_shape(., unit = "mi", bbox = senate_districts) + 
+  tm_fill(col = "red", alpha = 0.5) +
+  tm_shape(house_districts) + tm_borders(col = "seashell4") +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+  tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
+  tm_shape(ma_highways) + tm_lines(col = "gray", lwd = 1, alpha = 0.5) +
+  tm_shape(ma_highways2nd) + tm_lines(col = "gray", lwd = 1, alpha = 0.5) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = .1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = .1) +
+  tm_shape(I395roadSegment) +
+  tm_symbols(shape = I395, border.lwd = NA, size = .1) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment2) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment3) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I90roadSegment) +
+  tm_symbols(shape = I90, border.lwd = NA, size = .1) +
+  tm_shape(I90roadSegment2) +
+  tm_symbols(shape = I90, border.lwd = NA, size = .1) +
+  tm_shape(ma_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.4, col = "black",
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0,10,20), position = c(0.55,0.005)) +
+  tm_layout(title = "House Districts with Block Groups\nmeeting 3 - 4 Cumulative Burden\nCategories",
+            frame = FALSE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "bottom"),
+            title.position = c("left","bottom"))
+
+tmap_save(m, "images/CUM_BURDEN_HOUSE_map.png",
+          height = 4, width = 8, units = "in", dpi = 600)
+
+
+
+
+
 
 # map with block groups by burden count and senate districts
 # extract centorid of districts for labeling
@@ -737,3 +1013,12 @@ mS <- ma_blkgrps_sf %>%
 
 tmap_save(mS, "images/CUM_BURDEN_Senate_map.png",
           height = 4, width = 8, units = "in", dpi = 600)
+
+
+
+# test out different maps
+tmap_mode("view")
+ma_towns_sf %>% 
+  left_join(.,burdens_town_df, by = c("NAME" = "City/Town")) %>% 
+  filter(Pct3 >0 | Pct4>0) %>% 
+  tm_shape(.) + tm_fill(col = "red", alpha = 0.5)
