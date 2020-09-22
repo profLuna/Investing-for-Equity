@@ -214,6 +214,10 @@ townpopsdf <- nh_blkgrp_2823 %>%
 nh_state_sf_cb <- ne_states_sf_cb %>% 
   filter(NAME == "New Hampshire") %>% 
   st_transform(., crs = st_crs(nh_blkgrp_2823))
+
+# save data for later analysis
+save(nh_blkgrps_nfhza,nh_tracts_nfhza,
+     file = "DATA/FEMA/NH/nfhza_census.Rds")
 ```
 
 As a humid, coastal state, a significant portion of New Hampshire's land area and population are exposed to the risk of flooding from overbanking of inland water bodies (e.g., ponds and rivers) or from coastal storm surge and sea level rise. 
@@ -792,6 +796,10 @@ nh_HevacPops_df <- nh_blkgrp_2823 %>%
   left_join(., nh_hevac_blkgrp_df, by = "Group") %>%
   rbind(.,nh_tranh_hevac_pops_df) %>%
   mutate(PctHevac = HevacPop/NHPop*100)
+
+# save data for later analysis
+save(nh_blkgrps_hevac, nh_tracts_hevac, 
+     file = "DATA/FEMA/NH/hevac_census.Rds")
 ```
 
 New Hampshire is subject to hurricane risk. Since 1900, New Hampshire has been struck by hurricanes twice. The most recent hurricane to hit New Hampshire directly was [Hurricane Bob in 1991](https://www.mass.gov/service-details/the-worst-New Hampshire-hurricanes-of-the-20th-century),[^HurricaneBob] a Category 2 storm when it struck the  south shore of New Hampshire. The latter caused over \$2.3 million in damages in New Hampshire alone and left 20% of the state without power. Hurricane Sandy in 2012 did not hit New Hampshire directly, but nevertheless resulted in flooding of New Hampshire coastal communities that resulted in over \$1.6 million in damanges. In general, New Hampshire is subject to a [hurricane return period of approximately 30 years](https://www.nhc.noaa.gov/climo/#returns).[^HurricaneReturn] 
