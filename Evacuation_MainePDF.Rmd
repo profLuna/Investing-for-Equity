@@ -218,6 +218,10 @@ townpopsdf <- me_blkgrp_2802 %>%
 me_state_sf_cb <- ne_states_sf_cb %>% 
   filter(NAME == "Maine") %>% 
   st_transform(., crs = st_crs(me_blkgrp_2802))
+
+# save data for later analysis
+save(me_blkgrps_nfhza,me_tracts_nfhza,
+     file = "DATA/FEMA/ME/nfhza_census.Rds")
 ```
 
 As a humid, coastal state, a significant portion of Maine's land area and population are exposed to the risk of flooding from overbanking of inland water bodies (e.g., ponds and rivers) or from coastal storm surge and sea level rise. 
@@ -841,6 +845,10 @@ me_hea_sf_simple <- me_hea_sf %>%
   summarize() %>% 
   st_make_valid() %>%
   mutate(Area = st_area(.))
+
+# save data for later analysis
+save(me_blkgrps_hevac, me_tracts_hevac, 
+     file = "DATA/FEMA/ME/hevac_census.Rds")
 ```
 
 Maine is subject to hurricane risk. Since 1900, Maine has been struck by hurricanes four times. The most recent hurricane to hit Maine directly was [Hurricane Bob in 1991](https://www.mass.gov/service-details/the-worst-Maine-hurricanes-of-the-20th-century),[^HurricaneBob] a Category 2 storm that affected six counties in the southern and central part of the state. [The storm resulted in 3 deaths, power outages, and over $5 million in damages as well as a presidential disaster declaration](https://www.maine.gov/mema/hazards/natural-hazards/hurricanes).[^BobMaine] Hurricane Sandy in 2012 had been downgraded to a tropical storm by the time it hit Maine, but nevertheless [left 90,000 people across the state without power due to high winds](https://bangordailynews.com/2012/10/29/news/portland/hurricane-sandy-remains-unpredictable-for-maine-especially-islanders/).[^SandyME] In general, Maine is subject to a [hurricane return period of between 29 and 59 years, depending on the area](https://www.nhc.noaa.gov/climo/#returns).[^HurricaneReturn] 
