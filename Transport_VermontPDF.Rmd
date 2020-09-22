@@ -1320,7 +1320,7 @@ vt_blkgrp_walkability_sf <- walkability %>%
   left_join(vt_blkgrps_sf,., by = c("GEOID" = "GEOID10"))
 
 # Aggregate NatWalkIndex values to tract level sf
-vt_travt_walkability_sf <- vt_blkgrp_walkability_sf %>% 
+vt_tract_walkability_sf <- vt_blkgrp_walkability_sf %>% 
   as.data.frame() %>% 
   select(SFIPS,CFIPS,TRFIPS,NatWalkInd) %>% 
   mutate(TRAVTID = paste0(SFIPS,CFIPS,TRFIPS)) %>% 
@@ -1329,7 +1329,7 @@ vt_travt_walkability_sf <- vt_blkgrp_walkability_sf %>%
   left_join(vt_tracts_sf,., by = c("GEOID" = "TRAVTID"))
 
 # Create summarized df of population weighted avg walkability by tract pop
-vt_travt_walkability_df <- vt_travt_walkability_sf %>% 
+vt_tract_walkability_df <- vt_tract_walkability_sf %>% 
   as.data.frame() %>% 
   transmute(Disabled = disabledOver18E,
             `No Car HH` = HHnoCarE,
@@ -1353,7 +1353,7 @@ vt_wAvgWalkability_df <- vt_blkgrp_walkability_sf %>%
   gather(key = Group, value = Pop, `Total Pop`:`No HS Dip`) %>% 
   group_by(Group) %>% 
   summarize(wNatWalkIndex = weighted.mean(NatWalkInd, Pop, na.rm = TRUE)) %>% 
-  rbind(., vt_travt_walkability_df)
+  rbind(., vt_tract_walkability_df)
 
 # save data for later analysis
 save(vt_blkgrp_walkability_sf,
@@ -1436,7 +1436,7 @@ leastWalkable <- vt_blkgrp_walkability_sf %>%
   filter(NatWalkInd <= 5.8) %>% 
   mutate(SqKm = bg_area_m2/10^6)
 
-leastWalkableTract <- vt_travt_walkability_sf %>% 
+leastWalkableTract <- vt_tract_walkability_sf %>% 
   filter(NatWalkInd <= 5.8) %>% 
   mutate(SqKm = as.numeric(st_area(.))/10^6)
 
@@ -1621,7 +1621,7 @@ lai_vt_tract <- vt_tracts_sf %>%
   left_join(., as.data.frame(lai_ri),by="GEOID")
 
 # create summarized df of population weighted average transportation cost burden by tract pop
-lai_vt_travt_df <- lai_vt_tract %>% 
+lai_vt_tract_df <- lai_vt_tract %>% 
   as.data.frame() %>% 
   transmute(Disabled = disabledOver18E,
             `No Car HH` = HHnoCarE,
@@ -1645,7 +1645,7 @@ lai_vt_df <- lai_vt_blkgrp %>%
   gather(key = Group, value = Pop, `Total Pop`:`No HS Dip`) %>% 
   group_by(Group) %>% 
   summarize(wTBurden = weighted.mean(hh7_t, Pop, na.rm = TRUE)) %>% 
-  rbind(., lai_vt_travt_df)
+  rbind(., lai_vt_tract_df)
 
 # save data for later analysis
 save(lai_vt_blkgrp,
