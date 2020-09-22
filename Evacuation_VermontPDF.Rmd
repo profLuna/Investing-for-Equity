@@ -213,6 +213,10 @@ townpopsdf <- vt_blkgrp_2852 %>%
 vt_state_sf_cb <- ne_states_sf_cb %>% 
   filter(NAME == "Vermont") %>% 
   st_transform(., crs = st_crs(vt_blkgrp_2852))
+
+# save data for later analysis
+save(vt_blkgrps_nfhza, vt_tracts_nfhza,
+     file = "DATA/FEMA/VT/nfhza_census.Rds")
 ```
 
 In comparison to other part's of New England, relatively little of Vermont's land area is within flood zones. However, a significant proportion of the population are nevertheless exposed to the risk of flooding from overbanking of inland water bodies (e.g., ponds and rivers). 
