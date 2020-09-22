@@ -321,6 +321,10 @@ ri_fhza_2840_land_simple <- ri_fhza_2840_land %>%
   group_by(Interval) %>%
   summarize() %>%
   mutate(Area = st_area(.))
+
+# save data for later analysis
+save(ri_blkgrps_nfhza,ri_tracts_nfhza,
+     file = "DATA/FEMA/RI/nfhza_census.Rds")
 ```
 
 As a relatively flat, coastal plain state, a significant portion of Rhode Island's land area and population are exposed to the risk of flooding from overbanking of inland water bodies (e.g., ponds and rivers) or from coastal storm surge and sea level rise. 
@@ -740,6 +744,9 @@ ri_hea_sf_simple <- ri_hea_sf %>%
   group_by(EVAC) %>%
   summarize() %>%
   mutate(Area = st_area(.))
+
+save(ri_blkgrps_hevac, ri_tracts_hevac, 
+     file = "DATA/FEMA/RI/hevac_census.Rds")
 ```
 
 Rhode Island is subject to significant hurricane risk. Since 1900, Rhode Island has been struck by hurricanes 6 times, and 3 of those were major hurricanes (i.e., Category 3 or higher). The most recent hurricane to hit Rhode Island directly was Hurricane Bob in 1991, a Category 2 storm. The latter caused over $230 million in damage in Rhode Island alone and [left 60% of the state's population without power](https://www.nhc.noaa.gov/archive/storm_wallets/atlantic/atl1991/bob/preloc/fema02.gif).[^BobRI] In general, Rhode Island is subject to a [hurricane return period of approximately 17 years](https://www.nhc.noaa.gov/climo/#returns),[^HurricaneReturn] a level of risk comparable to the Gulf Coast of Texas.  
