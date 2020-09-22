@@ -224,6 +224,10 @@ townpopsdf <- ct_blkgrp_2775 %>%
 ct_state_sf_cb <- ne_states_sf_cb %>% 
   filter(NAME == "Connecticut") %>% 
   st_transform(., crs = st_crs(ct_blkgrp_2775))
+
+# save data for later analysis
+save(ct_blkgrps_nfhza,ct_tracts_nfhza,
+     file = "DATA/FEMA/CT/nfhza_census.Rds")
 ```
 
 As a humid, coastal state, a significant portion of Connecticut's land area and population are exposed to the risk of flooding from overbanking of inland water bodies (e.g., ponds and rivers) or from coastal storm surge and sea level rise. 
@@ -786,6 +790,10 @@ ct_hea_sf_simple <- ct_hea_sf %>%
   group_by(zone) %>%
   summarize() %>%
   mutate(Area = st_area(.))
+
+# save data for later analysis
+save(ct_blkgrps_hevac, ct_tracts_hevac, 
+     file = "DATA/FEMA/CT/hevac_census.Rds")
 ```
 
 Connecticut is subject to significant hurricane risk. Since 1900, Connecticut has been struck by hurricanes 5 times, and 3 of those were major hurricanes (i.e., Category 3 or higher). The most recent hurricane to hit Connecticut directly was Hurricane Gloria in 1985, a Category 2 storm. The latter caused over $91 million in damage in Connecticut alone (mostly around Hartford) and left 727,000 people in Connecticut without power. Hurricane Sandy in 2012 did not hit Connecticut directly, but nevertheless resulted in flooding of Connecticut coastal communities. In general, Connecticut is subject to a [hurricane return period of approximately 17 years](https://www.nhc.noaa.gov/climo/#returns),[^HurricaneReturn] a level of risk comparable to the Gulf Coast of Texas.  
