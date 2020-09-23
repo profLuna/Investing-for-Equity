@@ -854,9 +854,9 @@ regional public transit agencies and two rail services. Amtrak train service pas
 knitr::include_graphics("DATA/transport/CT/figures/ct_transit.png")
 ```
 
-Approximately `r paste0(round(ct_transitAccessPops_df %>% filter(Group == "Total Pop") %>% dplyr::select(PctBus) %>% pull(),1),"%")` of the state population lives within reasonable walking distance of a bus stop (defined as approximately 400 meters or 1/4 mile). 
+Approximately `r round(ct_transitAccessPops_df %>% filter(Group == "Total Pop") %>% select(PctAllTransit) %>% pull(),0)`% of the state population have reasonable access to some form of transit, but this access varies by mode. For example, only `r paste0(round(ct_transitAccessPops_df %>% filter(Group == "Total Pop") %>% dplyr::select(PctBus) %>% pull(),1),"%")` of the state population lives within reasonable walking distance of a bus stop (defined as approximately 400 meters or 1/4 mile). 
 
-However, this access varies by population group and by mode of transit. Figures \@ref(fig:loliBusDist) to \@ref(fig:loliAllTransitDist) below compare the percentages of different population groups living within reasonable walking distance of bus stops (1/4 mile) and commuter rail stops (3 miles) across the state, respectively. Most populations of concern, including transit-dependent groups, have access similar to or better than the general population. However, note that people over age 64 and under 18 have consistently less access to transit on average compared to the general population.
+Figures \@ref(fig:loliBusDist) to \@ref(fig:loliAllTransitDist) below compare the percentages of different population groups living within reasonable walking distance of bus stops (1/4 mile) and commuter rail stops (3 miles) across the state, respectively. Most populations of concern, including transit-dependent groups, have access similar to or better than the general population. However, note that people over age 64 and under 18 have consistently less access to transit on average compared to the general population.
 
 ```{r loliBusDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Percentage of population groups within 1/4 mile (400 meters) of a bus stop across Connecticut."}
 ct_transitAccessPops_df %>% 
