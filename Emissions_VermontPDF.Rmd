@@ -400,7 +400,7 @@ newggslopegraph(dataframe = PM11_16wSTAvg_actual,
 
 ### PM~2.5~ in Vermont and Populations of Concern
 
-In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvg) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the state. For example, adults with less than a high school diploma are exposed to PM~2.5~ concentrations that are 0.1% above concentrations for the state as a whole. All other groups are at or below the state average. 
+In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvg) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the state. All populations of concern are are at or below the state average for PM~2.5~ concentrations. 
 
 ```{r barplotPM25PopAvg, fig.align = "center", fig.cap="Population-weighted average exposures to PM2.5 for populations of concern in Vermont relative to the state average."}
 # Pop Weighted avg of PM2.5 for all Groups in Vermont relative to state average
@@ -848,7 +848,7 @@ newggslopegraph(dataframe = O311_16wSTAvg_actual,
 
 ### Ozone (O~3~) in Vermont and Populations of Concern
 
-In addition to variations in the general geography of Ozone (O~3~) concentrations, exposure to this pollutant also varies demographically. Figure \@ref(fig:barplotO3PopAvg) below shows population-weighted exposures for populations of concern relative to average Ozone concentrations for the region. For example, minorities and limited English households in Vermont are exposed to summer Ozone concentrations that are approximately 0.5% above concentrations for the region as a whole. By contrast, all other populations of concern are, on average, exposed to concentrations of Ozone at or below the state average. 
+In addition to variations in the general geography of Ozone (O~3~) concentrations, exposure to this pollutant also varies demographically. Figure \@ref(fig:barplotO3PopAvg) below shows population-weighted exposures for populations of concern relative to average Ozone concentrations for the state. For example, limited English households in Vermont are exposed to summer Ozone concentrations that are approximately 0.65% above concentrations for the state as a whole. Similarly, minorities are exposed to concentrations 0.5% above the state average. By contrast, all other populations of concern are, on average, exposed to concentrations of Ozone at or below the state average. 
 
 ```{r barplotO3PopAvg, fig.align = "center", fig.cap="Population-weighted average exposures to Ozone for populations of concern in Vermont relative to the state average."}
 # Pop Weighted avg of O3 for all Groups in Vermont relative to NE average
@@ -1558,7 +1558,7 @@ vt_blkgrp_sf %>%
 
 ### Diesel Particulate Matter in Vermont and Populations of Concern
 
-In addition to variations in the general geography of DPM concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvg) below shows population-weighted exposures for populations of concern relative to average DPM concentraions for the state. For example, limited English households in Vermont are exposed to  DPM concentrations that are more than 27% above concentrations for the state as a whole. Similarly, minorities are exposed to concentrations more than 22% above the state average. By contrast, persons over age 64 and under 5 are, on average, exposed to concentrations of DPM below the state average. 
+In addition to variations in the general geography of DPM concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvg) below shows population-weighted exposures for populations of concern relative to average DPM concentrations for the state. For example, limited English households in Vermont are exposed to  DPM concentrations that are more than 32% above concentrations for the state as a whole. Similarly, minorities are exposed to concentrations more than 22% above the state average. By contrast, persons over age 64 and under 5 are, on average, exposed to concentrations of DPM below the state average. 
 
 ```{r barplotDPMPopAvg, fig.align = "center", fig.cap="Population-weighted average exposures to annual average ambient concentrations of Diesel Particulate Matter across Vermont relative to the state average."}
 # Pop Weighted avg of DPM for all Groups in Vermont relative to NE average
@@ -1818,7 +1818,7 @@ vt_blkgrp_sf %>%
 
 ### Lifetime Cancer Risk from Inhalation of Air Toxics in Vermont and Populations of Concern
 
-In addition to variations in the general geography of cancer risk, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvg) below shows population-weighted exposures for populations of concern relative to average cancer risk for the state. For example, limited English speaking households in Vermont experience lifetime cancer risks from inhalation of air toxics that are more than 10% above the state as a whole. Similarly, minorities cancer risks more than 7% above the state average. In fact, all populations of concern experience risks above the state average. 
+In addition to variations in the general geography of cancer risk, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvg) below shows population-weighted exposures for populations of concern relative to average cancer risk for the state. For example, limited English speaking households in Vermont experience lifetime cancer risks from inhalation of air toxics that are more than 11% above the state as a whole. Similarly, minorities cancer risks more than 7% above the state average. In fact, all populations of concern experience risks above the state average. 
 
 ```{r barplotATCPopAvg, fig.align = "center", fig.cap="Population-weighted average lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Vermont at Census Block Group level relative to the state average."}
 # Pop Weighted avg of DPM for all Groups in Vermont relative to NE average
@@ -2077,7 +2077,7 @@ vt_blkgrp_sf %>%
 
 ### Respiratory Hazard Index from Inhalation of Air Toxics in Vermont and Populations of Concern
 
-In addition to variations in the general geography of the respitory hazard index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvg) below shows population-weighted exposures for populations of concern relative to average respiratory hazard index for the state. For example, limited English speaking households in Vermont experience respiratory hazard indices that are over 13% above the state as a whole. Similarly, minorities experience respiratory hazard indices more than 10% above the state average. In fact, all populations of concern are exposed to respiratory hazard indices above the state average. 
+In addition to variations in the general geography of the respitory hazard index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvg) below shows population-weighted exposures for populations of concern relative to average respiratory hazard index for the state. For example, limited English speaking households in Vermont experience respiratory hazard indices that are over 14% above the state as a whole. Similarly, minorities experience respiratory hazard indices more than 10% above the state average. In fact, all populations of concern are exposed to respiratory hazard indices above the state average. 
 
 ```{r barplotRHIPopAvg, fig.align = "center", fig.cap="Population-weighted average respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Vermont at Census Block Group level relative to the state average."}
 # Pop Weighted avg of RHI for all Groups in Vermont relative to NE average
