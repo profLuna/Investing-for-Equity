@@ -698,7 +698,7 @@ save(vt_blkgrps_sf_noTransit, vt_tracts_sf_noTransit,
 This analysis seeks to identify communities that are underserved by access to public transit. Access to transit is measured in terms of distance to transit boarding stops and in terms of frequency of service. 
 
 Vermont is served by 10 local bus agencies or transit districts, two inter-state rail lines operated by Amtrak, local and inter-state ferry services on Lake Champlain, and several private inter-city bus services. In addition, there are over 100 park-in-ride lots throughout the state, variously owned by the state, municipalities, and by public transit agencies. The analysis presented here only considers public transit services for which publicly available geospatial data is available, which includes the `r length(unique(vt_routes_sf_Bus$agency))`
-regional public transit agencies and the `r nrow(vt_parknride_sf)` park-in-ride lots that are directly serviced by the these transit agencies. Amtrak train service, private inter-city buses, ferry services, water taxis, and seasonal transportation services are not considered in this analysis. Figure \@ref(fig:transitMap) shows `r formatC(nrow(vt_routes_sf_Bus),big.mark = ",")` fixed public transit routes across the state along with population density.
+regional public transit agencies and the `r nrow(vt_parknride_sf)` park-in-ride lots that are directly serviced by these transit agencies. Amtrak train service, private inter-city buses, ferry services, water taxis, and seasonal transportation services are not considered in this analysis. Figure \@ref(fig:transitMap) shows `r formatC(nrow(vt_routes_sf_Bus),big.mark = ",")` fixed public transit routes across the state along with population density.
 
 ```{r transitMap, fig.align = "center", fig.cap="Transit service and population density in Vermont."}
 # bbox_new <- st_bbox(ct_blkgrps_sf) # current bounding box
@@ -1160,8 +1160,10 @@ headway80_2 <- headway80thblkgrps_bus %>%
 save(headway80thblkgrps_bus,
      headway80thtracts_bus,file = "DATA/transport/VT/headway80th.Rds")
 
-st_write(headway80thblkgrps_bus,"DATA/transport/VT/headway80thblkgrps_bus.shp")
-st_write(headway80thtracts_bus, "DATA/transport/VT/headway80thtracts_bus.shp")
+st_write(headway80thblkgrps_bus,"DATA/transport/VT/headway80thblkgrps_bus.shp",
+         delete_layer = TRUE)
+st_write(headway80thtracts_bus, "DATA/transport/VT/headway80thtracts_bus.shp",
+         delete_layer = TRUE)
 ```
 The population-weighted average headways above provide a glimpse of average headways across the state for different population groups. However, headways also vary for specific communities. Indeed, it is important to consider populations of concern or transportation-limited populations that experience excessively long headways or low service frequency. Figures \@ref(fig:mapHeadwayUnder5bus) and \@ref(fig:mapHeadwayUnder18bus) below highlight communities of persons under 5 and under 18 who are within reasonable distance of bus stops (i.e., 400m or 1/4 mile), but where the mean headway for these stops exceeds the 80th percentile of mean route headways for the state. Tables \@ref(tab:tabHeadwayUnder5bus) and \@ref(tab:tabHeadwayUnder18bus) show breakdowns by municipality. For example, Table \@ref(tab:tabHeadwayUnder5bus) shows that `r formatC(as.numeric(headway80_1[1,3]),big.mark=",")` children under 5 across `r headway80_1[1,2]` Block Groups in `r headway80_1[1,1]` resided in areas where the average headway of accessible bus stops exceeded `r quantile(vt_routes_sf_Bus$mean_headways,0.8)` minutes. These people represented `r headway80_1[1,4]` of children under 5 in `r headway80_1[1,1]`. Similarly, Table \@ref(tab:tabHeadwayUnder18bus) shows that `r formatC(as.numeric(headway80_2[1,3]),big.mark=",")` persons under 18 across `r headway80_2[1,2]` Block Groups in `r headway80_2[1,1]` resided in areas where the average headway of accessible bus stops exceeded `r quantile(vt_stops_sf_Bus$headway,.8)` minutes. These people represented `r headway80_2[1,4]` of persons under 18 in `r headway80_2[1,1]`.
 Maps and tables of other populations of concern with excessive headways can be found in Appendix B. 
