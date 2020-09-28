@@ -126,6 +126,9 @@ There is a significant hot spot of PM~2.5~ around Stamford, Connecticut. Warm cl
 These PM~2.5~ levels vary significantly by state (see Figure \@ref(fig:boxplotPM25NE) below). Connecticut stands out with the highest median PM~2.5~ concentrations among the New England states, while Vermont has the lowest overall concentrations. The differences in concentrations between the states are all statistically significant.  
 
 ```{r boxplotPM25NE, cache=TRUE, fig.align = "center", fig.cap="Boxplot of 2016 annual PM2.5 concentrations by state at Census Block Group level."}
+# # compute regional median
+# ne_pm25avg <- median(ne_blkgrp_sf$PM25_19, na.rm = TRUE)
+
 # boxplot of PM2.5 by state for 2016
 ne_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -148,15 +151,10 @@ ne_blkgrp_sf %>%
   geom_text(aes(x = "Maine", y = 8.4, 
                 label = "Recommended PM2.5 Standard"), 
             color = "orange", angle = 270)
-# # boxplot of PM2.5 by state for 2011
-# ne_blkgrp_sf %>% 
-#   as.data.frame() %>% 
-#   ggplot(aes(x = STATE, y = pm_15, fill = STATE)) + 
-#   geom_boxplot(notch = TRUE) + 
-#   ggtitle(expression(paste(PM[2.5], " Annual Concentration by New England state, 2011", sep = ""))) +
-#   theme_minimal() +
-#   theme(legend.position = "none") + xlab(NULL) + 
-#   ylab(expression(paste(PM[2.5]," (", mu, "g/", m^3, ")", sep = "")))
+  # geom_hline(aes(yintercept = ne_pm25avg), color = "gray", 
+  #            linetype = "dashed") +
+  # geom_text(aes(x = "New Hampshire", y = 6.7,
+  #               label = "NE median", color = "gray", angle = 270))
 ```
 
 
@@ -504,6 +502,9 @@ There are statistically significant hot spots of Ozone (O~3~) primarily around S
 These Ozone (O~3~) levels vary significantly by state (see Figure \@ref(fig:boxplotO3NE) below). Connecticut stands out with the highest median summer seasonal average Ozone (O~3~) concentrations among the New England states, while Maine has the lowest overall concentrations. The differences in median concentrations between the states are all statistically significant.  
 
 ```{r boxplotO3NE, cache=TRUE, fig.align = "center", fig.cap="Boxplot of 2016 Ozone (O3) summer seasonal average of daily maximum 8-hour concentrations in air in parts per billion by state at Census Block Group level."}
+# compute regional median
+ne_O3med <- median(ne_blkgrp_sf$OZONE_19, na.rm = TRUE)
+
 # boxplot of PM2.5 by state for 2016
 ne_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -522,6 +523,10 @@ ne_blkgrp_sf %>%
   geom_text(aes(x = "Massachusetts", y = 72, 
                 label = "NAAQS Primary O3 Standard"), 
             color = "red4", angle = 270)
+  # geom_hline(aes(yintercept = ne_O3med), color = "gray", 
+  #            linetype = "dashed") +
+  # geom_text(aes(x = "Vermont", y = 43,
+  #               label = "NE median", color = "gray", angle = 270)) 
 ```
 
 Since 2011, Ozone (O~3~) levels have increased slightly across the region, on average by `r {round(mean(ne_blkgrp_sf$OZONE_pctChange, na.rm = TRUE),1)}`%. These changes have not been uniform (see Figure \@ref(fig:mapO3NEchange) below). The greatest declines, up to 10.5%, have been in the northern half of Maine and Vermont, northeastern Vermont, southwestern Massachusetts, and southern Rhode Island. By contrast, increases in summer ozone concentrations of up to 8.1% appear in southwestern Connecticut, from Stamford to Hartford and north into western Massachusetts around Springfield. Significant increases also occur along the western border of Vermont, especially in the Champlain Valley. Minor increaes appear also in the greater Boston metro region, and southern and central Maine west and north of Portland.
@@ -867,6 +872,17 @@ tm_shape(local_g, unit = "mi",) +
 CO~2~ emissions vary by state (see Table \@ref(tab:statsCO2NE) below). Massachusetts shows the highest absolute on-road emissions.  
 
 ```{r statsCO2NE, fig.align = "center", fig.cap="Annual 2017 On-road CO2 emissions (mtons) at Census Block Group level and by state."}
+# create row for region
+ne_CO2_row <- ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  mutate(onroad_2017 = kgco2_2017/1000) %>% 
+  summarize(STATE = "NEW ENGLAND",
+            Mean = round(mean(onroad_2017, na.rm = TRUE),0),
+            Median = round(median(onroad_2017, na.rm = TRUE),0),
+            Min = round(min(onroad_2017, na.rm = TRUE),0),
+            Max = round(max(onroad_2017, na.rm = TRUE),0),
+            `State Total` = sum(onroad_2017, na.rm = TRUE))
+
 ne_blkgrp_sf %>% 
   mutate(onroad_2017 = kgco2_2017/1000) %>%
   as.data.frame() %>% 
@@ -877,9 +893,10 @@ ne_blkgrp_sf %>%
             Max = round(max(onroad_2017, na.rm = TRUE),0),
             `State Total` = sum(onroad_2017, na.rm = TRUE)) %>% 
   arrange(STATE) %>% 
+  rbind(., ne_CO2_row) %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
-                    caption = "Annual 2017 On-road CO2 emissions (mtons) by Census block group by state", align = "r") %>% 
+                    caption = "Annual 2017 On-road CO2 emissions (mtons) by Census block group by state and region", align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
@@ -1156,6 +1173,15 @@ ne_blkgrp_sf %>%
 ```
 
 ```{r statsDPMNE, fig.align = "center", fig.cap="Annual 2014 average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter across New England at Census Block Group level."}
+# create row for region
+ne_DPM_row <- ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  summarize(STATE = "NEW ENGLAND",
+            Mean = round(mean(DSLPM_19, na.rm = TRUE),3),
+            Median = round(median(DSLPM_19, na.rm = TRUE),3),
+            Min = round(min(DSLPM_19, na.rm = TRUE),3),
+            Max = round(max(DSLPM_19, na.rm = TRUE),3))
+
 ne_blkgrp_sf %>%
   as.data.frame() %>% 
   group_by(STATE) %>% 
@@ -1164,6 +1190,7 @@ ne_blkgrp_sf %>%
             Min = round(min(DSLPM_19, na.rm = TRUE),3),
             Max = round(max(DSLPM_19, na.rm = TRUE),3)) %>% 
   arrange(STATE) %>% 
+  rbind(., ne_DPM_row) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     caption = "Annual 2014 DPM concentrations by Census block group", align = "r") %>% 
@@ -1328,6 +1355,15 @@ tm_shape(local_g, unit = "mi",) +
 Lifetime cancer risk from inhalation of air toxics vary by state (see Table \@ref(tab:statsATCNE) and Figure \@ref(fig:boxplotATCNE) below). Massachusetts, Connecticut, and Rhode Island show the highest average lifetime cancer risks with similar median values, although Connecticut shows some block groups that are far above the median for all other states. New Hampshire shows risks that are significantly higher than Maine and Vermont.   
 
 ```{r statsATCNE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2014 lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across New England at Census Block Group level."}
+# create row for region
+ne_ATR_row <- ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  summarize(STATE = "NEW ENGLAND",
+            Mean = round(mean(CANCER_19, na.rm = TRUE),1),
+            Median = round(median(CANCER_19, na.rm = TRUE),1),
+            Min = round(min(CANCER_19, na.rm = TRUE),1),
+            Max = round(max(CANCER_19, na.rm = TRUE),1))
+
 ne_blkgrp_sf %>%
   as.data.frame() %>% 
   group_by(STATE) %>% 
@@ -1336,6 +1372,7 @@ ne_blkgrp_sf %>%
             Min = round(min(CANCER_19, na.rm = TRUE),1),
             Max = round(max(CANCER_19, na.rm = TRUE),1)) %>% 
   arrange(STATE) %>% 
+  rbind(., ne_ATR_row) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     caption = "Cancer Risk from Inhalation of Air Toxics by Census block group (risk-in-1 million)", align = "r") %>% 
@@ -1516,6 +1553,15 @@ tm_shape(local_g, unit = "mi",) +
 Respiratory hazard indices vary by state (see Table \@ref(tab:statsRHINE) and Figure \@ref(fig:boxplotRHINE)). Massachusetts, Connecticut, and Rhode Island show the highest average lifetime respiratory hazard indices.  
 
 ```{r statsRHINE, fig.align = "center", fig.cap="Annual 2014 respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across New England at Census Block Group level."}
+# create row for region
+ne_RHI_row <- ne_blkgrp_sf %>% 
+  as.data.frame() %>%  
+  summarize(STATE = "NEW ENGLAND",
+            Mean = round(mean(RESP_19, na.rm = TRUE),2),
+            Median = round(median(RESP_19, na.rm = TRUE),2),
+            Min = round(min(RESP_19, na.rm = TRUE),2),
+            Max = round(max(RESP_19, na.rm = TRUE),2))
+
 ne_blkgrp_sf %>%
   as.data.frame() %>% 
   group_by(STATE) %>% 
@@ -1524,6 +1570,7 @@ ne_blkgrp_sf %>%
             Min = round(min(RESP_19, na.rm = TRUE),2),
             Max = round(max(RESP_19, na.rm = TRUE),2)) %>% 
   arrange(STATE) %>% 
+  rbind(., ne_RHI_row) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     caption = "Respiratory Hazard Index from Inhalation of Air Toxics by Census block group (ratio of exposure concentration to health-based reference concentration)", align = "r") %>% 
@@ -1708,6 +1755,15 @@ tm_shape(local_g, unit = "mi",) +
 Traffic Proximity and Volume exposure vary by state (see Table \@ref(tab:statsTPVNE)). Massachusetts shows the highest median Traffic Proximity and Volume exposure, followed by Rhode Island, and Connecticut. Note that the highest values are orders of magnitude above the median values, indicating that some Block Groups are much more exposed to high traffic volumes in close proximity, particularly in Massachusetts. 
 
 ```{r statsTPVNE, fig.align = "center", fig.cap="Annual 2017 traffic proximity and volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across New England at Census Block Group level."}
+# create row for region
+ne_PTRAF_row <- ne_blkgrp_sf %>% 
+  as.data.frame() %>% 
+  summarize(STATE = "NEW ENGLAND",
+            Mean = round(mean(PTRAF_19, na.rm = TRUE),0),
+            Median = round(median(PTRAF_19, na.rm = TRUE),0),
+            Min = round(min(PTRAF_19, na.rm = TRUE),0),
+            Max = round(max(PTRAF_19, na.rm = TRUE),0))
+
 ne_blkgrp_sf %>%
   as.data.frame() %>% 
   group_by(STATE) %>% 
@@ -1716,6 +1772,7 @@ ne_blkgrp_sf %>%
             Min = round(min(PTRAF_19, na.rm = TRUE),0),
             Max = round(max(PTRAF_19, na.rm = TRUE),0)) %>% 
   arrange(STATE) %>% 
+  rbind(., ne_PTRAF_row) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     caption = "Annual traffic proximity and volume (AADT/Distance(km))", align = "r") %>% 
