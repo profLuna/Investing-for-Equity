@@ -215,7 +215,7 @@ knitr::include_graphics("DATA/EJSCREEN/ri_pm25hotspot.png")
 
 There is a statistically significant hot spot of PM~2.5~ around Providence and Pawtucket north to Lincoln. Warm clusters extend across the northern half of the state. 
 
-These PM~2.5~ levels vary significantly across the state (see Table \@ref(tab:statsPM) and Figure \@ref(fig:boxplotPM)). See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality. 
+These PM~2.5~ levels vary significantly across the state (see Table \@ref(tab:statsPM) and Figure \@ref(fig:boxplotPM25RI)). See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality. 
 
 ```{r statsPM, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual PM2.5 concentrations at Census Block Group level for the state."}
 ri_blkgrp_sf %>% 
@@ -724,7 +724,7 @@ ri_town_outlier <- ri_blkgrp_sf %>%
 ```
 The Block Group with highest O~3~ concentration value in the state is found in `r ri_town_max` and the lowest is found in `r ri_town_min`. See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality.
 
-Figure \@ref(fig:boxplotO3RI) is a boxplot of O~3~ concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into two parts represents the median O~3~ concentration for all Block Groups, which in this case is `r round(median(ri_blkgrp_sf$OZONE_19, na.rm = TRUE),2)`. Each dot represents an individual Block Group. The large black dots represent outliers, or unusually high or low values relative to the rest of the state. In this case, outliers would be represented by ozone values greater than `r Outlier`, which occur in `r glue::glue_collapse(ri_town_outlier,", ", last = ", and ")`.   
+Figure \@ref(fig:boxplotO3) is a boxplot of O~3~ concentrations by Block Group . The box represents concentration values ranging between the 25th and 75th percentiles. The line that divides the box into two parts represents the median O~3~ concentration for all Block Groups, which in this case is `r round(median(ri_blkgrp_sf$OZONE_19, na.rm = TRUE),2)`. Each dot represents an individual Block Group. The large black dots represent outliers, or unusually high or low values relative to the rest of the state. In this case, outliers would be represented by ozone values greater than `r Outlier`, which occur in `r glue::glue_collapse(ri_town_outlier,", ", last = ", and ")`.   
 
 ```{r boxplotO3, fig.align = "center", fig.cap="Boxplot of 2016 Ozone summer seasonal average of daily maximum 8-hour concentrations in air in parts per billion by state at Census Block Group level. 1 dot = 1 Block Group."}
 # boxplot of PM2.5 by state for 2016
