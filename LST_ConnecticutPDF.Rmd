@@ -1442,6 +1442,8 @@ In addition to variations in the general geography of Land Surface Temperatures 
 
 ```{r plotLSTDayTempPopAvgCT, fig.align = "center", fig.cap="Population-weighted average exposures to average daytime Land Surface Temperatures for populations of concern in Connecticut relative to the state average."}
 LSTDayPop %>% 
+  mutate(Group = recode(Group, "No HS Dip" = "No HS Diploma",
+                        "Minority" = "People of Color")) %>% 
   ggplot(aes(x = reorder(Group,LSTDaywMean), 
              y = LSTDaywMean)) +
   geom_segment(aes(x = reorder(Group,LSTDaywMean), 
@@ -1468,6 +1470,8 @@ LSTDayPop %>%
   # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 94, yend = 97), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(88,96))
+
+ggsave("DATA/LST/ct_DayLST_lolli.png")
 ```
 
 \pagebreak
