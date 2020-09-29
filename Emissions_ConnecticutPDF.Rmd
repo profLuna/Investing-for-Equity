@@ -2370,11 +2370,11 @@ ct_blkgrp_sf %>%
   summarize(DPMwMean = weighted.mean(x = PTRAF_19, w = Pop, na.rm = TRUE),
             DPMMean = mean(PTRAF_19, na.rm = TRUE)) %>% 
   spread(key = Group, value = DPMwMean) %>% 
-  transmute(Minority = (minorityE/DPMMean - 1)*100,
+  transmute(`People of Color` = (minorityE/DPMMean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/DPMMean - 1)*100,
          `Low Income` = (num2povE/DPMMean - 1)*100,
-         `No HS Dip` = (lthsE/DPMMean - 1)*100,
+         `No HS Diploma` = (lthsE/DPMMean - 1)*100,
          `Under 5` = (under5E/DPMMean - 1)*100,
          `Over 64` = (over64E/DPMMean - 1)*100,
          `CT Low Income` = (CT_LOWINC/DPMMean - 1)*100) %>%
@@ -2397,13 +2397,15 @@ ct_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "No HS Dip", y = 50, label = "Above state\naverage"),
+  geom_text(aes(x = "No HS Diploma", y = 50, label = "Above state\naverage"),
             color = "gray48") +
-  geom_text(aes(x = "No HS Dip", y = -12, label = "Below state\naverage"),
+  geom_text(aes(x = "No HS Diploma", y = -12, label = "Below state\naverage"),
             color = "gray48") +
   # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 10, yend = 50), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-28,75))
+
+ggsave("DATA/EJSCREEN/ct_traffic_lolli.png")
 ```
 
 There is a moderate positive correlation between the proportions of minorities, low income persons, limited English households, adults with less than a high school education, and traffic proximity and volume (see Figure \@ref(fig:cormatrixTPVPopAvg) in Appendix B).
