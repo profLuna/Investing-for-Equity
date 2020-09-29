@@ -896,6 +896,8 @@ Some groups are disproportionately exposed to these hurricane evacuation hazards
 ```{r chartHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut Populations Living within Hurricane Evacuation Zones."}
 # Create lollipop plot of pops within flood zones
 ct_HevacPops_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>% 
   ggplot(aes(x = reorder(Group,PctHevac), 
              y = PctHevac)) +
   geom_segment(aes(x = reorder(Group,PctHevac), 
@@ -921,6 +923,8 @@ ct_HevacPops_df %>%
   # geom_segment(aes(x = "Total Pop", xend = "Total Pop", y = 9.7, yend = 10.5), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(7.5,14.5))
+
+ggsave("DATA/FEMA/CT/ct_hevac_lolli.png")
 ```
 
 The maps below (Figures \@ref(fig:mapHEVACPopConcern1) and \@ref(fig:mapHEVACPopConcern2)) show households without a car and low income persons who are disproportionately exposed to hurricane evacuation risk. Maps for other populations of concern can be found in Figures \@ref(fig:mapHEVACPopConcern3) to \@ref(fig:mapHEVACPopConcern10) as well as breakdowns by municipality in Tables \@ref(tab:tabHEVACNoCar) to \@ref(tab:tabHEVACU18) in Appendix B.
