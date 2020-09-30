@@ -941,7 +941,7 @@ nh_HevacPops_df %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Some groups are disproportionately exposed to these hurricane evacuation hazards. While approximately 1.1% of the general population are living within hurricane inundation zones, individuals over age 64 and households without access to a car exceed the population average living within hurricane inundation zones. These populations of concern are disproportionately exposed to the risk of hurricane inundation (see Figures \@ref(fig:chartHEVACpop) and \@ref(fig:mapHEVACPopConcern) below).
+Some groups are disproportionately exposed to these hurricane evacuation hazards. While approximately 1.1% of the general population are living within hurricane inundation zones, individuals over age 64 and households without access to a car exceed the population average living within hurricane inundation zones. These populations of concern are disproportionately exposed to the risk of hurricane inundation (see Figures \@ref(fig:chartHEVACpop) and \@ref(fig:mapHEVACPopConcern1) below).
 
 ```{r chartHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="New Hampshire Populations Living within Hurricane Evacuation Zones."}
 # Create lollipop plot of pops within flood zones
