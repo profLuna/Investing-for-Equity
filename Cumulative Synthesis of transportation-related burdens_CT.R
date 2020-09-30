@@ -313,6 +313,8 @@ write_csv(cum_burden_df,"tables/CT_cum_burden.csv")
 
 # create a stacked bar chart to compare cumulative burdens
 cum_burden_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   select(Group,PctB1:PctB4) %>% 
   pivot_longer(.,cols = starts_with("Pct"), names_to = "Burdens") %>% 
   mutate(Burdens = as.factor(Burdens)) %>% 

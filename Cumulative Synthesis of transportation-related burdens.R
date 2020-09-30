@@ -263,6 +263,9 @@ ma_blkgrps_sf <- ma_blkgrps_sf %>%
   BurdenCount = nchar(BurdenCombo)
   )
 
+# save output
+saveRDS(ma_blkgrps_sf, file = "DATA/ma_blkgrps_sf_CUM.Rds")
+
 # repeat for tracts
 ma_tracts_sf <- ma_tracts_sf %>% 
   mutate(
@@ -337,6 +340,8 @@ write_csv(cum_burden_df,"tables/cum_burden.csv")
 
 # create a stacked bar chart to compare cumulative burdens
 cum_burden_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>% 
   select(Group,PctB1:PctB4) %>% 
   pivot_longer(.,cols = starts_with("Pct"), names_to = "Burdens") %>% 
   mutate(Burdens = as.factor(Burdens)) %>% 
@@ -404,7 +409,7 @@ ma_towns_sf_pts <- county_subdivisions(state = "MA", cb = TRUE) %>%
 # Create road layer for context
 ma_highways <- primary_roads() %>% 
   filter(FULLNAME %in% c("I- 84","I- 90","I- 91","I- 95","I- 190","I- 195","I- 290","I- 395","I- 495","US Hwy 6","US Hwy 202","Mohawk Trl","George W Stanton Hwy","State Rte 2","Mass State Hwy","Concord Tpke","State Rte 25")) %>% 
-  tmaptools::crop_shape(., ne_states_sf_cb) %>% 
+  tmaptools::crop_shape(., ma_blkgrps_sf, polygon = TRUE) %>% 
   st_transform(., crs = 26986)
 
 ma_highways2nd <- primary_secondary_roads("MA") %>% 
@@ -743,11 +748,55 @@ nrow(burdens_EJtown_df)/nrow(EJtowns)*100
 
 
 # map of towns with block groups meeting 3 - 4 burdens
+# create point layer of towns for context
+ma_EJtowns_sf_pts <- county_subdivisions(state = "MA", cb = TRUE) %>% 
+  filter(NAME %in% c("Boston",
+                     "Lawrence",
+                     "Lowell",
+                     "Brockton",
+                     "New Bedford",
+                     "Plymouth",
+                     "Worcester",
+                     "Springfield",
+                     "Pittsfield",
+                     "Holyoke",
+                     "Stockbridge",
+                     "Fall River",
+                     "Bourne",
+                     "Lynn",
+                     "Randolph",
+                     "Webster",
+                     "Attleboro",
+                     "Medford",
+                     "Chicopee",
+                     "Falmouth",
+                     "Eastham",
+                     "Sturbridge",
+                     "Longmeadow",
+                     "Westfield",
+                     "Framingham",
+                     "Foxborough",
+                     "Barnstable",
+                     "Brewster",
+                     "Reading",
+                     "Gloucester",
+                     "Quincy",
+                     "Danvers",
+                     "North Andover",
+                     "Holliston",
+                     "Sutton",
+                     "Salem",
+                     "Natick",
+                     "Mashpee")) %>% 
+  st_transform(., crs = 26986) %>% 
+  st_centroid(of_largest_polygon = TRUE)
+
 tmap_mode("plot")
 m <- ma_towns_sf %>% 
   right_join(.,burdens_town_df, by = c("NAME" = "City/Town")) %>% 
-  tm_shape(., unit = "mi", bbox = ma_towns_sf) + 
+  tm_shape(., unit = "mi") + 
   tm_fill(col = "red", alpha = 0.5) +
+  # tm_text("NAME", size = 0.25, col = "black", remove.overlap = TRUE) +
   tm_shape(ma_towns_sf) + tm_borders(col = "gray", lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
   tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
@@ -771,9 +820,10 @@ m <- ma_towns_sf %>%
   tm_symbols(shape = I90, border.lwd = NA, size = .1) +
   tm_shape(I90roadSegment2) +
   tm_symbols(shape = I90, border.lwd = NA, size = .1) +
-  tm_shape(ma_towns_sf_pts) + tm_dots() +
+  tm_shape(ma_EJtowns_sf_pts) + 
+  # tm_dots() +
   tm_text("NAME", size = 0.4, col = "black",
-          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+          shadow = TRUE) +
   tm_scale_bar(breaks = c(0,10,20), position = c(0.55,0.005)) +
   tm_layout(title = "Municipalities with Block Groups\nmeeting 3 - 4 Cumulative Burden\nCategories",
             frame = FALSE, main.title.size = 0.8,
