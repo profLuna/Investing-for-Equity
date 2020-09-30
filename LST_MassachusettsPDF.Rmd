@@ -1576,6 +1576,8 @@ In addition to variations in the general geography of Land Surface Temperatures 
 
 ```{r plotLSTDayTempPopAvgMA, fig.align = "center", fig.cap="Population-weighted average exposures to average daytime Land Surface Temperatures for populations of concern in Massachusetts relative to the state average."}
 LSTDayPop %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>% 
   ggplot(aes(x = reorder(Group,LSTDaywMean), 
              y = LSTDaywMean)) +
   geom_segment(aes(x = reorder(Group,LSTDaywMean), 
@@ -1602,6 +1604,8 @@ LSTDayPop %>%
   # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 94, yend = 97), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(90,99))
+
+ggsave("DATA/LST/ma_DayLST_lolli.png")
 ```
 
 \pagebreak
@@ -2302,6 +2306,8 @@ In addition to variations in the general geography of Land Surface Temperatures 
 
 ```{r plotLSTNightTempPopAvgMA, fig.align = "center", fig.cap="Population-weighted average exposures to average nighttime Land Surfact Temperatures for populations of concern in Massachusetts relative to the state average."}
 LSTNightPop %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>% 
   ggplot(aes(x = reorder(Group,LSTNightwMean), 
              y = LSTNightwMean)) +
   geom_segment(aes(x = reorder(Group,LSTNightwMean), 
@@ -2328,6 +2334,8 @@ LSTNightPop %>%
   # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 66.9, yend = 67.5), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(66,68))
+
+ggsave("DATA/LST/ma_NightLST_lolli.png")
 ```
 
 \pagebreak
