@@ -533,9 +533,9 @@ vt_FloodPops_df %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = vt_FloodPops_df[1,4], linetype = "dashed") +
-  geom_text(aes(x = "No HS Dip", y = 6.3, label = "Above state\naverage"),
+  geom_text(aes(x = "No HS Diploma", y = 6.3, label = "Above state\naverage"),
             color = "gray48") +
-  geom_text(aes(x = "No HS Dip", y = 5.2, label = "Below state\naverage"),
+  geom_text(aes(x = "No HS Diploma", y = 5.2, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(5,7.5))
 
