@@ -2337,11 +2337,11 @@ ri_blkgrp_sf %>%
   summarize(DPMwMean = weighted.mean(x = PTRAF_19, w = Pop, na.rm = TRUE),
             DPMMean = mean(PTRAF_19, na.rm = TRUE)) %>% 
   spread(key = Group, value = DPMwMean) %>% 
-  transmute(Minority = (minorityE/DPMMean - 1)*100,
+  transmute(`People of Color` = (minorityE/DPMMean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/DPMMean - 1)*100,
          `Low Income` = (num2povE/DPMMean - 1)*100,
-         `No HS Dip` = (lthsE/DPMMean - 1)*100,
+         `No HS Diploma` = (lthsE/DPMMean - 1)*100,
          `Under 5` = (under5E/DPMMean - 1)*100,
          `Over 64` = (over64E/DPMMean - 1)*100,
          `RI Low Income` = (RI_LOWINC/DPMMean - 1)*100,
@@ -2372,6 +2372,8 @@ ri_blkgrp_sf %>%
   # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 10, yend = 50), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-30,120))
+
+ggsave("DATA/EJSCREEN/ri_traffic_lolli.png")
 ```
 
 There is a strong positive correlation between the proportions of minorities and traffic proximity and volume, and moderate positive correlations with limited English households, low income persons, and adults without a high school diploma (see Figure \@ref(fig:cormatrixTPVPopAvg) in Appendix B).
