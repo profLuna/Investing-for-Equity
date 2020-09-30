@@ -207,7 +207,7 @@ knitr::include_graphics("DATA/EJSCREEN/me_pm25hotspot.png")
 
 There is a statistically significant hot spot of PM~2.5~ from Augusta to Bangor. Warm clusters extend across the southeast from Saco to Bangor. 
 
-These PM~2.5~ levels vary significantly across the state (see Table \@ref(tab:statsPM) and Figure \@ref(fig:boxplotPM)). See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality.
+These PM~2.5~ levels vary significantly across the state (see Table \@ref(tab:statsPM) and Figure \@ref(fig:boxplotPM25)). See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality.
 
 ```{r statsPM, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual PM2.5 concentrations at Census Block Group level for the state."}
 me_blkgrp_sf %>% 
@@ -377,7 +377,7 @@ newggslopegraph(dataframe = PM11_16wSTAvg_actual,
 
 ### PM~2.5~ in Maine and Populations of Concern
 
-In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvg) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the state. For example, limited English speaking households are exposed to PM~2.5~ concentrations that are over 1.7% above concentrations for the state as a whole. By contrast, adults without a high school diploma are exposed to concentrations at or below the state average. 
+In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvg) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the state. For example, limited English speaking households are exposed to PM~2.5~ concentrations that are over 1.8% above concentrations for the state as a whole. By contrast, adults without a high school diploma are exposed to concentrations below the state average. 
 
 ```{r barplotPM25PopAvg, fig.align = "center", fig.cap="Population-weighted average exposures to PM2.5 for populations of concern in Maine relative to the state average."}
 # Pop Weighted avg of PM2.5 for all Groups in Maine relative to state average
@@ -2234,7 +2234,7 @@ me_blkgrp_sf %>%
 
 ### Traffic Proximity and Volume Exposure in Maine and Populations of Concern
 
-In addition to variations in the general geography of the traffic proximity and volume exposure, this exposure also varies demographically. Figure \@ref(fig:barplotTPVPopAvgNE) below shows population-weighted exposures for populations of concern relative to average traffic proximity and volume for the state. For example, minorities are exposed to traffic proximity and volume more than 180% above the state average. By contrast, persons over age 64 are, on average, are exposed to traffic proximity and volume of more than 16% below the state average. 
+In addition to variations in the general geography of the traffic proximity and volume exposure, this exposure also varies demographically. Figure \@ref(fig:barplotTPVPopAvgNE) below shows population-weighted exposures for populations of concern relative to average traffic proximity and volume for the state. For example, minorities are exposed to traffic proximity and volume more than 180% above the state average. By contrast, persons over age 64 are, on average, are exposed to traffic proximity and volume of more than 17% below the state average. 
 
 ```{r barplotTPVPopAvgNE, fig.align = "center", fig.cap="Population-weighted average Traffic Proximity and Volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Maine at Census Block Group level relative to the state average."}
 # Pop Weighted avg of TPV for all Groups in Maine relative to NE average
