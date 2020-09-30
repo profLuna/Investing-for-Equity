@@ -2285,11 +2285,11 @@ nh_blkgrp_sf %>%
   summarize(DPMwMean = weighted.mean(x = PTRAF_19, w = Pop, na.rm = TRUE),
             DPMMean = mean(PTRAF_19, na.rm = TRUE)) %>% 
   spread(key = Group, value = DPMwMean) %>% 
-  transmute(Minority = (minorityE/DPMMean - 1)*100,
+  transmute(`People of Color` = (minorityE/DPMMean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/DPMMean - 1)*100,
          `Low Income` = (num2povE/DPMMean - 1)*100,
-         `No HS Dip` = (lthsE/DPMMean - 1)*100,
+         `No HS Diploma` = (lthsE/DPMMean - 1)*100,
          `Under 5` = (under5E/DPMMean - 1)*100,
          `Over 64` = (over64E/DPMMean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
@@ -2318,6 +2318,8 @@ nh_blkgrp_sf %>%
   # geom_segment(aes(x = "No HS Dip", xend = "No HS Dip", y = 30, yend = 60), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-30,150))
+
+ggsave("DATA/EJSCREEN/nh_traffic_lolli.png")
 ```
 
 There is a moderate positive correlation between the proportions of minorities and traffic proximity and volume (see Figure \@ref(fig:cormatrixTPVPopAvg) in Appendix B).
