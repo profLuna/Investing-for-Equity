@@ -1380,6 +1380,8 @@ In addition to variations in the general geography of Land Surface Temperatures 
 
 ```{r plotLSTDayTempPopAvgNH, fig.align = "center", fig.cap="Population-weighted average exposures to average daytime Land Surface Temperatures for populations of concern in New Hampshire relative to the state average."}
 LSTDayPop %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,LSTDaywMean), 
              y = LSTDaywMean)) +
   geom_segment(aes(x = reorder(Group,LSTDaywMean), 
@@ -1406,6 +1408,8 @@ LSTDayPop %>%
   # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 94, yend = 97), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(84,93))
+
+ggsave("DATA/LST/nh_DayLST_lolli.png")
 ```
 
 
