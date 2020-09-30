@@ -1545,11 +1545,11 @@ me_blkgrp_sf %>%
   summarize(DPMwMean = weighted.mean(x = DSLPM_19, w = Pop, na.rm = TRUE),
             DPMMean = mean(DSLPM_19, na.rm = TRUE)) %>% 
   spread(key = Group, value = DPMwMean) %>% 
-  transmute(Minority = (minorityE/DPMMean - 1)*100,
+  transmute(`People of Color` = (minorityE/DPMMean - 1)*100,
          #Minority_MEW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/DPMMean - 1)*100,
          `Low Income` = (num2povE/DPMMean - 1)*100,
-         `No HS Dip` = (lthsE/DPMMean - 1)*100,
+         `No HS Diploma` = (lthsE/DPMMean - 1)*100,
          `Under 5` = (under5E/DPMMean - 1)*100,
          `Over 64` = (over64E/DPMMean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
@@ -1578,6 +1578,8 @@ me_blkgrp_sf %>%
   # geom_segment(aes(x = "Low Income", xend = "Low Income", y = 5, yend = 25), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-25,80))
+
+ggsave("DATA/EJSCREEN/me_DPM_lolli.png")
 ```
 
 There is a weak positive correlation between the proportions of minorities and ambient concentrations of DPM (see Figure \@ref(fig:cormatrixDPMPopAvg) in Appendix B).
