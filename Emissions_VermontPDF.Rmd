@@ -2379,9 +2379,9 @@ vt_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "No HS Dip", y = 25, label = "Above state\naverage"),
+  geom_text(aes(x = "No HS Diploma", y = 25, label = "Above state\naverage"),
             color = "gray48") +
-  geom_text(aes(x = "No HS Dip", y = -15, label = "Below state\naverage"),
+  geom_text(aes(x = "No HS Diploma", y = -15, label = "Below state\naverage"),
             color = "gray48") +
   # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 5, yend = 30), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
