@@ -843,6 +843,8 @@ Some groups are disproportionately exposed to these flood hazards. While approxi
 # Create lollipop plot of pops within flood zones
 # Create lollipop plot of pops within hurricane evac zones
 ri_HevacPops_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,PctHevac), 
              y = PctHevac)) +
   geom_segment(aes(x = reorder(Group,PctHevac), 
@@ -871,6 +873,8 @@ ri_HevacPops_df %>%
   # geom_segment(aes(x = "Under 18", xend = "Under 18", y = 11.8, yend = 13.6), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(3,14))
+
+ggsave("DATA/FEMA/RI/ri_hevac_lolli.png")
 ```
 
 The maps below (Figures \@ref(fig:mapHEVACPopConcern1) and \@ref(fig:mapHEVACPopConcern2)) show persons over 64 and disabled persons who are disproportionately exposed to hurricane evacuation risk. Maps for other populations of concern can be found in Figures \@ref(fig:mapHEVACPopConcern3) to \@ref(fig:mapHEVACPopConcern11) and breakdowns by municipality in Tables \@ref(tab:tabHEVACO64) to \@ref(tab:tabHEVACRIMIN) in Appendix B.
