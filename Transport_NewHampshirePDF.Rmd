@@ -1044,6 +1044,8 @@ Transportation cost burden varies for different population groups across the sta
 ```{r loliLAI, fig.align = "center", fig.cap="Population-weighted average transportation cost burden for groups across New Hampshire."}
 # Create lollipop graph of pop-weighted average LAI
 lai_nh_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,wTBurden), y = wTBurden)) +
   geom_segment(aes(x = reorder(Group,wTBurden), 
                    xend = reorder(Group,wTBurden),
@@ -1065,6 +1067,8 @@ lai_nh_df %>%
   geom_text(aes(x = "Total Pop", y = 22, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(19,25))
+
+ggsave("DATA/transport/NH/figures/nh_tburden_lolli.png")
 ```
 ```{r HiBurden, include=FALSE}
 # Isolate highest transport burden block groups and tracts and add area variable
