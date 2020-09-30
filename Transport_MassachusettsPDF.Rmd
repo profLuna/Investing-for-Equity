@@ -1917,6 +1917,8 @@ The average population-weighted headway for all bus routes in the state is `r ro
 
 ```{r loliBusHeadway, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average bus headways for groups within 400 meters of a bus stop across Massachusetts."}
 ma_busHeadwayPops_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,AvgWHeadway), y = AvgWHeadway)) +
   geom_segment(aes(x = reorder(Group,AvgWHeadway), 
                    xend = reorder(Group,AvgWHeadway),
@@ -1938,6 +1940,8 @@ ma_busHeadwayPops_df %>%
   geom_text(aes(x = "Under 18", y = 87, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(75,105))
+
+ggsave("DATA/transport/MA/figures/ma_BusHeadway_lolli.png")
 ```
 
 Rapid transit routes, which are localized to Boston and adjacent municipalities, show considerably shorter average headways than bus routes. Figure \@ref(fig:mapGTFSrapidTransit) shows average headways by line, and Table \@ref(tab:tabGTFSrapidTransit) shows a breakdown of headway times by route. The average population-weighted headway for all rapid transit routes in the state is `r round(ma_RTHeadwayPops_df %>% filter(Group == "Total Pop") %>% select(AvgWHeadway) %>% pull(),1)` minutes. However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliRTHeadway) below compares the population-weighted average rapid transit headways for different groups within reasonable walking distance of stops. More than half of the groups have average headways longer than the general population. Adults without a high school diploma have the longest population-weighted average headways (`r round(ma_RTHeadwayPops_df %>% filter(Group == "No HS Dip") %>% select(AvgWHeadway) %>% pull(),1)` minutes). The shortest population-weighted average headway, experienced by low income persons, as defined by Massachusetts environmental justice policy, is `r round(ma_RTHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),1)` minutes.
@@ -2617,6 +2621,8 @@ Walkability varies for different population groups across the state. Figure \@re
 ```{r loliWalkability, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="population-weighted average walkability index scores for groups across Massachusetts."}
 # Create lollipop graph of pop-weighted average walk index
 ma_wAvgWalkability_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>% 
   ggplot(aes(x = reorder(Group,-wNatWalkIndex), y = wNatWalkIndex)) +
   geom_segment(aes(x = reorder(Group,-wNatWalkIndex), 
                    xend = reorder(Group,-wNatWalkIndex),
@@ -2637,6 +2643,8 @@ ma_wAvgWalkability_df %>%
   geom_text(aes(x = "Under 18", y = 10, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(9,16))
+
+ggsave("DATA/transport/MA/figures/ma_walk_lolli.png")
 ```
 ```{r lowWalk, include=FALSE}
 # Isolate least walkable block groups and tracts and add area variable
@@ -2949,6 +2957,8 @@ Transportation cost burden varies for different population groups across the sta
 ```{r loliLAI, fig.align = "center", fig.cap="Population-weighted average transportation cost burden as a percentage of household income for groups across Massachusetts."}
 # Create lollipop graph of pop-weighted average LAI
 lai_ma_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>% 
   ggplot(aes(x = reorder(Group,wTBurden), y = wTBurden)) +
   geom_segment(aes(x = reorder(Group,wTBurden), 
                    xend = reorder(Group,wTBurden),
@@ -2970,6 +2980,8 @@ lai_ma_df %>%
   geom_text(aes(x = "Under 18", y = 18, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(13,23))
+
+ggsave("DATA/transport/MA/figures/ma_tburden_lolli.png")
 ```
 ```{r HiBurden, include=FALSE}
 # Isolate highest transport burden block groups and tracts and add area variable
