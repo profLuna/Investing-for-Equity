@@ -973,6 +973,8 @@ Some groups are disproportionately exposed to these hurricane evacuation hazards
 ```{r chartHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Maine Populations Living within Hurricane Inundation Zones."}
 # Create lollipop plot of pops within flood zones
 me_HevacPops_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,PctHevac), 
              y = PctHevac)) +
   geom_segment(aes(x = reorder(Group,PctHevac), 
@@ -996,6 +998,8 @@ me_HevacPops_df %>%
   geom_text(aes(x = "Disabled", y = 3.5, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y=c(3,10))
+
+ggsave("DATA/FEMA/ME/me_hevac_lolli.png")
   # geom_segment(aes(x = "Total Pop", xend = "Total Pop", y = 5, yend = 7), 
   #              arrow = arrow(length = unit(0.3,"cm")))
 ```
