@@ -886,6 +886,8 @@ The average population-weighted headway for all transit in the state is `r round
 
 ```{r loliHeadway, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average headways for groups within 400 meters of a bus stop across Rhode Island."}
 ri_busHeadwayPops_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,AvgWHeadway), y = AvgWHeadway)) +
   geom_segment(aes(x = reorder(Group,AvgWHeadway), 
                    xend = reorder(Group,AvgWHeadway),
@@ -907,6 +909,8 @@ ri_busHeadwayPops_df %>%
   geom_text(aes(x = "Under 18", y = 80, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(60,110))
+
+ggsave("DATA/transport/RI/figures/ri_headwayBus_lolli.png")
 ```
 
 ```{r excessiveHeadway, include=FALSE}
@@ -1492,6 +1496,8 @@ Transportation cost burden varies for different population groups across the sta
 ```{r loliLAI, fig.align = "center", fig.cap="Population-weighted average transportation cost burden as a percentage of household income for groups across Rhode Island."}
 # Create lollipop graph of pop-weighted average LAI
 lai_ri_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,wTBurden), y = wTBurden)) +
   geom_segment(aes(x = reorder(Group,wTBurden), 
                    xend = reorder(Group,wTBurden),
@@ -1513,6 +1519,8 @@ lai_ri_df %>%
   geom_text(aes(x = "Under 18", y = 21.5, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(18,25))
+
+ggsave("DATA/transport/RI/figures/ri_tburden_lolli.png")
 ```
 ```{r HiBurden, include=FALSE}
 # Isolate highest transport burden block groups and tracts and add area variable
