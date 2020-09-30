@@ -505,6 +505,8 @@ Some groups are disproportionately exposed to these flood hazards. While approxi
 ```{r chartNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="New Hampshire Populations Living within Flood Zones."}
 # Create lollipop plot of pops within flood zones
 nh_FloodPops_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,PctFlood), 
              y = PctFlood)) +
   geom_segment(aes(x = reorder(Group,PctFlood), 
@@ -528,6 +530,8 @@ nh_FloodPops_df %>%
   geom_text(aes(x = "Over 64", y = 5, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y=c(4.5,8))
+
+ggsave("DATA/FEMA/NH/nh_flood_lolli.png")
   # geom_segment(aes(x = "Total Pop", xend = "Total Pop", y = 5.9, yend = 6.6), 
   #              arrow = arrow(length = unit(0.3,"cm")))
 ```
