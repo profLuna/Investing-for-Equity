@@ -1044,6 +1044,8 @@ Some groups are disproportionately exposed to these hurricane evacuation hazards
 ```{r chartHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Massachusetts Populations Living within Hurricane Evacuation Zones."}
 # Create lollipop plot of pops within flood zones
 ma_HevacPops_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>% 
   ggplot(aes(x = reorder(Group,PctHevac), 
              y = PctHevac)) +
   geom_segment(aes(x = reorder(Group,PctHevac), 
@@ -1069,6 +1071,8 @@ ma_HevacPops_df %>%
   # geom_segment(aes(x = "Total Pop", xend = "Total Pop", y = 15, yend = 22), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(6,40))
+
+ggsave("DATA/FEMA/MA/ma_hevac_lolli.png")
 ```
 
 The maps below (Figures \@ref(fig:mapHEVACPopConcern1) and \@ref(fig:mapHEVACPopConcern2)) show limited English speaking households and households without a car which are disproportionately exposed to hurricane evacuation risk. Maps for other populations of concern can be found in Figures \@ref(fig:mapHEVACPopConcern3) to \@ref(fig:mapHEVACPopConcern12) as well as breakdowns by municipality in Tables \@ref(tab:tabHEVACMALEH) to \@ref(tab:tabHEVACU18) in Appendix B.
