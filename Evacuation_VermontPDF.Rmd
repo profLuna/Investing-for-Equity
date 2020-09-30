@@ -513,6 +513,8 @@ Some groups are disproportionately exposed to these flood hazards. While approxi
 ```{r chartNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont Populations Living within Flood Zones."}
 # Create lollipop plot of pops within flood zones
 vt_FloodPops_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,PctFlood), 
              y = PctFlood)) +
   geom_segment(aes(x = reorder(Group,PctFlood), 
@@ -536,6 +538,8 @@ vt_FloodPops_df %>%
   geom_text(aes(x = "No HS Dip", y = 5.2, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(5,7.5))
+
+ggsave("DATA/FEMA/VT/vt_flood_lolli.png")
   # geom_segment(aes(x = "Total Pop", xend = "Total Pop", y = 5.8, yend = 6.6), 
   #              arrow = arrow(length = unit(0.3,"cm")))
 ```
