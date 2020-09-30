@@ -386,7 +386,7 @@ newggslopegraph(dataframe = PM11_16wSTAvg_actual,
 
 ### PM~2.5~ in New Hampshire and Populations of Concern
 
-In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvgRI) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the state. For example, limited English households are exposed to PM~2.5~ concentrations that are over 2% above concentrations for the state as a whole. By contrast, low income persons are exposed to concentrations at or below the state average. 
+In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvgRI) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the state. For example, limited English households are exposed to PM~2.5~ concentrations that are over 2% above concentrations for the state as a whole. By contrast, low income persons are exposed to concentrations below the state average. 
 
 ```{r barplotPM25PopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to PM2.5 for populations of concern in New Hampshire relative to the state average."}
 # Pop Weighted avg of PM2.5 for all Groups in New Hampshire relative to state average
@@ -1330,7 +1330,7 @@ nh_blkgrp_sf %>%
   theme_minimal()
 ```
 
-New Hampshire saw dramatic growth in CO~2~ emissions between 1990 and 2004. Since 2004, total emissions have declined slightly. However, emissions growth has exceeded population growth. This is reflected in the increase in per capita emissions since 1990 (see last three columns in Table \@ref(tab:changeCO2RI)).  
+New Hampshire saw dramatic growth in CO~2~ emissions between 1990 and 2004. Since 2004, total emissions have declined slightly. However, emissions growth has exceeded population growth. This is reflected in the increase in per capita emissions since 1990 (see last three columns in Table \@ref(tab:changeCO2)).  
 
 
 \pagebreak
@@ -1524,7 +1524,7 @@ nh_blkgrp_sf %>%
 
 ### Diesel Particulate Matter in New Hampshire and Populations of Concern
 
-In addition to variations in the general geography of DPM concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvg) below shows population-weighted exposures for populations of concern relative to average DPM concentraions for the state. For example, limited English speaking households in New Hampshire are exposed to  DPM concentrations that are more than 47% above concentrations for the state as a whole. Similarly, minorities are exposed to concentrations more than 28% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of DPM 4.6% below the state average. 
+In addition to variations in the general geography of DPM concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvg) below shows population-weighted exposures for populations of concern relative to average DPM concentraions for the state. For example, limited English speaking households in New Hampshire are exposed to  DPM concentrations that are more than 47% above concentrations for the state as a whole. Similarly, minorities are exposed to concentrations more than 28% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of DPM 4.8% below the state average. 
 
 ```{r barplotDPMPopAvg, fig.align = "center", fig.cap="Population-weighted average exposures to annual average ambient concentrations of Diesel Particulate Matter across New Hampshire relative to the state average."}
 # Pop Weighted avg of DPM for all Groups in New Hampshire relative to NE average
@@ -1768,7 +1768,7 @@ nh_blkgrp_sf %>%
 
 ### Lifetime Cancer Risk from Inhalation of Air Toxics in New Hampshire and Populations of Concern
 
-In addition to variations in the general geography of cancer risk, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvg) below shows population-weighted exposures for populations of concern relative to average cancer risk for the state. For example, limited English speaking households in New Hampshire experience  cancer risks from inhalation of air toxics that are more than 13% above the state as a whole. Similarly, minorities experience  cancer risks more than 8% above the state average. By contrast, persons over age 64 are exposed to risks 1.2% below the state average. 
+In addition to variations in the general geography of cancer risk, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvg) below shows population-weighted exposures for populations of concern relative to average cancer risk for the state. For example, limited English speaking households in New Hampshire experience  cancer risks from inhalation of air toxics that are more than 14% above the state as a whole. Similarly, minorities experience  cancer risks more than 8% above the state average. By contrast, persons over age 64 are exposed to risks 1.2% below the state average. 
 
 ```{r barplotATCPopAvg, fig.align = "center", fig.cap="Population-weighted average lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across New Hampshire at Census Block Group level relative to the state average."}
 # Pop Weighted avg of DPM for all Groups in New Hampshire relative to NE average
@@ -2254,7 +2254,7 @@ nh_blkgrp_sf %>%
 
 ### Traffic Proximity and Volume Exposure in New Hampshire and Populations of Concern
 
-In addition to variations in the general geography of the traffic proximity and volume exposure, this exposure also varies demographically. Figure \@ref(fig:barplotTPVPopAvgNE) below shows population-weighted exposures for populations of concern relative to average traffic proximity and volume for the state. For example, minorities are exposed to traffic proximity and volume more than 137% above the state average. By contrast, persons over age 64 are, on average, are exposed to traffic proximity and volume of more than 22% below the state average. 
+In addition to variations in the general geography of the traffic proximity and volume exposure, this exposure also varies demographically. Figure \@ref(fig:barplotTPVPopAvgNE) below shows population-weighted exposures for populations of concern relative to average traffic proximity and volume for the state. For example, limited English speaking households are exposed to traffic proximity and volume more than 139% above the state average. By contrast, persons over age 64 are, on average, are exposed to traffic proximity and volume of more than 22% below the state average. 
 
 ```{r barplotTPVPopAvgNE, fig.align = "center", fig.cap="Population-weighted average Traffic Proximity and Volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across New Hampshire at Census Block Group level relative to the state average."}
 # Pop Weighted avg of TPV for all Groups in New Hampshire relative to NE average
