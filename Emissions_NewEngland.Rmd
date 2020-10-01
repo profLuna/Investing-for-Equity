@@ -52,7 +52,7 @@ library(spdep)
 load("DATA/ne_layers.rds")
 
 # Map of PM2.5 across New England
-tm_shape(ne_blkgrp_sf, unit = "mi") + 
+m <- tm_shape(ne_blkgrp_sf, unit = "mi") + 
   tm_fill("PM25_19", style = "quantile", 
           title = expression(paste
                              (PM[2.5]," (", mu, "g/", m^3, ")", sep = "")),
@@ -73,6 +73,11 @@ tm_shape(ne_blkgrp_sf, unit = "mi") +
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"),
             legend.hist.width = 0.9)
+
+tmap_save(m, "DATA/EJSCREEN/ne_pm25.png",
+          height = 8, width = 8, units = "in", dpi = 600)
+
+knitr::include_graphics("DATA/EJSCREEN/ne_pm25.png")
 ```
 
 PM~2.5~ concentrations exhibit spatial clustering of both hot spots (i.e. geographic clusters of high values) and cold spots (i.e. geographic clusters of lower values). The map below (Figure \@ref(fig:hotspotPM25NE)) shows statistically significant PM~2.5~ hot spots.
