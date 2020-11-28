@@ -231,6 +231,9 @@ vt_blkgrps_sf <- vt_blkgrps_sf %>%
   BurdenCount = nchar(BurdenCombo)
   )
 
+# save output
+saveRDS(vt_blkgrps_sf, file = "DATA/vt_blkgrps_sf_CUM.Rds")
+
 # repeat for tracts
 vt_tracts_sf <- vt_tracts_sf %>% 
   mutate(
@@ -692,7 +695,7 @@ burdens_senate_df <- vt_blkgrps_sf %>%
   #        Rank4 = round(percent_rank(Pct4)*100,0)) %>% 
   transmute(`Senate District` = NAME, 
             `3 Burdens` = `3`, `4 Burdens` = `4`) %>% 
-  filter(`3 Burdens` > 0 | `4 Burdens` > 0) %>%
+  # filter(`3 Burdens` > 0 | `4 Burdens` > 0) %>%
   rowwise() %>% 
   mutate(`3+ Burdens` = sum(c_across(2:3)))
 
@@ -771,7 +774,7 @@ burdens_house_df <- vt_blkgrps_sf %>%
   #        Rank4 = round(percent_rank(Pct4)*100,0)) %>% 
   transmute(`House District` = NAME, 
             `3 Burdens` = `3`, `4 Burdens` = `4`) %>% 
-  filter(`3 Burdens` > 0 | `4 Burdens` > 0) %>%
+  # filter(`3 Burdens` > 0 | `4 Burdens` > 0) %>%
   rowwise() %>% 
   mutate(`3+ Burdens` = sum(c_across(2:3)))
 

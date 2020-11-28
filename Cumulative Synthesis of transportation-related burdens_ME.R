@@ -230,6 +230,9 @@ me_blkgrps_sf <- me_blkgrps_sf %>%
   BurdenCount = nchar(BurdenCombo)
   )
 
+# save output
+saveRDS(me_blkgrps_sf, file = "DATA/me_blkgrps_sf_CUM.Rds")
+
 # repeat for tracts
 me_tracts_sf <- me_tracts_sf %>% 
   mutate(
@@ -678,7 +681,7 @@ burdens_senate_df <- me_blkgrps_sf %>%
   #        Rank4 = round(percent_rank(Pct4)*100,0)) %>% 
   transmute(`Senate District` = SD2013, 
             `3 Burdens` = `3`, `4 Burdens` = `4`) %>% 
-  filter(`3 Burdens` > 0 | `4 Burdens` > 0) %>%
+  # filter(`3 Burdens` > 0 | `4 Burdens` > 0) %>%
   rowwise() %>% 
   mutate(`3+ Burdens` = sum(c_across(2:3)))
 
@@ -761,7 +764,7 @@ burdens_house_df <- me_blkgrps_sf %>%
   #        Rank4 = round(percent_rank(Pct4)*100,0)) %>% 
   transmute(`House District` = HD2013, 
             `3 Burdens` = `3`, `4 Burdens` = `4`) %>% 
-  filter(`3 Burdens` > 0 | `4 Burdens` > 0) %>%
+  # filter(`3 Burdens` > 0 | `4 Burdens` > 0) %>%
   rowwise() %>% 
   mutate(`3+ Burdens` = sum(c_across(2:3)))
 

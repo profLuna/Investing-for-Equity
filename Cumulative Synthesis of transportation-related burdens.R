@@ -865,7 +865,7 @@ burdens_senate_df <- ma_blkgrps_sf %>%
   #        Rank4 = round(percent_rank(Pct4)*100,0)) %>% 
   transmute(`Senate District` = SEN_DIST, 
             `3 Burdens` = `3`, `4 Burdens` = `4`) %>% 
-  filter(`3 Burdens` > 0 | `4 Burdens` > 0) %>%
+  # filter(`3 Burdens` > 0 | `4 Burdens` > 0) %>%
   rowwise() %>% 
   mutate(`3+ Burdens` = sum(c_across(2:3)))
 
@@ -883,6 +883,7 @@ write_csv(burdens_senate_df, "tables/burdens_senate.csv")
 tmap_mode("plot")
 m <- senate_districts %>% 
   right_join(.,burdens_senate_df, by = c("SEN_DIST" = "Senate District")) %>% 
+  filter(`3+ Burdens` > 0) %>% 
   tm_shape(., unit = "mi", bbox = senate_districts) + 
   tm_fill(col = "red", alpha = 0.5) +
   tm_shape(senate_districts) + tm_borders(col = "seashell4") +
@@ -952,7 +953,7 @@ burdens_house_df <- ma_blkgrps_sf %>%
   #        Rank4 = round(percent_rank(Pct4)*100,0)) %>% 
   transmute(`House District` = REP_DIST, 
             `3 Burdens` = `3`, `4 Burdens` = `4`) %>% 
-  filter(`3 Burdens` > 0 | `4 Burdens` > 0) %>%
+  # filter(`3 Burdens` > 0 | `4 Burdens` > 0) %>%
   rowwise() %>% 
   mutate(`3+ Burdens` = sum(c_across(2:3)))
 
@@ -970,6 +971,7 @@ write_csv(burdens_house_df, "tables/burdens_house.csv")
 tmap_mode("plot")
 m <- house_districts %>% 
   right_join(.,burdens_house_df, by = c("REP_DIST" = "House District")) %>% 
+  filter(`3+ Burdens` > 0) %>%
   tm_shape(., unit = "mi", bbox = senate_districts) + 
   tm_fill(col = "red", alpha = 0.5) +
   tm_shape(house_districts) + tm_borders(col = "seashell4") +
