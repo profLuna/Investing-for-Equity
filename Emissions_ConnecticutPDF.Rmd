@@ -449,7 +449,7 @@ ct_blkgrp_sf %>%
   summarize(PM25wMean = weighted.mean(x = PM25_19, w = Pop, na.rm = TRUE),
             PM25Mean = mean(PM25_19, na.rm = TRUE)) %>% 
   spread(key = Group, value = PM25wMean) %>% 
-  transmute(Minority = (minorityE/PM25Mean - 1)*100,
+  transmute(`People of Color` = (minorityE/PM25Mean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/PM25Mean - 1)*100,
          `Low Income` = (num2povE/PM25Mean - 1)*100,
@@ -484,6 +484,9 @@ ct_blkgrp_sf %>%
   # geom_segment(aes(x = "Low Income", xend = "Low Income", y = 0.6, yend = 2), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-1,3))
+
+# # save image of graph
+# ggsave("images/CT_PM25_graph.png")
 ```
 
 Like the region as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that all  populations of concern continue to experience exposures greater than the regional average, with language isolated households leading on this measure. 
@@ -506,7 +509,7 @@ PM19wAvgs_actual <- ct_blkgrp_sf %>%
   summarize(PM25wMean = weighted.mean(x = PM25_19, 
                                       w = Pop, na.rm = TRUE)) %>% 
   mutate(Group = case_when(
-    Group == "minorityE" ~ "Minority",
+    Group == "minorityE" ~ "People of Color",
     Group == "eng_limitE" ~ "Limited English HH",
     Group == "num2povE" ~ "Low Income",
     Group == "lthsE" ~ "No HS Dip",
@@ -529,7 +532,7 @@ PM15wAvgs_actual <- ct_blkgrp_sf %>%
   summarize(PM25wMean = weighted.mean(x = pm_15, 
                                       w = Pop, na.rm = TRUE)) %>%  
   mutate(Group = case_when(
-    Group == "mins_15" ~ "Minority",
+    Group == "mins_15" ~ "People of Color",
     Group == "lingiso_15" ~ "Limited English HH",
     Group == "lowinc_15" ~ "Low Income",
     Group == "lths_15" ~ "No HS Dip",
@@ -561,7 +564,7 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
                 Caption = NULL,
                 LineColor = c("STATE AVG" = "#000000",
                               "Limited English HH" = "#E69F00",
-                              "Minority" = "#56B4E9",
+                              "People of Color" = "#56B4E9",
                               "No HS" = "#009E73",
                               "Poverty" = "#F0E442",
                               "Under 5" = "#0072B2",
@@ -569,6 +572,9 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
                 YTextSize = 3.5,
                 DataTextSize = 3,
                 WiderLabels = TRUE)
+
+# # save graph image
+# ggsave("images/CT_PM25_slope.png")
 ```
 
 There is a weak positive relationship between the proportion of minority residents or language-isolated households and the concentration of PM~2.5~ (see Figure \@ref(fig:cormatrixPM25PopAvg) in Appendix B).
@@ -904,7 +910,7 @@ ct_blkgrp_sf %>%
   summarize(O3wMean = weighted.mean(x = OZONE_19, w = Pop, na.rm = TRUE),
             O3Mean = mean(OZONE_19, na.rm = TRUE)) %>% 
   spread(key = Group, value = O3wMean) %>% 
-  transmute(Minority = (minorityE/O3Mean - 1)*100,
+  transmute(`People of Color` = (minorityE/O3Mean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/O3Mean - 1)*100,
          `Low Income` = (num2povE/O3Mean - 1)*100,
@@ -938,6 +944,9 @@ ct_blkgrp_sf %>%
             color = "gray48") +
   # geom_segment(aes(x = "Low Income", xend = "Low Income", y = 0.2, yend = 0.6), arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-0.3,1))
+
+# # save graph image
+# ggsave("images/CT_O3_graph.png")
 ```
 
 Like the region as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvgCT). All populations of concern have experienced an increase in population-weighted exposure to Ozone, with persons in language-isolated households and minorities experiencing the greatest increase in exposure. 
@@ -960,7 +969,7 @@ O319wAvgs_actual <- ct_blkgrp_sf %>%
   summarize(O3wMean = weighted.mean(x = OZONE_19, 
                                       w = Pop, na.rm = TRUE)) %>% 
   mutate(Group = case_when(
-    Group == "minorityE" ~ "Minority",
+    Group == "minorityE" ~ "People of Color",
     Group == "eng_limitE" ~ "Limited English HH",
     Group == "num2povE" ~ "Low Income",
     Group == "lthsE" ~ "No HS Dip",
@@ -983,7 +992,7 @@ O315wAvgs_actual <- ct_blkgrp_sf %>%
   summarize(O3wMean = weighted.mean(x = o3_15, 
                                       w = Pop, na.rm = TRUE)) %>%  
   mutate(Group = case_when(
-    Group == "mins_15" ~ "Minority",
+    Group == "mins_15" ~ "People of Color",
     Group == "lingiso_15" ~ "Limited English HH",
     Group == "lowinc_15" ~ "Low Income",
     Group == "lths_15" ~ "No HS Dip",
@@ -1015,7 +1024,7 @@ newggslopegraph(dataframe = O311_16wAvg_actual,
                 Caption = NULL,
                 LineColor = c("STATE AVG" = "#000000",
                               "Limited English HH" = "#E69F00",
-                              "Minority" = "#56B4E9",
+                              "People of Color" = "#56B4E9",
                               "No HS Dip" = "#009E73",
                               "Low Income" = "#F0E442",
                               "Under 5" = "#0072B2",
@@ -1023,6 +1032,9 @@ newggslopegraph(dataframe = O311_16wAvg_actual,
                 YTextSize = 3.5,
                 DataTextSize = 3,
                 WiderLabels = TRUE)
+
+# # save graph image
+# ggsave("images/CT_O3_slope.png")
 ```
 
 
@@ -1519,7 +1531,7 @@ ct_blkgrp_sf %>%
             Max = round(max(DSLPM_19, na.rm = TRUE),3)) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
-                    caption = "Annual 2014 DPM concentrations by Census block group", align = "r") %>% 
+                    caption = "Annual 2014 Diesel Particulate Matter concentrations by Census block group", align = "r") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
@@ -1601,7 +1613,7 @@ ct_blkgrp_sf %>%
   summarize(DPMwMean = weighted.mean(x = DSLPM_19, w = Pop, na.rm = TRUE),
             DPMMean = mean(DSLPM_19, na.rm = TRUE)) %>% 
   spread(key = Group, value = DPMwMean) %>% 
-  transmute(Minority = (minorityE/DPMMean - 1)*100,
+  transmute(`People of Color` = (minorityE/DPMMean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/DPMMean - 1)*100,
          `Low Income` = (num2povE/DPMMean - 1)*100,
@@ -1618,7 +1630,7 @@ ct_blkgrp_sf %>%
                color = "skyblue") +
   geom_point(color = "blue", size = 4, alpha = 0.8) +
   coord_flip() + xlab("") + ylab("") + 
-  ggtitle("Population-Weighted Exposure to DPM \n(relative to Connecticut average)") + theme_light() +
+  ggtitle("Population-Weighted Exposure to Diesel Particulate\nMatter (relative to Connecticut average)") + theme_light() +
   theme(panel.grid.major.y = element_blank(),
         panel.border = element_blank(),
         axis.ticks.y = element_blank()) +
@@ -1635,6 +1647,9 @@ ct_blkgrp_sf %>%
   # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 4, yend = 15), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-8,23))
+
+# # save graph image
+# ggsave("images/CT_DPM_graph.png")
 ```
 
 There is a moderate to strong positive correlation between the proportions of limited English speaking households and minorities and ambient concentrations of Diesel Particulate Matter (see Figure \@ref(fig:cormatrixDPMPopAvg) in Appendix B).
@@ -1867,7 +1882,7 @@ ct_blkgrp_sf %>%
   summarize(DPMwMean = weighted.mean(x = CANCER_19, w = Pop, na.rm = TRUE),
             DPMMean = mean(CANCER_19, na.rm = TRUE)) %>% 
   spread(key = Group, value = DPMwMean) %>% 
-  transmute(Minority = (minorityE/DPMMean - 1)*100,
+  transmute(`People of Color` = (minorityE/DPMMean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/DPMMean - 1)*100,
          `Low Income` = (num2povE/DPMMean - 1)*100,
@@ -1901,6 +1916,9 @@ ct_blkgrp_sf %>%
   # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1, yend = 4), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-2,5))
+
+# # save graph image
+# ggsave("images/CT_Cancer_graph.png")
 ```
 
 There is a moderately positive correlation between the proportions of minorities and limited English households and cancer risk (see Figure \@ref(fig:cormatrixATCPopAvg) in Appendix B).
@@ -2119,7 +2137,7 @@ ct_blkgrp_sf %>%
   summarize(RESPwMean = weighted.mean(x = RESP_19, w = Pop, na.rm = TRUE),
             RESPMean = mean(RESP_19, na.rm = TRUE)) %>% 
   spread(key = Group, value = RESPwMean) %>% 
-  transmute(Minority = (minorityE/RESPMean - 1)*100,
+  transmute(`People of Color` = (minorityE/RESPMean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/RESPMean - 1)*100,
          `Low Income` = (num2povE/RESPMean - 1)*100,
@@ -2153,6 +2171,9 @@ ct_blkgrp_sf %>%
   # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1.5, yend = 5), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-3,8))
+
+# # savegraph image
+# ggsave("images/CT_Resp_graph.png")
 ```
 
 There is a moderate to strong positive correlation between the proportions of minorities and respiratory hazard index (see Figure \@ref(fig:cormatrixRHIPopAvg) in Appendix B).
@@ -2406,7 +2427,7 @@ ct_blkgrp_sf %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-28,75))
 
-ggsave("DATA/EJSCREEN/ct_traffic_lolli.png")
+# ggsave("images/CT_Traffic_graph.png")
 ```
 
 There is a moderate positive correlation between the proportions of minorities, low income persons, limited English households, adults with less than a high school education, and traffic proximity and volume (see Figure \@ref(fig:cormatrixTPVPopAvg) in Appendix B).
@@ -2538,7 +2559,7 @@ The ACS provides greater demographic detail and temporal resolution than the dec
 For the purposes of this analysis ACS 5-year estimates for the period 2014 - 2018 for Census Tracts and Block Groups in New England, as well as their associated TIGER/Line spatial files, were downloaded from the Census Bureau via API using the tigris package in R. Demographic variables consistent with those used by the EPA in EJSCREEN were chosen, as well as environmental justice population thresholds used by states where available. Table \@ref(tab:ACSvariables) below lists the demographic variables that were downloaded directly or computed from ACS variables:
 ```{r ACSvariables}
 ACSvDF <- data.frame(Variable = c("Total Population",
-                                  "Minority",
+                                  "People of Color",
                                   "Low Income",
                                   "Limited English Household",
                                   "Less than High School Education",
@@ -2590,7 +2611,8 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
            NonMinority = c(20,12,5,10)) %>% 
   mutate(TotalPop = Minority + NonMinority) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
-                    caption = "Block Group Populations and PM2.5", align = "l") %>% 
+                    caption = "Block Group Populations and PM2.5", 
+                    align = "l", col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
@@ -2604,10 +2626,11 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
            Minority = c(5,10,20,10),
            NonMinority = c(20,12,5,10)) %>% 
   mutate(TotalPop = Minority + NonMinority,
-         PM25xMinority = PM25*Minority) %>% 
+         PM25xPOC = PM25*Minority) %>% 
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
-                    caption = "Block Group Populations and PM2.5", align = "l") %>% 
+                    caption = "Block Group Populations and PM2.5", align = "l",
+                    col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5:6])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header")) %>% 
   kableExtra::row_spec(5, bold = TRUE) %>% 
   kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
@@ -2626,7 +2649,8 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
          PM25xTotalPop = PM25*TotalPop) %>% 
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
-                    caption = "Block Group Populations and PM2.5", align = "l") %>% 
+                    caption = "Block Group Populations and PM2.5", align = "l",
+                    col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5:6])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header")) %>% 
   kableExtra::row_spec(5, bold = TRUE) %>% 
   kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
@@ -2662,7 +2686,7 @@ corrPM25 <- ct_blkgrp_sf %>%
   mutate(CT_LOWINC = if_else(CT_INCOME == "I", totalpopE, 0)) %>% 
   mutate(CT_LOWINC = replace_na(CT_LOWINC,0)) %>%
   dplyr::transmute(PM25 = PM25_19, 
-                Minority = minority_pctE, 
+                `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
@@ -2684,7 +2708,7 @@ corrO3 <- ct_blkgrp_sf %>%
   mutate(CT_LOWINC = if_else(CT_INCOME == "I", totalpopE, 0)) %>% 
   mutate(CT_LOWINC = replace_na(CT_LOWINC,0)) %>%
   dplyr::transmute(Ozone = OZONE_19, 
-                Minority = minority_pctE, 
+                `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
@@ -2722,7 +2746,7 @@ corrDPM <- ct_blkgrp_sf %>%
   mutate(CT_LOWINC = if_else(CT_INCOME == "I", totalpopE, 0)) %>% 
   mutate(CT_LOWINC = replace_na(CT_LOWINC,0)) %>% 
   dplyr::transmute(DPM = DSLPM_19, 
-                Minority = minority_pctE, 
+                `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
@@ -2745,7 +2769,7 @@ corrACT <- ct_blkgrp_sf %>%
   mutate(CT_LOWINC = if_else(CT_INCOME == "I", totalpopE, 0)) %>% 
   mutate(CT_LOWINC = replace_na(CT_LOWINC,0)) %>%
   dplyr::transmute(`Cancer Risk` = CANCER_19, 
-                Minority = minority_pctE, 
+                `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
@@ -2768,7 +2792,7 @@ corrACT <- ct_blkgrp_sf %>%
   mutate(CT_LOWINC = if_else(CT_INCOME == "I", totalpopE, 0)) %>% 
   mutate(CT_LOWINC = replace_na(CT_LOWINC,0)) %>%
   dplyr::transmute(`Resp Hazard Index` = RESP_19, 
-                Minority = minority_pctE, 
+                `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
@@ -2791,7 +2815,7 @@ corrTPV <- ct_blkgrp_sf %>%
   mutate(CT_LOWINC = if_else(CT_INCOME == "I", totalpopE, 0)) %>% 
   mutate(CT_LOWINC = replace_na(CT_LOWINC,0)) %>%
   dplyr::transmute(`Traffic Exposure` = PTRAF_19, 
-                Minority = minority_pctE, 
+                `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
