@@ -414,7 +414,7 @@ newggslopegraph(dataframe = PM11_16wSTAvg_actual,
 
 ### PM~2.5~ in Connecticut and Populations of Concern
 
-In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvgCT) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the state. For example, language isolated households in Connecticut are exposed to PM~2.5~ concentrations that are 2.8% above concentrations for the state as a whole. Similarly, minorities are exposed to concentrations over 2% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of PM~2.5~ at or below the state average. 
+In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvgCT) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the state. For example, language isolated households in Connecticut are exposed to PM~2.5~ concentrations that are 2.8% above concentrations for the state as a whole. Similarly, People of Color are exposed to concentrations over 2% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of PM~2.5~ at or below the state average. 
 
 ```{r barplotPM25PopAvgCT, fig.align = "center", fig.cap="Population-weighted average exposures to PM2.5 for populations of concern in Connecticut relative to the state average."}
 # Pop Weighted avg of PM2.5 for all Groups in Connecticut relative to state average
@@ -577,7 +577,7 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
 # ggsave("images/CT_PM25_slope.png")
 ```
 
-There is a weak positive relationship between the proportion of minority residents or language-isolated households and the concentration of PM~2.5~ (see Figure \@ref(fig:cormatrixPM25PopAvg) in Appendix B).
+There is a weak positive relationship between the proportion of people of color or language-isolated households and the concentration of PM~2.5~ (see Figure \@ref(fig:cormatrixPM25PopAvg) in Appendix B).
 
 
 \pagebreak
@@ -875,7 +875,7 @@ newggslopegraph(dataframe = O311_16wSTAvg_actual,
 
 ### Ozone (O~3~) in Connecticut and Populations of Concern
 
-In addition to variations in the general geography of Ozone (O~3~) concentrations, exposure to this pollutant also varies demographically. Figure \@ref(fig:barplotO3PopAvgCT) below shows population-weighted exposures for populations of concern relative to average Ozone concentrations for the region. For example, language isolated households in Connecticut are exposed to summer Ozone concentrations that are more than 0.76% above concentrations for the region as a whole. Similarly, minorities are exposed to concentrations 0.55% above the regional average. By contrast, persons over age 64 are, on average, exposed to concentrations of Ozone at or below the regional average. 
+In addition to variations in the general geography of Ozone (O~3~) concentrations, exposure to this pollutant also varies demographically. Figure \@ref(fig:barplotO3PopAvgCT) below shows population-weighted exposures for populations of concern relative to average Ozone concentrations for the region. For example, language isolated households in Connecticut are exposed to summer Ozone concentrations that are more than 0.76% above concentrations for the region as a whole. Similarly, People of Color are exposed to concentrations 0.55% above the regional average. By contrast, persons over age 64 are, on average, exposed to concentrations of Ozone at or below the regional average. 
 
 ```{r barplotO3PopAvgCT, fig.align = "center", fig.cap="Population-weighted average exposures to Ozone for populations of concern in Connecticut relative to the regional average."}
 # Pop Weighted avg of O3 for all Groups in Connecticut relative to NE average
@@ -949,7 +949,7 @@ ct_blkgrp_sf %>%
 # ggsave("images/CT_O3_graph.png")
 ```
 
-Like the region as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvgCT). All populations of concern have experienced an increase in population-weighted exposure to Ozone, with persons in language-isolated households and minorities experiencing the greatest increase in exposure. 
+Like the region as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvgCT). All populations of concern have experienced an increase in population-weighted exposure to Ozone, with persons in language-isolated households and People of Color experiencing the greatest increase in exposure. 
 
 ```{r slopegraphO3PopAvgCT, fig.align = "center", fig.cap="Change in population-weighted exposure to summer ozone for populations of concern between 2011 and 2016."}
 # Pop Weighted avg of O3 EXPOSURE CHANGE 2011 - 2016 for all Groups in Connecticut relative to NE average. 
@@ -1652,7 +1652,7 @@ ct_blkgrp_sf %>%
 # ggsave("images/CT_DPM_graph.png")
 ```
 
-There is a moderate to strong positive correlation between the proportions of limited English speaking households and minorities and ambient concentrations of Diesel Particulate Matter (see Figure \@ref(fig:cormatrixDPMPopAvg) in Appendix B).
+There is a moderate to strong positive correlation between the proportions of limited English speaking households and People of Color and ambient concentrations of Diesel Particulate Matter (see Figure \@ref(fig:cormatrixDPMPopAvg) in Appendix B).
 
 
 \pagebreak
@@ -1847,7 +1847,7 @@ ct_blkgrp_sf %>%
 
 ### Lifetime Cancer Risk from Inhalation of Air Toxics in Connecticut and Populations of Concern
 
-In addition to variations in the general geography of lifetime cancer risk from inhalation of air toxics, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvgCT) below shows population-weighted exposures for populations of concern relative to average cancer risk for the state. For example, limited English speaking households in Connecticut experience lifetime cancer risks from inhalation of air toxics that are 4.5% above the region as a whole. Similarly, minorities experience lifetime cancer risks almost 4% above the state average. By contrast, persons over age 64 are, on average, exposed to lifetime cancer risks 1% below the state average. 
+In addition to variations in the general geography of lifetime cancer risk from inhalation of air toxics, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvgCT) below shows population-weighted exposures for populations of concern relative to average cancer risk for the state. For example, limited English speaking households in Connecticut experience lifetime cancer risks from inhalation of air toxics that are 4.5% above the region as a whole. Similarly, People of Color experience lifetime cancer risks almost 4% above the state average. By contrast, persons over age 64 are, on average, exposed to lifetime cancer risks 1% below the state average. 
 
 ```{r barplotATCPopAvgCT, fig.align = "center", fig.cap="Population-weighted average lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Connecticut at Census Block Group level relative to the state average."}
 # Pop Weighted avg of DPM for all Groups in Connecticut relative to NE average
@@ -1921,7 +1921,7 @@ ct_blkgrp_sf %>%
 # ggsave("images/CT_Cancer_graph.png")
 ```
 
-There is a moderately positive correlation between the proportions of minorities and limited English households and cancer risk (see Figure \@ref(fig:cormatrixATCPopAvg) in Appendix B).
+There is a moderately positive correlation between the proportions of People of Color and limited English households and cancer risk (see Figure \@ref(fig:cormatrixATCPopAvg) in Appendix B).
 
 
 \pagebreak
@@ -2102,7 +2102,7 @@ ct_blkgrp_sf %>%
 
 ### Respiratory Hazard Index from Inhalation of Air Toxics in Connecticut and Populations of Concern
 
-In addition to variations in the general geography of the respiratory hazard index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvgCT) below shows population-weighted exposures for populations of concern relative to average respiratory hazard index for the state. For example, limited English speaking households in Connecticut experience respiratory hazard indices that are 6.1% above the region as a whole. Similarly, minorities are experience hazard index values almost 5% above the regional average. By contrast, persons over age 64 are, on average, exposed to respiratory hazard indices 1.5% below the regional average. 
+In addition to variations in the general geography of the respiratory hazard index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvgCT) below shows population-weighted exposures for populations of concern relative to average respiratory hazard index for the state. For example, limited English speaking households in Connecticut experience respiratory hazard indices that are 6.1% above the region as a whole. Similarly, People of Color are experience hazard index values almost 5% above the regional average. By contrast, persons over age 64 are, on average, exposed to respiratory hazard indices 1.5% below the regional average. 
 
 ```{r barplotRHIPopAvgCT, fig.align = "center", fig.cap="Population-weighted average respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Connecticut at Census Block Group level relative to the regional average."}
 # Pop Weighted avg of RHI for all Groups in Connecticut relative to NE average
@@ -2176,7 +2176,7 @@ ct_blkgrp_sf %>%
 # ggsave("images/CT_Resp_graph.png")
 ```
 
-There is a moderate to strong positive correlation between the proportions of minorities and respiratory hazard index (see Figure \@ref(fig:cormatrixRHIPopAvg) in Appendix B).
+There is a moderate to strong positive correlation between the proportions of People of Color and respiratory hazard index (see Figure \@ref(fig:cormatrixRHIPopAvg) in Appendix B).
 
 
 \pagebreak
@@ -2430,7 +2430,7 @@ ct_blkgrp_sf %>%
 # ggsave("images/CT_Traffic_graph.png")
 ```
 
-There is a moderate positive correlation between the proportions of minorities, low income persons, limited English households, adults with less than a high school education, and traffic proximity and volume (see Figure \@ref(fig:cormatrixTPVPopAvg) in Appendix B).
+There is a moderate positive correlation between the proportions of People of Color, low income persons, limited English households, adults with less than a high school education, and traffic proximity and volume (see Figure \@ref(fig:cormatrixTPVPopAvg) in Appendix B).
 
 [^EJSCREEN]: U.S. Environmental Protection Agency (EPA), 2019. EJSCREEN Technical Documentation. For more information see www.epa.gov/ejscreen
 
@@ -2602,7 +2602,7 @@ ACSvDF %>%
 
 ## Population-weighted averages {-}
 
-Wherever feasible, population exposure to pollutants or other risks is reported as a population-weighted average. A population weighted-average is equivalent to a weighted mean in which the raw values for which a mean (or average) is calculated are multiplied by a weight factor. For example, we are interested in knowing whether Minorities are exposed to higher average PM~2.5~ concentrations than the general or Total Population. Consider the table below.
+Wherever feasible, population exposure to pollutants or other risks is reported as a population-weighted average. A population weighted-average is equivalent to a weighted mean in which the raw values for which a mean (or average) is calculated are multiplied by a weight factor. For example, we are interested in knowing whether People of Color are exposed to higher average PM~2.5~ concentrations than the general or Total Population. Consider the table below.
 
 ```{r wmean1}
 data.frame(BG = c("BG1","BG2","BG3","BG4"),
@@ -2616,9 +2616,9 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Population numbers of minorities, as well as the total population, and PM~2.5~ concentrations, are each reported by Block Group. Since each Block Group is associated with one PM~2.5~ concentration value, we might assume (incorrectly) that everyone is equally exposed to the average PM~2.5~ values of all Block Groups (`r round(mean(c(2.5,6.2,10,5)),2)`). However, not all Block Groups have the same number of people or categories, which means that each PM~2.5~ concentration value is associated with different categories and numbers of people. Do more Minorities occupy Block Groups with higher concentrations than the simple average would indicate?
+Population numbers of People of Color, as well as the total population, and PM~2.5~ concentrations, are each reported by Block Group. Since each Block Group is associated with one PM~2.5~ concentration value, we might assume (incorrectly) that everyone is equally exposed to the average PM~2.5~ values of all Block Groups (`r round(mean(c(2.5,6.2,10,5)),2)`). However, not all Block Groups have the same number of people or categories, which means that each PM~2.5~ concentration value is associated with different categories and numbers of people. Do more People of Color occupy Block Groups with higher concentrations than the simple average would indicate?
 
-To calculate the population-weighted average PM~2.5~ exposure for Minorities, the number of Minorities in each Block Group is used as a 'weight'. The PM~2.5~ concentraions of each Block Group is multiplied by its respective number of Minorities. See the table below. The light gray column on the right is the product of PM~2.5~ values and Minority populations. 
+To calculate the population-weighted average PM~2.5~ exposure for People of Color, the number of People of Color in each Block Group is used as a 'weight'. The PM~2.5~ concentraions of each Block Group is multiplied by its respective number of People of Color. See the table below. The light gray column on the right is the product of PM~2.5~ values and numbers of People of Color. 
 
 ```{r wmean2}
 data.frame(BG = c("BG1","BG2","BG3","BG4"),
@@ -2636,7 +2636,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
 ```
 
-The total or sum of the products (i.e., Minority pop x PM~2.5~ concentrations) is then divided by the sum of the weights (i.e., total Minority), so that 324.5/45 = `r round(324.5/45,2)`. The result is a weighted average PM~2.5~ concentration that is influenced by the number of minorities. 
+The total or sum of the products (i.e., People of Color x PM~2.5~ concentrations) is then divided by the sum of the weights (i.e., total People of Color), so that 324.5/45 = `r round(324.5/45,2)`. The result is a weighted average PM~2.5~ concentration that is influenced by the number of People of Color. 
 
 This process is repeated for the Total Population so that the two population-weighted average PM~2.5~ concentrations can be compared. Below is the calculation of population-weighted calculation for the total population. 
 
@@ -2656,7 +2656,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
 ```
 
-For the TotalPop, the population-weighted average of PM~2.5~ is 548.9/92 = `r round(548.9/92,2)`. Thus we can see that Minorities experience a higher population-weighted average PM~2.5~ concentration than the general or total population. 
+For the TotalPop, the population-weighted average of PM~2.5~ is 548.9/92 = `r round(548.9/92,2)`. Thus we can see that People of Color experience a higher population-weighted average PM~2.5~ concentration than the general or total population. 
 
 # Appendix B: Supplementary Figures {-}
 
