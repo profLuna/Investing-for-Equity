@@ -816,9 +816,9 @@ ma_tracts_sf_noTransit_simple <- ma_tracts_sf_noTransit %>%
   filter(!st_is_empty(.)) %>% 
   st_make_valid()
 
-# # write out to file for later analysis
-# save(ma_blkgrps_sf_noTransit, ma_tracts_sf_noTransit, 
-#      file = "DATA/transport/MA/noTransit.Rds")
+# write out to file for later analysis
+save(ma_blkgrps_sf_noTransit, ma_tracts_sf_noTransit, ma_blkgrps_sf_noBus, 
+     ma_transitAccessPops_df, file = "DATA/transport/MA/noTransit.Rds")
 ```
 
 ## Access to Public Transit
@@ -2254,7 +2254,9 @@ headway80_commuterRail <- headway80thblkgrps_CR %>%
   arrange(desc(`Over 64`))
 
 # # write out to file for use in later analysis
-# save(headway80thblkgrps_bus,
+# save(ma_bus_stopHeadway_df,
+#      ma_busHeadwayPops_df,
+#      headway80thblkgrps_bus,
 #      headway80thtracts_bus,
 #      headway80thblkgrps_RT,
 #      headway80thtracts_RT,
@@ -2559,7 +2561,8 @@ ma_wAvgWalkability_df <- ma_blkgrp_walkability_sf %>%
   rbind(., ma_tract_walkability_df)
 
 # # save data for later analysis
-# save(ma_blkgrp_walkability_sf,
+# save(ma_wAvgWalkability_df,
+#      ma_blkgrp_walkability_sf,
 #      ma_tract_walkability_sf,
 #      file = "DATA/transport/MA/walkability.Rds")
 ```
@@ -2893,14 +2896,16 @@ lai_ma_df <- lai_ma_blkgrp %>%
   summarize(wTBurden = weighted.mean(hh7_t, Pop, na.rm = TRUE)) %>% 
   rbind(., lai_ma_tract_df)
 
-# # save data for later analysis
-# save(lai_ma_blkgrp,
-#      lai_ma_tract,
-#      file = "DATA/transport/MA/costBurden.Rds")
-
 # isolate places where transportation cost as a percentage of income exceeds housing as a percentage of income
 lai_ToverH <- lai_ma %>% 
   filter(hh7_t > hh7_h)
+
+# # save data for later analysis
+# save(lai_ma_df,
+#      lai_ToverH,
+#      lai_ma_blkgrp,
+#      lai_ma_tract,
+#      file = "DATA/transport/MA/costBurden.Rds")
 ```
 
 Figure \@ref(fig:mapLAI) below shows transportation cost burden (i.e., transportation cost as a percentage of household income) by Census Tract across Massachusetts. Transportation cost burden varies across the state. It is lowest in and around the state's major urban centers, and it is highest in central and western parts of the state. In `r nrow(lai_ToverH)` Census Tracts, the transportation cost burden exceeds the cost burden of housing. 
