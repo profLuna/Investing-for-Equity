@@ -68,7 +68,7 @@ options(tigris_class = "sf")
 #   filter(NAMELSAD == "Hartford town" |
 #            NAMELSAD == "Stamford town" |
 #            NAMELSAD == "Fairfield town" |
-#            NAMELSAD == "Milford town" |
+#            NAMELSAD == "Bridgeport town" |
 #            NAMELSAD == "New Haven town" |
 #            NAMELSAD == "Danbury town" |
 #            NAMELSAD == "Hamden town" |
@@ -82,13 +82,14 @@ ct_towns_sf_pts <- county_subdivisions(state = "CT", cb = TRUE) %>%
   filter(NAME %in% c("Hartford", 
                      "Stamford", 
                      "Fairfield", 
-                     "Milford", 
+                     "Bridgeport", 
                      "New Haven", 
                      "Danbury", 
                      "Hamden", 
                      "Meriden", 
                      "Waterbury", 
                      "New Britain",
+                     "New Haven",
                      "New London",
                      "Norwich",
                      "North Canaan",
@@ -236,7 +237,7 @@ tmap_save(m2, "DATA/EJSCREEN/ct_pm25hotspot.png",
 knitr::include_graphics("DATA/EJSCREEN/ct_pm25hotspot.png")
 ```
 
-There is a statistically significant hot spot of PM~2.5~ around Stamford to Danbury and Milford. Warm clusters extend to just south of New Britain. 
+There is a statistically significant hot spot of PM~2.5~ around Stamford to Danbury and Bridgeport. Warm clusters extend to just south of New Britain. 
 
 These PM~2.5~ levels vary significantly across the state (see Table \@ref(tab:statsPMCT) and Figure \@ref(fig:boxplotPM25CT)). See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality. 
 
@@ -694,7 +695,7 @@ tmap_save(m5, "DATA/EJSCREEN/ct_O3hotspot.png",
 knitr::include_graphics("DATA/EJSCREEN/ct_O3hotspot.png")
 ```
 
-There are statistically significant hot spots of Ozone (O~3~) primarily between Stamford and Milford. A warm cluster extends as north as New Britain. 
+There are statistically significant hot spots of Ozone (O~3~) primarily between Stamford and Bridgeport. A warm cluster extends as north as New Britain. 
 
 These Ozone (O~3~) levels vary significantly across the state (see Table \@ref(tab:statsO3CT) and Figure \@ref(fig:boxplotO3CT)). See Table \@ref(tab:PollutantByTown) in Appendix B for concentrations by municipality. 
 
