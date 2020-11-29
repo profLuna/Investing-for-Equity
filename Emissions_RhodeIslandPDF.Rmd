@@ -397,8 +397,8 @@ ri_blkgrp_sf %>%
   as.data.frame() %>% 
   mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>%
   mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>%
-  mutate(RI_People of Color = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
-  mutate(RI_People of Color = replace_na(RI_People of Color,0)) %>%
+  mutate(RI_MINORITY = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
+  mutate(RI_MINORITY = replace_na(RI_MINORITY,0)) %>%
   # filter(STATE == "Massachusetts") %>%
   dplyr::select(totalpopE,
                 nhwhitepopE,
@@ -420,9 +420,9 @@ ri_blkgrp_sf %>%
                 under5E, 
                 over64E,
                 RI_LOWINC,
-                RI_People of Color,
+                RI_MINORITY,
                 PM25_19) %>% 
-  gather(key = Group, value = Pop, totalpopE:RI_People of Color) %>% 
+  gather(key = Group, value = Pop, totalpopE:RI_MINORITY) %>% 
   group_by(Group) %>% 
   summarize(PM25wMean = weighted.mean(x = PM25_19, w = Pop, na.rm = TRUE),
             PM25Mean = mean(PM25_19, na.rm = TRUE)) %>% 
@@ -435,7 +435,7 @@ ri_blkgrp_sf %>%
          `Under 5` = (under5E/PM25Mean - 1)*100,
          `Over 64` = (over64E/PM25Mean - 1)*100,
          `RI Low Income` = ( RI_LOWINC/PM25Mean - 1)*100,
-         `RI POC` = ( RI_People of Color/PM25Mean - 1)*100) %>%
+         `RI POC` = ( RI_MINORITY/PM25Mean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
   ggplot(aes(x = reorder(Group,Pct), 
              y = Pct)) +
@@ -464,7 +464,7 @@ ri_blkgrp_sf %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-1,3))
 
-ggsave("images/RI_PM25_graph.png")
+# ggsave("images/RI_PM25_graph.png")
 ```
 
 Like the region as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that all priority populations now experience exposures greater than the state average, with People of Color and limited English speaking households leading on this measure. 
@@ -551,7 +551,7 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
                 DataTextSize = 3,
                 WiderLabels = TRUE)
 
-ggsave("images/RI_PM25_slope.png")
+# ggsave("images/RI_PM25_slope.png")
 ```
 
 There is a weak positive relationship between the proportion of People of Color or language-isolated households and the concentration of PM~2.5~ (see Figure \@ref(fig:cormatrixPM25PopAvg) in Appendix B).
@@ -868,8 +868,8 @@ ri_blkgrp_sf %>%
   as.data.frame() %>% 
   mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>%
   mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>%
-  mutate(RI_People of Color = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
-  mutate(RI_People of Color = replace_na(RI_People of Color,0)) %>%
+  mutate(RI_MINORITY = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
+  mutate(RI_MINORITY = replace_na(RI_MINORITY,0)) %>%
   # filter(STATE == "Massachusetts") %>%
   dplyr::select(totalpopE,
                 nhwhitepopE,
@@ -891,9 +891,9 @@ ri_blkgrp_sf %>%
                 under5E, 
                 over64E, 
                 RI_LOWINC,
-                RI_People of Color,
+                RI_MINORITY,
                 OZONE_19) %>% 
-  gather(key = Group, value = Pop, totalpopE:RI_People of Color) %>% 
+  gather(key = Group, value = Pop, totalpopE:RI_MINORITY) %>% 
   group_by(Group) %>% 
   summarize(O3wMean = weighted.mean(x = OZONE_19, w = Pop, na.rm = TRUE),
             O3Mean = mean(OZONE_19, na.rm = TRUE)) %>% 
@@ -906,7 +906,7 @@ ri_blkgrp_sf %>%
          `Under 5` = (under5E/O3Mean - 1)*100,
          `Over 64` = (over64E/O3Mean - 1)*100,
          `RI Low Income` = ( RI_LOWINC/O3Mean - 1)*100,
-         `RI POC` = ( RI_People of Color/O3Mean - 1)*100) %>%
+         `RI POC` = ( RI_MINORITY/O3Mean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
   ggplot(aes(x = reorder(Group,Pct), 
              y = Pct)) +
@@ -934,7 +934,7 @@ ri_blkgrp_sf %>%
   # geom_segment(aes(x = "Low Income", xend = "Low Income", y = 0.1, yend = 0.3), arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-1,1))
 
-ggsave("images/RI_O3_graph.png")
+# ggsave("images/RI_O3_graph.png")
 ```
 
 Like the region as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvgRI). All priority populations have experienced a decrease in population-weighted exposure to Ozone. 
@@ -1021,7 +1021,7 @@ newggslopegraph(dataframe = O311_16wAvg_actual,
                 DataTextSize = 3,
                 WiderLabels = TRUE)
 
-ggsave("images/RI_O3_slope.png")
+# ggsave("images/RI_O3_slope.png")
 ```
 
 
@@ -1558,8 +1558,8 @@ ri_blkgrp_sf %>%
   as.data.frame() %>% 
   mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>%
   mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>%
-  mutate(RI_People of Color = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
-  mutate(RI_People of Color = replace_na(RI_People of Color,0)) %>%
+  mutate(RI_MINORITY = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
+  mutate(RI_MINORITY = replace_na(RI_MINORITY,0)) %>%
   # filter(STATE == "Massachusetts") %>%
   dplyr::select(totalpopE,
                 nhwhitepopE,
@@ -1581,9 +1581,9 @@ ri_blkgrp_sf %>%
                 under5E, 
                 over64E, 
                 RI_LOWINC,
-                RI_People of Color,
+                RI_MINORITY,
                 DSLPM_19) %>% 
-  gather(key = Group, value = Pop, totalpopE:RI_People of Color) %>% 
+  gather(key = Group, value = Pop, totalpopE:RI_MINORITY) %>% 
   group_by(Group) %>% 
   summarize(DPMwMean = weighted.mean(x = DSLPM_19, w = Pop, na.rm = TRUE),
             DPMMean = mean(DSLPM_19, na.rm = TRUE)) %>% 
@@ -1596,7 +1596,7 @@ ri_blkgrp_sf %>%
          `Under 5` = (under5E/DPMMean - 1)*100,
          `Over 64` = (over64E/DPMMean - 1)*100,
          `RI Low Income` = (RI_LOWINC/DPMMean - 1)*100,
-         `RI POC` = (RI_People of Color/DPMMean - 1)*100) %>%
+         `RI POC` = (RI_MINORITY/DPMMean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
   ggplot(aes(x = reorder(Group,Pct), 
              y = Pct)) +
@@ -1624,7 +1624,7 @@ ri_blkgrp_sf %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-20,23))
 
-ggsave("images/RI_DPM_graph.png")
+# ggsave("images/RI_DPM_graph.png")
 ```
 
 There is a strong positive correlation between the proportions of People of Color and ambient concentrations of Diesel Particulate Matter, and moderate to strong correlations with limited English households, low income persons, and adults without a high school diploma (see Figure \@ref(fig:cormatrixDPMPopAvg) in Appendix B).
@@ -1813,8 +1813,8 @@ ri_blkgrp_sf %>%
   as.data.frame() %>% 
   mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>%
   mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>%
-  mutate(RI_People of Color = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
-  mutate(RI_People of Color = replace_na(RI_People of Color,0)) %>%
+  mutate(RI_MINORITY = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
+  mutate(RI_MINORITY = replace_na(RI_MINORITY,0)) %>%
   # filter(STATE == "Massachusetts") %>%
   dplyr::select(totalpopE,
                 nhwhitepopE,
@@ -1836,9 +1836,9 @@ ri_blkgrp_sf %>%
                 under5E, 
                 over64E, 
                 RI_LOWINC,
-                RI_People of Color,
+                RI_MINORITY,
                 CANCER_19) %>% 
-  gather(key = Group, value = Pop, totalpopE:RI_People of Color) %>% 
+  gather(key = Group, value = Pop, totalpopE:RI_MINORITY) %>% 
   group_by(Group) %>% 
   summarize(DPMwMean = weighted.mean(x = CANCER_19, w = Pop, na.rm = TRUE),
             DPMMean = mean(CANCER_19, na.rm = TRUE)) %>% 
@@ -1851,7 +1851,7 @@ ri_blkgrp_sf %>%
          `Under 5` = (under5E/DPMMean - 1)*100,
          `Over 64` = (over64E/DPMMean - 1)*100,
          `RI Low Income` = (RI_LOWINC/DPMMean - 1)*100,
-         `RI POC` = (RI_People of Color/DPMMean - 1)*100) %>%
+         `RI POC` = (RI_MINORITY/DPMMean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
   ggplot(aes(x = reorder(Group,Pct), 
              y = Pct)) +
@@ -1879,7 +1879,7 @@ ri_blkgrp_sf %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-5,15))
 
-ggsave("images/RI_Cancer_graph.png")
+# ggsave("images/RI_Cancer_graph.png")
 ```
 
 There is a strong positive correlation between the proportions of People of Color and cancer risk, and moderate to strong correlations with limited English households, low income persons, and adults without a high school diploma (see Figure \@ref(fig:cormatrixATCPopAvg) in Appendix B).
@@ -2067,8 +2067,8 @@ ri_blkgrp_sf %>%
   as.data.frame() %>% 
   mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>%
   mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>%
-  mutate(RI_People of Color = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
-  mutate(RI_People of Color = replace_na(RI_People of Color,0)) %>%
+  mutate(RI_MINORITY = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
+  mutate(RI_MINORITY = replace_na(RI_MINORITY,0)) %>%
   # filter(STATE == "Massachusetts") %>%
   dplyr::select(totalpopE,
                 nhwhitepopE,
@@ -2090,9 +2090,9 @@ ri_blkgrp_sf %>%
                 under5E, 
                 over64E, 
                 RI_LOWINC,
-                RI_People of Color,
+                RI_MINORITY,
                 RESP_19) %>% 
-  gather(key = Group, value = Pop, totalpopE:RI_People of Color) %>% 
+  gather(key = Group, value = Pop, totalpopE:RI_MINORITY) %>% 
   group_by(Group) %>% 
   summarize(RESPwMean = weighted.mean(x = RESP_19, w = Pop, na.rm = TRUE),
             RESPMean = mean(RESP_19, na.rm = TRUE)) %>% 
@@ -2105,7 +2105,7 @@ ri_blkgrp_sf %>%
          `Under 5` = (under5E/RESPMean - 1)*100,
          `Over 64` = (over64E/RESPMean - 1)*100,
          `RI Low Income` = (RI_LOWINC/RESPMean - 1)*100,
-         `RI POC` = (RI_People of Color/RESPMean - 1)*100) %>%
+         `RI POC` = (RI_MINORITY/RESPMean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
   ggplot(aes(x = reorder(Group,Pct), 
              y = Pct)) +
@@ -2133,7 +2133,7 @@ ri_blkgrp_sf %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-6,20))
 
-ggsave("images/RI_Resp_graph.png")
+# ggsave("images/RI_Resp_graph.png")
 ```
 
 There is a strong positive correlation between the proportions of People of Color and respiratory hazard index, and moderate to strong positive correlations with limited English households, low income persons, and adults without a high school diploma (see Figure \@ref(fig:cormatrixRHIPopAvg) in Appendix B).
@@ -2321,8 +2321,8 @@ ri_blkgrp_sf %>%
   as.data.frame() %>% 
   mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>%
   mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>%
-  mutate(RI_People of Color = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
-  mutate(RI_People of Color = replace_na(RI_People of Color,0)) %>%
+  mutate(RI_MINORITY = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
+  mutate(RI_MINORITY = replace_na(RI_MINORITY,0)) %>%
   # filter(STATE == "Massachusetts") %>%
   dplyr::select(totalpopE,
                 nhwhitepopE,
@@ -2344,9 +2344,9 @@ ri_blkgrp_sf %>%
                 under5E, 
                 over64E,
                 RI_LOWINC,
-                RI_People of Color,
+                RI_MINORITY,
                 PTRAF_19) %>% 
-  gather(key = Group, value = Pop, totalpopE:RI_People of Color) %>% 
+  gather(key = Group, value = Pop, totalpopE:RI_MINORITY) %>% 
   group_by(Group) %>% 
   summarize(DPMwMean = weighted.mean(x = PTRAF_19, w = Pop, na.rm = TRUE),
             DPMMean = mean(PTRAF_19, na.rm = TRUE)) %>% 
@@ -2359,7 +2359,7 @@ ri_blkgrp_sf %>%
          `Under 5` = (under5E/DPMMean - 1)*100,
          `Over 64` = (over64E/DPMMean - 1)*100,
          `RI Low Income` = (RI_LOWINC/DPMMean - 1)*100,
-         `RI POC` = (RI_People of Color/DPMMean - 1)*100) %>%
+         `RI POC` = (RI_MINORITY/DPMMean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
   ggplot(aes(x = reorder(Group,Pct), 
              y = Pct)) +
@@ -2387,7 +2387,7 @@ ri_blkgrp_sf %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-30,120))
 
-ggsave("images/RI_Traffic_graph.png")
+# ggsave("images/RI_Traffic_graph.png")
 ```
 
 There is a strong positive correlation between the proportions of People of Color and traffic proximity and volume, and moderate positive correlations with limited English households, low income persons, and adults without a high school diploma (see Figure \@ref(fig:cormatrixTPVPopAvg) in Appendix B).
@@ -2677,8 +2677,8 @@ corrPM25 <- ri_blkgrp_sf %>%
   as.data.frame() %>% 
   mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>%
   mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>%
-  mutate(RI_People of Color = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
-  mutate(RI_People of Color = replace_na(RI_People of Color,0)) %>%
+  mutate(RI_MINORITY = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
+  mutate(RI_MINORITY = replace_na(RI_MINORITY,0)) %>%
   dplyr::transmute(PM25 = PM25_19, 
                 `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
@@ -2687,7 +2687,7 @@ corrPM25 <- ri_blkgrp_sf %>%
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E,
                 `RI Low Income` =  RI_LOWINC,
-                `RI POC` = RI_People of Color) %>% 
+                `RI POC` = RI_MINORITY) %>% 
   drop_na() %>% 
   cor(method = "spearman")
 # corrPM25
@@ -2703,8 +2703,8 @@ corrO3 <- ri_blkgrp_sf %>%
   as.data.frame() %>% 
   mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>%
   mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>%
-  mutate(RI_People of Color = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
-  mutate(RI_People of Color = replace_na(RI_People of Color,0)) %>%
+  mutate(RI_MINORITY = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
+  mutate(RI_MINORITY = replace_na(RI_MINORITY,0)) %>%
   dplyr::transmute(Ozone = OZONE_19, 
                 `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
@@ -2713,7 +2713,7 @@ corrO3 <- ri_blkgrp_sf %>%
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E,
                 `RI Low Income` =  RI_LOWINC,
-                `RI POC` = RI_People of Color) %>%  
+                `RI POC` = RI_MINORITY) %>%  
   drop_na() %>% 
   cor(method = "spearman")
 # corrPM25
@@ -2745,8 +2745,8 @@ corrDPM <- ri_blkgrp_sf %>%
   as.data.frame() %>% 
   mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>%
   mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>%
-  mutate(RI_People of Color = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
-  mutate(RI_People of Color = replace_na(RI_People of Color,0)) %>%
+  mutate(RI_MINORITY = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
+  mutate(RI_MINORITY = replace_na(RI_MINORITY,0)) %>%
   dplyr::transmute(DPM = DSLPM_19, 
                 `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
@@ -2755,7 +2755,7 @@ corrDPM <- ri_blkgrp_sf %>%
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E,
                 `RI Low Income` =  RI_LOWINC,
-                `RI POC` = RI_People of Color) %>%  
+                `RI POC` = RI_MINORITY) %>%  
   drop_na() %>% 
   cor(method = "spearman")
 # corrPM25
@@ -2772,8 +2772,8 @@ corrARI <- ri_blkgrp_sf %>%
   as.data.frame() %>% 
   mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>%
   mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>%
-  mutate(RI_People of Color = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
-  mutate(RI_People of Color = replace_na(RI_People of Color,0)) %>%
+  mutate(RI_MINORITY = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
+  mutate(RI_MINORITY = replace_na(RI_MINORITY,0)) %>%
   dplyr::transmute(`Cancer Risk` = CANCER_19, 
                 `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
@@ -2782,7 +2782,7 @@ corrARI <- ri_blkgrp_sf %>%
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E,
                 `RI Low Income` =  RI_LOWINC,
-                `RI POC` = RI_People of Color) %>%  
+                `RI POC` = RI_MINORITY) %>%  
   drop_na() %>% 
   cor(method = "spearman")
 
@@ -2799,8 +2799,8 @@ corrARI <- ri_blkgrp_sf %>%
   as.data.frame() %>% 
   mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>%
   mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>%
-  mutate(RI_People of Color = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
-  mutate(RI_People of Color = replace_na(RI_People of Color,0)) %>%
+  mutate(RI_MINORITY = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
+  mutate(RI_MINORITY = replace_na(RI_MINORITY,0)) %>%
   dplyr::transmute(`Resp Hazard Index` = RESP_19, 
                 `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
@@ -2809,7 +2809,7 @@ corrARI <- ri_blkgrp_sf %>%
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E,
                 `RI Low Income` =  RI_LOWINC,
-                `RI POC` = RI_People of Color) %>%  
+                `RI POC` = RI_MINORITY) %>%  
   drop_na() %>% 
   cor(method = "spearman")
 # corrPM25
@@ -2826,8 +2826,8 @@ corrTPV <- ri_blkgrp_sf %>%
   as.data.frame() %>% 
   mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>%
   mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>%
-  mutate(RI_People of Color = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
-  mutate(RI_People of Color = replace_na(RI_People of Color,0)) %>%
+  mutate(RI_MINORITY = if_else(RI_MINORITY == "M", totalpopE,0)) %>%
+  mutate(RI_MINORITY = replace_na(RI_MINORITY,0)) %>%
   dplyr::transmute(`Traffic Exposure` = PTRAF_19, 
                 `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
@@ -2836,7 +2836,7 @@ corrTPV <- ri_blkgrp_sf %>%
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E,
                 `RI Low Income` =  RI_LOWINC,
-                `RI POC` = RI_People of Color) %>%  
+                `RI POC` = RI_MINORITY) %>%  
   drop_na() %>% 
   cor(method = "spearman")
 # corrPM25
