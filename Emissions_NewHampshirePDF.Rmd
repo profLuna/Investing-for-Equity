@@ -417,7 +417,7 @@ nh_blkgrp_sf %>%
   summarize(PM25wMean = weighted.mean(x = PM25_19, w = Pop, na.rm = TRUE),
             PM25Mean = mean(PM25_19, na.rm = TRUE)) %>% 
   spread(key = Group, value = PM25wMean) %>% 
-  transmute(Minority = (minorityE/PM25Mean - 1)*100,
+  transmute(`People of Color` = (minorityE/PM25Mean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/PM25Mean - 1)*100,
          `Low Income` = (num2povE/PM25Mean - 1)*100,
@@ -451,6 +451,8 @@ nh_blkgrp_sf %>%
   # geom_segment(aes(x = "No HS Dip", xend = "No HS Dip", y = 0.2, yend = 1.1), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-1,2.5))
+
+ggsave("images/NH_PM25_graph.png")
 ```
 
 Like the region as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that all populations of concern now experience exposures greater than the state average, with minorities and limited English speaking households leading on this measure. 
@@ -474,7 +476,7 @@ PM19wAvgs_actual <- nh_blkgrp_sf %>%
   summarize(PM25wMean = weighted.mean(x = PM25_19, 
                                       w = Pop, na.rm = TRUE)) %>% 
   mutate(Group = case_when(
-    Group == "minorityE" ~ "Minority",
+    Group == "minorityE" ~ "People of Color",
     Group == "eng_limitE" ~ "Limited English HH",
     Group == "num2povE" ~ "Low Income",
     Group == "lthsE" ~ "No HS Dip",
@@ -498,7 +500,7 @@ PM15wAvgs_actual <- nh_blkgrp_sf %>%
   summarize(PM25wMean = weighted.mean(x = pm_15, 
                                       w = Pop, na.rm = TRUE)) %>%  
   mutate(Group = case_when(
-    Group == "mins_15" ~ "Minority",
+    Group == "mins_15" ~ "People of Color",
     Group == "lingiso_15" ~ "Limited English HH",
     Group == "lowinc_15" ~ "Low Income",
     Group == "lths_15" ~ "No HS Dip",
@@ -530,7 +532,7 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
                 Caption = NULL,
                 LineColor = c("STATE AVG" = "#000000",
                               "Limited English HH" = "#E69F00",
-                              "Minority" = "#56B4E9",
+                              "People of Color" = "#56B4E9",
                               "No HS" = "#009E73",
                               "Poverty" = "#F0E442",
                               "Under 5" = "#0072B2",
@@ -538,6 +540,8 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
                 YTextSize = 3.5,
                 DataTextSize = 3,
                 WiderLabels = TRUE)
+
+ggsave("images/NH_PM25_slope.png")
 ```
 
 There is a weak positive relationship between the proportion of minority residents or language-isolated households and the concentration of PM~2.5~ (see Figure \@ref(fig:cormatrixPM25PopAvg) in Appendix B).
@@ -863,7 +867,7 @@ nh_blkgrp_sf %>%
   summarize(O3wMean = weighted.mean(x = OZONE_19, w = Pop, na.rm = TRUE),
             O3Mean = mean(OZONE_19, na.rm = TRUE)) %>% 
   spread(key = Group, value = O3wMean) %>% 
-  transmute(Minority = (minorityE/O3Mean - 1)*100,
+  transmute(`People of Color` = (minorityE/O3Mean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/O3Mean - 1)*100,
          `Low Income` = (num2povE/O3Mean - 1)*100,
@@ -896,6 +900,8 @@ nh_blkgrp_sf %>%
             color = "gray48") +
   # geom_segment(aes(x = "No HS Dip", xend = "No HS Dip", y = 0.35, yend = 1.5), arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-1,3.5))
+
+ggsave("images/NH_O3_graph.png")
 ```
 
 Like the state as a whole, these populations have also experienced declines in exposure since 2011, except for limited English speaking households. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvg).  
@@ -918,7 +924,7 @@ O319wAvgs_actual <- nh_blkgrp_sf %>%
   summarize(O3wMean = weighted.mean(x = OZONE_19, 
                                       w = Pop, na.rm = TRUE)) %>% 
   mutate(Group = case_when(
-    Group == "minorityE" ~ "Minority",
+    Group == "minorityE" ~ "People of Color",
     Group == "eng_limitE" ~ "Limited English HH",
     Group == "num2povE" ~ "Low Income",
     Group == "lthsE" ~ "No HS Dip",
@@ -941,7 +947,7 @@ O315wAvgs_actual <- nh_blkgrp_sf %>%
   summarize(O3wMean = weighted.mean(x = o3_15, 
                                       w = Pop, na.rm = TRUE)) %>%  
   mutate(Group = case_when(
-    Group == "mins_15" ~ "Minority",
+    Group == "mins_15" ~ "People of Color",
     Group == "lingiso_15" ~ "Limited English HH",
     Group == "lowinc_15" ~ "Low Income",
     Group == "lths_15" ~ "No HS Dip",
@@ -973,7 +979,7 @@ newggslopegraph(dataframe = O311_16wAvg_actual,
                 Caption = NULL,
                 LineColor = c("STATE AVG" = "#000000",
                               "Limited English HH" = "#E69F00",
-                              "Minority" = "#56B4E9",
+                              "People of Color" = "#56B4E9",
                               "No HS Dip" = "#009E73",
                               "Low Income" = "#F0E442",
                               "Under 5" = "#0072B2",
@@ -981,6 +987,8 @@ newggslopegraph(dataframe = O311_16wAvg_actual,
                 YTextSize = 3.5,
                 DataTextSize = 3,
                 WiderLabels = TRUE)
+
+ggsave("images/NH_O3_slope.png")
 ```
 
 
@@ -1555,7 +1563,7 @@ nh_blkgrp_sf %>%
   summarize(DPMwMean = weighted.mean(x = DSLPM_19, w = Pop, na.rm = TRUE),
             DPMMean = mean(DSLPM_19, na.rm = TRUE)) %>% 
   spread(key = Group, value = DPMwMean) %>% 
-  transmute(Minority = (minorityE/DPMMean - 1)*100,
+  transmute(`People of Color` = (minorityE/DPMMean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/DPMMean - 1)*100,
          `Low Income` = (num2povE/DPMMean - 1)*100,
@@ -1571,7 +1579,7 @@ nh_blkgrp_sf %>%
                color = "skyblue") +
   geom_point(color = "blue", size = 4, alpha = 0.8) +
   coord_flip() + xlab("") + ylab("") + 
-  ggtitle("Population-Weighted Exposure to DPM \n(relative to New Hampshire average)") + theme_light() +
+  ggtitle("Population-Weighted Exposure to Diesel Particulate\nMatter (relative to New Hampshire average)") + theme_light() +
   theme(panel.grid.major.y = element_blank(),
         panel.border = element_blank(),
         axis.ticks.y = element_blank()) +
@@ -1588,6 +1596,8 @@ nh_blkgrp_sf %>%
   # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 5, yend = 15), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-15,50))
+
+ggsave("images/NH_DPM_graph.png")
 ```
 
 There is a moderate positive correlation between the proportions of minorities and ambient concentrations of Diesel Particulate Matter (see Figure \@ref(fig:cormatrixDPMPopAvg) in Appendix B).
@@ -1799,7 +1809,7 @@ nh_blkgrp_sf %>%
   summarize(DPMwMean = weighted.mean(x = CANCER_19, w = Pop, na.rm = TRUE),
             DPMMean = mean(CANCER_19, na.rm = TRUE)) %>% 
   spread(key = Group, value = DPMwMean) %>% 
-  transmute(Minority = (minorityE/DPMMean - 1)*100,
+  transmute(`People of Color` = (minorityE/DPMMean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/DPMMean - 1)*100,
          `Low Income` = (num2povE/DPMMean - 1)*100,
@@ -1832,6 +1842,8 @@ nh_blkgrp_sf %>%
   # geom_segment(aes(x = "Low Income", xend = "Low Income", y = 1, yend = 5), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-5,15))
+
+ggsave("images/NH_Cancer_graph.png")
 ```
 
 There is a moderately positive correlation between the proportions of minorities and cancer risk (see Figure \@ref(fig:cormatrixATCPopAvg) in Appendix B).
@@ -2042,7 +2054,7 @@ nh_blkgrp_sf %>%
   summarize(RESPwMean = weighted.mean(x = RESP_19, w = Pop, na.rm = TRUE),
             RESPMean = mean(RESP_19, na.rm = TRUE)) %>% 
   spread(key = Group, value = RESPwMean) %>% 
-  transmute(Minority = (minorityE/RESPMean - 1)*100,
+  transmute(`People of Color` = (minorityE/RESPMean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/RESPMean - 1)*100,
          `Low Income` = (num2povE/RESPMean - 1)*100,
@@ -2075,6 +2087,8 @@ nh_blkgrp_sf %>%
   # geom_segment(aes(x = "Low Income", xend = "Low Income", y = 1, yend = 5), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-5,16))
+
+ggsave("images/NH_Resp_graph.png")
 ```
 
 There is a moderate positive correlation between the proportions of minorities and respiratory hazard index (see Figure \@ref(fig:cormatrixRHIPopAvg) in Appendix B).
@@ -2319,7 +2333,7 @@ nh_blkgrp_sf %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-30,150))
 
-ggsave("DATA/EJSCREEN/nh_traffic_lolli.png")
+ggsave("images/NH_Traffic_graph.png")
 ```
 
 There is a moderate positive correlation between the proportions of minorities and traffic proximity and volume (see Figure \@ref(fig:cormatrixTPVPopAvg) in Appendix B).
@@ -2451,7 +2465,7 @@ The ACS provides greater demographic detail and temporal resolution than the dec
 For the purposes of this analysis ACS 5-year estimates for the period 2014 - 2018 for Census Tracts and Block Groups in New England, as well as their associated TIGER/Line spatial files, were downloaded from the Census Bureau via API using the tigris package in R. Demographic variables consistent with those used by the EPA in EJSCREEN were chosen, as well as environmental justice population thresholds used by states where available. Table \@ref(tab:ACSvariables) below lists the demographic variables that were downloaded directly or computed from ACS variables:
 ```{r ACSvariables}
 ACSvDF <- data.frame(Variable = c("Total Population",
-                                  "Minority",
+                                  "People of Color",
                                   "Low Income",
                                   "Limited English Household",
                                   "Less than High School Education",
@@ -2463,9 +2477,9 @@ ACSvDF <- data.frame(Variable = c("Total Population",
                                   "RI Income",
                                   "MA Income",
                                   "MA Limited English Household",
-                                  "MA Minority",
+                                  "MA POC",
                                   "RI Income",
-                                  "RI Minority"),
+                                  "RI POC"),
                      Description = c("Total population",
                                      "Persons of Hispanic or Latino origin or persons who are not White",
                                      "People in households where the household income is less than or equal to twice the federal poverty level",
@@ -2476,12 +2490,12 @@ ACSvDF <- data.frame(Variable = c("Total Population",
                                      "Persons over 64 years of age",
                                      "Persons 18 years+ with a disability",
                                      "Households with no vehicle available",
-                                     "New Hampshire Low Income threshold: 30% or more people in households where the household income is less than or equal to twice the federal poverty level",
+                                     "Maine Low Income threshold: 30% or more people in households where the household income is less than or equal to twice the federal poverty level",
                                      "Massachusetts Low Income threshold: 25% or more of households with median household incomes below 65% statewide median",
                                      "Massachusetts Language Isolation threshold: 25% or more people in households where all adults speak English less than \"very well\"",
-                                     "Massachusetts Minority threshold: 25% or more are persons of Hispanic or Latino origin or persons who are not White",
-                                     "New Hampshire Low Income threshold: highest 15% of block groups with people in households where the household income is less than or equal to twice the federal poverty level",
-                                     "New Hampshire Minority threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
+                                     "Massachusetts POC threshold: 40% or more are persons of Hispanic or Latino origin or persons who are not White OR 25% or more are persons of Hispanic or Latino origin or persons who are not White AND the median household income of the municipality is less than 150% of the statewide median household income",
+                                     "Maine Low Income threshold: highest 15% of block groups with people in households where the household income is less than or equal to twice the federal poverty level",
+                                     "Maine POC threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
                      'ACS Table ID' = c("B03002: Hispanic or Latino Origin by Race",
                                 "B03002: Hispanic or Latino Origin by Race",
                                 "C17002: Ratio of Income to Poverty Level",
@@ -2535,7 +2549,8 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
            NonMinority = c(20,12,5,10)) %>% 
   mutate(TotalPop = Minority + NonMinority) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
-                    caption = "Block Group Populations and PM2.5", align = "l") %>% 
+                    caption = "Block Group Populations and PM2.5", 
+                    align = "l", col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
@@ -2549,10 +2564,11 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
            Minority = c(5,10,20,10),
            NonMinority = c(20,12,5,10)) %>% 
   mutate(TotalPop = Minority + NonMinority,
-         PM25xMinority = PM25*Minority) %>% 
+         PM25xPOC = PM25*Minority) %>% 
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
-                    caption = "Block Group Populations and PM2.5", align = "l") %>% 
+                    caption = "Block Group Populations and PM2.5", align = "l",
+                    col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5:6])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header")) %>% 
   kableExtra::row_spec(5, bold = TRUE) %>% 
   kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
@@ -2571,7 +2587,8 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
          PM25xTotalPop = PM25*TotalPop) %>% 
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
-                    caption = "Block Group Populations and PM2.5", align = "l") %>% 
+                    caption = "Block Group Populations and PM2.5", align = "l",
+                    col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5:6])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header")) %>% 
   kableExtra::row_spec(5, bold = TRUE) %>% 
   kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
@@ -2605,7 +2622,7 @@ ggcorrplot(corrPollutants, hc.order = TRUE, type = "lower", lab = TRUE,
 corrPM25 <- nh_blkgrp_sf %>% 
   as.data.frame() %>% 
   dplyr::transmute(PM25 = PM25_19, 
-                Minority = minority_pctE, 
+                `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
@@ -2624,7 +2641,7 @@ ggcorrplot(corrPM25, hc.order = TRUE, type = "lower", lab = TRUE,
 corrO3 <- nh_blkgrp_sf %>% 
   as.data.frame() %>%
   dplyr::transmute(Ozone = OZONE_19, 
-                Minority = minority_pctE, 
+                `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
@@ -2659,7 +2676,7 @@ nh_blkgrp_sf %>%
 corrDPM <- nh_blkgrp_sf %>% 
   as.data.frame() %>% 
   dplyr::transmute(DPM = DSLPM_19, 
-                Minority = minority_pctE, 
+                `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
@@ -2679,7 +2696,7 @@ ggcorrplot(corrDPM, hc.order = TRUE, type = "lower", lab = TRUE,
 corrARI <- nh_blkgrp_sf %>% 
   as.data.frame() %>% 
   dplyr::transmute(`Cancer Risk` = CANCER_19, 
-                Minority = minority_pctE, 
+                `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
@@ -2699,7 +2716,7 @@ ggcorrplot(corrARI, hc.order = TRUE, type = "lower", lab = TRUE,
 corrARI <- nh_blkgrp_sf %>% 
   as.data.frame() %>%
   dplyr::transmute(`Resp Hazard Index` = RESP_19, 
-                Minority = minority_pctE, 
+                `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
@@ -2719,7 +2736,7 @@ ggcorrplot(corrARI, hc.order = TRUE, type = "lower", lab = TRUE,
 corrTPV <- nh_blkgrp_sf %>% 
   as.data.frame() %>% 
   dplyr::transmute(`Traffic Exposure` = PTRAF_19, 
-                Minority = minority_pctE, 
+                `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
