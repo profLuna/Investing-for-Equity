@@ -452,7 +452,7 @@ nh_blkgrp_sf %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-1,2.5))
 
-ggsave("images/NH_PM25_graph.png")
+# ggsave("images/NH_PM25_graph.png")
 ```
 
 Like the region as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that all populations of concern now experience exposures greater than the state average, with People of Color and limited English speaking households leading on this measure. 
@@ -541,7 +541,7 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
                 DataTextSize = 3,
                 WiderLabels = TRUE)
 
-ggsave("images/NH_PM25_slope.png")
+# ggsave("images/NH_PM25_slope.png")
 ```
 
 There is a weak positive relationship between the proportion of People of Color or language-isolated households and the concentration of PM~2.5~ (see Figure \@ref(fig:cormatrixPM25PopAvg) in Appendix B).
@@ -901,7 +901,7 @@ nh_blkgrp_sf %>%
   # geom_segment(aes(x = "No HS Dip", xend = "No HS Dip", y = 0.35, yend = 1.5), arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-1,3.5))
 
-ggsave("images/NH_O3_graph.png")
+# ggsave("images/NH_O3_graph.png")
 ```
 
 Like the state as a whole, these populations have also experienced declines in exposure since 2011, except for limited English speaking households. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvg).  
@@ -988,7 +988,7 @@ newggslopegraph(dataframe = O311_16wAvg_actual,
                 DataTextSize = 3,
                 WiderLabels = TRUE)
 
-ggsave("images/NH_O3_slope.png")
+# ggsave("images/NH_O3_slope.png")
 ```
 
 
@@ -1597,7 +1597,7 @@ nh_blkgrp_sf %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-15,50))
 
-ggsave("images/NH_DPM_graph.png")
+# ggsave("images/NH_DPM_graph.png")
 ```
 
 There is a moderate positive correlation between the proportions of People of Color and ambient concentrations of Diesel Particulate Matter (see Figure \@ref(fig:cormatrixDPMPopAvg) in Appendix B).
@@ -1843,7 +1843,7 @@ nh_blkgrp_sf %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-5,15))
 
-ggsave("images/NH_Cancer_graph.png")
+# ggsave("images/NH_Cancer_graph.png")
 ```
 
 There is a moderately positive correlation between the proportions of People of Color and cancer risk (see Figure \@ref(fig:cormatrixATCPopAvg) in Appendix B).
@@ -2088,7 +2088,7 @@ nh_blkgrp_sf %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-5,16))
 
-ggsave("images/NH_Resp_graph.png")
+# ggsave("images/NH_Resp_graph.png")
 ```
 
 There is a moderate positive correlation between the proportions of People of Color and respiratory hazard index (see Figure \@ref(fig:cormatrixRHIPopAvg) in Appendix B).
@@ -2333,7 +2333,7 @@ nh_blkgrp_sf %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-30,150))
 
-ggsave("images/NH_Traffic_graph.png")
+# ggsave("images/NH_Traffic_graph.png")
 ```
 
 There is a moderate positive correlation between the proportions of People of Color and traffic proximity and volume (see Figure \@ref(fig:cormatrixTPVPopAvg) in Appendix B).
