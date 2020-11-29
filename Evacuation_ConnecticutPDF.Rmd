@@ -422,11 +422,11 @@ m1 <- tm_layout(bg.color = "#e6f3f7") +
   tm_text("LABEL", alpha = 0.5) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
-  tm_add_legend(type = "fill", col = "darkgoldenrod3",
-                alpha = 0.6,
-                border.col = "white", border.alpha = 0,
-                labels = "1 dot = 500 people",
-                title = "Total Population") +
+  # tm_add_legend(type = "fill", col = "darkgoldenrod3",
+  #               alpha = 0.6,
+  #               border.col = "white", border.alpha = 0,
+  #               labels = "1 dot = 500 people",
+  #               title = "Total Population") +
   tm_layout(title = "FEMA\nFlood Zones",
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
@@ -847,11 +847,11 @@ m3 <- tm_layout(bg.color = "#e6f3f7") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
-  tm_add_legend(type = "fill", col = "springgreen3",
-                alpha = 0.6,
-                border.col = "white", border.alpha = 0,
-                labels = "1 dot = 500 people",
-                title = "Total Population") +
+  # tm_add_legend(type = "fill", col = "springgreen3",
+  #               alpha = 0.6,
+  #               border.col = "white", border.alpha = 0,
+  #               labels = "1 dot = 500 people",
+  #               title = "Total Population") +
   tm_layout(title = "Hurricane\nEvacuation Zones",
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
