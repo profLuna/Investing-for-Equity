@@ -398,11 +398,11 @@ newggslopegraph(dataframe = PM11_16wSTAvg_actual,
 ```
 
 
-### PM~2.5~ in Vermont and Populations of Concern
+### PM~2.5~ in Vermont and Priority Populations
 
-In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvg) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the state. All populations of concern are are at or below the state average for PM~2.5~ concentrations. 
+In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvg) below shows population-weighted exposures for priority populations relative to average PM~2.5~ concentrations for the state. All priority populations are are at or below the state average for PM~2.5~ concentrations. 
 
-```{r barplotPM25PopAvg, fig.align = "center", fig.cap="Population-weighted average exposures to PM2.5 for populations of concern in Vermont relative to the state average."}
+```{r barplotPM25PopAvg, fig.align = "center", fig.cap="Population-weighted average exposures to PM2.5 for priority populations in Vermont relative to the state average."}
 # Pop Weighted avg of PM2.5 for all Groups in Vermont relative to state average
 vt_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -431,7 +431,7 @@ vt_blkgrp_sf %>%
   summarize(PM25wMean = weighted.mean(x = PM25_19, w = Pop, na.rm = TRUE),
             PM25Mean = mean(PM25_19, na.rm = TRUE)) %>% 
   spread(key = Group, value = PM25wMean) %>% 
-  transmute(Minority = (minorityE/PM25Mean - 1)*100,
+  transmute(`People of Color` = (minorityE/PM25Mean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/PM25Mean - 1)*100,
          `Low Income` = (num2povE/PM25Mean - 1)*100,
@@ -464,11 +464,13 @@ vt_blkgrp_sf %>%
             color = "gray48") +
   # geom_segment(aes(x = "Limited English HH", xend = "Limited English HH", y = 0.1, yend = 1.1), arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-2,2))
+
+ggsave("images/VT_PM25_graph.png")
 ```
 
-Like the region as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that all populations of concern now experience exposures greater than the state average, with minorities and limited English speaking households leading on this measure. 
+Like the region as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that all priority populations now experience exposures greater than the state average, with People of Color and limited English speaking households leading on this measure. 
 
-```{r slopegraphPM25PopAvgNE, fig.align = "center", fig.cap="Change in population-weighted exposure to PM2.5 for populations of concern between 2011 and 2016."}
+```{r slopegraphPM25PopAvgNE, fig.align = "center", fig.cap="Change in population-weighted exposure to PM2.5 for priority populations between 2011 and 2016."}
 # Pop Weighted avg of PM2.5 EXPOSURE CHANGE 2011 - 2016 for all Groups in Vermont relative to NE average. 
 # Create df of 2019 actual values
 PM19wAvgs_actual <- vt_blkgrp_sf %>% 
@@ -487,7 +489,7 @@ PM19wAvgs_actual <- vt_blkgrp_sf %>%
   summarize(PM25wMean = weighted.mean(x = PM25_19, 
                                       w = Pop, na.rm = TRUE)) %>% 
   mutate(Group = case_when(
-    Group == "minorityE" ~ "Minority",
+    Group == "minorityE" ~ "People of Color",
     Group == "eng_limitE" ~ "Limited English HH",
     Group == "num2povE" ~ "Low Income",
     Group == "lthsE" ~ "No HS Dip",
@@ -511,7 +513,7 @@ PM15wAvgs_actual <- vt_blkgrp_sf %>%
   summarize(PM25wMean = weighted.mean(x = pm_15, 
                                       w = Pop, na.rm = TRUE)) %>%  
   mutate(Group = case_when(
-    Group == "mins_15" ~ "Minority",
+    Group == "mins_15" ~ "People of Color",
     Group == "lingiso_15" ~ "Limited English HH",
     Group == "lowinc_15" ~ "Low Income",
     Group == "lths_15" ~ "No HS Dip",
@@ -543,7 +545,7 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
                 Caption = NULL,
                 LineColor = c("STATE AVG" = "#000000",
                               "Limited English HH" = "#E69F00",
-                              "Minority" = "#56B4E9",
+                              "People of Color" = "#56B4E9",
                               "No HS" = "#009E73",
                               "Poverty" = "#F0E442",
                               "Under 5" = "#0072B2",
@@ -551,9 +553,11 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
                 YTextSize = 3.5,
                 DataTextSize = 3,
                 WiderLabels = TRUE)
+
+ggsave("images/VT_PM25_slope.png")
 ```
 
-There is a weak positive relationship between the proportion of minority residents or language-isolated households and the concentration of PM~2.5~ (see Figure \@ref(fig:cormatrixPM25PopAvg) in Appendix B).
+There is a weak positive relationship between the proportion of People of Color or language-isolated households and the concentration of PM~2.5~ (see Figure \@ref(fig:cormatrixPM25PopAvg) in Appendix B).
 
 
 \pagebreak
@@ -846,11 +850,11 @@ newggslopegraph(dataframe = O311_16wSTAvg_actual,
 ```
 
 
-### Ozone (O~3~) in Vermont and Populations of Concern
+### Ozone (O~3~) in Vermont and Priority Populations
 
-In addition to variations in the general geography of Ozone (O~3~) concentrations, exposure to this pollutant also varies demographically. Figure \@ref(fig:barplotO3PopAvg) below shows population-weighted exposures for populations of concern relative to average Ozone concentrations for the state. For example, limited English households in Vermont are exposed to summer Ozone concentrations that are approximately 0.65% above concentrations for the state as a whole. Similarly, minorities are exposed to concentrations 0.5% above the state average. By contrast, all other populations of concern are, on average, exposed to concentrations of Ozone at or below the state average. 
+In addition to variations in the general geography of Ozone (O~3~) concentrations, exposure to this pollutant also varies demographically. Figure \@ref(fig:barplotO3PopAvg) below shows population-weighted exposures for priority populations relative to average Ozone concentrations for the state. For example, limited English households in Vermont are exposed to summer Ozone concentrations that are approximately 0.65% above concentrations for the state as a whole. Similarly, People of Color are exposed to concentrations 0.5% above the state average. By contrast, all other priority populations are, on average, exposed to concentrations of Ozone at or below the state average. 
 
-```{r barplotO3PopAvg, fig.align = "center", fig.cap="Population-weighted average exposures to Ozone for populations of concern in Vermont relative to the state average."}
+```{r barplotO3PopAvg, fig.align = "center", fig.cap="Population-weighted average exposures to Ozone for priority populations in Vermont relative to the state average."}
 # Pop Weighted avg of O3 for all Groups in Vermont relative to NE average
 vt_blkgrp_sf %>% 
   as.data.frame() %>%
@@ -879,7 +883,7 @@ vt_blkgrp_sf %>%
   summarize(O3wMean = weighted.mean(x = OZONE_19, w = Pop, na.rm = TRUE),
             O3Mean = mean(OZONE_19, na.rm = TRUE)) %>% 
   spread(key = Group, value = O3wMean) %>% 
-  transmute(Minority = (minorityE/O3Mean - 1)*100,
+  transmute(`People of Color` = (minorityE/O3Mean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/O3Mean - 1)*100,
          `Low Income` = (num2povE/O3Mean - 1)*100,
@@ -912,11 +916,13 @@ vt_blkgrp_sf %>%
             color = "gray48") +
   # geom_segment(aes(x = "Low Income", xend = "Low Income", y = 0.1, yend = 0.4), arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-1,1))
+
+ggsave("images/VT_O3_graph.png")
 ```
 
-Like the state as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvg). Unlike all other populations, minorities and limited English households have experienced a slight increase in population-weighted exposure to Ozone. 
+Like the state as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvg). Unlike all other populations, People of Color and limited English households have experienced a slight increase in population-weighted exposure to Ozone. 
 
-```{r slopegraphO3PopAvg, fig.align = "center", fig.cap="Change in population-weighted exposure to summer ozone for populations of concern between 2011 and 2016."}
+```{r slopegraphO3PopAvg, fig.align = "center", fig.cap="Change in population-weighted exposure to summer ozone for priority populations between 2011 and 2016."}
 # Pop Weighted avg of O3 EXPOSURE CHANGE 2011 - 2016 for all Groups in Vermont relative to NE average. 
 # Create df of 2019 actual values
 O319wAvgs_actual <- vt_blkgrp_sf %>% 
@@ -934,7 +940,7 @@ O319wAvgs_actual <- vt_blkgrp_sf %>%
   summarize(O3wMean = weighted.mean(x = OZONE_19, 
                                       w = Pop, na.rm = TRUE)) %>% 
   mutate(Group = case_when(
-    Group == "minorityE" ~ "Minority",
+    Group == "minorityE" ~ "People of Color",
     Group == "eng_limitE" ~ "Limited English HH",
     Group == "num2povE" ~ "Low Income",
     Group == "lthsE" ~ "No HS Dip",
@@ -957,7 +963,7 @@ O315wAvgs_actual <- vt_blkgrp_sf %>%
   summarize(O3wMean = weighted.mean(x = o3_15, 
                                       w = Pop, na.rm = TRUE)) %>%  
   mutate(Group = case_when(
-    Group == "mins_15" ~ "Minority",
+    Group == "mins_15" ~ "People of Color",
     Group == "lingiso_15" ~ "Limited English HH",
     Group == "lowinc_15" ~ "Low Income",
     Group == "lths_15" ~ "No HS Dip",
@@ -989,7 +995,7 @@ newggslopegraph(dataframe = O311_16wAvg_actual,
                 Caption = NULL,
                 LineColor = c("STATE AVG" = "#000000",
                               "Limited English HH" = "#E69F00",
-                              "Minority" = "#56B4E9",
+                              "People of Color" = "#56B4E9",
                               "No HS Dip" = "#009E73",
                               "Low Income" = "#F0E442",
                               "Under 5" = "#0072B2",
@@ -997,6 +1003,8 @@ newggslopegraph(dataframe = O311_16wAvg_actual,
                 YTextSize = 3.5,
                 DataTextSize = 3,
                 WiderLabels = TRUE)
+
+ggsave("images/VT_O3_slope.png")
 ```
 
 
@@ -1556,9 +1564,9 @@ vt_blkgrp_sf %>%
 ```
 
 
-### Diesel Particulate Matter in Vermont and Populations of Concern
+### Diesel Particulate Matter in Vermont and Priority Populations
 
-In addition to variations in the general geography of DPM concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvg) below shows population-weighted exposures for populations of concern relative to average DPM concentrations for the state. For example, limited English households in Vermont are exposed to  DPM concentrations that are more than 32% above concentrations for the state as a whole. Similarly, minorities are exposed to concentrations more than 22% above the state average. By contrast, persons over age 64 and under 5 are, on average, exposed to concentrations of DPM below the state average. 
+In addition to variations in the general geography of DPM concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvg) below shows population-weighted exposures for priority populations relative to average DPM concentrations for the state. For example, limited English households in Vermont are exposed to  DPM concentrations that are more than 32% above concentrations for the state as a whole. Similarly, People of Color are exposed to concentrations more than 22% above the state average. By contrast, persons over age 64 and under 5 are, on average, exposed to concentrations of DPM below the state average. 
 
 ```{r barplotDPMPopAvg, fig.align = "center", fig.cap="Population-weighted average exposures to annual average ambient concentrations of Diesel Particulate Matter across Vermont relative to the state average."}
 # Pop Weighted avg of DPM for all Groups in Vermont relative to NE average
@@ -1589,7 +1597,7 @@ vt_blkgrp_sf %>%
   summarize(DPMwMean = weighted.mean(x = DSLPM_19, w = Pop, na.rm = TRUE),
             DPMMean = mean(DSLPM_19, na.rm = TRUE)) %>% 
   spread(key = Group, value = DPMwMean) %>% 
-  transmute(Minority = (minorityE/DPMMean - 1)*100,
+  transmute(`People of Color` = (minorityE/DPMMean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/DPMMean - 1)*100,
          `Low Income` = (num2povE/DPMMean - 1)*100,
@@ -1605,7 +1613,7 @@ vt_blkgrp_sf %>%
                color = "skyblue") +
   geom_point(color = "blue", size = 4, alpha = 0.8) +
   coord_flip() + xlab("") + ylab("") + 
-  ggtitle("Population-Weighted Exposure to DPM \n(relative to Vermont average)") + theme_light() +
+  ggtitle("Population-Weighted Exposure to Diesel Particulate\nMatter (relative to Vermont average)") + theme_light() +
   theme(panel.grid.major.y = element_blank(),
         panel.border = element_blank(),
         axis.ticks.y = element_blank()) +
@@ -1622,9 +1630,11 @@ vt_blkgrp_sf %>%
   # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1, yend = 10), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-10,30))
+
+ggsave("images/VT_DPM_graph.png")
 ```
 
-There is a moderate positive correlation between the proportions of limited English speaking households and minorities and ambient concentrations of DPM (see Figure \@ref(fig:cormatrixDPMPopAvg) in Appendix B).
+There is a moderate positive correlation between the proportions of limited English speaking households and People of Color and ambient concentrations of DPM (see Figure \@ref(fig:cormatrixDPMPopAvg) in Appendix B).
 
 
 \pagebreak
@@ -1816,9 +1826,9 @@ vt_blkgrp_sf %>%
 ```
 
 
-### Lifetime Cancer Risk from Inhalation of Air Toxics in Vermont and Populations of Concern
+### Lifetime Cancer Risk from Inhalation of Air Toxics in Vermont and Priority Populations
 
-In addition to variations in the general geography of cancer risk, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvg) below shows population-weighted exposures for populations of concern relative to average cancer risk for the state. For example, limited English speaking households in Vermont experience lifetime cancer risks from inhalation of air toxics that are more than 11% above the state as a whole. Similarly, minorities cancer risks more than 7% above the state average. In fact, all populations of concern experience risks above the state average. 
+In addition to variations in the general geography of cancer risk, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvg) below shows population-weighted exposures for priority populations relative to average cancer risk for the state. For example, limited English speaking households in Vermont experience lifetime cancer risks from inhalation of air toxics that are more than 11% above the state as a whole. Similarly, People of Color cancer risks more than 7% above the state average. In fact, all priority populations experience risks above the state average. 
 
 ```{r barplotATCPopAvg, fig.align = "center", fig.cap="Population-weighted average lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Vermont at Census Block Group level relative to the state average."}
 # Pop Weighted avg of DPM for all Groups in Vermont relative to NE average
@@ -1849,7 +1859,7 @@ vt_blkgrp_sf %>%
   summarize(DPMwMean = weighted.mean(x = CANCER_19, w = Pop, na.rm = TRUE),
             DPMMean = mean(CANCER_19, na.rm = TRUE)) %>% 
   spread(key = Group, value = DPMwMean) %>% 
-  transmute(Minority = (minorityE/DPMMean - 1)*100,
+  transmute(`People of Color` = (minorityE/DPMMean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/DPMMean - 1)*100,
          `Low Income` = (num2povE/DPMMean - 1)*100,
@@ -1882,9 +1892,11 @@ vt_blkgrp_sf %>%
   # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1.5, yend = 5), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-5,12))
+
+ggsave("images/VT_Cancer_graph.png")
 ```
 
-There is a moderately positive correlation between the proportions of minorities and cancer risk (see Figure \@ref(fig:cormatrixATCPopAvg) in Appendix B).
+There is a moderately positive correlation between the proportions of People of Color and cancer risk (see Figure \@ref(fig:cormatrixATCPopAvg) in Appendix B).
 
 
 \pagebreak
@@ -2075,9 +2087,9 @@ vt_blkgrp_sf %>%
 ```
 
 
-### Respiratory Hazard Index from Inhalation of Air Toxics in Vermont and Populations of Concern
+### Respiratory Hazard Index from Inhalation of Air Toxics in Vermont and Priority Populations
 
-In addition to variations in the general geography of the respitory hazard index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvg) below shows population-weighted exposures for populations of concern relative to average respiratory hazard index for the state. For example, limited English speaking households in Vermont experience respiratory hazard indices that are over 14% above the state as a whole. Similarly, minorities experience respiratory hazard indices more than 10% above the state average. In fact, all populations of concern are exposed to respiratory hazard indices above the state average. 
+In addition to variations in the general geography of the respitory hazard index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvg) below shows population-weighted exposures for priority populations relative to average respiratory hazard index for the state. For example, limited English speaking households in Vermont experience respiratory hazard indices that are over 14% above the state as a whole. Similarly, People of Color experience respiratory hazard indices more than 10% above the state average. In fact, all priority populations are exposed to respiratory hazard indices above the state average. 
 
 ```{r barplotRHIPopAvg, fig.align = "center", fig.cap="Population-weighted average respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Vermont at Census Block Group level relative to the state average."}
 # Pop Weighted avg of RHI for all Groups in Vermont relative to NE average
@@ -2108,7 +2120,7 @@ vt_blkgrp_sf %>%
   summarize(RESPwMean = weighted.mean(x = RESP_19, w = Pop, na.rm = TRUE),
             RESPMean = mean(RESP_19, na.rm = TRUE)) %>% 
   spread(key = Group, value = RESPwMean) %>% 
-  transmute(Minority = (minorityE/RESPMean - 1)*100,
+  transmute(`People of Color` = (minorityE/RESPMean - 1)*100,
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/RESPMean - 1)*100,
          `Low Income` = (num2povE/RESPMean - 1)*100,
@@ -2141,9 +2153,11 @@ vt_blkgrp_sf %>%
   # geom_segment(aes(x = "Over 64", xend = "Over 64", y = 1, yend = 5), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-5,15))
+
+ggsave("images/VT_Resp_graph.png")
 ```
 
-There is a moderate to strong positive correlation between the proportions of minorities and respiratory hazard index (see Figure \@ref(fig:cormatrixRHIPopAvg) in Appendix B).
+There is a moderate to strong positive correlation between the proportions of People of Color and respiratory hazard index (see Figure \@ref(fig:cormatrixRHIPopAvg) in Appendix B).
 
 
 \pagebreak
@@ -2320,9 +2334,9 @@ vt_blkgrp_sf %>%
 ```
 
 
-### Traffic Proximity and Volume Exposure in Vermont and Populations of Concern
+### Traffic Proximity and Volume Exposure in Vermont and Priority Populations
 
-In addition to variations in the general geography of the traffic proximity and volume exposure, this exposure also varies demographically. Figure \@ref(fig:barplotTPVPopAvgNE) below shows population-weighted exposures for populations of concern relative to average traffic proximity and volume for the state. For example, minorities are exposed to traffic proximity and volume more than 79% above the state average. By contrast, persons over age 64 are, on average, are exposed to traffic proximity and volume of more than 13% below the state average. 
+In addition to variations in the general geography of the traffic proximity and volume exposure, this exposure also varies demographically. Figure \@ref(fig:barplotTPVPopAvgNE) below shows population-weighted exposures for priority populations relative to average traffic proximity and volume for the state. For example, People of Color are exposed to traffic proximity and volume more than 79% above the state average. By contrast, persons over age 64 are, on average, are exposed to traffic proximity and volume of more than 13% below the state average. 
 
 ```{r barplotTPVPopAvgNE, fig.align = "center", fig.cap="Population-weighted average Traffic Proximity and Volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Vermont at Census Block Group level relative to the state average."}
 # Pop Weighted avg of TPV for all Groups in Vermont relative to NE average
@@ -2387,10 +2401,10 @@ vt_blkgrp_sf %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-20,80))
 
-ggsave("DATA/EJSCREEN/vt_traffic_lolli.png")
+ggsave("images/VT_Traffic_graph.png")
 ```
 
-There is a moderate positive correlation between the proportions of minorities and traffic proximity and volume, and a moderate positive correlation with low income persons (see Figure \@ref(fig:cormatrixTPVPopAvg) in Appendix B).
+There is a moderate positive correlation between the proportions of People of Color and traffic proximity and volume, and a moderate positive correlation with low income persons (see Figure \@ref(fig:cormatrixTPVPopAvg) in Appendix B).
 
 [^EJSCREEN]: U.S. Environmental Protection Agency (EPA), 2019. EJSCREEN Technical Documentation. For more information see www.epa.gov/ejscreen
 
@@ -2519,7 +2533,7 @@ The ACS provides greater demographic detail and temporal resolution than the dec
 For the purposes of this analysis ACS 5-year estimates for the period 2014 - 2018 for Census Tracts and Block Groups in New England, as well as their associated TIGER/Line spatial files, were downloaded from the Census Bureau via API using the tigris package in R. Demographic variables consistent with those used by the EPA in EJSCREEN were chosen, as well as environmental justice population thresholds used by states where available. Table \@ref(tab:ACSvariables) below lists the demographic variables that were downloaded directly or computed from ACS variables:
 ```{r ACSvariables}
 ACSvDF <- data.frame(Variable = c("Total Population",
-                                  "Minority",
+                                  "People of Color",
                                   "Low Income",
                                   "Limited English Household",
                                   "Less than High School Education",
@@ -2531,9 +2545,9 @@ ACSvDF <- data.frame(Variable = c("Total Population",
                                   "RI Income",
                                   "MA Income",
                                   "MA Limited English Household",
-                                  "MA Minority",
+                                  "MA POC",
                                   "RI Income",
-                                  "RI Minority"),
+                                  "RI POC"),
                      Description = c("Total population",
                                      "Persons of Hispanic or Latino origin or persons who are not White",
                                      "People in households where the household income is less than or equal to twice the federal poverty level",
@@ -2544,12 +2558,12 @@ ACSvDF <- data.frame(Variable = c("Total Population",
                                      "Persons over 64 years of age",
                                      "Persons 18 years+ with a disability",
                                      "Households with no vehicle available",
-                                     "Vermont Low Income threshold: 30% or more people in households where the household income is less than or equal to twice the federal poverty level",
+                                     "Maine Low Income threshold: 30% or more people in households where the household income is less than or equal to twice the federal poverty level",
                                      "Massachusetts Low Income threshold: 25% or more of households with median household incomes below 65% statewide median",
                                      "Massachusetts Language Isolation threshold: 25% or more people in households where all adults speak English less than \"very well\"",
-                                     "Massachusetts Minority threshold: 25% or more are persons of Hispanic or Latino origin or persons who are not White",
-                                     "Vermont Low Income threshold: highest 15% of block groups with people in households where the household income is less than or equal to twice the federal poverty level",
-                                     "Vermont Minority threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
+                                     "Massachusetts POC threshold: 40% or more are persons of Hispanic or Latino origin or persons who are not White OR 25% or more are persons of Hispanic or Latino origin or persons who are not White AND the median household income of the municipality is less than 150% of the statewide median household income",
+                                     "Maine Low Income threshold: highest 15% of block groups with people in households where the household income is less than or equal to twice the federal poverty level",
+                                     "Maine POC threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
                      'ACS Table ID' = c("B03002: Hispanic or Latino Origin by Race",
                                 "B03002: Hispanic or Latino Origin by Race",
                                 "C17002: Ratio of Income to Poverty Level",
@@ -2603,11 +2617,12 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
            NonMinority = c(20,12,5,10)) %>% 
   mutate(TotalPop = Minority + NonMinority) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
-                    caption = "Block Group Populations and PM2.5", align = "l") %>% 
+                    caption = "Block Group Populations and PM2.5", 
+                    align = "l", col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Population numbers of minorities, as well as the total population, and PM~2.5~ concentrations, are each reported by Block Group. Since each Block Group is associated with one PM~2.5~ concentration value, we might assume (incorrectly) that everyone is equally exposed to the average PM~2.5~ values of all Block Groups (`r round(mean(c(2.5,6.2,10,5)),2)`). However, not all Block Groups have the same number of people, which means that each PM~2.5~ concentration value is associated with a different number of people. Do more Minorities occupy Block Groups with higher concentrations than the simple average would indicate?
+Population numbers of People of Color, as well as the total population, and PM~2.5~ concentrations, are each reported by Block Group. Since each Block Group is associated with one PM~2.5~ concentration value, we might assume (incorrectly) that everyone is equally exposed to the average PM~2.5~ values of all Block Groups (`r round(mean(c(2.5,6.2,10,5)),2)`). However, not all Block Groups have the same number of people, which means that each PM~2.5~ concentration value is associated with a different number of people. Do more Minorities occupy Block Groups with higher concentrations than the simple average would indicate?
 
 To calculate the population-weighted average PM~2.5~ exposure for Minorities, the number of Minorities in each Block Group is used as a 'weight'. The PM~2.5~ concentrations of each Block Group is multiplied by its respective number of Minorities. See the table below. The light gray column on the right is the product of PM~2.5~ values and Minority populations. 
 
@@ -2617,16 +2632,17 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
            Minority = c(5,10,20,10),
            NonMinority = c(20,12,5,10)) %>% 
   mutate(TotalPop = Minority + NonMinority,
-         PM25xMinority = PM25*Minority) %>% 
+         PM25xPOC = PM25*Minority) %>% 
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
-                    caption = "Block Group Populations and PM2.5", align = "l") %>% 
+                    caption = "Block Group Populations and PM2.5", align = "l",
+                    col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5:6])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header")) %>% 
   kableExtra::row_spec(5, bold = TRUE) %>% 
   kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
 ```
 
-The total or sum of the products (i.e., Minority pop x PM~2.5~ concentrations) is then divided by the sum of the weights (i.e., total Minority), so that 324.5/45 = `r round(324.5/45,2)`. The result is a weighted average PM~2.5~ concentration that is influenced by the number of minorities. 
+The total or sum of the products (i.e., Minority pop x PM~2.5~ concentrations) is then divided by the sum of the weights (i.e., total Minority), so that 324.5/45 = `r round(324.5/45,2)`. The result is a weighted average PM~2.5~ concentration that is influenced by the number of People of Color. 
 
 This process is repeated for the Total Population so that the two population-weighted average PM~2.5~ concentrations can be compared. Below is the calculation of population-weighted calculation for the total population. 
 
@@ -2639,7 +2655,8 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
          PM25xTotalPop = PM25*TotalPop) %>% 
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
-                    caption = "Block Group Populations and PM2.5", align = "l") %>% 
+                    caption = "Block Group Populations and PM2.5", align = "l",
+                    col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5:6])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header")) %>% 
   kableExtra::row_spec(5, bold = TRUE) %>% 
   kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
@@ -2650,7 +2667,7 @@ For the TotalPop, the population-weighted average of PM~2.5~ is 548.9/92 = `r ro
 # Appendix B: Supplementary Figures {-}
 
 ```{r cormatrixPollutants, fig.align = "center", fig.cap="Spearman's correlation matrix of pollutants by Census Block Group."}
-# Create a correlation matrix of PM25 and populations of concern
+# Create a correlation matrix of PM25 and priority populations
 corrPollutants <- vt_blkgrp_sf %>% 
   as.data.frame() %>% 
   dplyr::transmute(PM2.5 = PM25_19, 
@@ -2668,12 +2685,12 @@ ggcorrplot(corrPollutants, hc.order = TRUE, type = "lower", lab = TRUE,
            legend.title = "Spearman's \nCorrelation\nCoefficient")
 ```
 
-```{r cormatrixPM25PopAvg, fig.align = "center", fig.cap="Spearman's correlation matrix of annual PM2.5 concentrations and the proportions of populations of concern by Census Block Group."}
-# Create a correlation matrix of PM25 and populations of concern
+```{r cormatrixPM25PopAvg, fig.align = "center", fig.cap="Spearman's correlation matrix of annual PM2.5 concentrations and the proportions of priority populations by Census Block Group."}
+# Create a correlation matrix of PM25 and priority populations
 corrPM25 <- vt_blkgrp_sf %>% 
   as.data.frame() %>% 
   dplyr::transmute(PM25 = PM25_19, 
-                Minority = minority_pctE, 
+                `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
@@ -2687,12 +2704,12 @@ ggcorrplot(corrPM25, hc.order = TRUE, type = "lower", lab = TRUE,
            legend.title = "Spearman's \nCorrelation\nCoefficient")
 ```
 
-```{r cormatrixO3PopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of summer Ozone concentrations and the proportions of populations of concern by Census Block Group."}
-# Create a correlation matrix of PM25 and populations of concern
+```{r cormatrixO3PopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of summer Ozone concentrations and the proportions of priority populations by Census Block Group."}
+# Create a correlation matrix of PM25 and priority populations
 corrO3 <- vt_blkgrp_sf %>% 
   as.data.frame() %>%
   dplyr::transmute(Ozone = OZONE_19, 
-                Minority = minority_pctE, 
+                `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
@@ -2722,12 +2739,12 @@ vt_blkgrp_sf %>%
   coord_flip()
 ```
 
-```{r cormatrixDPMPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of annual average Diesel Particulate Matter concentrations and the proportions of populations of concern by Census Block Group."}
-# Create a correlation matrix of PM25 and populations of concern
+```{r cormatrixDPMPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of annual average Diesel Particulate Matter concentrations and the proportions of priority populations by Census Block Group."}
+# Create a correlation matrix of PM25 and priority populations
 corrDPM <- vt_blkgrp_sf %>% 
   as.data.frame() %>% 
   dplyr::transmute(DPM = DSLPM_19, 
-                Minority = minority_pctE, 
+                `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
@@ -2742,12 +2759,12 @@ ggcorrplot(corrDPM, hc.order = TRUE, type = "lower", lab = TRUE,
            ggtheme = ggplot2::theme_minimal())
 ```
 
-```{r cormatrixATCPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group."}
-# Create a correlation matrix of cancer risk and populations of concern
+```{r cormatrixATCPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of priority populations by Census Block Group."}
+# Create a correlation matrix of cancer risk and priority populations
 corrARI <- vt_blkgrp_sf %>% 
   as.data.frame() %>% 
   dplyr::transmute(`Cancer Risk` = CANCER_19, 
-                Minority = minority_pctE, 
+                `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
@@ -2762,12 +2779,12 @@ ggcorrplot(corrARI, hc.order = TRUE, type = "lower", lab = TRUE,
            ggtheme = ggplot2::theme_minimal())
 ```
 
-```{r cormatrixRHIPopAvg, fig.align = "center", fig.cap="Spearman's correlation matrix of respiratory hazard index and the proportions of populations of concern by Census Block Group."}
-# Create a correlation matrix of cancer risk and populations of concern
+```{r cormatrixRHIPopAvg, fig.align = "center", fig.cap="Spearman's correlation matrix of respiratory hazard index and the proportions of priority populations by Census Block Group."}
+# Create a correlation matrix of cancer risk and priority populations
 corrARI <- vt_blkgrp_sf %>% 
   as.data.frame() %>%
   dplyr::transmute(`Resp Hazard Index` = RESP_19, 
-                Minority = minority_pctE, 
+                `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
@@ -2782,12 +2799,12 @@ ggcorrplot(corrARI, hc.order = TRUE, type = "lower", lab = TRUE,
            ggtheme = ggplot2::theme_minimal())
 ```
 
-```{r cormatrixTPVPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of traffice proximity and volume and the proportions of populations of concern by Census Block Group."}
-# Create a correlation matrix of cancer risk and populations of concern
+```{r cormatrixTPVPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of traffice proximity and volume and the proportions of priority populations by Census Block Group."}
+# Create a correlation matrix of cancer risk and priority populations
 corrTPV <- vt_blkgrp_sf %>% 
   as.data.frame() %>% 
   dplyr::transmute(`Traffic Exposure` = PTRAF_19, 
-                Minority = minority_pctE, 
+                `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
