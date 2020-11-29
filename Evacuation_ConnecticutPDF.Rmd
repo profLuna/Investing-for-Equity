@@ -294,22 +294,22 @@ ct_nfhza_2775_land <- readRDS("DATA/FEMA/CT/ct_nfhza_2775_land.Rds")
 # Create a dot density map of total populations and overlay on flood zones
 # Create point layer of major cities for context
 # Note cb=FALSE is necessary for extracting centroids from town polygons. Otherwise, if cb=TRUE, cannot extract centroids from multipolygon features.
-ct_towns_sf_pts <- county_subdivisions(state = "CT", cb = TRUE) %>% 
-  filter(NAME %in% c("Hartford", 
-                     "Stamford", 
-                     "Fairfield", 
-                     "Bridgeport", 
-                     "New Haven", 
-                     "Danbury", 
-                     "Hamden", 
-                     "Meriden", 
-                     "Waterbury", 
+ct_towns_sf_pts <- county_subdivisions(state = "CT", cb = TRUE) %>%
+  filter(NAME %in% c("Hartford",
+                     "Stamford",
+                     "Fairfield",
+                     "Bridgeport",
+                     "New Haven",
+                     "Danbury",
+                     "Hamden",
+                     "Meriden",
+                     "Waterbury",
                      "New Britain",
                      "New London",
                      "Norwich",
                      "North Canaan",
-                     "Old Saybrook")) %>% 
-  st_transform(., crs = 2775) %>% 
+                     "Old Saybrook")) %>%
+  st_transform(., crs = 2775) %>%
   st_centroid(of_largest_polygon = TRUE)
 
 # Create road layer for context
@@ -361,14 +361,14 @@ ny_state_sf <- tigris::states(cb = TRUE) %>%
 # load data
 nofemapolys <- readRDS("DATA/FEMA/CT/nofemapolys.Rds")
 
-# Create random points, with 1 point for every 500 people
-ct_totalpop_pts <- ct_blkgrps_developed %>% 
-  select(NewPop) %>% 
-  filter(NewPop >= 500) %>% 
-  st_sample(., size = round(.$NewPop/500)) %>% # create 1 random point for every 500 people
-  st_sf(.) %>% 
-  group_by() %>% 
-  summarize() # reduce to one multipoint object
+# # Create random points, with 1 point for every 500 people
+# ct_totalpop_pts <- ct_blkgrps_developed %>% 
+#   select(NewPop) %>% 
+#   filter(NewPop >= 500) %>% 
+#   st_sample(., size = round(.$NewPop/500)) %>% # create 1 random point for every 500 people
+#   st_sf(.) %>% 
+#   group_by() %>% 
+#   summarize() # reduce to one multipoint object
 
 # Create a simplified version of NFHZA polygons to speed up mapping
 ct_nfhza_2775_land_simple <- ct_nfhza_2775_land %>% 
@@ -382,59 +382,59 @@ ct_nfhza_2775_land_simple <- ct_nfhza_2775_land %>%
   mutate(Area = st_area(.))
 ```
 
-```{r mapNFHZAPop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="FEMA flood zones and population distribution across Connecticut at Census Block Group level."}
+```{r mapNFHZAPop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="FEMA flood zones across Connecticut."}
 # Create a dot density map of total populations and overlay on flood zones
 # Map totalpop and flood zones
-# m1 <- tm_layout(bg.color = "#e6f3f7") +
-#   tm_shape(ct_blkgrp_2775, unit = "mi") + tm_fill(col = "white") +
-#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
-#   tm_shape(ny_state_sf) + tm_fill(col="white") +
-#   tm_shape(ct_awater_sf) + tm_fill(col = "#e6f3f7") + 
-#   # tm_shape(ne_states_sf_cb) + tm_borders() +
-#   # tm_shape(ny_state_sf) + tm_borders() +
-#   tm_shape(ct_totalpop_pts) + tm_dots(col = "darkgoldenrod3",
-#                                       labels = "1 dot = 500 people",
-#                                       alpha = 0.6) +
-#   tm_shape(ct_nfhza_2775_land_simple) + 
-#   tm_fill(col = "Interval", 
-#           palette = c("dodgerblue", "blueviolet"), 
-#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"), 
-#           title = "FEMA Flood Zones",
-#           alpha = 0.6,
-#           border.alpha = 0) +
-#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
-#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
-#   tm_shape(ct_highways) + tm_lines(col = "seashell4", lwd = 1) +
-#   tm_shape(I95roadSegment) + 
-#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-#   tm_shape(I95roadSegment2) + 
-#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-#   tm_shape(I395roadSegment) +
-#   tm_symbols(shape = I395, border.lwd = NA, size = 0.1) +
-#   tm_shape(I91roadSegment) + 
-#   tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
-#   tm_shape(I84roadSegment) + 
-#   tm_symbols(shape = I84, border.lwd = NA, size = 0.1) +
-#   tm_shape(ct_towns_sf_pts) + tm_dots() +
-#   tm_text("NAME", size = 0.5, col = "black", 
-#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-#   tm_shape(nofemapolys) + tm_fill(col = "gray", alpha = 0.4) +
-#   tm_text("LABEL", alpha = 0.5) +
-#   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
-#                position = c(0.6,0.005)) +
-#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
-#                 alpha = 0.6,
-#                 border.col = "white", border.alpha = 0,
-#                 labels = "1 dot = 500 people",
-#                 title = "Total Population") +
-#   tm_layout(title = "Total\nPopulation\nDistribution\nand Flood Zones", 
-#             frame = TRUE, main.title.size = 0.8,
-#             legend.outside = TRUE,
-#             legend.title.size = 0.8,
-#             legend.outside.position = c("right", "top"))
-# 
-# tmap_save(m1, "DATA/FEMA/CT/ct_flood.png",
-#           height = 4, width = 8, units = "in", dpi = 600)
+m1 <- tm_layout(bg.color = "#e6f3f7") +
+  tm_shape(ct_blkgrp_2775, unit = "mi") + tm_fill(col = "white") +
+  tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+  tm_shape(ny_state_sf) + tm_fill(col="white") +
+  tm_shape(ct_awater_sf) + tm_fill(col = "#e6f3f7") +
+  # tm_shape(ne_states_sf_cb) + tm_borders() +
+  # tm_shape(ny_state_sf) + tm_borders() +
+  # tm_shape(ct_totalpop_pts) + tm_dots(col = "darkgoldenrod3",
+  #                                     labels = "1 dot = 500 people",
+  #                                     alpha = 0.6) +
+  tm_shape(ct_nfhza_2775_land_simple) +
+  tm_fill(col = "Interval",
+          palette = c("dodgerblue", "blueviolet"),
+          labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
+          title = "FEMA Flood Zones",
+          alpha = 0.6,
+          border.alpha = 0) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+  tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
+  tm_shape(ct_highways) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I395roadSegment) +
+  tm_symbols(shape = I395, border.lwd = NA, size = 0.1) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
+  tm_shape(I84roadSegment) +
+  tm_symbols(shape = I84, border.lwd = NA, size = 0.1) +
+  tm_shape(ct_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black",
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_shape(nofemapolys) + tm_fill(col = "gray", alpha = 0.4) +
+  tm_text("LABEL", alpha = 0.5) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
+               position = c(0.6,0.005)) +
+  tm_add_legend(type = "fill", col = "darkgoldenrod3",
+                alpha = 0.6,
+                border.col = "white", border.alpha = 0,
+                labels = "1 dot = 500 people",
+                title = "Total Population") +
+  tm_layout(title = "FEMA\nFlood Zones",
+            frame = TRUE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m1, "DATA/FEMA/CT/ct_flood.png",
+          height = 4, width = 8, units = "in", dpi = 600)
 
 knitr::include_graphics("DATA/FEMA/CT/ct_flood.png")
 ```
@@ -808,58 +808,58 @@ The analysis of hurricane evacuation risk presented here is based on Hurricane E
 
 A significant proportion of Connecticut's population lives near the coast and is therefore within these hurricane evacuation zones. Figure \@ref(fig:mapHEVACPop) below shows the population distribution and areas within Hurricane Evacuation Zones. Evacuation Zone “A” is recommended to be evacuated prior to an expected category 1 or 2 hurricane.  Evacuation Zone “B” is recommended to be evacuated prior to an expected category 3 or 4 hurricane.
 
-```{r mapHEVACPop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="FEMA flood zones and population distribution across Connecticut at Census Block Group level."}
-# # Map totalpop and hurricane evacuation zones
-# m3 <- tm_layout(bg.color = "#e6f3f7") +
-#   tm_shape(ct_blkgrp_2775, unit = "mi") + tm_fill(col = "white") +
-#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
-#   tm_shape(ny_state_sf) + tm_fill(col="white") +
-#   tm_shape(ct_awater_sf) + tm_fill(col = "#e6f3f7") +
-#   # tm_shape(ne_states_sf_cb) + tm_borders() +
-#   # tm_shape(ny_state_sf) + tm_borders() +
-#   tm_shape(ct_totalpop_pts) +
-#   tm_dots(col = "springgreen3",
-#           labels = "1 dot = 500 people",
-#           alpha = 0.6) +
-#   tm_shape(ct_hea_sf_simple) +
-#   tm_fill(col = "zone",
-#           palette = c("deeppink", "purple3"),
-#           labels = c("A: Category 1 - 2",
-#                      "B: Category 3 - 4"),
-#           title = "Evacuation Zone and\nHurricane Category",
-#           alpha = 0.6,
-#           border.alpha = 0) +
-#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
-#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
-#   tm_shape(ct_highways) + tm_lines(col = "seashell4", lwd = 1) +
-#   tm_shape(I95roadSegment) +
-#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-#   tm_shape(I95roadSegment2) +
-#   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
-#   tm_shape(I395roadSegment) +
-#   tm_symbols(shape = I395, border.lwd = NA, size = 0.1) +
-#   tm_shape(I91roadSegment) +
-#   tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
-#   tm_shape(I84roadSegment) +
-#   tm_symbols(shape = I84, border.lwd = NA, size = 0.1) +
-#   tm_shape(ct_towns_sf_pts) + tm_dots() +
-#   tm_text("NAME", size = 0.5, col = "black",
-#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-#   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
-#                position = c(0.6,0.005)) +
-#   tm_add_legend(type = "fill", col = "springgreen3",
-#                 alpha = 0.6,
-#                 border.col = "white", border.alpha = 0,
-#                 labels = "1 dot = 500 people",
-#                 title = "Total Population") +
-#   tm_layout(title = "Total\nPopulation\nDistribution\nand Hurricane\nEvacuation Zones",
-#             frame = TRUE, main.title.size = 0.8,
-#             legend.outside = TRUE,
-#             legend.title.size = 0.8,
-#             legend.outside.position = c("right", "top"))
-# 
-# tmap_save(m3, "DATA/FEMA/CT/CT_hevac.png",
-#           height = 4, width = 8, units = "in", dpi = 600)
+```{r mapHEVACPop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hurricane evacuation zones across Connecticut."}
+# Map totalpop and hurricane evacuation zones
+m3 <- tm_layout(bg.color = "#e6f3f7") +
+  tm_shape(ct_blkgrp_2775, unit = "mi") + tm_fill(col = "white") +
+  tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+  tm_shape(ny_state_sf) + tm_fill(col="white") +
+  tm_shape(ct_awater_sf) + tm_fill(col = "#e6f3f7") +
+  # tm_shape(ne_states_sf_cb) + tm_borders() +
+  # tm_shape(ny_state_sf) + tm_borders() +
+  # tm_shape(ct_totalpop_pts) +
+  # tm_dots(col = "springgreen3",
+  #         labels = "1 dot = 500 people",
+  #         alpha = 0.6) +
+  tm_shape(ct_hea_sf_simple) +
+  tm_fill(col = "zone",
+          palette = c("deeppink", "purple3"),
+          labels = c("A: Category 1 - 2",
+                     "B: Category 3 - 4"),
+          title = "Evacuation Zone and\nHurricane Category",
+          alpha = 0.6,
+          border.alpha = 0) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+  tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
+  tm_shape(ct_highways) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
+  tm_shape(I395roadSegment) +
+  tm_symbols(shape = I395, border.lwd = NA, size = 0.1) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = 0.1) +
+  tm_shape(I84roadSegment) +
+  tm_symbols(shape = I84, border.lwd = NA, size = 0.1) +
+  tm_shape(ct_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black",
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
+               position = c(0.6,0.005)) +
+  tm_add_legend(type = "fill", col = "springgreen3",
+                alpha = 0.6,
+                border.col = "white", border.alpha = 0,
+                labels = "1 dot = 500 people",
+                title = "Total Population") +
+  tm_layout(title = "Hurricane\nEvacuation Zones",
+            frame = TRUE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m3, "DATA/FEMA/CT/CT_hevac.png",
+          height = 4, width = 8, units = "in", dpi = 600)
 
 knitr::include_graphics("DATA/FEMA/CT/CT_hevac.png")
 ```
