@@ -465,7 +465,7 @@ vt_blkgrp_sf %>%
   # geom_segment(aes(x = "Limited English HH", xend = "Limited English HH", y = 0.1, yend = 1.1), arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-2,2))
 
-ggsave("images/VT_PM25_graph.png")
+# ggsave("images/VT_PM25_graph.png")
 ```
 
 Like the region as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that all priority populations now experience exposures greater than the state average, with People of Color and limited English speaking households leading on this measure. 
@@ -554,7 +554,7 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
                 DataTextSize = 3,
                 WiderLabels = TRUE)
 
-ggsave("images/VT_PM25_slope.png")
+# ggsave("images/VT_PM25_slope.png")
 ```
 
 There is a weak positive relationship between the proportion of People of Color or language-isolated households and the concentration of PM~2.5~ (see Figure \@ref(fig:cormatrixPM25PopAvg) in Appendix B).
@@ -917,7 +917,7 @@ vt_blkgrp_sf %>%
   # geom_segment(aes(x = "Low Income", xend = "Low Income", y = 0.1, yend = 0.4), arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-1,1))
 
-ggsave("images/VT_O3_graph.png")
+# ggsave("images/VT_O3_graph.png")
 ```
 
 Like the state as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvg). Unlike all other populations, People of Color and limited English households have experienced a slight increase in population-weighted exposure to Ozone. 
@@ -1004,7 +1004,7 @@ newggslopegraph(dataframe = O311_16wAvg_actual,
                 DataTextSize = 3,
                 WiderLabels = TRUE)
 
-ggsave("images/VT_O3_slope.png")
+# ggsave("images/VT_O3_slope.png")
 ```
 
 
@@ -1631,7 +1631,7 @@ vt_blkgrp_sf %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-10,30))
 
-ggsave("images/VT_DPM_graph.png")
+# ggsave("images/VT_DPM_graph.png")
 ```
 
 There is a moderate positive correlation between the proportions of limited English speaking households and People of Color and ambient concentrations of DPM (see Figure \@ref(fig:cormatrixDPMPopAvg) in Appendix B).
@@ -1893,7 +1893,7 @@ vt_blkgrp_sf %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-5,12))
 
-ggsave("images/VT_Cancer_graph.png")
+# ggsave("images/VT_Cancer_graph.png")
 ```
 
 There is a moderately positive correlation between the proportions of People of Color and cancer risk (see Figure \@ref(fig:cormatrixATCPopAvg) in Appendix B).
@@ -2154,7 +2154,7 @@ vt_blkgrp_sf %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-5,15))
 
-ggsave("images/VT_Resp_graph.png")
+# ggsave("images/VT_Resp_graph.png")
 ```
 
 There is a moderate to strong positive correlation between the proportions of People of Color and respiratory hazard index (see Figure \@ref(fig:cormatrixRHIPopAvg) in Appendix B).
@@ -2401,7 +2401,7 @@ vt_blkgrp_sf %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-20,80))
 
-ggsave("images/VT_Traffic_graph.png")
+# ggsave("images/VT_Traffic_graph.png")
 ```
 
 There is a moderate positive correlation between the proportions of People of Color and traffic proximity and volume, and a moderate positive correlation with low income persons (see Figure \@ref(fig:cormatrixTPVPopAvg) in Appendix B).
