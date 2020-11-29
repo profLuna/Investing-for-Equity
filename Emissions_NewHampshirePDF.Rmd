@@ -455,7 +455,7 @@ nh_blkgrp_sf %>%
 ggsave("images/NH_PM25_graph.png")
 ```
 
-Like the region as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that all populations of concern now experience exposures greater than the state average, with minorities and limited English speaking households leading on this measure. 
+Like the region as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that all populations of concern now experience exposures greater than the state average, with People of Color and limited English speaking households leading on this measure. 
 
 ```{r slopegraphPM25PopAvgNE, fig.align = "center", fig.cap="Change in population-weighted exposure to PM2.5 for populations of concern between 2011 and 2016."}
 # Pop Weighted avg of PM2.5 EXPOSURE CHANGE 2011 - 2016 for all Groups in New Hampshire relative to NE average. 
@@ -544,7 +544,7 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
 ggsave("images/NH_PM25_slope.png")
 ```
 
-There is a weak positive relationship between the proportion of minority residents or language-isolated households and the concentration of PM~2.5~ (see Figure \@ref(fig:cormatrixPM25PopAvg) in Appendix B).
+There is a weak positive relationship between the proportion of People of Color or language-isolated households and the concentration of PM~2.5~ (see Figure \@ref(fig:cormatrixPM25PopAvg) in Appendix B).
 
 
 \pagebreak
@@ -1532,7 +1532,7 @@ nh_blkgrp_sf %>%
 
 ### Diesel Particulate Matter in New Hampshire and Populations of Concern
 
-In addition to variations in the general geography of DPM concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvg) below shows population-weighted exposures for populations of concern relative to average DPM concentraions for the state. For example, limited English speaking households in New Hampshire are exposed to  DPM concentrations that are more than 47% above concentrations for the state as a whole. Similarly, minorities are exposed to concentrations more than 28% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of DPM 4.8% below the state average. 
+In addition to variations in the general geography of DPM concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvg) below shows population-weighted exposures for populations of concern relative to average DPM concentraions for the state. For example, limited English speaking households in New Hampshire are exposed to  DPM concentrations that are more than 47% above concentrations for the state as a whole. Similarly, People of Color are exposed to concentrations more than 28% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of DPM 4.8% below the state average. 
 
 ```{r barplotDPMPopAvg, fig.align = "center", fig.cap="Population-weighted average exposures to annual average ambient concentrations of Diesel Particulate Matter across New Hampshire relative to the state average."}
 # Pop Weighted avg of DPM for all Groups in New Hampshire relative to NE average
@@ -1600,7 +1600,7 @@ nh_blkgrp_sf %>%
 ggsave("images/NH_DPM_graph.png")
 ```
 
-There is a moderate positive correlation between the proportions of minorities and ambient concentrations of Diesel Particulate Matter (see Figure \@ref(fig:cormatrixDPMPopAvg) in Appendix B).
+There is a moderate positive correlation between the proportions of People of Color and ambient concentrations of Diesel Particulate Matter (see Figure \@ref(fig:cormatrixDPMPopAvg) in Appendix B).
 
 
 \pagebreak
@@ -1778,7 +1778,7 @@ nh_blkgrp_sf %>%
 
 ### Lifetime Cancer Risk from Inhalation of Air Toxics in New Hampshire and Populations of Concern
 
-In addition to variations in the general geography of cancer risk, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvg) below shows population-weighted exposures for populations of concern relative to average cancer risk for the state. For example, limited English speaking households in New Hampshire experience  cancer risks from inhalation of air toxics that are more than 14% above the state as a whole. Similarly, minorities experience  cancer risks more than 8% above the state average. By contrast, persons over age 64 are exposed to risks 1.2% below the state average. 
+In addition to variations in the general geography of cancer risk, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvg) below shows population-weighted exposures for populations of concern relative to average cancer risk for the state. For example, limited English speaking households in New Hampshire experience  cancer risks from inhalation of air toxics that are more than 14% above the state as a whole. Similarly, People of Color experience  cancer risks more than 8% above the state average. By contrast, persons over age 64 are exposed to risks 1.2% below the state average. 
 
 ```{r barplotATCPopAvg, fig.align = "center", fig.cap="Population-weighted average lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across New Hampshire at Census Block Group level relative to the state average."}
 # Pop Weighted avg of DPM for all Groups in New Hampshire relative to NE average
@@ -1846,7 +1846,7 @@ nh_blkgrp_sf %>%
 ggsave("images/NH_Cancer_graph.png")
 ```
 
-There is a moderately positive correlation between the proportions of minorities and cancer risk (see Figure \@ref(fig:cormatrixATCPopAvg) in Appendix B).
+There is a moderately positive correlation between the proportions of People of Color and cancer risk (see Figure \@ref(fig:cormatrixATCPopAvg) in Appendix B).
 
 
 \pagebreak
@@ -2023,7 +2023,7 @@ nh_blkgrp_sf %>%
 
 ### Respiratory Hazard Index from Inhalation of Air Toxics in New Hampshire and Populations of Concern
 
-In addition to variations in the general geography of the respiratory hazard index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvg) below shows population-weighted exposures for populations of concern relative to average respiratory hazard index for the state. For example, limited English speaking households in New Hampshire experience respiratory hazard indices that are over 15% above the state as a whole. Similarly, minorities experience respiratory hazard index values more than 9% above the state average. By contrast, persons over age 64 are exposed to an average hazard index below the state average. 
+In addition to variations in the general geography of the respiratory hazard index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvg) below shows population-weighted exposures for populations of concern relative to average respiratory hazard index for the state. For example, limited English speaking households in New Hampshire experience respiratory hazard indices that are over 15% above the state as a whole. Similarly, People of Color experience respiratory hazard index values more than 9% above the state average. By contrast, persons over age 64 are exposed to an average hazard index below the state average. 
 
 ```{r barplotRHIPopAvg, fig.align = "center", fig.cap="Population-weighted average respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across New Hampshire at Census Block Group level relative to the state average."}
 # Pop Weighted avg of RHI for all Groups in New Hampshire relative to NE average
@@ -2091,7 +2091,7 @@ nh_blkgrp_sf %>%
 ggsave("images/NH_Resp_graph.png")
 ```
 
-There is a moderate positive correlation between the proportions of minorities and respiratory hazard index (see Figure \@ref(fig:cormatrixRHIPopAvg) in Appendix B).
+There is a moderate positive correlation between the proportions of People of Color and respiratory hazard index (see Figure \@ref(fig:cormatrixRHIPopAvg) in Appendix B).
 
 
 \pagebreak
@@ -2336,7 +2336,7 @@ nh_blkgrp_sf %>%
 ggsave("images/NH_Traffic_graph.png")
 ```
 
-There is a moderate positive correlation between the proportions of minorities and traffic proximity and volume (see Figure \@ref(fig:cormatrixTPVPopAvg) in Appendix B).
+There is a moderate positive correlation between the proportions of People of Color and traffic proximity and volume (see Figure \@ref(fig:cormatrixTPVPopAvg) in Appendix B).
 
 [^EJSCREEN]: U.S. Environmental Protection Agency (EPA), 2019. EJSCREEN Technical Documentation. For more information see www.epa.gov/ejscreen
 
@@ -2540,7 +2540,7 @@ ACSvDF %>%
 
 ## Population-weighted averages {-}
 
-Wherever feasible, population exposure to pollutants or other risks is reported as a population-weighted average. A population weighted-average is equivalent to a weighted mean in which the raw values for which a mean (or average) is calculated are multiplied by a weight factor. For example, we are interested in knowing whether Minorities are exposed to higher average PM~2.5~ concentrations than the general or Total Population. Consider the table below.
+Wherever feasible, population exposure to pollutants or other risks is reported as a population-weighted average. A population weighted-average is equivalent to a weighted mean in which the raw values for which a mean (or average) is calculated are multiplied by a weight factor. For example, we are interested in knowing whether People of Color are exposed to higher average PM~2.5~ concentrations than the general or Total Population. Consider the table below.
 
 ```{r wmean1}
 data.frame(BG = c("BG1","BG2","BG3","BG4"),
@@ -2554,9 +2554,9 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Population numbers of minorities, as well as the total population, and PM~2.5~ concentrations, are each reported by Block Group. Since each Block Group is associated with one PM~2.5~ concentration value, we might assume (incorrectly) that everyone is equally exposed to the average PM~2.5~ values of all Block Groups (`r round(mean(c(2.5,6.2,10,5)),2)`). However, not all Block Groups have the same number of people, which means that each PM~2.5~ concentration value is associated with a different number of people. Do more Minorities occupy Block Groups with higher concentrations than the simple average would indicate?
+Population numbers of People of Color, as well as the total population, and PM~2.5~ concentrations, are each reported by Block Group. Since each Block Group is associated with one PM~2.5~ concentration value, we might assume (incorrectly) that everyone is equally exposed to the average PM~2.5~ values of all Block Groups (`r round(mean(c(2.5,6.2,10,5)),2)`). However, not all Block Groups have the same number of people, which means that each PM~2.5~ concentration value is associated with a different number of people. Do more People of Color occupy Block Groups with higher concentrations than the simple average would indicate?
 
-To calculate the population-weighted average PM~2.5~ exposure for Minorities, the number of Minorities in each Block Group is used as a 'weight'. The PM~2.5~ concentraions of each Block Group is multiplied by its respective number of Minorities. See the table below. The light gray column on the right is the product of PM~2.5~ values and Minority populations. 
+To calculate the population-weighted average PM~2.5~ exposure for People of Color, the number of People of Color in each Block Group is used as a 'weight'. The PM~2.5~ concentraions of each Block Group is multiplied by its respective number of People of Color. See the table below. The light gray column on the right is the product of PM~2.5~ values and People of Color. 
 
 ```{r wmean2}
 data.frame(BG = c("BG1","BG2","BG3","BG4"),
@@ -2574,7 +2574,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
 ```
 
-The total or sum of the products (i.e., Minority pop x PM~2.5~ concentrations) is then divided by the sum of the weights (i.e., total Minority), so that 324.5/45 = `r round(324.5/45,2)`. The result is a weighted average PM~2.5~ concentration that is influenced by the number of minorities. 
+The total or sum of the products (i.e., POC x PM~2.5~ concentrations) is then divided by the sum of the weights (i.e., total People of Color), so that 324.5/45 = `r round(324.5/45,2)`. The result is a weighted average PM~2.5~ concentration that is influenced by the number of People of Color. 
 
 This process is repeated for the Total Population so that the two population-weighted average PM~2.5~ concentrations can be compared. Below is the calculation of population-weighted calculation for the total population. 
 
@@ -2594,7 +2594,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
 ```
 
-For the TotalPop, the population-weighted average of PM~2.5~ is 548.9/92 = `r round(548.9/92,2)`. Thus we can see that Minorities experience a higher population-weighted average PM~2.5~ concentration than the general or total population. 
+For the TotalPop, the population-weighted average of PM~2.5~ is 548.9/92 = `r round(548.9/92,2)`. Thus we can see that People of Color experience a higher population-weighted average PM~2.5~ concentration than the general or total population. 
 
 # Appendix B: Supplementary Figures {-}
 
