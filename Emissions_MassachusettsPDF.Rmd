@@ -466,11 +466,11 @@ newggslopegraph(dataframe = PM11_16wSTAvg_actual,
 ```
 
 
-### PM~2.5~ in Massachusetts and Populations of Concern
+### PM~2.5~ in Massachusetts and Priority Populations
 
-In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvgMA) below shows population-weighted exposures for populations of concern relative to average PM~2.5~ concentrations for the state. For example, limited English speaking households in Massachusetts, as defined by state environmental justice policy, are exposed to PM~2.5~ concentrations that are approximately 2.3% above concentrations for the state as a whole. Similarly, People of Color, as defined by state environmental justice policy, are exposed to concentrations over 2% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of PM~2.5~ almost 1% below the state average. 
+In addition to variations in the general geography of PM~2.5~ concentrations, exposure to these pollutants also varies demographically. Figure \@ref(fig:barplotPM25PopAvgMA) below shows population-weighted exposures for priority populations relative to average PM~2.5~ concentrations for the state. For example, limited English speaking households in Massachusetts, as defined by state environmental justice policy, are exposed to PM~2.5~ concentrations that are approximately 2.3% above concentrations for the state as a whole. Similarly, People of Color, as defined by state environmental justice policy, are exposed to concentrations over 2% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of PM~2.5~ almost 1% below the state average. 
 
-```{r barplotPM25PopAvgMA, fig.align = "center", fig.cap="Population-weighted average exposures to PM2.5 for populations of concern in Massachusetts relative to the state average."}
+```{r barplotPM25PopAvgMA, fig.align = "center", fig.cap="Population-weighted average exposures to PM2.5 for priority populations in Massachusetts relative to the state average."}
 # Pop Weighted avg of PM2.5 for all Groups in Massachusetts relative to state average
 ma_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -547,9 +547,9 @@ ma_blkgrp_sf %>%
 # ggsave("images/MA_PM25_graph.png")
 ```
 
-Like the state as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that all populations of concern, except for persons over 64, continue to experience exposures greater than the state average, with limited English speaking households and People of Color leading on this measure. 
+Like the state as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Note however that all priority populations, except for persons over 64, continue to experience exposures greater than the state average, with limited English speaking households and People of Color leading on this measure. 
 
-```{r slopegraphPM25PopAvgNE, fig.align = "center", fig.cap="Change in population-weighted exposure to PM2.5 for populations of concern between 2011 and 2016."}
+```{r slopegraphPM25PopAvgNE, fig.align = "center", fig.cap="Change in population-weighted exposure to PM2.5 for priority populations between 2011 and 2016."}
 # Pop Weighted avg of PM2.5 EXPOSURE CHANGE 2011 - 2016 for all Groups in Massachusetts relative to NE average. 
 # Create df of 2019 actual values
 PM19wAvgs_actual <- ma_blkgrp_sf %>% 
@@ -972,11 +972,11 @@ newggslopegraph(dataframe = O311_16wSTAvg_actual,
 ```
 
 
-### Ozone (O~3~) in Massachusetts and Populations of Concern
+### Ozone (O~3~) in Massachusetts and Priority Populations
 
-In addition to variations in the general geography of Ozone (O~3~) concentrations, exposure to this pollutant also varies demographically. Figure \@ref(fig:barplotO3PopAvgMA) below shows population-weighted exposures for populations of concern relative to average Ozone concentrations for the region. For example, low income persons, as identified by Massachusetts Environmental Justice policy, are exposed to summer Ozone concentrations that are 0.5% above concentrations for the region as a whole. Similarly, persons over age 64 are exposed to concentrations 0.2% above the regional average. By contrast, limited English speaking households are, on average, exposed to concentrations of Ozone at or below the regional average. 
+In addition to variations in the general geography of Ozone (O~3~) concentrations, exposure to this pollutant also varies demographically. Figure \@ref(fig:barplotO3PopAvgMA) below shows population-weighted exposures for priority populations relative to average Ozone concentrations for the region. For example, low income persons, as identified by Massachusetts Environmental Justice policy, are exposed to summer Ozone concentrations that are 0.5% above concentrations for the region as a whole. Similarly, persons over age 64 are exposed to concentrations 0.2% above the regional average. By contrast, limited English speaking households are, on average, exposed to concentrations of Ozone at or below the regional average. 
 
-```{r barplotO3PopAvgMA, fig.align = "center", fig.cap="Population-weighted average exposures to Ozone for populations of concern in Massachusetts relative to the state average."}
+```{r barplotO3PopAvgMA, fig.align = "center", fig.cap="Population-weighted average exposures to Ozone for priority populations in Massachusetts relative to the state average."}
 # Pop Weighted avg of O3 for all Groups in Massachusetts relative to NE average
 ma_blkgrp_sf %>% 
   as.data.frame() %>% 
@@ -1055,9 +1055,9 @@ ma_blkgrp_sf %>%
 # ggsave("images/MA_O3_graph.png")
 ```
 
-Like the region as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvgMA). All populations of concern have experienced an increase in population-weighted exposure to Ozone. 
+Like the region as a whole, these populations have also experienced changes in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvgMA). All priority populations have experienced an increase in population-weighted exposure to Ozone. 
 
-```{r slopegraphO3PopAvgMA, fig.align = "center", fig.cap="Change in population-weighted exposure to summer ozone for populations of concern between 2011 and 2016."}
+```{r slopegraphO3PopAvgMA, fig.align = "center", fig.cap="Change in population-weighted exposure to summer ozone for priority populations between 2011 and 2016."}
 # Pop Weighted avg of O3 EXPOSURE CHANGE 2011 - 2016 for all Groups in Massachusetts relative to NE average. 
 # Create df of 2019 actual values
 O319wAvgs_actual <- ma_blkgrp_sf %>% 
@@ -1733,9 +1733,9 @@ ma_blkgrp_sf %>%
 ```
 
 
-### Diesel Particulate Matter in Massachusetts and Populations of Concern
+### Diesel Particulate Matter in Massachusetts and Priority Populations
 
-In addition to variations in the general geography of DPM concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvgMA) below shows population-weighted exposures for populations of concern relative to average DPM concentrations for the state. For example, limited English speaking households in Massachusetts, as defined by state environmental justice policy, are exposed to DPM concentrations that are more than 54% above concentrations for the region as a whole. Similarly, People of Color, as identified by Massachusetts Environmental Justice policy, are exposed to concentrations more than 24% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of DPM 10% below the state average. 
+In addition to variations in the general geography of DPM concentrations, exposure to these concentrations also varies demographically. Figure \@ref(fig:barplotDPMPopAvgMA) below shows population-weighted exposures for priority populations relative to average DPM concentrations for the state. For example, limited English speaking households in Massachusetts, as defined by state environmental justice policy, are exposed to DPM concentrations that are more than 54% above concentrations for the region as a whole. Similarly, People of Color, as identified by Massachusetts Environmental Justice policy, are exposed to concentrations more than 24% above the state average. By contrast, persons over age 64 are, on average, exposed to concentrations of DPM 10% below the state average. 
 
 ```{r barplotDPMPopAvgMA, fig.align = "center", fig.cap="Population-weighted average exposures to annual average ambient concentrations of Diesel Particulate Matter across Massachusetts relative to the state average."}
 # Pop Weighted avg of DPM for all Groups in Massachusetts relative to NE average
@@ -2027,9 +2027,9 @@ ma_blkgrp_sf %>%
 ```
 
 
-### Lifetime Cancer Risk from Inhalation of Air Toxics in Massachusetts and Populations of Concern
+### Lifetime Cancer Risk from Inhalation of Air Toxics in Massachusetts and Priority Populations
 
-In addition to variations in the general geography of cancer risk, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvgMA) below shows population-weighted exposures for populations of concern relative to the average cancer risk for the state. For example, limited English speaking households in Massachusetts, as defined by state environmental justice policy, experience lifetime cancer risks from inhalation of air toxics that are 12.5% above the state as a whole. Similarly, People of Color, as identified by Massachusetts Environmental Justice policy, experience lifetime cancer risks of 8.3% above the state average. By contrast, persons over age 64 are, on average, exposed to cancer risk 2.7% below the state average. 
+In addition to variations in the general geography of cancer risk, exposure to these risks also varies demographically. Figure \@ref(fig:barplotATCPopAvgMA) below shows population-weighted exposures for priority populations relative to the average cancer risk for the state. For example, limited English speaking households in Massachusetts, as defined by state environmental justice policy, experience lifetime cancer risks from inhalation of air toxics that are 12.5% above the state as a whole. Similarly, People of Color, as identified by Massachusetts Environmental Justice policy, experience lifetime cancer risks of 8.3% above the state average. By contrast, persons over age 64 are, on average, exposed to cancer risk 2.7% below the state average. 
 
 ```{r barplotATCPopAvgMA, fig.align = "center", fig.cap="Population-weighted average lifetime cancer risk from inhalation of air toxics (expressed as risk in-1 million) across Massachusetts at Census Block Group level relative to the state average."}
 # Pop Weighted avg of DPM for all Groups in Massachusetts relative to NE average
@@ -2319,9 +2319,9 @@ ma_blkgrp_sf %>%
 ```
 
 
-### Respiratory Hazard Index from Inhalation of Air Toxics in Massachusetts and Populations of Concern
+### Respiratory Hazard Index from Inhalation of Air Toxics in Massachusetts and Priority Populations
 
-In addition to variations in the general geography of the respiratory hazard index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvgMA) below shows population-weighted exposures for populations of concern relative to the average hazard index for the state. For example, limited English speaking households in Massachusetts, as identified by Massachusetts Environmental Justice policy, experience respiratory hazard indices from inhalation of air toxics that are 19% above the state as a whole. Similarly, People of Color, as identified by Massachusetts Environmental Justice policy, experience lifetime hazard index values more than 11.8% above the state average. By contrast, persons over age 64 are, on average, exposed to respiratory hazard indices over 3.9% below the state average. 
+In addition to variations in the general geography of the respiratory hazard index, exposure to these risks also varies demographically. Figure \@ref(fig:barplotRHIPopAvgMA) below shows population-weighted exposures for priority populations relative to the average hazard index for the state. For example, limited English speaking households in Massachusetts, as identified by Massachusetts Environmental Justice policy, experience respiratory hazard indices from inhalation of air toxics that are 19% above the state as a whole. Similarly, People of Color, as identified by Massachusetts Environmental Justice policy, experience lifetime hazard index values more than 11.8% above the state average. By contrast, persons over age 64 are, on average, exposed to respiratory hazard indices over 3.9% below the state average. 
 
 ```{r barplotRHIPopAvgMA, fig.align = "center", fig.cap="Population-weighted average respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Massachusetts at Census Block Group level relative to the state average."}
 # Pop Weighted avg of RHI for all Groups in Massachusetts relative to NE average
@@ -2597,9 +2597,9 @@ ma_blkgrp_sf %>%
 ```
 
 
-### Traffic Proximity and Volume Exposure in Massachusetts and Populations of Concern
+### Traffic Proximity and Volume Exposure in Massachusetts and Priority Populations
 
-In addition to variations in the general geography of the traffic proximity and volume exposure, this exposure also varies demographically. Figure \@ref(fig:barplotTPVPopAvgNE) below shows population-weighted exposures for populations of concern relative to average traffic proximity and volume for the state. For example, limited English speaking households, as identified by Massachusetts Environmental Justice policy, are exposed to traffic proximity and volume more than 118% above the state as a whole. Similarly, People of Color, as identified by Massachusetts Environmental Justice policy, are exposed to traffic proximity and volume approximately 55% above the state average. By contrast, persons over age 64 are, on average, are exposed to Traffic Proximity and Volume of more than 20% below the state average. 
+In addition to variations in the general geography of the traffic proximity and volume exposure, this exposure also varies demographically. Figure \@ref(fig:barplotTPVPopAvgNE) below shows population-weighted exposures for priority populations relative to average traffic proximity and volume for the state. For example, limited English speaking households, as identified by Massachusetts Environmental Justice policy, are exposed to traffic proximity and volume more than 118% above the state as a whole. Similarly, People of Color, as identified by Massachusetts Environmental Justice policy, are exposed to traffic proximity and volume approximately 55% above the state average. By contrast, persons over age 64 are, on average, are exposed to Traffic Proximity and Volume of more than 20% below the state average. 
 
 ```{r barplotTPVPopAvgNE, fig.align = "center", fig.cap="Population-weighted average Traffic Proximity and Volume (calculated as a count of vehicles (average annual daily traffic) at major roads within 500 meters, divided by distance in kilometers (km)) across Massachusetts at Census Block Group level relative to the state average."}
 # Pop Weighted avg of TPV for all Groups in Massachusetts relative to NE average
@@ -2943,7 +2943,7 @@ For the TotalPop, the population-weighted average of PM~2.5~ is 548.9/92 = `r ro
 # Appendix B: Supplementary Figures {-}
 
 ```{r cormatrixPollutants, fig.align = "center", fig.cap="Spearman's correlation matrix of pollutants by Census Block Group."}
-# Create a correlation matrix of PM25 and populations of concern
+# Create a correlation matrix of PM25 and priority populations
 corrPollutants <- ma_blkgrp_sf %>% 
   as.data.frame() %>% 
   dplyr::transmute(PM2.5 = PM25_19, 
@@ -2961,8 +2961,8 @@ ggcorrplot(corrPollutants, hc.order = TRUE, type = "lower", lab = TRUE,
            legend.title = "Spearman's \nCorrelation\nCoefficient")
 ```
 
-```{r cormatrixPM25PopAvg, fig.align = "center", fig.cap="Spearman's correlation matrix of annual PM2.5 concentrations and the proportions of populations of concern by Census Block Group."}
-# Create a correlation matrix of PM25 and populations of concern
+```{r cormatrixPM25PopAvg, fig.align = "center", fig.cap="Spearman's correlation matrix of annual PM2.5 concentrations and the proportions of priority populations by Census Block Group."}
+# Create a correlation matrix of PM25 and priority populations
 corrPM25 <- ma_blkgrp_sf %>% 
   as.data.frame() %>% 
   mutate(MA_LOWINC = if_else(MA_INCOME == "I", totalpopE, 0)) %>% 
@@ -2990,8 +2990,8 @@ ggcorrplot(corrPM25, hc.order = TRUE, type = "lower", lab = TRUE,
            lab_size = 2)
 ```
 
-```{r cormatrixO3PopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of summer Ozone concentrations and the proportions of populations of concern by Census Block Group."}
-# Create a correlation matrix of PM25 and populations of concern
+```{r cormatrixO3PopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of summer Ozone concentrations and the proportions of priority populations by Census Block Group."}
+# Create a correlation matrix of PM25 and priority populations
 corrO3 <- ma_blkgrp_sf %>% 
   as.data.frame() %>% 
   mutate(MA_LOWINC = if_else(MA_INCOME == "I", totalpopE, 0)) %>% 
@@ -3035,8 +3035,8 @@ ma_blkgrp_sf %>%
   coord_flip()
 ```
 
-```{r cormatrixDPMPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of annual average Diesel Particulate Matter concentrations and the proportions of populations of concern by Census Block Group."}
-# Create a correlation matrix of PM25 and populations of concern
+```{r cormatrixDPMPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of annual average Diesel Particulate Matter concentrations and the proportions of priority populations by Census Block Group."}
+# Create a correlation matrix of PM25 and priority populations
 corrDPM <- ma_blkgrp_sf %>% 
   as.data.frame() %>% 
   mutate(MA_LOWINC = if_else(MA_INCOME == "I", totalpopE, 0)) %>% 
@@ -3064,8 +3064,8 @@ ggcorrplot(corrDPM, hc.order = TRUE, type = "lower", lab = TRUE,
            ggtheme = ggplot2::theme_minimal(), lab_size = 2)
 ```
 
-```{r cormatrixATCPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of populations of concern by Census Block Group."}
-# Create a correlation matrix of cancer risk and populations of concern
+```{r cormatrixATCPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of lifetime cancer risk and the proportions of priority populations by Census Block Group."}
+# Create a correlation matrix of cancer risk and priority populations
 corrAMA <- ma_blkgrp_sf %>% 
   as.data.frame() %>% 
   mutate(MA_LOWINC = if_else(MA_INCOME == "I", totalpopE, 0)) %>% 
@@ -3093,8 +3093,8 @@ ggcorrplot(corrAMA, hc.order = TRUE, type = "lower", lab = TRUE,
            ggtheme = ggplot2::theme_minimal(), lab_size = 2)
 ```
 
-```{r cormatrixRHIPopAvg, fig.align = "center", fig.cap="Spearman's correlation matrix of respiratory hazard risk and the proportions of populations of concern by Census Block Group."}
-# Create a correlation matrix of cancer risk and populations of concern
+```{r cormatrixRHIPopAvg, fig.align = "center", fig.cap="Spearman's correlation matrix of respiratory hazard risk and the proportions of priority populations by Census Block Group."}
+# Create a correlation matrix of cancer risk and priority populations
 corrAMA <- ma_blkgrp_sf %>% 
   as.data.frame() %>% 
   mutate(MA_LOWINC = if_else(MA_INCOME == "I", totalpopE, 0)) %>% 
@@ -3122,8 +3122,8 @@ ggcorrplot(corrAMA, hc.order = TRUE, type = "lower", lab = TRUE,
            ggtheme = ggplot2::theme_minimal(), lab_size = 2)
 ```
 
-```{r cormatrixTPVPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of traffic proximity and volume and the proportions of populations of concern by Census Block Group."}
-# Create a correlation matrix of cancer risk and populations of concern
+```{r cormatrixTPVPopAvg, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of traffic proximity and volume and the proportions of priority populations by Census Block Group."}
+# Create a correlation matrix of cancer risk and priority populations
 corrTPV <- ma_blkgrp_sf %>% 
   as.data.frame() %>% 
   mutate(MA_LOWINC = if_else(MA_INCOME == "I", totalpopE, 0)) %>% 
