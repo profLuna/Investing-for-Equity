@@ -1317,9 +1317,9 @@ ACSvDF <- data.frame(Variable = c("Total Population",
                                      "Connecticut Low Income threshold: 30% or more people in households where the household income is less than or equal to twice the federal poverty level",
                                      "Massachusetts Low Income threshold: 25% or more of households with median household incomes below 65% statewide median",
                                      "Massachusetts Language Isolation threshold: 25% or more people in households where all adults speak English less than \"very well\"",
-                                     "Massachusetts Minority threshold: 25% or more are persons of Hispanic or Latino origin or persons who are not White",
+                                     "Massachusetts POC threshold: 40% or more are persons of Hispanic or Latino origin or persons who are not White OR 25% or more are persons of Hispanic or Latino origin or persons who are not White AND the median household income of the municipality is less than 150% of the statewide median household income",
                                      "Rhode Island Low Income threshold: highest 15% of block groups with people in households where the household income is less than or equal to twice the federal poverty level",
-                                     "Rhode Island Minority threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
+                                     "Rhode Island POC threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
                      'ACS Table ID' = c("B03002: Hispanic or Latino Origin by Race",
                                 "B03002: Hispanic or Latino Origin by Race",
                                 "C17002: Ratio of Income to Poverty Level",
@@ -2027,7 +2027,7 @@ tmap_save(m2, "DATA/FEMA/ME/ME_hevac_vulnerable3.png",
 knitr::include_graphics("DATA/FEMA/ME/ME_hevac_vulnerable3.png")
 ```
 
-```{r tabHEVACMIN, fig.align = "center", fig.cap="Minority persons living within Hurricane Inundation Zones."}
+```{r tabHEVACMIN, fig.align = "center", fig.cap="People of Color living within Hurricane Inundation Zones."}
 me_blkgrps_hevac %>% 
   st_centroid(.) %>% 
   st_intersection(me_towns_sf,.) %>% 
@@ -2045,7 +2045,7 @@ me_blkgrps_hevac %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Minority Persons Living in Hurricane Inundation Zones", align = "r", col.names = c("City/Town", "People of Color", "Pct of POC")) %>% 
+                    caption = "People of Color Living in Hurricane Inundation Zones", align = "r", col.names = c("City/Town", "People of Color", "Pct of POC")) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
 
