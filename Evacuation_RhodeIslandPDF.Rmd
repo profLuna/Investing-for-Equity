@@ -407,7 +407,8 @@ These percentages closely approximate the proportion of the total population in 
 ri_FloodPops_df %>% 
   mutate(PctFlood = paste0(as.character(round(PctFlood,1)),"%")) %>% 
   arrange(-FloodPop) %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color", 
+                        "RI Minority" = "RI POC")) %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
                     caption = "Rhode Island Populations Living within Flood Zones",
@@ -420,7 +421,8 @@ Some groups are disproportionately exposed to these flood hazards. While approxi
 ```{r chartNFHZApop, fig.align = "center", fig.cap="Rhode Island Populations Living within Flood Zones."}
 # Create lollipop plot of pops within flood zones
 ri_FloodPops_df %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color", 
+                        "RI Minority" = "RI POC")) %>%
   ggplot(aes(x = reorder(Group,PctFlood), 
              y = PctFlood)) +
   geom_segment(aes(x = reorder(Group,PctFlood), 
@@ -835,7 +837,8 @@ These percentages closely approximate the proportion of the total population in 
 ri_HevacPops_df %>% 
   mutate(PctHevac = paste0(as.character(round(PctHevac,1)),"%")) %>% 
   arrange(-HevacPop) %>%  
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color", 
+                        "RI Minority" = "RI POC")) %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
                     caption = "Rhode Island Populations Living within Hurricane Evacuation Zones", digits = 0, align = "r") %>% 
@@ -848,8 +851,8 @@ Some groups are disproportionately exposed to these flood hazards. While approxi
 # Create lollipop plot of pops within flood zones
 # Create lollipop plot of pops within hurricane evac zones
 ri_HevacPops_df %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "No HS Dip" = "No HS Diploma")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color", 
+                        "RI Minority" = "RI POC")) %>%
   ggplot(aes(x = reorder(Group,PctHevac), 
              y = PctHevac)) +
   geom_segment(aes(x = reorder(Group,PctHevac), 
