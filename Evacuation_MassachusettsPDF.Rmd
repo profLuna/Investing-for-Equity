@@ -18,12 +18,12 @@ knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE)
 \pagebreak
 # Analysis of evacuation-related risks in Massachusetts
 
-This is an analysis of flood or storm surge-related evacuation risks for populations of concern in Massachusetts In the event of significant inland or coastal flooding, evacuation may be required. For individuals and households with limited mobility, either due to inadequate access to transportation options or because of physical limitations, evacuation presents heightened risk. Evacuation may also prove especially difficult for individuals and households due to limited economic resources, difficulty understanding or accessing information, or low trust in official sources of information. 
+This is an analysis of flood or storm surge-related evacuation risks for priority populations in Massachusetts. In the event of significant inland or coastal flooding, evacuation may be required. For individuals and households with limited mobility, either due to inadequate access to transportation options or because of physical limitations, evacuation presents heightened risk. Evacuation may also prove especially difficult for individuals and households due to limited economic resources, difficulty understanding or accessing information, or low trust in official sources of information. 
 
 ## Analysis of Flood Hazard Exposure in Massachusetts
 
 ```{r NFHZAdata, include=FALSE}
-# Analysis of flooding and hurricane evacuation risks for populations of concern in Massachusetts
+# Analysis of flooding and hurricane evacuation risks for priority populations in Massachusetts
 library(tidyverse)
 library(sf)
 library(tmap)
@@ -418,14 +418,14 @@ ny_state_sf <- tigris::states(cb = TRUE) %>%
 # load data
 nofemapolys <- readRDS("DATA/FEMA/MA/nofemapolys.Rds")
 
-# Create random points, with 1 point for every 1,000 people
-ma_totalpop_pts <- ma_blkgrps_developed %>% 
-  select(NewPop) %>% 
-  filter(NewPop >= 1000) %>% 
-  st_sample(., size = round(.$NewPop/1000)) %>% # create 1 random point for every 1000 people
-  st_sf(.) %>% 
-  group_by() %>% 
-  summarize() # reduce to one multipoint object
+# # Create random points, with 1 point for every 1,000 people
+# ma_totalpop_pts <- ma_blkgrps_developed %>% 
+#   select(NewPop) %>% 
+#   filter(NewPop >= 1000) %>% 
+#   st_sample(., size = round(.$NewPop/1000)) %>% # create 1 random point for every 1000 people
+#   st_sf(.) %>% 
+#   group_by() %>% 
+#   summarize() # reduce to one multipoint object
 
 # Create a simplified version of NFHZA polygons to speed up mapping
 # start_time <- Sys.time()
@@ -451,72 +451,72 @@ ma_awater_sf_simple <- ma_awater_sf %>%
   summarize()
 ```
 
-```{r mapNFHZAPop, fig.align = "center", fig.cap="FEMA flood zones and population distribution across Massachusetts at Census Block Group level."}
+```{r mapNFHZAPop, fig.align = "center", fig.cap="FEMA flood zones across Massachusetts."}
 # Create a dot density map of total populations and overlay on flood zones
 # Map totalpop and flood zones
-# m1 <- tm_layout(bg.color = "#e6f3f7") +
-#   tm_shape(ma_blkgrp_2805, unit = "mi") + tm_fill(col = "white") +
-#   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
-#   tm_shape(ny_state_sf) + tm_fill(col="white") +
-#   tm_shape(ma_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
-#   # tm_shape(ne_states_sf_cb) + tm_borders() +
-#   # tm_shape(ny_state_sf) + tm_borders() +
-#   tm_shape(ma_totalpop_pts) + tm_dots(col = "darkgoldenrod3",
-#                                       labels = "1 dot = 1,000 people",
-#                                       alpha = 0.6) +
-#   tm_shape(ma_nfhza_2805_land_simple) +
-#   tm_fill(col = "Interval",
-#           palette = c("dodgerblue", "blueviolet"),
-#           labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
-#           title = "FEMA Flood Zones",
-#           alpha = 0.6,
-#           border.alpha = 0) +
-#   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
-#   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
-#   tm_shape(ma_highways) + tm_lines(col = "seashell4", lwd = 1) +
-#   tm_shape(ma_highways2nd) + tm_lines(col = "seashell4", lwd = 1) +
-#   tm_shape(I95roadSegment) +
-#   tm_symbols(shape = I95, border.lwd = NA, size = .1) +
-#   tm_shape(I95roadSegment2) +
-#   tm_symbols(shape = I95, border.lwd = NA, size = .1) +
-#   tm_shape(I395roadSegment) +
-#   tm_symbols(shape = I395, border.lwd = NA, size = .1) +
-#   tm_shape(I91roadSegment) +
-#   tm_symbols(shape = I91, border.lwd = NA, size = .1) +
-#   tm_shape(I495roadSegment) +
-#   tm_symbols(shape = I495, border.lwd = NA, size = .1) +
-#   tm_shape(I495roadSegment2) +
-#   tm_symbols(shape = I495, border.lwd = NA, size = .1) +
-#   tm_shape(I495roadSegment3) +
-#   tm_symbols(shape = I495, border.lwd = NA, size = .1) +
-#   tm_shape(I90roadSegment) +
-#   tm_symbols(shape = I90, border.lwd = NA, size = .1) +
-#   tm_shape(I90roadSegment2) +
-#   tm_symbols(shape = I90, border.lwd = NA, size = .1) +
-#   # tm_shape(StRt2Segment) +
-#   # tm_symbols(shape = Hwy2, border.lwd = NA, size = 0.2) +
-#   # tm_shape(USHwy6Segment) +
-#   # tm_symbols(shape = Hwy6, border.lwd = NA, size = 0.2) +
-#   tm_shape(ma_towns_sf_pts) + tm_dots() +
-#   tm_text("NAME", size = 0.5, col = "black",
-#           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
-#   tm_shape(nofemapolys) + tm_fill(col = "gray", alpha = 0.4) +
-#   tm_text("LABEL", alpha = 0.5) +
-#   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
-#                position = c(0.6,0.005)) +
-#   tm_add_legend(type = "fill", col = "darkgoldenrod3",
-#                 alpha = 0.6,
-#                 border.col = "white", border.alpha = 0,
-#                 labels = "1 dot = 1,000 people",
-#                 title = "Total Population") +
-#   tm_layout(title = "Total\nPopulation\nDistribution \nand Flood Zones",
-#             frame = TRUE, main.title.size = 0.8,
-#             legend.outside = TRUE,
-#             legend.title.size = 0.8,
-#             legend.outside.position = c("right", "top"))
-# 
-# tmap_save(m1, "DATA/FEMA/MA/ma_flood.png",
-#           height = 4, width = 8, units = "in", dpi = 600)
+m1 <- tm_layout(bg.color = "#e6f3f7") +
+  tm_shape(ma_blkgrp_2805, unit = "mi") + tm_fill(col = "white") +
+  tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
+  tm_shape(ny_state_sf) + tm_fill(col="white") +
+  tm_shape(ma_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
+  # tm_shape(ne_states_sf_cb) + tm_borders() +
+  # tm_shape(ny_state_sf) + tm_borders() +
+  # tm_shape(ma_totalpop_pts) + tm_dots(col = "darkgoldenrod3",
+  #                                     labels = "1 dot = 1,000 people",
+  #                                     alpha = 0.6) +
+  tm_shape(ma_nfhza_2805_land_simple) +
+  tm_fill(col = "Interval",
+          palette = c("dodgerblue", "blueviolet"),
+          labels = c("1% AEP (100-year)", "0.2% AEP (500-year)"),
+          title = "FEMA Flood Zones",
+          alpha = 0.6,
+          border.alpha = 0) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+  tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
+  tm_shape(ma_highways) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(ma_highways2nd) + tm_lines(col = "seashell4", lwd = 1) +
+  tm_shape(I95roadSegment) +
+  tm_symbols(shape = I95, border.lwd = NA, size = .1) +
+  tm_shape(I95roadSegment2) +
+  tm_symbols(shape = I95, border.lwd = NA, size = .1) +
+  tm_shape(I395roadSegment) +
+  tm_symbols(shape = I395, border.lwd = NA, size = .1) +
+  tm_shape(I91roadSegment) +
+  tm_symbols(shape = I91, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment2) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I495roadSegment3) +
+  tm_symbols(shape = I495, border.lwd = NA, size = .1) +
+  tm_shape(I90roadSegment) +
+  tm_symbols(shape = I90, border.lwd = NA, size = .1) +
+  tm_shape(I90roadSegment2) +
+  tm_symbols(shape = I90, border.lwd = NA, size = .1) +
+  # tm_shape(StRt2Segment) +
+  # tm_symbols(shape = Hwy2, border.lwd = NA, size = 0.2) +
+  # tm_shape(USHwy6Segment) +
+  # tm_symbols(shape = Hwy6, border.lwd = NA, size = 0.2) +
+  tm_shape(ma_towns_sf_pts) + tm_dots() +
+  tm_text("NAME", size = 0.5, col = "black",
+          xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_shape(nofemapolys) + tm_fill(col = "gray", alpha = 0.4) +
+  tm_text("LABEL", alpha = 0.5) +
+  tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
+               position = c(0.6,0.005)) +
+  # tm_add_legend(type = "fill", col = "darkgoldenrod3",
+  #               alpha = 0.6,
+  #               border.col = "white", border.alpha = 0,
+  #               labels = "1 dot = 1,000 people",
+  #               title = "Total Population") +
+  tm_layout(title = "FEMA\nFlood Zones",
+            frame = TRUE, main.title.size = 0.8,
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.outside.position = c("right", "top"))
+
+tmap_save(m1, "DATA/FEMA/MA/ma_flood.png",
+          height = 4, width = 8, units = "in", dpi = 600)
 
 knitr::include_graphics("DATA/FEMA/MA/ma_flood.png")
 ```
@@ -541,13 +541,14 @@ ma_nfhza_2805_land %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-These percentages approximate the proportion of the total population in the state that are living within these flood zones. However, exposure varies significantly by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups living within flood zones. Aside from the total population, the largest absolute numbers of subpopulations living within a flood zone are low income persons followed by minorities. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
+These percentages approximate the proportion of the total population in the state that are living within these flood zones. However, exposure varies significantly by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups living within flood zones. Aside from the total population, the largest absolute numbers of subpopulations living within a flood zone are low income persons followed by People of Color The latter groups are priority populations who may have limited mobility in the event of an evacuation. 
 
 ```{r tabNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Massachusetts Populations Living within Flood Zones."}
 # Show table of pops within flood zones
 ma_FloodPops_df %>% 
   mutate(PctFlood = paste0(as.character(round(PctFlood,1)),"%")) %>% 
   arrange(-FloodPop) %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
                     caption = "Massachusetts Populations Living within Flood Zones",
@@ -555,11 +556,12 @@ ma_FloodPops_df %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Some groups are disproportionately exposed to these flood hazards. While approximately 5.4% of the general population are living within flood zones, limited English speaking households, households without access to a car, people in low income households, and other populations of concern, exceed the population average living within flood zones. These populations of concern are disproportionately exposed to flood risk (see Figure \@ref(fig:chartNFHZApop) below).
+Some groups are disproportionately exposed to these flood hazards. While approximately 5.4% of the general population are living within flood zones, limited English speaking households, households without access to a car, people in low income households, and other priority populations, exceed the population average living within flood zones. These priority populations are disproportionately exposed to flood risk (see Figure \@ref(fig:chartNFHZApop) below).
 
 ```{r chartNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Massachusetts Populations Living within Flood Zones."}
 # Create lollipop plot of pops within flood zones
 ma_FloodPops_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
   ggplot(aes(x = reorder(Group,PctFlood), 
              y = PctFlood)) +
   geom_segment(aes(x = reorder(Group,PctFlood), 
@@ -583,11 +585,13 @@ ma_FloodPops_df %>%
   geom_text(aes(x = "Over 64", y = 4, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(3.5,10.5))
+
+ggsave("images/MA_FEMA_graph.png")
   # geom_segment(aes(x = "Total Pop", xend = "Total Pop", y = 5.6, yend = 6.6), 
   #              arrow = arrow(length = unit(0.3,"cm")))
 ```
 
-The maps below (Figures \@ref(fig:mapNFHZAPopConcern1) and \@ref(fig:mapNFHZAPopConcern2)) show those populations disproportionately exposed to flood risk. Maps for other populations of concern can be found in Figures \@ref(fig:mapNFHZAPopConcern3) to \@ref(fig:mapNFHZAPopConcern12) and breakdowns by municipality in Tables \@ref(tab:tabNFHZAMALEH) to \@ref(tab:tabNFHZAU18) in Appendix B.
+The maps below (Figures \@ref(fig:mapNFHZAPopConcern1) and \@ref(fig:mapNFHZAPopConcern2)) show those populations disproportionately exposed to flood risk. Maps for other priority populations can be found in Figures \@ref(fig:mapNFHZAPopConcern3) to \@ref(fig:mapNFHZAPopConcern12) and breakdowns by municipality in Tables \@ref(tab:tabNFHZAMALEH) to \@ref(tab:tabNFHZAU18) in Appendix B.
 
 ```{r mapNFHZAPopConcern, include=FALSE}
 # Create a dot density map of transit-dependent populations in flood zone
@@ -926,7 +930,7 @@ The analysis of hurricane evacuation risk presented here is based on Hurricane E
 
 A significant proportion of Massachusetts's population lives near the coast and is therefore within these hurricane evacuation zones. Figure \@ref(fig:mapHEVACPop) below shows the population distribution and areas within Hurricane Evacuation Zones. Evacuation Zone “A” is recommended to be evacuated prior to an expected category 1 or 2 hurricane.  Evacuation Zone “B” is recommended to be evacuated prior to an expected category 3 or 4 hurricane.
 
-```{r mapHEVACPop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="FEMA flood zones and population distribution across Massachusetts at Census Block Group level."}
+```{r mapHEVACPop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Hurricane evacuation zones across Massachusetts."}
 # Create a simplified version of hea polygons to speed up mapping
 empty_geo <- st_is_empty(ma_hea_sf)
 ma_hea_sf <- ma_hea_sf[!empty_geo,]
@@ -952,10 +956,10 @@ m2 <- tm_layout(bg.color = "#e6f3f7") +
   tm_shape(ma_awater_sf_simple) + tm_fill(col = "#e6f3f7") + 
   # tm_shape(ne_states_sf_cb) + tm_borders() +
   # tm_shape(ny_state_sf) + tm_borders() +
-  tm_shape(ma_totalpop_pts) + 
-  tm_dots(col = "springgreen3",
-          labels = "1 dot = 500 people",
-          alpha = 0.6) +
+  # tm_shape(ma_totalpop_pts) + 
+  # tm_dots(col = "springgreen3",
+  #         labels = "1 dot = 500 people",
+  #         alpha = 0.6) +
   tm_shape(ma_hea_sf_simple) + 
   tm_fill(col = "EVACZONE", 
           palette = c("deeppink", "purple3"), 
@@ -991,12 +995,12 @@ m2 <- tm_layout(bg.color = "#e6f3f7") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.05,0.005)) +
-  tm_add_legend(type = "fill", col = "springgreen3",
-                alpha = 0.6,
-                border.col = "white", border.alpha = 0,
-                labels = "1 dot = 500 people",
-                title = "Total Population") +
-  tm_layout(title = "Total Population\nDistribution \nand Hurricane\nEvacuation Zones", 
+  # tm_add_legend(type = "fill", col = "springgreen3",
+  #               alpha = 0.6,
+  #               border.col = "white", border.alpha = 0,
+  #               labels = "1 dot = 500 people",
+  #               title = "Total Population") +
+  tm_layout(title = "Hurricane\nEvacuation Zones", 
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1025,13 +1029,14 @@ ma_hea_sf %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-These percentages belie the proportion of the population in the state that are living within these evacuation zones. Moreover, exposure varies significantly by population subgroup. Table \@ref(tab:tabHEVACpop) below shows the total and percentages of the general population and various subgroups living within hurricane evacuation zones. Aside from the total population, the largest subpopulation living within an evacuation zone are minorities and low income persons. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
+These percentages belie the proportion of the population in the state that are living within these evacuation zones. Moreover, exposure varies significantly by population subgroup. Table \@ref(tab:tabHEVACpop) below shows the total and percentages of the general population and various subgroups living within hurricane evacuation zones. Aside from the total population, the largest subpopulation living within an evacuation zone are People of Color and low income persons. The latter groups are priority populations who may have limited mobility in the event of an evacuation. 
 
 ```{r tabHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Massachusetts Populations Living within Hurricane Evacuation Zones."}
 # Show table of pops within hurricane evacuation zones
 ma_HevacPops_df %>% 
   mutate(PctHevac = paste0(as.character(round(PctHevac,1)),"%")) %>% 
   arrange(-HevacPop) %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
                     caption = "Massachusetts Populations Living within Hurricane Evacuation Zones",
@@ -1039,7 +1044,7 @@ ma_HevacPops_df %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Some groups are disproportionately exposed to these hurricane evacuation hazards. While approximately 14.1% of the general population are living within hurricane evacuation zones, people in limited English speaking households, households without access to a car, minorities, people in low income households, adults with less than a high school education, and other populations of concern exceed the population average living within hurricane evacuation zones. These populations of concern are disproportionately exposed to hurricane evacuation risk (see Figure \@ref(fig:chartHEVACpop)).
+Some groups are disproportionately exposed to these hurricane evacuation hazards. While approximately 14.1% of the general population are living within hurricane evacuation zones, people in limited English speaking households, households without access to a car, People of Color, people in low income households, adults with less than a high school education, and other priority populations exceed the population average living within hurricane evacuation zones. These priority populations are disproportionately exposed to hurricane evacuation risk (see Figure \@ref(fig:chartHEVACpop)).
 
 ```{r chartHEVACpop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Massachusetts Populations Living within Hurricane Evacuation Zones."}
 # Create lollipop plot of pops within flood zones
@@ -1072,10 +1077,10 @@ ma_HevacPops_df %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(6,40))
 
-ggsave("DATA/FEMA/MA/ma_hevac_lolli.png")
+ggsave("images/MA_HEVAC_graph.png")
 ```
 
-The maps below (Figures \@ref(fig:mapHEVACPopConcern1) and \@ref(fig:mapHEVACPopConcern2)) show limited English speaking households and households without a car which are disproportionately exposed to hurricane evacuation risk. Maps for other populations of concern can be found in Figures \@ref(fig:mapHEVACPopConcern3) to \@ref(fig:mapHEVACPopConcern12) as well as breakdowns by municipality in Tables \@ref(tab:tabHEVACMALEH) to \@ref(tab:tabHEVACU18) in Appendix B.
+The maps below (Figures \@ref(fig:mapHEVACPopConcern1) and \@ref(fig:mapHEVACPopConcern2)) show limited English speaking households and households without a car which are disproportionately exposed to hurricane evacuation risk. Maps for other priority populations can be found in Figures \@ref(fig:mapHEVACPopConcern3) to \@ref(fig:mapHEVACPopConcern12) as well as breakdowns by municipality in Tables \@ref(tab:tabHEVACMALEH) to \@ref(tab:tabHEVACU18) in Appendix B.
 
 ```{r mapHEVACPopConcern, include=FALSE}
 # # Create a dot density map of over-represented populations in hurricane evacuation zones
@@ -1399,7 +1404,7 @@ For the purposes of this analysis ACS 5-year estimates for the period 2014 - 201
 
 ```{r ACSvariables}
 ACSvDF <- data.frame(Variable = c("Total Population",
-                                  "Minority",
+                                  "People of Color",
                                   "Low Income",
                                   "Limited English Household",
                                   "Less than High School Education",
@@ -1411,9 +1416,9 @@ ACSvDF <- data.frame(Variable = c("Total Population",
                                   "CT Income",
                                   "MA Income",
                                   "MA Limited English Household",
-                                  "MA Minority",
+                                  "MA POC",
                                   "RI Income",
-                                  "RI Minority"),
+                                  "RI POC"),
                      Description = c("Total population",
                                      "Persons of Hispanic or Latino origin or persons who are not White",
                                      "People in households where the household income is less than or equal to twice the federal poverty level",
@@ -1427,9 +1432,9 @@ ACSvDF <- data.frame(Variable = c("Total Population",
                                      "Connecticut Low Income threshold: 30% or more people in households where the household income is less than or equal to twice the federal poverty level",
                                      "Massachusetts Low Income threshold: 25% or more of households with median household incomes below 65% statewide median",
                                      "Massachusetts Language Isolation threshold: 25% or more people in households where all adults speak English less than \"very well\"",
-                                     "Massachusetts Minority threshold: 25% or more are persons of Hispanic or Latino origin or persons who are not White",
+                                     "Massachusetts POC threshold: 40% or more are persons of Hispanic or Latino origin or persons who are not White OR 25% or more are persons of Hispanic or Latino origin or persons who are not White AND the median household income of the municipality is less than 150% of the statewide median household income",
                                      "Rhode Island Low Income threshold: highest 15% of block groups with people in households where the household income is less than or equal to twice the federal poverty level",
-                                     "Rhode Island Minority threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
+                                     "Rhode Island POC threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
                      'ACS Table ID' = c("B03002: Hispanic or Latino Origin by Race",
                                 "B03002: Hispanic or Latino Origin by Race",
                                 "C17002: Ratio of Income to Poverty Level",
@@ -1476,7 +1481,7 @@ ACSvDF %>%
 \pagebreak
 # Appendix B: Supplementary Figures {-}
 
-## Populations of Concern in FEMA Flood Zones {-}
+## Priority Populations in FEMA Flood Zones {-}
 ```{r tabNFHZAMALEH, fig.align = "center", fig.cap="Limited English Speaking Housheolds, as Defined by the Massachusetts Environmental Justice Policy, living within FEMA Flood Zones."}
 ma_blkgrps_nfhza %>% 
   st_centroid(.) %>% 
@@ -1887,7 +1892,7 @@ ma_tracts_nfhza %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapNFHZAPopConcern7, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Minority Persons, as Defined by the Massachusetts Environmental Justice Policy, Living within Flood Zones."}
+```{r mapNFHZAPopConcern7, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="People of Color, as Defined by the Massachusetts Environmental Justice Policy, Living within Flood Zones."}
 # Create data subset
 nfhza_sub <- ma_nfhza_vulnerable %>% 
   filter(Group == "MA Minority")
@@ -1946,7 +1951,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
                 alpha = 0.6,
                 border.col = "white", border.alpha = 0,
                 labels = "1 dot = 10 people") +
-  tm_layout(title = "MA Minority\nPersons\nLiving within\nFlood Zones",
+  tm_layout(title = "MA People\nof Color\nLiving within\nFlood Zones",
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1958,7 +1963,7 @@ tmap_save(m, "DATA/FEMA/MA/MA_nhfza_vulnerable7.png",
 knitr::include_graphics("DATA/FEMA/MA/MA_nhfza_vulnerable7.png")
 ```
 
-```{r tabNFHZAMAMIN, fig.align = "center", fig.cap="Minority Persons, as Defined by the Massachusetts Environmental Justice Policy, living within FEMA Flood Zones."}
+```{r tabNFHZAMAMIN, fig.align = "center", fig.cap="People of Color, as Defined by the Massachusetts Environmental Justice Policy, living within FEMA Flood Zones."}
 ma_blkgrps_nfhza %>% 
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -1975,7 +1980,7 @@ ma_blkgrps_nfhza %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "MA Minority Persons Living in FEMA Flood Zones", align = "r") %>% 
+                    caption = "MA People of Color Living in FEMA Flood Zones", align = "r", col.names = c("City/Town", "MA POC", "Pct of MA POC")) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
@@ -2071,7 +2076,7 @@ ma_blkgrps_nfhza %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapNFHZAPopConcern9, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Minority Persons Living within Flood Zones."}
+```{r mapNFHZAPopConcern9, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="People of Color Living within Flood Zones."}
 # Create data subset
 nfhza_sub <- ma_nfhza_vulnerable %>% 
   filter(Group == "Minority")
@@ -2130,7 +2135,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
                 alpha = 0.6,
                 border.col = "white", border.alpha = 0,
                 labels = "1 dot = 10 people") +
-  tm_layout(title = "Minority\nPersons\nLiving within\nFlood Zones",
+  tm_layout(title = "People\nof Color\nLiving within\nFlood Zones",
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2142,7 +2147,7 @@ tmap_save(m, "DATA/FEMA/MA/MA_nhfza_vulnerable9.png",
 knitr::include_graphics("DATA/FEMA/MA/MA_nhfza_vulnerable9.png")
 ```
 
-```{r tabNFHZAMIN, fig.align = "center", fig.cap="Minority Persons living within FEMA Flood Zones."}
+```{r tabNFHZAMIN, fig.align = "center", fig.cap="People of Color living within FEMA Flood Zones."}
 ma_blkgrps_nfhza %>% 
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -2159,7 +2164,7 @@ ma_blkgrps_nfhza %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Minority Persons Living in FEMA Flood Zones", align = "r") %>% 
+                    caption = "People of Color Living in FEMA Flood Zones", align = "r", col.names = c("City/Town", "People of Color", "Pct of POC")) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
@@ -2440,7 +2445,7 @@ ma_blkgrps_nfhza %>%
 ```
 
 \pagebreak
-## Populations of Concern in Hurricane Evacuation Zones {-}
+## Priority Populations in Hurricane Evacuation Zones {-}
 ```{r tabHEVACMALEH, fig.align = "center", fig.cap="Limited English Speaking Housheolds, as Defined by the Massachusetts Environmental Justice Policy, living within Hurricane Evacuation Zones."}
 ma_blkgrps_hevac %>% 
   st_centroid(.) %>% 
@@ -2839,7 +2844,7 @@ ma_tracts_hevac %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapHEVACPopConcern7, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Minority Persons, as Defined by the Massachusetts Environmental Justice Policy, Living within Flood Zones."}
+```{r mapHEVACPopConcern7, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="People of Color, as Defined by the Massachusetts Environmental Justice Policy, Living within Flood Zones."}
 # Create data subset
 hevac_sub <- ma_hevac_vulnerable %>% 
   filter(Group == "MA Minority")
@@ -2895,7 +2900,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
                 alpha = 0.6,
                 border.col = "white", border.alpha = 0,
                 labels = "1 dot = 10 people") +
-  tm_layout(title = "MA Minority\nPersons\nLiving within\nHurricane\nEvacuation\nZones",
+  tm_layout(title = "MA People\nof Color\nLiving within\nHurricane\nEvacuation\nZones",
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2907,7 +2912,7 @@ tmap_save(m, "DATA/FEMA/MA/MA_hevac_vulnerable7.png",
 knitr::include_graphics("DATA/FEMA/MA/MA_hevac_vulnerable7.png")
 ```
 
-```{r tabHEVACMAMIN, fig.align = "center", fig.cap="Minority Persons, as Defined by the Massachusetts Environmental Justice Policy, living within Hurricane Evacuation Zones."}
+```{r tabHEVACMAMIN, fig.align = "center", fig.cap="People of Color, as Defined by the Massachusetts Environmental Justice Policy, living within Hurricane Evacuation Zones."}
 ma_blkgrps_hevac %>% 
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -2924,7 +2929,7 @@ ma_blkgrps_hevac %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "MA Minority Persons Living in Hurricane Evacuation Zones", align = "r") %>% 
+                    caption = "MA Minority Persons Living in Hurricane Evacuation Zones", align = "r", col.names = c("City/Town", "MA POC", "Pct of MA POC")) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
@@ -3017,7 +3022,7 @@ ma_blkgrps_hevac %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapHEVACPopConcern9, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Minority Persons Living within Flood Zones."}
+```{r mapHEVACPopConcern9, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="People of Color Living within Flood Zones."}
 # Create data subset
 hevac_sub <- ma_hevac_vulnerable %>% 
   filter(Group == "Minority")
@@ -3073,7 +3078,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
                 alpha = 0.6,
                 border.col = "white", border.alpha = 0,
                 labels = "1 dot = 10 people") +
-  tm_layout(title = "Minority\nPersons\nLiving within\nHurricane\nEvacuation\nZones",
+  tm_layout(title = "People\nof Color\nLiving within\nHurricane\nEvacuation\nZones",
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -3085,7 +3090,7 @@ tmap_save(m, "DATA/FEMA/MA/MA_hevac_vulnerable9.png",
 knitr::include_graphics("DATA/FEMA/MA/MA_hevac_vulnerable9.png")
 ```
 
-```{r tabHEVACMIN, fig.align = "center", fig.cap="Minority Persons living within Hurricane Evacuation Zones."}
+```{r tabHEVACMIN, fig.align = "center", fig.cap="People of Color living within Hurricane Evacuation Zones."}
 ma_blkgrps_hevac %>% 
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -3102,7 +3107,7 @@ ma_blkgrps_hevac %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Minority Persons Living in Hurricane Evacuation Zones", align = "r") %>% 
+                    caption = "People of Color Living in Hurricane Evacuation Zones", align = "r", col.names = c("City/Town", "People of Color", "Pct of POC")) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
