@@ -26,12 +26,12 @@ options(tigris_use_cache = TRUE, tigris_class = "sf")
 \pagebreak
 # Analysis of evacuation-related risks in Vermont
 
-This is an analysis of flood evacuation risks for populations of concern in Vermont. In the event of significant inland flooding, evacuation may be required. For individuals and households with limited mobility, either due to inadequate access to transportation options or because of physical limitations, evacuation presents heightened risk. Evacuation may also prove especially difficult for individuals and households due to limited economic resources, difficulty understanding or accessing information, or low trust in official sources of information. 
+This is an analysis of flood evacuation risks for priority populations in Vermont. In the event of significant inland flooding, evacuation may be required. For individuals and households with limited mobility, either due to inadequate access to transportation options or because of physical limitations, evacuation presents heightened risk. Evacuation may also prove especially difficult for individuals and households due to limited economic resources, difficulty understanding or accessing information, or low trust in official sources of information. 
 
 ## Analysis of Flood Hazard Exposure in Vermont
 
 ```{r NFHZAdata, include=FALSE}
-# Analysis of flooding and hurricane evacuation risks for populations of concern in Vermont
+# Analysis of flooding and hurricane evacuation risks for priority populations in Vermont
 load("DATA/ne_layers.rds")
 
 # Extract state census units and convert to projected local CRS EPSG:2852: NAD83(HARN) / Vermont See https://spatialreference.org/ref/epsg/2852/
@@ -375,14 +375,14 @@ ny_state_sf <- tigris::states(cb = TRUE) %>%
 # load data
 nofemapolys <- readRDS("DATA/FEMA/VT/nofemapolys.Rds")
 
-# Create random points, with 1 point for every 100 people
-vt_totalpop_pts <- vt_blkgrps_developed %>% 
-  select(NewPop) %>% 
-  filter(NewPop >= 100) %>% 
-  st_sample(., size = round(.$NewPop/100)) %>% # create 1 random point for every 100 people
-  st_sf(.) %>% 
-  group_by() %>% 
-  summarize() # reduce to one multipoint object
+# # Create random points, with 1 point for every 100 people
+# vt_totalpop_pts <- vt_blkgrps_developed %>% 
+#   select(NewPop) %>% 
+#   filter(NewPop >= 100) %>% 
+#   st_sample(., size = round(.$NewPop/100)) %>% # create 1 random point for every 100 people
+#   st_sf(.) %>% 
+#   group_by() %>% 
+#   summarize() # reduce to one multipoint object
 
 # Create a simplified version of NFHZA polygons to speed up mapping
 # start_time <- Sys.time()
@@ -408,7 +408,7 @@ vt_awater_sf_simple <- vt_awater_sf %>%
   summarize()
 ```
 
-```{r mapNFHZAPop, fig.align = "center", fig.cap="FEMA flood zones and population distribution across Vermont at Census Block Group level."}
+```{r mapNFHZAPop, fig.align = "center", fig.cap="FEMA flood zones across Vermont."}
 # Create a dot density map of total populations and overlay on flood zones
 # Map totalpop and flood zones
 m1 <- tm_shape(vt_blkgrp_2852, unit = "mi") + tm_fill(col = "white") +
@@ -417,9 +417,9 @@ m1 <- tm_shape(vt_blkgrp_2852, unit = "mi") + tm_fill(col = "white") +
   tm_shape(vt_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
   # tm_shape(ne_states_sf_cb) + tm_borders() +
   # tm_shape(ny_state_sf) + tm_borders() +
-  tm_shape(vt_totalpop_pts) + tm_dots(col = "darkgoldenrod3",
-                                      labels = "1 dot = 100 people",
-                                      alpha = 0.6) +
+  # tm_shape(vt_totalpop_pts) + tm_dots(col = "darkgoldenrod3",
+  #                                     labels = "1 dot = 100 people",
+  #                                     alpha = 0.6) +
   tm_shape(vt_nfhza_2852_land_simple) +
   tm_fill(col = "Interval",
           palette = c("dodgerblue", "blueviolet"),
@@ -452,17 +452,17 @@ m1 <- tm_shape(vt_blkgrp_2852, unit = "mi") + tm_fill(col = "white") +
   # tm_text("LABEL", alpha = 0.5) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
-  tm_add_legend(type = "fill", col = "darkgoldenrod3",
-                alpha = 0.6,
-                border.col = "white", border.alpha = 0,
-                labels = "1 dot = 100 people",
-                title = "Total Population") +
+  # tm_add_legend(type = "fill", col = "darkgoldenrod3",
+  #               alpha = 0.6,
+  #               border.col = "white", border.alpha = 0,
+  #               labels = "1 dot = 100 people",
+  #               title = "Total Population") +
   tm_add_legend(type = "fill", col = "gray",
                 alpha = 0.4,
                 border.col = "white", border.alpha = 0,
                 labels = "No FEMA Data",
                 title = "FEMA Coverage") +
-  tm_layout(title = "Total\nPopulation\nDistribution\nand Flood Zones",
+  tm_layout(title = "FEMA\nFlood Zones",
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -494,13 +494,14 @@ vt_nfhza_2852_land %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-The proportion of the total state population living within flood zones exceeds the percentage of the state area within flood zones. Moreover, exposure varies by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups living within flood zones. Aside from the total population, the largest absolute numbers of subpopulations living within a flood zone are low income persons followed by those under 18 and over 64. The latter groups are populations of concern who may have limited mobility in the event of an evacuation. 
+The proportion of the total state population living within flood zones exceeds the percentage of the state area within flood zones. Moreover, exposure varies by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups living within flood zones. Aside from the total population, the largest absolute numbers of subpopulations living within a flood zone are low income persons followed by those under 18 and over 64. The latter groups are priority populations who may have limited mobility in the event of an evacuation. 
 
 ```{r tabNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont Populations Living within Flood Zones."}
 # Show table of pops within flood zones
 vt_FloodPops_df %>% 
   mutate(PctFlood = paste0(as.character(round(PctFlood,1)),"%")) %>% 
   arrange(-FloodPop) %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
                     caption = "Vermont Populations Living within Flood Zones",
@@ -508,7 +509,7 @@ vt_FloodPops_df %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Some groups are disproportionately exposed to these flood hazards. While approximately 5.7% of the general population are living within flood zones, limited English speaking households, households without access to a car, people in low income households, and other populations of concern, exceed the population average living within flood zones. These populations of concern are disproportionately exposed to flood risk (see Figure \@ref(fig:chartNFHZApop) below).
+Some groups are disproportionately exposed to these flood hazards. While approximately 5.7% of the general population are living within flood zones, limited English speaking households, households without access to a car, people in low income households, and other priority populations, exceed the population average living within flood zones. These priority populations are disproportionately exposed to flood risk (see Figure \@ref(fig:chartNFHZApop) below).
 
 ```{r chartNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont Populations Living within Flood Zones."}
 # Create lollipop plot of pops within flood zones
@@ -539,12 +540,12 @@ vt_FloodPops_df %>%
             color = "gray48") +
   expand_limits(y = c(5,7.5))
 
-ggsave("DATA/FEMA/VT/vt_flood_lolli.png")
+ggsave("images/VT_FEMA_graph.png")
   # geom_segment(aes(x = "Total Pop", xend = "Total Pop", y = 5.8, yend = 6.6), 
   #              arrow = arrow(length = unit(0.3,"cm")))
 ```
 
-The maps below (Figures \@ref(fig:mapNFHZAPopConcern1) and \@ref(fig:mapNFHZAPopConcern2)) show households without a car and low income persons who are disproportionately exposed to flood risk. Maps for other populations of concern can be found in Figures \@ref(fig:mapNFHZAPopConcern3) to \@ref(fig:mapNFHZAPopConcern8) and breakdowns by municipality in Tables \@ref(tab:tabNFHZANoCar) to \@ref(tab:tabNFHZALEH) in Appendix B.
+The maps below (Figures \@ref(fig:mapNFHZAPopConcern1) and \@ref(fig:mapNFHZAPopConcern2)) show households without a car and low income persons who are disproportionately exposed to flood risk. Maps for other priority populations can be found in Figures \@ref(fig:mapNFHZAPopConcern3) to \@ref(fig:mapNFHZAPopConcern8) and breakdowns by municipality in Tables \@ref(tab:tabNFHZANoCar) to \@ref(tab:tabNFHZALEH) in Appendix B.
 
 ```{r mapNFHZAPopConcern, include=FALSE}
 # Create a dot density map of transit-dependent populations in flood zone
@@ -846,7 +847,7 @@ For the purposes of this analysis ACS 5-year estimates for the period 2014 - 201
 
 ```{r ACSvariables}
 ACSvDF <- data.frame(Variable = c("Total Population",
-                                  "Minority",
+                                  "People of Color",
                                   "Low Income",
                                   "Limited English Household",
                                   "Less than High School Education",
@@ -858,9 +859,9 @@ ACSvDF <- data.frame(Variable = c("Total Population",
                                   "CT Income",
                                   "MA Income",
                                   "MA Limited English Household",
-                                  "MA Minority",
+                                  "MA POC",
                                   "RI Income",
-                                  "RI Minority"),
+                                  "RI POC"),
                      Description = c("Total population",
                                      "Persons of Hispanic or Latino origin or persons who are not White",
                                      "People in households where the household income is less than or equal to twice the federal poverty level",
@@ -874,9 +875,9 @@ ACSvDF <- data.frame(Variable = c("Total Population",
                                      "Connecticut Low Income threshold: 30% or more people in households where the household income is less than or equal to twice the federal poverty level",
                                      "Massachusetts Low Income threshold: 25% or more of households with median household incomes below 65% statewide median",
                                      "Massachusetts Language Isolation threshold: 25% or more people in households where all adults speak English less than \"very well\"",
-                                     "Massachusetts Minority threshold: 25% or more are persons of Hispanic or Latino origin or persons who are not White",
+                                     "Massachusetts POC threshold: 40% or more are persons of Hispanic or Latino origin or persons who are not White OR 25% or more are persons of Hispanic or Latino origin or persons who are not White AND the median household income of the municipality is less than 150% of the statewide median household income",
                                      "Rhode Island Low Income threshold: highest 15% of block groups with people in households where the household income is less than or equal to twice the federal poverty level",
-                                     "Rhode Island Minority threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
+                                     "Rhode Island POC threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
                      'ACS Table ID' = c("B03002: Hispanic or Latino Origin by Race",
                                 "B03002: Hispanic or Latino Origin by Race",
                                 "C17002: Ratio of Income to Poverty Level",
@@ -923,7 +924,7 @@ ACSvDF %>%
 \pagebreak
 # Appendix B: Supplementary Figures {-}
 
-## Populations of Concern in FEMA Flood Zones {-}
+## Priority Populations in FEMA Flood Zones {-}
 
 ```{r tabNFHZANoCar, fig.align = "center", fig.cap="Households without a car living within FEMA Flood Zones."}
 vt_tracts_nfhza %>% 
@@ -1145,7 +1146,7 @@ vt_blkgrps_nfhza %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapNFHZAPopConcern5, fig.align = "center", fig.cap="Minority Persons Living within Flood Zones."}
+```{r mapNFHZAPopConcern5, fig.align = "center", fig.cap="People of Color Living within Flood Zones."}
 # create pop subset
 nfhza_sub <- vt_nfhza_vulnerable %>% 
   filter(Group == "Minority")
@@ -1199,7 +1200,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
                 border.col = "white", border.alpha = 0,
                 labels = "No FEMA Data",
                 title = "FEMA Coverage") +
-  tm_layout(title = "Minority\nPersons\nLiving within\nFlood Zones",
+  tm_layout(title = "People\nof Color\nLiving within\nFlood Zones",
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1211,7 +1212,7 @@ tmap_save(m, "DATA/FEMA/VT/VT_nhfza_vulnerable5.png",
 knitr::include_graphics("DATA/FEMA/VT/VT_nhfza_vulnerable5.png")
 ```
 
-```{r tabNFHZAMIN, fig.align = "center", fig.cap="Minority persons living within FEMA Flood Zones."}
+```{r tabNFHZAMIN, fig.align = "center", fig.cap="People of Color living within FEMA Flood Zones."}
 vt_blkgrps_nfhza %>% 
   st_centroid(.) %>% 
   st_intersection(vt_towns_sf,.) %>% 
@@ -1229,7 +1230,7 @@ vt_blkgrps_nfhza %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Minority Persons Living in FEMA Flood Zones", align = "r") %>% 
+                    caption = "People of Color Living in FEMA Flood Zones", align = "r", col.names = c("City/Town", "People of Color", "Pct of POC")) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
 
