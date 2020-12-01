@@ -2740,7 +2740,6 @@ All data was analyzed or aggregated geographically by Census Tract and Block Gro
 For the purposes of this analysis ACS 5-year estimates for the period 2014 - 2018 for Census Tracts and Block Groups in Connecticut, as well as their associated TIGER/Line spatial files, were downloaded from the Census Bureau via API using the `tigris` package in R. Demographic variables consistent with those used by the EPA in EJSCREEN were chosen, as well as environmental justice population thresholds used by states where available. Table \@ref(tab:ACSvariables) below lists the demographic variables that were downloaded directly or computed from ACS variables:
 
 ```{r ACSvariables}
-```{r ACSvariables}
 ACSvDF <- data.frame(Variable = c("Total Population",
                                   "People of Color",
                                   "Low Income",
@@ -2847,7 +2846,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   kableExtra::kable(longtable = T, booktabs = T, 
                     caption = "Block Group Populations and Temperature", 
                     align = "l",
-                    col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5])) %>% 
+                    col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5:6])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header")) %>% 
   kableExtra::row_spec(5, bold = TRUE) %>% 
   kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
@@ -2868,7 +2867,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   kableExtra::kable(longtable = T, booktabs = T, 
                     caption = "Block Group Populations and Temperature", 
                     align = "l",
-                    col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5])) %>% 
+                    col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5:6])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header")) %>% 
   kableExtra::row_spec(5, bold = TRUE) %>% 
   kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
