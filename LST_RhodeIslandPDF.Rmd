@@ -459,7 +459,7 @@ ri_blkgrpLST_sf <- ri_blkgrpLST_sf %>%
          LSTNightOver64Score = (rankNightLST + rankOver64)/2
          )
 
-# Calculate totals of populations of concern for use in computing percentages in later tables
+# Calculate totals of priority populations for use in computing percentages in later tables
 statepopsdf <- ri_blkgrpLST_sf %>% 
   as.data.frame() %>% 
   mutate(RI_LOWINC = if_else(RI_INCOME == "I", totalpopE, 0)) %>% 
@@ -672,7 +672,7 @@ ri_blkgrpLST_sf %>%
 
 
 
-### Day-Night Average Land Surface Temperatures and Populations of Concern
+### Day-Night Average Land Surface Temperatures and Priority Populations
 
 ```{r LST24hrTempPop, include=FALSE}
 # Pop Weighted avg of 24hr LST exposure for all Groups in Rhode Island relative to RI average
@@ -777,10 +777,12 @@ LST24hrPopTab <- ri_blkgrpLST_sf %>%
                        paste0(round(Pct,2),"%")))
 ```
 
-In addition to variations in the general geography of Land Surface Temperatures (LST), temperature exposure also varies demographically. Figure \@ref(fig:plotLST24hrTempPopAvgRI) and Table \@ref(tab:tabLST24hrPopAvgRI) show population-weighted exposures for populations of concern relative to the day-night average LST for the state of `r round(mean(ri_blkgrpLST_sf$meanAvgLST,na.rm=TRUE),1)`°. For example, minority persons in Rhode Island, as defined by the state's environmental justice policy, were exposed to a population-weighted day-night average LST of `r round(max(LST24hrPop$LST24hrwMean),1)`°, approximately `r round(max(LST24hrPop$LST24hrwMean) - max(LST24hrPop$LST24hrMean),1)`° (`r LST24hrPopTab[7,4]`) above the state day-night average LST. Similarly, low income persons, as defined by the state's environmental justice policy,  were exposed to a population-weighted day-night average LST of `r LST24hrPop %>% filter(Group == "RI Low Income") %>% summarize(round(max(LST24hrwMean),1)) %>% pull()`°, over `r round(LST24hrPop %>% filter(Group == "RI Low Income") %>% summarize(max(LST24hrwMean)) %>% pull() - max(LST24hrPop$LST24hrMean),1)`° (`r LST24hrPopTab[6,4]`) above the state day-night average LST. By contrast, persons over age 64 were, on average, exposed to population-weighted day-night average LSTs of `r LST24hrPopTab[5,2]`, which is `r LST24hrPopTab[5,3]` (`r LST24hrPopTab[5,4]`) below the state average.
+In addition to variations in the general geography of Land Surface Temperatures (LST), temperature exposure also varies demographically. Figure \@ref(fig:plotLST24hrTempPopAvgRI) and Table \@ref(tab:tabLST24hrPopAvgRI) show population-weighted exposures for priority populations relative to the day-night average LST for the state of `r round(mean(ri_blkgrpLST_sf$meanAvgLST,na.rm=TRUE),1)`°. For example, minority persons in Rhode Island, as defined by the state's environmental justice policy, were exposed to a population-weighted day-night average LST of `r round(max(LST24hrPop$LST24hrwMean),1)`°, approximately `r round(max(LST24hrPop$LST24hrwMean) - max(LST24hrPop$LST24hrMean),1)`° (`r LST24hrPopTab[7,4]`) above the state day-night average LST. Similarly, low income persons, as defined by the state's environmental justice policy,  were exposed to a population-weighted day-night average LST of `r LST24hrPop %>% filter(Group == "RI Low Income") %>% summarize(round(max(LST24hrwMean),1)) %>% pull()`°, over `r round(LST24hrPop %>% filter(Group == "RI Low Income") %>% summarize(max(LST24hrwMean)) %>% pull() - max(LST24hrPop$LST24hrMean),1)`° (`r LST24hrPopTab[6,4]`) above the state day-night average LST. By contrast, persons over age 64 were, on average, exposed to population-weighted day-night average LSTs of `r LST24hrPopTab[5,2]`, which is `r LST24hrPopTab[5,3]` (`r LST24hrPopTab[5,4]`) below the state average.
 
-```{r plotLST24hrTempPopAvgRI, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average temperatures for populations of concern in Rhode Island relative to the state average."}
+```{r plotLST24hrTempPopAvgRI, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average temperatures for priority populations in Rhode Island relative to the state average."}
 LST24hrPop %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "RI Minority" = "RI POC")) %>%
   ggplot(aes(x = reorder(Group,LST24hrwMean), 
              y = LST24hrwMean)) +
   geom_segment(aes(x = reorder(Group,LST24hrwMean), 
@@ -807,10 +809,14 @@ LST24hrPop %>%
   # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 81, yend = 82), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(79,87))
+
+ggsave("images/RI_LST24_graph.png")
 ```
 \pagebreak
-```{r tabLST24hrPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average LST for populations of concern in Rhode Island relative to the state average."}
+```{r tabLST24hrPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average LST for priority populations in Rhode Island relative to the state average."}
 LST24hrPopTab %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "RI Minority" = "RI POC")) %>%
   arrange(Group) %>% 
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Avg 24hr LST (°F)",
@@ -924,10 +930,12 @@ UHI24hrPopTab <- ri_blkgrpLST_sf %>%
                        paste0(round(Pct,2),"%")))
 ```
 
-Figure \@ref(fig:plotUHI24hrTempPopAvgRI) and Table \@ref(tab:tabUHI24hrPopAvgRI) show population-weighted exposures for populations of concern relative to the day-night average Urban Heat Island (UHI) effect for Rhode Island. All populations of concern are exposed to the UHI effect on average. Indeed, the average UHI effect across Rhode Island is approximately `r round(mean(ri_blkgrpLST_sf$UHI24avg,na.rm=TRUE),1)`°. However, some populations experience significantly higher UHI effects. For example, minority persons in Rhode Island, as defined by the state's environmental justice policy, were exposed to a population-weighted day-night average UHI effect of `r round(max(UHI24hrPop$UHI24hrwMean),1)`° above the rural average. This value is more than `r round(max(UHI24hrPop$UHI24hrwMean) - max(UHI24hrPop$UHI24hrMean),1)`° (`r UHI24hrPopTab[7,4]`) above the state day-night average UHI. Similarly, low income persons, as defined by the state's environmental justice policy, were exposed to a population-weighted day-night average UHI effect of `r UHI24hrPop %>% filter(Group == "RI Low Income") %>% summarize(round(max(UHI24hrwMean),1)) %>% pull()`°, approximately `r round(UHI24hrPop %>% filter(Group == "RI Low Income") %>% summarize(max(UHI24hrwMean)) %>% pull() - max(UHI24hrPop$UHI24hrMean),1)`° (`r UHI24hrPopTab[6,4]`) above the state day-night average UHI. By contrast, persons over age 64 were, on average, were exposed to a population-weighted day-night average UHI of `r UHI24hrPopTab[5,2]`, which is `r UHI24hrPopTab[5,3]` (`r UHI24hrPopTab[5,4]`) below the state average.
+Figure \@ref(fig:plotUHI24hrTempPopAvgRI) and Table \@ref(tab:tabUHI24hrPopAvgRI) show population-weighted exposures for priority populations relative to the day-night average Urban Heat Island (UHI) effect for Rhode Island. All priority populations are exposed to the UHI effect on average. Indeed, the average UHI effect across Rhode Island is approximately `r round(mean(ri_blkgrpLST_sf$UHI24avg,na.rm=TRUE),1)`°. However, some populations experience significantly higher UHI effects. For example, minority persons in Rhode Island, as defined by the state's environmental justice policy, were exposed to a population-weighted day-night average UHI effect of `r round(max(UHI24hrPop$UHI24hrwMean),1)`° above the rural average. This value is more than `r round(max(UHI24hrPop$UHI24hrwMean) - max(UHI24hrPop$UHI24hrMean),1)`° (`r UHI24hrPopTab[7,4]`) above the state day-night average UHI. Similarly, low income persons, as defined by the state's environmental justice policy, were exposed to a population-weighted day-night average UHI effect of `r UHI24hrPop %>% filter(Group == "RI Low Income") %>% summarize(round(max(UHI24hrwMean),1)) %>% pull()`°, approximately `r round(UHI24hrPop %>% filter(Group == "RI Low Income") %>% summarize(max(UHI24hrwMean)) %>% pull() - max(UHI24hrPop$UHI24hrMean),1)`° (`r UHI24hrPopTab[6,4]`) above the state day-night average UHI. By contrast, persons over age 64 were, on average, were exposed to a population-weighted day-night average UHI of `r UHI24hrPopTab[5,2]`, which is `r UHI24hrPopTab[5,3]` (`r UHI24hrPopTab[5,4]`) below the state average.
 
-```{r plotUHI24hrTempPopAvgRI, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average Urban Heat Island effect for populations of concern in Rhode Island."}
+```{r plotUHI24hrTempPopAvgRI, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average Urban Heat Island effect for priority populations in Rhode Island."}
 UHI24hrPop %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "RI Minority" = "RI POC")) %>%
   ggplot(aes(x = reorder(Group,UHI24hrwMean), 
              y = UHI24hrwMean)) +
   geom_segment(aes(x = reorder(Group,UHI24hrwMean), 
@@ -952,11 +960,15 @@ UHI24hrPop %>%
   # geom_segment(aes(x = "Over 64", xend = "Over 64", y = 8, yend = 11), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-2,12))
+
+ggsave("images/RI_UHI24_graph.png")
 ```
 
 
-```{r tabUHI24hrPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average Urban Heat Island effect for populations of concern in Rhode Island relative to the rural average."}
+```{r tabUHI24hrPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average Urban Heat Island effect for priority populations in Rhode Island relative to the rural average."}
 UHI24hrPopTab %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "RI Minority" = "RI POC")) %>%
   arrange(Group) %>% 
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Day-Night Avg UHI (°F)",
@@ -1004,7 +1016,7 @@ RIINC24hrPct <- round(RIINC24hr/statepopsdf$TotalRI_LOWINC*100,1) %>%
 
 Because the risk of heat-related illness is a combination of both exposure and vulnerability, it is important to consider where these factors come together. Figures \@ref(fig:mapLST24hrHighRiskRIMIN) and \@ref(fig:mapLST24hrHighRiskRIINC) highlight Census Block Groups across Rhode Island which exhibited day-night average LSTs in the top quintile (i.e., 80th percentile) and were also categorized as Environmental Justice communities for minorities and low income persons.[^LST24quintile] Approximately `r RIMIN24hr %>% format(., big.mark = ",") %>% pull()` minority persons and `r RIINC24hr %>% format(., big.mark = ",") %>% pull()` low income persons were resident in these highest quintile Block Groups. These numbers represent `r RIMIN24hrPct`% and `r RIINC24hrPct`%, respectively, of those populations in the state. By comparison, `r HH24hrPct`% of all households, and `r Pop24hrPct`% of the general population were resident in these same Block Groups. 
 
-Tables \@ref(tab:tabLST24hrHighRiskRIMIN) and \@ref(tab:tabLST24hrHighRiskRIINC) show breakdowns by municipality of how many minorities and low income persons these represent, and the day-night average LST values for those same Census Block Groups. Maps and tables for other populations of concern can be found in Figures \@ref(fig:mapLST24hrHighRiskLEH) to \@ref(fig:mapLST24hrHighRiskO64) and Tables \@ref(tab:tabLST24hrHighRiskLEH) to \@ref(tab:tabLST24hrHighRiskO64) in Appendix B.
+Tables \@ref(tab:tabLST24hrHighRiskRIMIN) and \@ref(tab:tabLST24hrHighRiskRIINC) show breakdowns by municipality of how many minorities and low income persons these represent, and the day-night average LST values for those same Census Block Groups. Maps and tables for other priority populations can be found in Figures \@ref(fig:mapLST24hrHighRiskLEH) to \@ref(fig:mapLST24hrHighRiskO64) and Tables \@ref(tab:tabLST24hrHighRiskLEH) to \@ref(tab:tabLST24hrHighRiskO64) in Appendix B.
 
 ```{r mapLST24hrHighRiskRILEH, fig.align = "center", fig.cap="Map of Block Groups in the highest quintile (80th percentile) of day-night average LST and 80th percentile of percentage of Limited English Speaking Households, as defined by the Rhode Island Environmental Justice Policy, by Census Block Group, July-Aug 2019."}
 # LST24EngLang5 <- ri_blkgrpLST_sf %>%
@@ -1337,7 +1349,7 @@ ri_blkgrpLST_sf %>%
 
 
 
-### Daytime Average Land Surface Temperatures and Populations of Concern
+### Daytime Average Land Surface Temperatures and Priority Populations
 
 ```{r LSTDayTempPop, include=FALSE}
 # Pop Weighted avg of 24hr LST exposure for all Groups in Rhode Island relative to RI average
@@ -1442,12 +1454,12 @@ LSTDayPopTab <- ri_blkgrpLST_sf %>%
                        paste0(round(Pct,2),"%")))
 ```
 
-In addition to variations in the general geography of Land Surface Temperatures (LST), temperature exposure also varies demographically. Figure \@ref(fig:plotLSTDayTempPopAvgRI) and Table \@ref(tab:tabLSTDayPopAvgRI) show population-weighted exposures for populations of concern relative to the average daytime average LST for the state, which is `r round(mean(ri_blkgrpLST_sf$meanDayLST,na.rm=TRUE),1)`°. For example, minority persons in Rhode Island, as defined by the state's environmental justice policy, were exposed to a population-weighted daytime average LST of `r round(max(LSTDayPop$LSTDaywMean),1)`°, approximately `r round(max(LSTDayPop$LSTDaywMean) - max(LSTDayPop$LSTDayMean),1)`° (`r LSTDayPopTab[7,4]`) above the state daytime average LST. Similarly, low income persons, as defined by the state's environmental justice policy, were exposed to a population-weighted daytime average LST of approximately `r LSTDayPop %>% filter(Group == "RI Low Income") %>% summarize(round(max(LSTDaywMean),1)) %>% pull()`°, `r round(LSTDayPop %>% filter(Group == "RI Low Income") %>% summarize(max(LSTDaywMean)) %>% pull() - LSTDayPop %>% summarize(max(LSTDayMean)) %>% pull(),1)`° (`r LSTDayPopTab[6,4]`) above the state daytime average LST. By contrast, persons over age 64 were, on average, exposed to population-weighted daytime average LSTs of `r LSTDayPop %>% filter(Group == "Over 64") %>% summarize(round(max(LSTDaywMean),1)) %>% pull()`°, approximately `r LSTDayPopTab[5,3]` below the state average.
+In addition to variations in the general geography of Land Surface Temperatures (LST), temperature exposure also varies demographically. Figure \@ref(fig:plotLSTDayTempPopAvgRI) and Table \@ref(tab:tabLSTDayPopAvgRI) show population-weighted exposures for priority populations relative to the average daytime average LST for the state, which is `r round(mean(ri_blkgrpLST_sf$meanDayLST,na.rm=TRUE),1)`°. For example, minority persons in Rhode Island, as defined by the state's environmental justice policy, were exposed to a population-weighted daytime average LST of `r round(max(LSTDayPop$LSTDaywMean),1)`°, approximately `r round(max(LSTDayPop$LSTDaywMean) - max(LSTDayPop$LSTDayMean),1)`° (`r LSTDayPopTab[7,4]`) above the state daytime average LST. Similarly, low income persons, as defined by the state's environmental justice policy, were exposed to a population-weighted daytime average LST of approximately `r LSTDayPop %>% filter(Group == "RI Low Income") %>% summarize(round(max(LSTDaywMean),1)) %>% pull()`°, `r round(LSTDayPop %>% filter(Group == "RI Low Income") %>% summarize(max(LSTDaywMean)) %>% pull() - LSTDayPop %>% summarize(max(LSTDayMean)) %>% pull(),1)`° (`r LSTDayPopTab[6,4]`) above the state daytime average LST. By contrast, persons over age 64 were, on average, exposed to population-weighted daytime average LSTs of `r LSTDayPop %>% filter(Group == "Over 64") %>% summarize(round(max(LSTDaywMean),1)) %>% pull()`°, approximately `r LSTDayPopTab[5,3]` below the state average.
 
-```{r plotLSTDayTempPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to average daytime Land Surface Temperatures for populations of concern in Rhode Island relative to the state average."}
+```{r plotLSTDayTempPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to average daytime Land Surface Temperatures for priority populations in Rhode Island relative to the state average."}
 LSTDayPop %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "No HS Dip" = "No HS Diploma")) %>%
+                        "RI Minority" = "RI POC")) %>%
   ggplot(aes(x = reorder(Group,LSTDaywMean), 
              y = LSTDaywMean)) +
   geom_segment(aes(x = reorder(Group,LSTDaywMean), 
@@ -1475,12 +1487,14 @@ LSTDayPop %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(91,104))
 
-ggsave("DATA/LST/ri_DayLST_lolli.png")
+ggsave("images/RI_LSTDay_graph.png")
 ```
 
 \pagebreak
-```{r tabLSTDayPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to Daytime LST for populations of concern in Rhode Island relative to the state average."}
+```{r tabLSTDayPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to Daytime LST for priority populations in Rhode Island relative to the state average."}
 LSTDayPopTab %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "RI Minority" = "RI POC")) %>%
   arrange(Group) %>% 
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Avg Day LST (°F)",
@@ -1595,10 +1609,12 @@ UHIDayPopTab <- ri_blkgrpLST_sf %>%
                        paste0(round(Pct,2),"%")))
 ```
 
-Figure \@ref(fig:plotUHIDayTempPopAvgRI) and Table \@ref(tab:tabUHIDayPopAvgRI) show population-weighted exposures for populations of concern relative to the average daytime average Urban Heat Island (UHI) effect for the state. All populations of concern are exposed to the UHI effect on average. Indeed, the average UHI effect across the state is approximately `r round(mean(ri_blkgrpLST_sf$UHIDay,na.rm=TRUE),1)`°. However, some populations experience significantly higher UHI effects. For example, minority persons in Rhode Island, as defined by the state's environmental justice policy, were exposed to a population-weighted daytime average UHI effect of `r round(max(UHIDayPop$UHIDaywMean),1)`° above the rural average. This value is more than `r round(max(UHIDayPop$UHIDaywMean) - max(UHIDayPop$UHIDayMean),1)`° (`r UHIDayPopTab[7,4]`) above the state daytime average UHI. Similarly, low income persons, as defined by the state's environmental justice policy, were exposed to a population-weighted daytime average UHI effect of `r UHIDayPop %>% filter(Group == "RI Low Income") %>% summarize(round(max(UHIDaywMean),1)) %>% pull()`°, approximately `r round(UHIDayPop %>% filter(Group == "RI Low Income") %>% summarize(max(UHIDaywMean)) %>% pull() - max(UHIDayPop$UHIDayMean),1)`° (`r UHIDayPopTab[6,4]`) above the state daytime average UHI. By contrast, persons over age 64 were, on average, exposed to population-weighted daytime average UHI of `r UHIDayPopTab[5,2]`, which is `r UHIDayPopTab[5,3]` (`r UHIDayPopTab[5,4]`) below the state average.
+Figure \@ref(fig:plotUHIDayTempPopAvgRI) and Table \@ref(tab:tabUHIDayPopAvgRI) show population-weighted exposures for priority populations relative to the average daytime average Urban Heat Island (UHI) effect for the state. All priority populations are exposed to the UHI effect on average. Indeed, the average UHI effect across the state is approximately `r round(mean(ri_blkgrpLST_sf$UHIDay,na.rm=TRUE),1)`°. However, some populations experience significantly higher UHI effects. For example, minority persons in Rhode Island, as defined by the state's environmental justice policy, were exposed to a population-weighted daytime average UHI effect of `r round(max(UHIDayPop$UHIDaywMean),1)`° above the rural average. This value is more than `r round(max(UHIDayPop$UHIDaywMean) - max(UHIDayPop$UHIDayMean),1)`° (`r UHIDayPopTab[7,4]`) above the state daytime average UHI. Similarly, low income persons, as defined by the state's environmental justice policy, were exposed to a population-weighted daytime average UHI effect of `r UHIDayPop %>% filter(Group == "RI Low Income") %>% summarize(round(max(UHIDaywMean),1)) %>% pull()`°, approximately `r round(UHIDayPop %>% filter(Group == "RI Low Income") %>% summarize(max(UHIDaywMean)) %>% pull() - max(UHIDayPop$UHIDayMean),1)`° (`r UHIDayPopTab[6,4]`) above the state daytime average UHI. By contrast, persons over age 64 were, on average, exposed to population-weighted daytime average UHI of `r UHIDayPopTab[5,2]`, which is `r UHIDayPopTab[5,3]` (`r UHIDayPopTab[5,4]`) below the state average.
 
-```{r plotUHIDayTempPopAvgRI, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to daytime Urban Heat Island effect for populations of concern in Rhode Island."}
+```{r plotUHIDayTempPopAvgRI, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to daytime Urban Heat Island effect for priority populations in Rhode Island."}
 UHIDayPop %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "RI Minority" = "RI POC")) %>%
   ggplot(aes(x = reorder(Group,UHIDaywMean), 
              y = UHIDaywMean)) +
   geom_segment(aes(x = reorder(Group,UHIDaywMean), 
@@ -1623,11 +1639,15 @@ UHIDayPop %>%
   # geom_segment(aes(x = "Over 64", xend = "Over 64", y = 12.5, yend = 16), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-1,17))
+
+ggsave("images/RI_UHIDay_graph.png")
 ```
 
 
-```{r tabUHIDayPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to daytime Urban Heat Island effect for populations of concern in Rhode Island relative to the rural average."}
+```{r tabUHIDayPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to daytime Urban Heat Island effect for priority populations in Rhode Island relative to the rural average."}
 UHIDayPopTab %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "RI Minority" = "RI POC")) %>%
   arrange(Group) %>% 
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Avg Daytime UHI (°F)",
@@ -1675,9 +1695,9 @@ RIINCDayPct <- round(RIINCDay/statepopsdf$TotalRI_LOWINC*100,1) %>%
 
 Because the risk of heat-related illness is a combination of both exposure and vulnerability, it is important to consider where these factors come together. Figures \@ref(fig:mapLSTDayHighRiskRIMIN) and \@ref(fig:mapLSTDayHighRiskRIINC) highlight Census Block Groups across Rhode Island which exhibited daytime average LSTs in the top quintile (i.e., 80th percentile) and were categorized as Environmental Justice communities for minorities or low income persons.[^Dayquintile] Approximately `r RIMINDay %>% format(., big.mark = ",") %>% pull()` minority persons and `r RIINCDay %>% format(., big.mark = ",") %>% pull()` low income persons were resident in these highest quintile Block Groups. These numbers represent `r RIMINDayPct`% and `r RIINCDayPct`%, respectively, of those populations in the state. By comparison, `r HHDayPct`% of all households, and `r PopDayPct`% of the general population were resident in these same Block Groups.  
 
-Tables \@ref(tab:tabLSTDayHighRiskRIMIN) and \@ref(tab:tabLSTDayHighRiskRIINC) show breakdowns by municipality of the numbers of minorities and low income persons resident in these top quintile Block Groups. Maps and tables for other populations of concern can be found in Figures \@ref(fig:mapLSTDayHighRiskLEH) to \@ref(fig:mapLSTDayHighRiskO64) and Tables \@ref(tab:tabLSTDayHighRiskLEH) to \@ref(tab:tabLSTDayHighRiskO64) in Appendix B.
+Tables \@ref(tab:tabLSTDayHighRiskRIMIN) and \@ref(tab:tabLSTDayHighRiskRIINC) show breakdowns by municipality of the numbers of minorities and low income persons resident in these top quintile Block Groups. Maps and tables for other priority populations can be found in Figures \@ref(fig:mapLSTDayHighRiskLEH) to \@ref(fig:mapLSTDayHighRiskO64) and Tables \@ref(tab:tabLSTDayHighRiskLEH) to \@ref(tab:tabLSTDayHighRiskO64) in Appendix B.
 
-```{r mapLSTDayHighRiskRIMIN, fig.align = "center", fig.cap="Map of Block Groups in the highest quintile (80th percentile) of daytime average LST and 80th percentile of percentage of Minorities, as defined by Rhode Island Environmental Justice Policy, by Census Block Group, July-Aug 2019."}
+```{r mapLSTDayHighRiskRIMIN, fig.align = "center", fig.cap="Map of Block Groups in the highest quintile (80th percentile) of daytime average LST and 80th percentile of percentage of People of Color, as defined by Rhode Island Environmental Justice Policy, by Census Block Group, July-Aug 2019."}
 LSTDayMinorityRI5 <- ri_blkgrpLST_sf %>%
   filter(RI_MINORITY == "M" & pctileDayLST >= 0.8)
 
@@ -1718,7 +1738,7 @@ bbox_new <- bbox_new %>%  # take the bounding box ...
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Daytime Avg\nTemps for RI\nMinority\nJuly-Aug 2019", 
+  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Daytime Avg\nTemps for RI\nPeople of Color\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1732,7 +1752,7 @@ knitr::include_graphics("DATA/LST/ri_LSTDayMinorityRI5.png")
 ```
 
 \pagebreak
-```{r tabLSTDayHighRiskRIMIN, fig.align = "center", fig.cap="Minorities in Census Block Groups at or above 80th percentile of daytime average Land Surface Temperature."}
+```{r tabLSTDayHighRiskRIMIN, fig.align = "center", fig.cap="People of Color in Census Block Groups at or above 80th percentile of daytime average Land Surface Temperature."}
 LSTDayMinorityRI5 %>% 
   st_centroid(.) %>% 
   st_intersection(ri_towns_sf,.) %>% 
@@ -1756,8 +1776,8 @@ LSTDayMinorityRI5 %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "RI Minority in Highest Quintile of Daytime Avg LST", align = "r",
-                    col.names = c(names(.)[1:2],"RI Minority*",names(.)[4:7])) %>% 
+                    caption = "RI POC in Highest Quintile of Daytime Avg LST", align = "r",
+                    col.names = c(names(.)[1:2], "RI POC*", "Pct of RI POC", names(.)[5:7])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) %>% 
   kableExtra::column_spec(2:4, width = "3cm") %>%
   kableExtra::add_header_above(c(" " = 4, "Daytime LST (°F)" = 3)) %>% 
@@ -2007,7 +2027,7 @@ ri_blkgrpLST_sf %>%
 ```
 
 
-### Nighttime Average Land Surface Temperatures and Populations of Concern
+### Nighttime Average Land Surface Temperatures and Priority Populations
 
 ```{r LSTNightPop, include=FALSE}
 # Pop Weighted avg of 24hr LST exposure for all Groups in Rhode Island relative to RI average
@@ -2111,10 +2131,12 @@ LSTNightPopTab <- ri_blkgrpLST_sf %>%
                        paste0(round(Pct,2),"%")))
 ```
 
-In addition to variations in the general geography of Land Surface Temperatures (LST), temperature exposure also varies demographically. Figure \@ref(fig:plotLSTNightTempPopAvgRI) and Table \@ref(tab:tabLSTNightPopAvgRI) show population-weighted exposures for populations of concern relative to the average nighttime average LST of `r round(mean(ri_blkgrpLST_sf$meanNightLST,na.rm=TRUE),1)`° for the state. For example, minorities in Rhode Island, as defined by the state's environmental justice policy, were exposed to a population-weighted nighttime average LST of `r round(max(LSTNightPop$LSTNightwMean),1)`°, approximately `r round(max(LSTNightPop$LSTNightwMean) - max(LSTNightPop$LSTNightMean),1)`° (`r LSTNightPopTab[7,4]`) above the state nighttime average LST. Similarly, limited English speaking households were exposed to a population-weighted nighttime average LST of `r LSTNightPop %>% filter(Group == "Limited English HH") %>% summarize(round(max(LSTNightwMean),1)) %>% pull()`°, over `r round(LSTNightPop %>% filter(Group == "Limited English HH") %>% summarize(max(LSTNightwMean)) %>% pull() - max(LSTNightPop$LSTNightMean),1)`° (`r LSTNightPopTab[1,4]`) above the state nighttime average LST. By contrast, persons over age 64 were, on average, exposed to population-weighted nighttime average LSTs of `r LSTNightPopTab[5,2]`, approximately `r LSTNightPopTab[5,3]` below the state average.
+In addition to variations in the general geography of Land Surface Temperatures (LST), temperature exposure also varies demographically. Figure \@ref(fig:plotLSTNightTempPopAvgRI) and Table \@ref(tab:tabLSTNightPopAvgRI) show population-weighted exposures for priority populations relative to the average nighttime average LST of `r round(mean(ri_blkgrpLST_sf$meanNightLST,na.rm=TRUE),1)`° for the state. For example, minorities in Rhode Island, as defined by the state's environmental justice policy, were exposed to a population-weighted nighttime average LST of `r round(max(LSTNightPop$LSTNightwMean),1)`°, approximately `r round(max(LSTNightPop$LSTNightwMean) - max(LSTNightPop$LSTNightMean),1)`° (`r LSTNightPopTab[7,4]`) above the state nighttime average LST. Similarly, limited English speaking households were exposed to a population-weighted nighttime average LST of `r LSTNightPop %>% filter(Group == "Limited English HH") %>% summarize(round(max(LSTNightwMean),1)) %>% pull()`°, over `r round(LSTNightPop %>% filter(Group == "Limited English HH") %>% summarize(max(LSTNightwMean)) %>% pull() - max(LSTNightPop$LSTNightMean),1)`° (`r LSTNightPopTab[1,4]`) above the state nighttime average LST. By contrast, persons over age 64 were, on average, exposed to population-weighted nighttime average LSTs of `r LSTNightPopTab[5,2]`, approximately `r LSTNightPopTab[5,3]` below the state average.
 
-```{r plotLSTNightTempPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to average nighttime Land Surfact Temperatures for populations of concern in Rhode Island relative to the state average."}
+```{r plotLSTNightTempPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to average nighttime Land Surfact Temperatures for priority populations in Rhode Island relative to the state average."}
 LSTNightPop %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "RI Minority" = "RI POC")) %>%
   ggplot(aes(x = reorder(Group,LSTNightwMean), 
              y = LSTNightwMean)) +
   geom_segment(aes(x = reorder(Group,LSTNightwMean), 
@@ -2141,11 +2163,15 @@ LSTNightPop %>%
   # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 66.9, yend = 67.5), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(67,70))
+
+ggsave("images/RI_LSTNight_graph.png")
 ```
 
 \pagebreak
-```{r tabLSTNightPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to nighttime LST for populations of concern in Rhode Island relative to the state average."}
+```{r tabLSTNightPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to nighttime LST for priority populations in Rhode Island relative to the state average."}
 LSTNightPopTab %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "RI Minority" = "RI POC")) %>%
   arrange(Group) %>% 
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Avg Night LST (°F)",
@@ -2260,10 +2286,12 @@ UHINightPopTab <- ri_blkgrpLST_sf %>%
                        paste0(round(Pct,2),"%")))
 ```
 
-Figure \@ref(fig:plotUHINightTempPopAvgRI) and Table \@ref(tab:tabUHINightPopAvgRI) show population-weighted exposures for populations of concern relative to the average daytime average Urban Heat Island (UHI) effect for the state. All populations of concern are exposed to the UHI effect on average. Indeed, the average UHI effect across the state is approximately `r round(mean(ri_blkgrpLST_sf$UHINight,na.rm=TRUE),1)`°. However, some populations experience significantly higher UHI effects. For example, minorities in Rhode Island, as defined by the state's environmental justice policy, were exposed to a population-weighted daytime average UHI effect of `r round(max(UHINightPop$UHINightwMean),1)`° above the rural average. This value is more than `r round(max(UHINightPop$UHINightwMean) - max(UHINightPop$UHINightMean),1)`° (`r UHINightPopTab[7,4]`) above the state daytime average UHI. Similarly, limited English speaking households were exposed to a population-weighted daytime average UHI effect of `r UHINightPop %>% filter(Group == "Limited English HH") %>% summarize(round(max(UHINightwMean),1)) %>% pull()`°, approximately `r round(UHINightPop %>% filter(Group == "Limited English HH") %>% summarize(max(UHINightwMean)) %>% pull() - max(UHINightPop$UHINightMean),1)`° (`r UHINightPopTab[1,4]`) above the state daytime average UHI. By contrast, persons over age 64 were, on average, exposed to population-weighted daytime average UHI of `r UHINightPop %>% filter(Group == "Over 64") %>% summarize(round(max(UHINightwMean),1)) %>% pull()`° (`r UHINightPopTab[5,4]`) below the state average.
+Figure \@ref(fig:plotUHINightTempPopAvgRI) and Table \@ref(tab:tabUHINightPopAvgRI) show population-weighted exposures for priority populations relative to the average daytime average Urban Heat Island (UHI) effect for the state. All priority populations are exposed to the UHI effect on average. Indeed, the average UHI effect across the state is approximately `r round(mean(ri_blkgrpLST_sf$UHINight,na.rm=TRUE),1)`°. However, some populations experience significantly higher UHI effects. For example, minorities in Rhode Island, as defined by the state's environmental justice policy, were exposed to a population-weighted daytime average UHI effect of `r round(max(UHINightPop$UHINightwMean),1)`° above the rural average. This value is more than `r round(max(UHINightPop$UHINightwMean) - max(UHINightPop$UHINightMean),1)`° (`r UHINightPopTab[7,4]`) above the state daytime average UHI. Similarly, limited English speaking households were exposed to a population-weighted daytime average UHI effect of `r UHINightPop %>% filter(Group == "Limited English HH") %>% summarize(round(max(UHINightwMean),1)) %>% pull()`°, approximately `r round(UHINightPop %>% filter(Group == "Limited English HH") %>% summarize(max(UHINightwMean)) %>% pull() - max(UHINightPop$UHINightMean),1)`° (`r UHINightPopTab[1,4]`) above the state daytime average UHI. By contrast, persons over age 64 were, on average, exposed to population-weighted daytime average UHI of `r UHINightPop %>% filter(Group == "Over 64") %>% summarize(round(max(UHINightwMean),1)) %>% pull()`° (`r UHINightPopTab[5,4]`) below the state average.
 
-```{r plotUHINightTempPopAvgRI, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to nighttime Urban Heat Island effect for populations of concern in Rhode Island."}
+```{r plotUHINightTempPopAvgRI, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to nighttime Urban Heat Island effect for priority populations in Rhode Island."}
 UHINightPop %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "RI Minority" = "RI POC")) %>%
   ggplot(aes(x = reorder(Group,UHINightwMean), 
              y = UHINightwMean)) +
   geom_segment(aes(x = reorder(Group,UHINightwMean), 
@@ -2288,11 +2316,15 @@ UHINightPop %>%
   # geom_segment(aes(x = "Over 64", xend = "Over 64", y = 3.7, yend = 4.4), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-1,5))
+
+ggsave("images/RI_UHINight_graph.png")
 ```
 
 
-```{r tabUHINightPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to nighttime Urban Heat Island effect for populations of concern in Rhode Island relative to the rural average."}
+```{r tabUHINightPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to nighttime Urban Heat Island effect for priority populations in Rhode Island relative to the rural average."}
 UHINightPopTab %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "RI Minority" = "RI POC")) %>%
   arrange(Group) %>% 
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Avg Nighttime UHI (°F)",
@@ -2340,7 +2372,7 @@ LEHNightPct <- round(LEHNight/statepopsdf$TotalLEH*100,1) %>%
 
 Because the risk of heat-related illness is a combination of both exposure and vulnerability, it is important to consider where these factors come together. Figures \@ref(fig:mapLSTNightHighRiskRIMIN) and \@ref(fig:mapLSTNightHighRiskLEH) highlight Census Block Groups across Rhode Island which exhibited day-night average LSTs in the top quintile (i.e., 80th percentile) and were also designated as Environmental Justice communities for minorities or were in the top quintile for limited English speaking households.[^Nightquintile] Approximately `r RIMINNight %>% format(., big.mark = ",") %>% pull()` minorities and `r LEHNight %>% format(., big.mark = ",") %>% pull()` limited English speaking households were resident in these highest quintile Block Groups. These numbers represent `r RIMINNightPct`% and `r LEHNightPct`%, respectively, of those populations in the state. By comparison, `r HHNightPct`% of all households, and `r PopNightPct`% of the general population were resident in these same Block Groups. 
 
-Tables \@ref(tab:tabLSTNightHighRiskRIMIN) and \@ref(tab:tabLSTNightHighRiskLEH) show breakdowns by municipality of how many limited English speaking households and minorities these represent, and the day-night average LST values for those same Census Block Groups. Maps and tables for other populations of concern can be found in Figures \@ref(fig:mapLSTNightHighRiskRIINC) to \@ref(fig:mapLSTNightHighRiskO64) and Tables \@ref(tab:tabLSTNightHighRiskRIINC) to \@ref(tab:tabLSTNightHighRiskO64) in Appendix B.
+Tables \@ref(tab:tabLSTNightHighRiskRIMIN) and \@ref(tab:tabLSTNightHighRiskLEH) show breakdowns by municipality of how many limited English speaking households and minorities these represent, and the day-night average LST values for those same Census Block Groups. Maps and tables for other priority populations can be found in Figures \@ref(fig:mapLSTNightHighRiskRIINC) to \@ref(fig:mapLSTNightHighRiskO64) and Tables \@ref(tab:tabLSTNightHighRiskRIINC) to \@ref(tab:tabLSTNightHighRiskO64) in Appendix B.
 
 ```{r mapLSTNightHighRiskRIMIN, fig.align = "center", fig.cap="Map of Block Groups in the highest quintile (80th percentile) of nighttime average LST and 80th percentile of percentage of Limited English Speaking Households, as defined by Rhode Island Environmental Justice Policy, by Census Block Group, July-Aug 2019."}
 LSTNightMinorityRI5 <- ri_blkgrpLST_sf %>%
@@ -2397,7 +2429,7 @@ knitr::include_graphics("DATA/LST/ri_LSTNightMinorityRI5.png")
 ```
 
 \pagebreak
-```{r tabLSTNightHighRiskRIMIN, fig.align = "center", fig.cap="Minorities, as defined by Rhode Island Environmental Justice Policy, in Census Block Groups at or above 80th percentile of nighttime average Land Surface Temperature."}
+```{r tabLSTNightHighRiskRIMIN, fig.align = "center", fig.cap="People of Color, as defined by Rhode Island Environmental Justice Policy, in Census Block Groups at or above 80th percentile of nighttime average Land Surface Temperature."}
 LSTNightMinorityRI5 %>% 
   st_centroid(.) %>% 
   st_intersection(ri_towns_sf,.) %>% 
@@ -2421,8 +2453,8 @@ LSTNightMinorityRI5 %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "RI Minority Persons in Highest Quintile of Night Avg LST", align = "r",
-                    col.names = c(names(.)[1:2],"RI Minority*",names(.)[4:7])) %>% 
+                    caption = "RI POC in Highest Quintile of Night Avg LST", align = "r",
+                    col.names = c(names(.)[1:2], "RI POC*", "Pct of RI POC", names(.)[5:7])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) %>% 
   kableExtra::column_spec(2:4, width = "3cm") %>%
   kableExtra::add_header_above(c(" " = 4, "Night LST (°F)" = 3)) %>% 
@@ -2730,7 +2762,7 @@ For the purposes of this analysis ACS 5-year estimates for the period 2014 - 201
 
 ```{r ACSvariables}
 ACSvDF <- data.frame(Variable = c("Total Population",
-                                  "Minority",
+                                  "People of Color",
                                   "Low Income",
                                   "Limited English Household",
                                   "Less than High School Education",
@@ -2739,12 +2771,12 @@ ACSvDF <- data.frame(Variable = c("Total Population",
                                   "Over 64",
                                   "Disabled",
                                   "No Car Household",
-                                  "CT Income",
                                   "RI Income",
-                                  "RI Limited English Household",
-                                  "RI Minority",
+                                  "MA Income",
+                                  "MA Limited English Household",
+                                  "MA POC",
                                   "RI Income",
-                                  "RI Minority"),
+                                  "RI POC"),
                      Description = c("Total population",
                                      "Persons of Hispanic or Latino origin or persons who are not White",
                                      "People in households where the household income is less than or equal to twice the federal poverty level",
@@ -2755,12 +2787,12 @@ ACSvDF <- data.frame(Variable = c("Total Population",
                                      "Persons over 64 years of age",
                                      "Persons 18 years+ with a disability",
                                      "Households with no vehicle available",
-                                     "Connecticut Low Income threshold: 30% or more people in households where the household income is less than or equal to twice the federal poverty level",
-                                     "Rhode Island Low Income threshold: 25% or more of households with median household incomes below 65% statewide median",
-                                     "Rhode Island Language Isolation threshold: 25% or more people in households where all adults speak English less than \"very well\"",
-                                     "Rhode Island Minority threshold: 25% or more are persons of Hispanic or Latino origin or persons who are not White",
-                                     "Rhode Island Low Income threshold: highest 15% of block groups with people in households where the household income is less than or equal to twice the federal poverty level",
-                                     "Rhode Island Minority threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
+                                     "Maine Low Income threshold: 30% or more people in households where the household income is less than or equal to twice the federal poverty level",
+                                     "Massachusetts Low Income threshold: 25% or more of households with median household incomes below 65% statewide median",
+                                     "Massachusetts Language Isolation threshold: 25% or more people in households where all adults speak English less than \"very well\"",
+                                     "Massachusetts POC threshold: 40% or more are persons of Hispanic or Latino origin or persons who are not White OR 25% or more are persons of Hispanic or Latino origin or persons who are not White AND the median household income of the municipality is less than 150% of the statewide median household income",
+                                     "Maine Low Income threshold: highest 15% of block groups with people in households where the household income is less than or equal to twice the federal poverty level",
+                                     "Maine POC threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
                      'ACS Table ID' = c("B03002: Hispanic or Latino Origin by Race",
                                 "B03002: Hispanic or Latino Origin by Race",
                                 "C17002: Ratio of Income to Poverty Level",
@@ -2814,7 +2846,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
            NonMinority = c(20,12,5,10)) %>% 
   mutate(TotalPop = Minority + NonMinority) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
-                    caption = "Block Group Populations and Temperature", align = "l") %>% 
+                    caption = "Block Group Populations and Temperature", align = "l", col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
@@ -2832,7 +2864,8 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
                     caption = "Block Group Populations and Temperature", 
-                    align = "l") %>% 
+                    align = "l",
+                    col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5:6])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header")) %>% 
   kableExtra::row_spec(5, bold = TRUE) %>% 
   kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
@@ -2852,7 +2885,8 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
                     caption = "Block Group Populations and Temperature", 
-                    align = "l") %>% 
+                    align = "l",
+                    col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5:6])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header")) %>% 
   kableExtra::row_spec(5, bold = TRUE) %>% 
   kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
@@ -2863,7 +2897,7 @@ For the TotalPop, the population-weighted average temperature is 6800/92 = `r ro
 \pagebreak
 # Appendix B: Supplementary Figures {-}
 
-## Day-Night Highest Exposure Populations of Concern {-}
+## Day-Night Highest Exposure Priority Populations {-}
 ```{r mapLST24hrHighRiskLEH, fig.align = "center", fig.cap="Map of Block Groups in the highest quintile (80th percentile) of day-night average LST and 80th percentile of percentage of Limited English Speaking Households by Census Block Group, July-Aug 2019."}
 LST24EngLang5 <- ri_blkgrpLST_sf %>%
   filter(LST24EngLangScore == 5)
@@ -2944,7 +2978,7 @@ LST24EngLang5 %>%
   kableExtra::add_header_above(c(" " = 4, "Day-Night LST (°F)" = 3))
 ```
 
-```{r mapLST24hrHighRiskMIN, fig.align = "center", fig.cap="Map of Block Groups in the highest quintile (80th percentile) of day-night average LST and 80th percentile of percentage of Minorities by Census Block Group, July-Aug 2019."}
+```{r mapLST24hrHighRiskMIN, fig.align = "center", fig.cap="Map of Block Groups in the highest quintile (80th percentile) of day-night average LST and 80th percentile of percentage of People of Color by Census Block Group, July-Aug 2019."}
 LST24Minority5 <- ri_blkgrpLST_sf %>%
   filter(LST24MinorScore == 5)
 
@@ -2982,7 +3016,7 @@ m <- tm_shape(LST24Minority5, unit = "mi", bbox = bbox_new) + tm_fill(col = "red
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Day-Night Avg\nTemps for\nMinorities\nJuly-Aug 2019", 
+  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Day-Night Avg\nTemps for\nPeople of Color\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2996,7 +3030,7 @@ knitr::include_graphics("DATA/LST/ri_LST24Minority5.png")
 ```
 
 \pagebreak
-```{r tabLST24hrHighRiskMIN, fig.align = "center", fig.cap="Minorities in Census Block Groups at or above 80th percentile of day-night average Land Surface Temperature."}
+```{r tabLST24hrHighRiskMIN, fig.align = "center", fig.cap="People of Color in Census Block Groups at or above 80th percentile of day-night average Land Surface Temperature."}
 # Identify municipalities and values by municipality
 LST24Minority5 %>% 
   st_centroid(.) %>% 
@@ -3019,7 +3053,7 @@ LST24Minority5 %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Minorities in Highest Quintile of Day-Night Avg LST by Municipality", align = "r") %>% 
+                    caption = "People of Color in Highest Quintile of Day-Night Avg LST by Municipality", align = "r", col.names = c(names(.)[1:2], "People of Color", "Pct of POC", names(.)[5:7])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) %>% 
   kableExtra::column_spec(2:4, width = "3cm") %>%
   kableExtra::add_header_above(c(" " = 4, "Day-Night LST (°F)" = 3))
@@ -3346,7 +3380,7 @@ LST24Over645 %>%
 
 
 
-## Daytime Highest Exposure Populations of Concern {-}
+## Daytime Highest Exposure Priority Populations {-}
 
 ```{r mapLSTDayHighRiskLEH, fig.align = "center", fig.cap="Map of Block Groups in the highest quintile (80th percentile) of daytime average LST and 80th percentile of percentage of Limited English Speaking Households by Census Block Group, July-Aug 2019."}
 LSTDayEngLang5 <- ri_blkgrpLST_sf %>%
@@ -3431,7 +3465,7 @@ LSTDayEngLang5 %>%
   kableExtra::add_header_above(c(" " = 4, "Day LST (°F)" = 3))
 ```
 
-```{r mapLSTDayHighRiskMIN, fig.align = "center", fig.cap="Map of Block Groups in the highest quintile (80th percentile) of daytime average LST and 80th percentile of percentage of Minorities by Census Block Group, July-Aug 2019."}
+```{r mapLSTDayHighRiskMIN, fig.align = "center", fig.cap="Map of Block Groups in the highest quintile (80th percentile) of daytime average LST and 80th percentile of percentage of People of Color by Census Block Group, July-Aug 2019."}
 LSTDayMinority5 <- ri_blkgrpLST_sf %>%
   filter(LSTDayMinorScore == 5)
 
@@ -3472,7 +3506,7 @@ bbox_new <- bbox_new %>%  # take the bounding box ...
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) + 
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Daytime Avg\nTemps for\nMinorities\nJuly-Aug 2019", 
+  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Daytime Avg\nTemps for\nPeople of Color\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -3485,7 +3519,7 @@ bbox_new <- bbox_new %>%  # take the bounding box ...
 knitr::include_graphics("DATA/LST/ri_LSTDayMinority5.png")
 ```
 \pagebreak
-```{r tabLSTDayHighRiskMIN, fig.align = "center", fig.cap="Minorities in Census Block Groups at or above 80th percentile of daytime average Land Surface Temperature."}
+```{r tabLSTDayHighRiskMIN, fig.align = "center", fig.cap="People of Color in Census Block Groups at or above 80th percentile of daytime average Land Surface Temperature."}
 LSTDayMinority5 %>% 
   st_centroid(.) %>% 
   st_intersection(ri_towns_sf,.) %>% 
@@ -3507,7 +3541,7 @@ LSTDayMinority5 %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Minorities in Highest Quintile of Daytime Avg LST by Municipality", align = "r") %>% 
+                    caption = "People of Color in Highest Quintile of Daytime Avg LST by Municipality", align = "r", col.names = c(names(.)[1:2], "People of Color", "Pct of POC", names(.)[5:7])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) %>% 
   kableExtra::column_spec(2:4, width = "3cm") %>%
   kableExtra::add_header_above(c(" " = 4, "Day LST (°F)" = 3))
@@ -3837,7 +3871,7 @@ LSTDayOver645 %>%
 
 
 
-## Nighttime Highest Exposure Populations of Concern {-}
+## Nighttime Highest Exposure Priority Populations {-}
 
 ```{r mapLSTNightHighRiskRIINC, fig.align = "center", fig.cap="Map of Block Groups in the highest quintile (80th percentile) of nighttime average LST and Environmental Justice communities of Low Income persons, as defined by Rhode Island Environmental Justice Policy, by Census Block Group, July-Aug 2019."}
 LSTNightLowIncRI5 <- ri_blkgrpLST_sf %>%
@@ -3920,7 +3954,7 @@ LSTNightLowIncRI5 %>%
   kableExtra::footnote(., symbol = "As defined by Rhode Island Environmental Justice Policy")
 ```
 
-```{r mapLSTNightHighRiskMIN, fig.align = "center", fig.cap="Map of Block Groups in the highest quintile (80th percentile) of nighttime average LST and 80th percentile of percentage of Minorities by Census Block Group, July-Aug 2019."}
+```{r mapLSTNightHighRiskMIN, fig.align = "center", fig.cap="Map of Block Groups in the highest quintile (80th percentile) of nighttime average LST and 80th percentile of percentage of People of Color by Census Block Group, July-Aug 2019."}
 LSTNightMinority5 <- ri_blkgrpLST_sf %>%
   filter(LSTNightMinorScore == 5)
 
@@ -3961,7 +3995,7 @@ m <- LSTNightMinority5 %>%
                 labels = "80th Percentile Block Groups",
                 col = "red",
                 border.col = "white", border.alpha = 0) + 
-  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Nighttime Avg\nTemps for\nMinorities\nJuly-Aug 2019", 
+  tm_layout(title = "Highest Exposure\nand Vulnerability\nto Nighttime Avg\nTemps for\nPeople of Color\nJuly-Aug 2019", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -3974,7 +4008,7 @@ tmap_save(m, "DATA/LST/ri_LSTNightMinority5.png",
 knitr::include_graphics("DATA/LST/ri_LSTNightMinority5.png")
 ```
 \pagebreak
-```{r tabLSTNightHighRiskMIN, fig.align = "center", fig.cap="Minorities in Census Block Groups at or above 80th percentile of Nighttime average Land Surface Temperature."}
+```{r tabLSTNightHighRiskMIN, fig.align = "center", fig.cap="People of Color in Census Block Groups at or above 80th percentile of Nighttime average Land Surface Temperature."}
 LSTNightMinority5 %>% 
   st_centroid(.) %>% 
   st_intersection(ri_towns_sf,.) %>% 
@@ -3996,7 +4030,7 @@ LSTNightMinority5 %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Minorities in Highest Quintile of Nighttime Avg LST by Municipality", align = "r") %>% 
+                    caption = "People of Color in Highest Quintile of Nighttime Avg LST by Municipality", align = "r", col.names = c(names(.)[1:2], "People of Color", "Pct of POC", names(.)[5:7])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) %>% 
   kableExtra::column_spec(2:4, width = "3cm") %>%
   kableExtra::add_header_above(c(" " = 4, "Night LST (°F)" = 3))
@@ -4331,14 +4365,14 @@ LSTNightOver645 %>%
 
 ## Correlations {-}
 
-```{r cormatrixLSTpopsRI, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of temperature and the proportions of populations of concern by Census Block Group."}
-# Create a correlation matrix of PM25 and populations of concern
+```{r cormatrixLSTpopsRI, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of temperature and the proportions of priority populations by Census Block Group."}
+# Create a correlation matrix of PM25 and priority populations
 corrLSTpops <- ri_blkgrpLST_sf %>% 
   as.data.frame() %>% 
   dplyr::transmute(`Day-Night Avg LST` = meanNightLST,
                    `Day LST` = meanDayLST,
                    `Night LST` = meanNightLST, 
-                Minority = minority_pctE, 
+                `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Lang Isol` = eng_limit_pctE, 
                 `No HS Dip` = pct_lthsE, 
@@ -4356,7 +4390,7 @@ ggcorrplot(corrLSTpops, hc.order = TRUE, type = "lower", lab = TRUE,
 
 
 ```{r cormatrixLSTAvgRIpollutants, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Spearman's correlation matrix of temperature and pollution by Census Block Group."}
-# Create a correlation matrix of PM25 and populations of concern
+# Create a correlation matrix of PM25 and priority populations
 corrLSTemissions <- ri_blkgrpLST_sf %>% 
   as.data.frame() %>% 
   dplyr::transmute(`Day-Night Avg LST` = meanNightLST,
