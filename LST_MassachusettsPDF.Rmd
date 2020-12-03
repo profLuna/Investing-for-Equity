@@ -3303,7 +3303,7 @@ LST24Minority5 %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "People of Color in Highest Quintile of Day-Night Avg LST by Municipality", align = "r", col.names = c("City/Town", "People of Color", "Pct of POC")) %>% 
+                    caption = "People of Color in Highest Quintile of Day-Night Avg LST by Municipality", align = "r", col.names = c(names(.)[1:2], "People of Color", "Pct of POC", names(.)[5:7])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) %>% 
   kableExtra::column_spec(2:4, width = "3cm") %>%
   kableExtra::add_header_above(c(" " = 4, "Day-Night LST (°F)" = 3))
@@ -3956,7 +3956,7 @@ LSTDayMinority5 %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "People of Color in Highest Quintile of Daytime Avg LST by Municipality", align = "r", col.names = c("City/Town", "People of Color", "Pct of POC")) %>% 
+                    caption = "People of Color in Highest Quintile of Daytime Avg LST by Municipality", align = "r", col.names = c(names(.)[1:2], "People of Color", "Pct of POC", names(.)[5:7])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) %>% 
   kableExtra::column_spec(2:4, width = "3cm") %>%
   kableExtra::add_header_above(c(" " = 4, "Day LST (°F)" = 3))
@@ -4608,7 +4608,7 @@ LSTNightMinority5 %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "People of Color in Highest Quintile of Nighttime Avg LST by Municipality", align = "r", col.names = c("City/Town", "People of Color", "Pct of POC")) %>% 
+                    caption = "People of Color in Highest Quintile of Nighttime Avg LST by Municipality", align = "r", col.names = c(names(.)[1:2], "People of Color", "Pct of POC", names(.)[5:7])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) %>% 
   kableExtra::column_spec(2:4, width = "3cm") %>%
   kableExtra::add_header_above(c(" " = 4, "Night LST (°F)" = 3))
