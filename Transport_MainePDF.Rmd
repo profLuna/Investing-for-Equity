@@ -163,7 +163,7 @@ me_busBuff400m <- st_buffer(me_transit_sf,dist = 400) %>%
   st_union() %>%
   st_as_sf()
 
-# Use areal interpolation to calculate populations of concern within buffer of accessibility
+# Use areal interpolation to calculate priority populations within buffer of accessibility
 me_busBuff400m_sf <- me_blkgrps_developed %>%
   select(GEOID,NewArea:NewLths) %>%
   mutate(OldArea = NewArea) %>%
@@ -289,7 +289,7 @@ I95 <- tmap_icons(file = "https://upload.wikimedia.org/wikipedia/commons/thumb/6
 #     ROUTE %in% c(1,20,27,28,31,50,56,71,92) ~ "Key Corridor",
 #     ROUTE %in% c(16,203,204,210,231,242,281,282,301) ~ "Flex Service"))
 
-# Calculate totals of populations of concern for use in computing percentages in later tables
+# Calculate totals of priority populations for use in computing percentages in later tables
 # Calculate tract populations by state
 statepopsdf_tracts <- me_tracts_sf %>% 
   as.data.frame() %>% 
@@ -438,10 +438,11 @@ knitr::include_graphics("DATA/transport/ME/figures/me_transit.png")
 
 Approximately `r paste0(round(me_transitAccessPops_df %>% filter(Group == "Total Pop") %>% dplyr::select(PctBus) %>% pull(),1),"%")` of the state population lives within reasonable walking distance of a fixed bus route (defined as approximately 400 meters or 1/4 mile). 
 
-However, this access varies by population group. Figure \@ref(fig:loliBusDist) below compares the percentages of different population groups living within reasonable walking distance of bus routes across the state. Most populations of concern, including transit-dependent groups, have access similar to or better than the general population. However, note that people over age 64 and under 18 have less access on average compared to the general population.
+However, this access varies by population group. Figure \@ref(fig:loliBusDist) below compares the percentages of different population groups living within reasonable walking distance of bus routes across the state. Most priority populations, including transit-dependent groups, have access similar to or better than the general population. However, note that people over age 64 and under 18 have less access on average compared to the general population.
 
 ```{r loliBusDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Percentage of population groups within 1/4 mile (400 meters) of a bus routes across Maine."}
 me_transitAccessPops_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
   ggplot(aes(x = reorder(Group,-PctBus), 
              y = PctBus)) +
   geom_segment(aes(x = reorder(Group,-PctBus), xend = reorder(Group,-PctBus),
@@ -463,6 +464,8 @@ me_transitAccessPops_df %>%
   geom_text(aes(x = "Total Pop", y = 18, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(15,45))
+
+ggsave("images/ME_Bus_graph.png")
 ```
 
 Specific values of the same can be seen in Table \@ref(tab:statsBusDist) below.
@@ -470,6 +473,7 @@ Specific values of the same can be seen in Table \@ref(tab:statsBusDist) below.
 ```{r statsBusDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Maine populations living within 1/4 mile (400 meters) of a bus route. Based on ACS 2018 Block Group data."}
 # See table of distance by group
 me_transitAccessPops_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
   mutate(`% Bus Access` = paste0(round(PctBus,1),"%")) %>% 
   select(-PctBus) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
@@ -514,7 +518,7 @@ TransitNoAccess2 <- me_blkgrps_sf_noBus %>%
   arrange(desc(`Under 18`))
 ```
 Figures \@ref(fig:mapTransitAccessO64) and \@ref(fig:mapTransitAccessU18) below highlight developed portions of Census Block Groups across Maine which are more than 1 mile from a bus route and the numbers of persons over 64 or under 18 who live there. Tables \@ref(tab:tabTransitAccessO64) and \@ref(tab:tabTransitAccessU18) show breakdowns by municipality. For example, Table \@ref(tab:tabTransitAccessO64) shows that `r formatC(as.numeric(TransitNoAccess1[1,3]),big.mark=",")` people over 64 across `r TransitNoAccess1[1,2]` Block Groups in `r TransitNoAccess1[1,1]` resided one or more miles from the nearest bus route. These people represented `r TransitNoAccess1[1,4]` of people over 64 in `r TransitNoAccess1[1,1]`. Similarly, Table \@ref(tab:tabTransitAccessDisabled) shows that `r formatC(as.numeric(TransitNoAccess2[1,3]),big.mark=",")` people under 18 across `r TransitNoAccess1[1,2]` Census Block Groups in `r TransitNoAccess2[1,1]` resided one or more miles from the nearest bus route. These people represented `r TransitNoAccess2[1,4]` of people under 18 in `r TransitNoAccess2[1,1]`.
-Maps and tables of other populations of concern without access to transit can be found in Appendix B.
+Maps and tables of other priority populations without access to transit can be found in Appendix B.
 
 ```{r mapTransitAccessO64, fig.align = "center", fig.cap="Persons over 64 who are one or more miles from the nearest bus route by Census Block Group."}
 m <- tm_shape(me_state_sf_cb, unit = "mi") + 
@@ -678,7 +682,7 @@ me_tract_walkability_df <- me_tract_walkability_sf %>%
   group_by(Group) %>% 
   summarize(wNatWalkIndex = weighted.mean(NatWalkInd, Pop, na.rm = TRUE))
 
-# Populated-Weighted Average Walkability Index for Populations of Concern
+# Populated-Weighted Average Walkability Index for Priority Populations
 me_wAvgWalkability_df <- me_blkgrp_walkability_sf %>% 
   as.data.frame() %>% 
   transmute(`Total Pop` = totalpopE,
@@ -745,6 +749,7 @@ Walkability varies for different population groups across the state. Figure \@re
 ```{r loliWalkability, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="population-weighted average walkability index scores for groups across Maine."}
 # Create lollipop graph of pop-weighted average walk index
 me_wAvgWalkability_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
   ggplot(aes(x = reorder(Group,-wNatWalkIndex), y = wNatWalkIndex)) +
   geom_segment(aes(x = reorder(Group,-wNatWalkIndex), 
                    xend = reorder(Group,-wNatWalkIndex),
@@ -765,6 +770,8 @@ me_wAvgWalkability_df %>%
   geom_text(aes(x = "Total Pop", y = 6.3, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(6,8))
+
+ggsave("images/ME_Walk_graph.png")
 ```
 ```{r lowWalk, include=FALSE}
 # Isolate least walkable block groups and tracts and add area variable
@@ -803,8 +810,8 @@ leastWalkable2 <- leastWalkable %>%
   arrange(desc(`Over 64`))
 
 ```
-The population-weighted average walkability scores provide a glimpse of average walkability across the state for different population groups. However, walkability also varies for specific communities. Indeed, it is important to consider populations of concern that reside in communities with low walkability. Figures \@ref(fig:mapLowWalkU18) and  \@ref(fig:mapLowWalkO64) below highlight Census Block Groups across Maine that are least walkable and the numbers of persons under 18 or over 64 that live there. Tables \@ref(tab:tabLowWalkU18) and \@ref(tab:tabLowWalkO64) show breakdowns by municipality. For example, Table \@ref(tab:tabLowWalkU18) shows that `r formatC(as.numeric(leastWalkable1[1,3]),big.mark=",")` people under 18 across `r leastWalkable1[1,2]` Block Groups in `r leastWalkable1[1,1]` resided in the least walkable areas. These people represented `r leastWalkable1[1,4]` of people under 18 in `r leastWalkable1[1,1]`. Similarly, Table \@ref(tab:tabLowWalkO64) shows that `r formatC(as.numeric(leastWalkable2[1,3]),big.mark=",")` people over 64 across `r leastWalkable2[1,2]` Block Groups in `r leastWalkable2[1,1]` resided in the least walkable areas. These people represented `r leastWalkable2[1,4]` of people over 64 in `r leastWalkable2[1,1]`.
-Maps and tables of other populations of concern in the least walkable Block Groups can be found in Appendix B.
+The population-weighted average walkability scores provide a glimpse of average walkability across the state for different population groups. However, walkability also varies for specific communities. Indeed, it is important to consider priority populations that reside in communities with low walkability. Figures \@ref(fig:mapLowWalkU18) and  \@ref(fig:mapLowWalkO64) below highlight Census Block Groups across Maine that are least walkable and the numbers of persons under 18 or over 64 that live there. Tables \@ref(tab:tabLowWalkU18) and \@ref(tab:tabLowWalkO64) show breakdowns by municipality. For example, Table \@ref(tab:tabLowWalkU18) shows that `r formatC(as.numeric(leastWalkable1[1,3]),big.mark=",")` people under 18 across `r leastWalkable1[1,2]` Block Groups in `r leastWalkable1[1,1]` resided in the least walkable areas. These people represented `r leastWalkable1[1,4]` of people under 18 in `r leastWalkable1[1,1]`. Similarly, Table \@ref(tab:tabLowWalkO64) shows that `r formatC(as.numeric(leastWalkable2[1,3]),big.mark=",")` people over 64 across `r leastWalkable2[1,2]` Block Groups in `r leastWalkable2[1,1]` resided in the least walkable areas. These people represented `r leastWalkable2[1,4]` of people over 64 in `r leastWalkable2[1,1]`.
+Maps and tables of other priority populations in the least walkable Block Groups can be found in Appendix B.
 
 ```{r mapLowWalkU18, fig.align = "center", fig.cap="Persons under 18 per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
 leastWalkable18 <- leastWalkable %>% 
@@ -958,7 +965,7 @@ lai_me_tract_df <- lai_me_tract %>%
   group_by(Group) %>% 
   summarize(wTBurden = weighted.mean(hh7_t, Pop, na.rm = TRUE))
 
-# Population-weighted average transportation cost burden for populations of concern
+# Population-weighted average transportation cost burden for priority populations
 lai_me_df <- lai_me_blkgrp %>% 
   as.data.frame() %>% 
   transmute(`Total Pop` = totalpopE,
@@ -1050,7 +1057,7 @@ lai_me_df %>%
             color = "gray48") +
   expand_limits(y = c(27,33))
 
-ggsave("DATA/transport/ME/figures/me_tburden_lolli.png")
+ggsave("images/ME_Cost_graph.png")
 ```
 ```{r HiBurden, include=FALSE}
 # Isolate highest transport burden block groups and tracts and add area variable
@@ -1088,8 +1095,8 @@ HiBurden2 <- HiBurdenTract %>%
   mutate(`Pct of Disabled` = paste0(`Pct of Disabled`,"%")) %>% 
   arrange(desc(`Disabled`))
 ```
-The population-weighted average transportation cost burden values provide a glimpse of average transportation cost burden across the state for different population groups. However, transportation cost burden also varies for specific communities. Indeed, it is important to consider populations of concern that reside in communities with a high transportation cost burden. Figures \@ref(fig:mapHiBurdenLTHS) and \@ref(fig:mapHiBurdenDisabled) below highlight Census Block Groups across Maine where the transportation cost burden is in the highest quintile (i.e., 80th percentile) and the numbers of adults without a high school diploma or disabled persons that live there. Tables \@ref(tab:tabHiBurdenLTHS) and \@ref(tab:tabHiBurdenDisabled) show breakdowns by municipality. For example, Table \@ref(tab:tabHiBurdenLTHS) shows that `r formatC(as.numeric(HiBurden1[1,3]),big.mark=",")` adults without a high school diploma across `r HiBurden1[1,2]` Block Groups in `r HiBurden1[1,1]` resided in areas with the highest transportation cost burden. These people represented `r HiBurden1[1,4]` of adults without a high school diploma in `r HiBurden1[1,1]`. Similarly, Table \@ref(tab:tabHiBurdenDisabled) shows that `r formatC(as.numeric(HiBurden2[1,3]),big.mark=",")` disabled persons across `r HiBurden2[1,2]` Block Groups in `r HiBurden2[1,1]` resided in areas with the highest transportation cost burden. These people represented `r HiBurden2[1,4]` of disabled persons in `r HiBurden2[1,1]`.
-Maps and tables of other populations of concern in areas with the highest transportation cost burden can be found in Appendix B.
+The population-weighted average transportation cost burden values provide a glimpse of average transportation cost burden across the state for different population groups. However, transportation cost burden also varies for specific communities. Indeed, it is important to consider priority populations that reside in communities with a high transportation cost burden. Figures \@ref(fig:mapHiBurdenLTHS) and \@ref(fig:mapHiBurdenDisabled) below highlight Census Block Groups across Maine where the transportation cost burden is in the highest quintile (i.e., 80th percentile) and the numbers of adults without a high school diploma or disabled persons that live there. Tables \@ref(tab:tabHiBurdenLTHS) and \@ref(tab:tabHiBurdenDisabled) show breakdowns by municipality. For example, Table \@ref(tab:tabHiBurdenLTHS) shows that `r formatC(as.numeric(HiBurden1[1,3]),big.mark=",")` adults without a high school diploma across `r HiBurden1[1,2]` Block Groups in `r HiBurden1[1,1]` resided in areas with the highest transportation cost burden. These people represented `r HiBurden1[1,4]` of adults without a high school diploma in `r HiBurden1[1,1]`. Similarly, Table \@ref(tab:tabHiBurdenDisabled) shows that `r formatC(as.numeric(HiBurden2[1,3]),big.mark=",")` disabled persons across `r HiBurden2[1,2]` Block Groups in `r HiBurden2[1,1]` resided in areas with the highest transportation cost burden. These people represented `r HiBurden2[1,4]` of disabled persons in `r HiBurden2[1,1]`.
+Maps and tables of other priority populations in areas with the highest transportation cost burden can be found in Appendix B.
 
 ```{r mapHiBurdenLTHS, fig.align = "center", fig.cap="Adults without a high school diploma per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
 m <- tm_shape(me_state_sf_cb, unit = "mi") + 
@@ -1291,7 +1298,7 @@ For the purposes of this analysis ACS 5-year estimates for the period 2014 - 201
 
 ```{r ACSvariables}
 ACSvDF <- data.frame(Variable = c("Total Population",
-                                  "Minority",
+                                  "People of Color",
                                   "Low Income",
                                   "Limited English Household",
                                   "Less than High School Education",
@@ -1303,9 +1310,9 @@ ACSvDF <- data.frame(Variable = c("Total Population",
                                   "CT Income",
                                   "MA Income",
                                   "MA Limited English Household",
-                                  "MA Minority",
-                                  "MA Income",
-                                  "MA Minority"),
+                                  "MA POC",
+                                  "RI Income",
+                                  "RI POC"),
                      Description = c("Total population",
                                      "Persons of Hispanic or Latino origin or persons who are not White",
                                      "People in households where the household income is less than or equal to twice the federal poverty level",
@@ -1316,12 +1323,12 @@ ACSvDF <- data.frame(Variable = c("Total Population",
                                      "Persons over 64 years of age",
                                      "Persons 18 years+ with a disability",
                                      "Households with no vehicle available",
-                                     "Maine Low Income threshold: 30% or more people in households where the household income is less than or equal to twice the federal poverty level",
-                                     "Maine Low Income threshold: 25% or more of households with median household incomes below 65% statewide median",
-                                     "Maine Language Isolation threshold: 25% or more people in households where all adults speak English less than \"very well\"",
-                                     "Maine Minority threshold: 25% or more are persons of Hispanic or Latino origin or persons who are not White",
-                                     "Maine Low Income threshold: highest 15% of block groups with people in households where the household income is less than or equal to twice the federal poverty level",
-                                     "Maine Minority threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
+                                     "Connecticut Low Income threshold: 30% or more people in households where the household income is less than or equal to twice the federal poverty level",
+                                     "Massachusetts Low Income threshold: 25% or more of households with median household incomes below 65% statewide median",
+                                     "Massachusetts Language Isolation threshold: 25% or more people in households where all adults speak English less than \"very well\"",
+                                     "Massachusetts POC threshold: 40% or more are persons of Hispanic or Latino origin or persons who are not White OR 25% or more are persons of Hispanic or Latino origin or persons who are not White AND the median household income of the municipality is less than 150% of the statewide median household income",
+                                     "Rhode Island Low Income threshold: highest 15% of block groups with people in households where the household income is less than or equal to twice the federal poverty level",
+                                     "Rhode Island POC threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
                      'ACS Table ID' = c("B03002: Hispanic or Latino Origin by Race",
                                 "B03002: Hispanic or Latino Origin by Race",
                                 "C17002: Ratio of Income to Poverty Level",
@@ -1366,7 +1373,7 @@ ACSvDF %>%
 
 ## Population-weighted averages {-}
 
-Wherever feasible, averages are reported as population-weighted averages. A population weighted-average is equivalent to a weighted mean in which the raw values for which a mean (or average) is calculated are multiplied by a weight factor. For example, we are interested in knowing whether Minorities experience longer headways than the general or Total Population. Consider the table below.
+Wherever feasible, averages are reported as population-weighted averages. A population weighted-average is equivalent to a weighted mean in which the raw values for which a mean (or average) is calculated are multiplied by a weight factor. For example, we are interested in knowing whether People of Color experience longer headways than the general or Total Population. Consider the table below.
 
 ```{r wmean1}
 data.frame(BG = c("BG1","BG2","BG3","BG4"),
@@ -1375,13 +1382,13 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
            NonMinority = c(20,12,5,10)) %>% 
   mutate(TotalPop = Minority + NonMinority) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
-                    caption = "Block Group Populations and Headways", align = "l") %>% 
+                    caption = "Block Group Populations and Headways", align = "l", col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Population numbers of minorities, as well as the total population, and headways, are each reported by Block Group. Since each Block Group is associated with one headway value, we might assume (incorrectly) that everyone is equally exposed to the average headways of all Block Groups (`r round(mean(c(65,75,85,70)),2)`). However, not all Block Groups have the same number or categories of people, which means that each headway value is associated with a different number of people. Do Minorities occupy Block Groups with higher headways than the simple average would indicate?
+Population numbers of People of Color, as well as the total population, and headways, are each reported by Block Group. Since each Block Group is associated with one headway value, we might assume (incorrectly) that everyone is equally exposed to the average headways of all Block Groups (`r round(mean(c(65,75,85,70)),2)`). However, not all Block Groups have the same number or categories of people, which means that each headway value is associated with a different number of people. Do People of Color occupy Block Groups with higher headways than the simple average would indicate?
 
-To calculate the population-weighted average headway for Minorities, the number of Minorities in each Block Group is used as a 'weight'. The headway of each Block Group is multiplied by its respective number of Minorities. See the table below. 
+To calculate the population-weighted average headway for People of Color, the number of People of Color in each Block Group is used as a 'weight'. The headway of each Block Group is multiplied by its respective number of People of Color. See the table below. 
 
 ```{r wmean2}
 data.frame(BG = c("BG1","BG2","BG3","BG4"),
@@ -1393,13 +1400,14 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
                     caption = "Block Group Populations and Headway", 
-                    align = "l") %>% 
+                    align = "l",
+                    col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5:6])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header")) %>% 
   kableExtra::row_spec(5, bold = TRUE) %>% 
   kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
 ```
 
-The total or sum of the products (i.e., Minority pop x Headway) is then divided by the sum of the weights (i.e., total Minority population), so that 3475/45 = `r round(3475/45,2)`. The result is a weighted average headway that is influenced by the number of minorities. 
+The total or sum of the products (i.e., POC x Headway) is then divided by the sum of the weights (i.e., total POC population), so that 3475/45 = `r round(3475/45,2)`. The result is a weighted average headway that is influenced by the number of People of Color. 
 
 This process is repeated for the Total Population so that the two population-weighted average headways can be compared. Below is the calculation of population-weighted calculation for the total population. 
 
@@ -1413,18 +1421,19 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
                     caption = "Block Group Populations and Headway", 
-                    align = "l") %>% 
+                    align = "l",
+                    col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5:6])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header")) %>% 
   kableExtra::row_spec(5, bold = TRUE) %>% 
   kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
 ```
 
-For the TotalPop, the population-weighted average headway is 6800/92 = `r round(6800/92,2)`. Thus we can see that Minorities experience a higher population-weighted average headway than the general or total population. 
+For the TotalPop, the population-weighted average headway is 6800/92 = `r round(6800/92,2)`. Thus we can see that People of Color experience a higher population-weighted average headway than the general or total population. 
 
 
 \pagebreak
 # Appendix B: Supplementary Figures {-}
-## No Transit Access and Populations of Concern {-}
+## No Transit Access and Priority Populations {-}
 ```{r mapTransitAccessDisabled, fig.align = "center", fig.cap="Disabled persons who are one or more miles from the nearest bus route by Census Tract."}
 m <- tm_shape(me_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
@@ -1720,12 +1729,12 @@ me_tracts_sf_noBus %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
 
-```{r mapTransitAccessMIN, fig.align = "center", fig.cap="Minority persons who are one or more miles from the nearest bus route by Census Block Group."}
+```{r mapTransitAccessMIN, fig.align = "center", fig.cap="People of Color who are one or more miles from the nearest bus route by Census Block Group."}
 m <- tm_shape(me_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(me_blkgrps_sf_noBus_simple, unit = "mi") +
   tm_fill(col = "NewMinority", alpha = 0.9, style = "quantile",
-          colorNA = "white", colorNULL = "gray", title = "Number of\nMinority Persons",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nPeople of Color",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(me_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -1743,7 +1752,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Bus Route") +
-  tm_layout(title = "Minority Persons\n1+ Miles from\nNearest Bus\nRoute", 
+  tm_layout(title = "People of Color\n1+ Miles from\nNearest Bus\nRoute", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1755,7 +1764,7 @@ tmap_save(m, "DATA/transport/ME/figures/me_transitMINaccess.png",
 knitr::include_graphics("DATA/transport/ME/figures/me_transitMINaccess.png")
 ```
 
-```{r tabTransitAccessMIN, fig.align = "center", fig.cap="Minority persons in Census Block Groups one or more miles from the nearest bus route."}
+```{r tabTransitAccessMIN, fig.align = "center", fig.cap="People of Color in Census Block Groups one or more miles from the nearest bus route."}
 me_blkgrps_sf_noBus %>%
   st_centroid(.) %>% 
   st_intersection(me_towns_sf,.) %>% 
@@ -1773,8 +1782,8 @@ me_blkgrps_sf_noBus %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Minority Persons One or More Miles from Nearest Bus Route", align = "r", 
-                    col.names = c(names(.)[1:2],"Number of Minority in Block Groups","Pct of Minority in City/Town")) %>% 
+                    caption = "People of Color One or More Miles from Nearest Bus Route", align = "r", 
+                    col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
@@ -1839,7 +1848,7 @@ me_blkgrps_sf_noBus %>%
 ```
 
 
-## Low Walkability and Populations of Concern {-}
+## Low Walkability and Priority Populations {-}
 ```{r mapLowWalkU5, fig.align = "center", fig.cap="Children under 5 per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
 m <- tm_shape(me_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
@@ -2068,12 +2077,12 @@ leastWalkable %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapLowWalkMIN, fig.align = "center", fig.cap="Minority persons per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+```{r mapLowWalkMIN, fig.align = "center", fig.cap="People of Color per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
 m <- tm_shape(me_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(leastWalkable, unit = "mi") +
   tm_fill(col = "minorityE", alpha = 0.9, style = "fisher",
-          colorNA = "white", colorNULL = "gray", title = "Minority Persons\nPer Square Kilometer",
+          colorNA = "white", colorNULL = "gray", title = "People of Color\nPer Square Kilometer",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
   tm_shape(me_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -2090,7 +2099,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
-  tm_layout(title = "Minority Persons\nin Least Walkable\nBlock Groups", 
+  tm_layout(title = "People of Color\nin Least Walkable\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2102,7 +2111,7 @@ tmap_save(m, "DATA/transport/ME/figures/me_walkMIN.png",
 knitr::include_graphics("DATA/transport/ME/figures/me_walkMIN.png")
 ```
 
-```{r tabLowWalkMIN, fig.align = "center", fig.cap="Minority persons by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+```{r tabLowWalkMIN, fig.align = "center", fig.cap="People of Color by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
 leastWalkable %>%
   st_centroid(.) %>% 
   st_intersection(me_towns_sf,.) %>% 
@@ -2120,7 +2129,7 @@ leastWalkable %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Minority Persons in Least Walkable Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Minority in Block Groups","Pct of Minority in City/Town")) %>% 
+                    caption = "People of Color in Least Walkable Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
@@ -2240,7 +2249,7 @@ leastWalkableTract %>%
 ```
 
 
-## Highest Transportation Cost Burden and Populations of Concern {-}
+## Highest Transportation Cost Burden and Priority Populations {-}
 
 ```{r mapHiBurdenO64, fig.align = "center", fig.cap="Persons over 64 per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
 m <- tm_shape(me_state_sf_cb, unit = "mi") + 
@@ -2528,12 +2537,12 @@ HiBurdenTract %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapHiBurdenMIN, fig.align = "center", fig.cap="Minority persons per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+```{r mapHiBurdenMIN, fig.align = "center", fig.cap="People of Color per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
 m <- tm_shape(me_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(HiBurden, unit = "mi") +
   tm_fill(col = "minorityE", alpha = 0.9, style = "fisher",
-          colorNA = "white", colorNULL = "gray", title = "Minority Persons\nPer Square Kilometer",
+          colorNA = "white", colorNULL = "gray", title = "People of Color\nPer Square Kilometer",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
   tm_shape(me_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -2550,7 +2559,7 @@ m <- tm_shape(me_state_sf_cb, unit = "mi") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("center","bottom")) +
-  tm_layout(title = "Minority Persons\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+  tm_layout(title = "People of Color\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2562,7 +2571,7 @@ tmap_save(m, "DATA/transport/ME/figures/me_HiBurdenMIN.png",
 knitr::include_graphics("DATA/transport/ME/figures/me_HiBurdenMIN.png")
 ```
 
-```{r tabHiBurdenMIN, fig.align = "center", fig.cap="Minority persons by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+```{r tabHiBurdenMIN, fig.align = "center", fig.cap="People of Color by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
 HiBurden %>%
   st_centroid(.) %>% 
   st_intersection(me_towns_sf,.) %>% 
@@ -2580,7 +2589,7 @@ HiBurden %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Minority Persons in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Minority in Block Groups","Pct of Minority in City/Town")) %>% 
+                    caption = "People of Color in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
