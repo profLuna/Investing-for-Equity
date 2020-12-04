@@ -270,7 +270,7 @@ ma_transitAllBuff <- rbind(ma_busBuff400m,
   st_as_sf() %>% 
   mutate(Sqm = st_area(.))
 
-# Use areal interpolation to calculate populations of concern within buffer of accessibility
+# Use areal interpolation to calculate priority populations within buffer of accessibility
 ma_busBuff400m_sf <- ma_blkgrps_developed %>% 
   select(GEOID,NewArea:NewMA_ENGLISH) %>% 
   mutate(OldArea = NewArea) %>% 
@@ -380,7 +380,7 @@ ma_TransitAllBuffTracts_sf <- ma_tracts_developed %>%
          NewDisabled = as.integer(NewDisabled*Proportion),
          NewNoCar = as.integer(NewHHNoCar*Proportion))
 
-# # Use areal interpolation to calculate populations of concern within buffer of accessibility
+# # Use areal interpolation to calculate priority populations within buffer of accessibility
 # ma_busBuff400m_sf <- ma_blkgrps_sf %>% 
 #   mutate(MA_LOWINC = if_else(MA_INCOME == "I",totalpopE,0)) %>% 
 #   mutate(MA_LOWINC = replace_na(MA_LOWINC,0)) %>% 
@@ -641,7 +641,7 @@ Hwy6 <- tmap_icons("https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/US
 #     ROUTE %in% c(1,20,27,28,31,50,56,71,92) ~ "Key Corridor",
 #     ROUTE %in% c(16,203,204,210,231,242,281,282,301) ~ "Flex Service"))
 
-# Calculate totals of populations of concern for use in computing percentages in later tables
+# Calculate totals of priority populations for use in computing percentages in later tables
 # Calculate tract populations by state
 statepopsdf_tracts <- ma_tracts_sf %>% 
   as.data.frame() %>% 
@@ -904,10 +904,12 @@ knitr::include_graphics("DATA/transport/MA/figures/ma_transit.png")
 Approximately `r paste0(round(ma_transitAccessPops_df %>% filter(Group == "Total Pop") %>% dplyr::select(PctBus) %>% pull(),1),"%")` of the state population lives within reasonable walking distance of a bus stop (defined as approximately 400 meters or 1/4 mile), 
  `r paste0(round(ma_transitAccessPops_df %>% filter(Group == "Total Pop") %>% dplyr::select(PctRapidTransit) %>% pull(),1),"%")` live within 1/2 mile of a rapid transit stop, `r paste0(round(ma_transitAccessPops_df %>% filter(Group == "Total Pop") %>% dplyr::select(PctCommuter) %>% pull(),1),"%")` live within 3 miles of a commuter rail stop, and `r paste0(round(ma_transitAccessPops_df %>% filter(Group == "Total Pop") %>% dplyr::select(PctAllTransit) %>% pull(),1),"%")` live within reasonable distance of any transit. 
 
-However, this access varies by population group and by mode of transit. Figures \@ref(fig:loliBusDist) to \@ref(fig:loliAllTransitDist) below compare the percentages of different population groups living within reasonable walking distance of bus stops (1/4 mile), rapid transit (1/2 mile), and commuter rail or park-in-ride stops (3 miles) across the state, respectively. Most populations of concern, including transit-dependent groups, have access similar to or better than the general population. However, note that people over age 64 and under 18 have consistently less access to transit on average compared to the general population.
+However, this access varies by population group and by mode of transit. Figures \@ref(fig:loliBusDist) to \@ref(fig:loliAllTransitDist) below compare the percentages of different population groups living within reasonable walking distance of bus stops (1/4 mile), rapid transit (1/2 mile), and commuter rail or park-in-ride stops (3 miles) across the state, respectively. Most priority populations, including transit-dependent groups, have access similar to or better than the general population. However, note that people over age 64 and under 18 have consistently less access to transit on average compared to the general population.
 
 ```{r loliBusDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Percentage of population groups within 1/4 mile (400 meters) of a bus stop across Massachusetts."}
 ma_transitAccessPops_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "MA Minority" = "MA POC")) %>%
   ggplot(aes(x = reorder(Group,-PctBus), 
              y = PctBus)) +
   geom_segment(aes(x = reorder(Group,-PctBus), xend = reorder(Group,-PctBus),
@@ -929,10 +931,14 @@ ma_transitAccessPops_df %>%
   geom_text(aes(x = "Total Pop", y = 35, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(30,96))
+
+ggsave("images/MA_Bus_graph.png")
 ```
 
 ```{r loliRTDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Percentage of population groups within 1/2 mile (800 meters) of a rapid transit stop across Massachusetts."}
 ma_transitAccessPops_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "MA Minority" = "MA POC")) %>%
   ggplot(aes(x = reorder(Group,-PctRapidTransit), 
              y = PctRapidTransit)) +
   geom_segment(aes(x = reorder(Group,-PctRapidTransit), xend = reorder(Group,-PctRapidTransit),
@@ -954,10 +960,14 @@ ma_transitAccessPops_df %>%
   geom_text(aes(x = "Total Pop", y = 5, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(0,35))
+
+ggsave("images/MA_RT_graph.png")
 ```
 
 ```{r loliCRDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Percentage of population groups within 3 miles (4800 meters) of a commuter rail stop or park-in-ride lot across Massachusetts."}
 ma_transitAccessPops_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "MA Minority" = "MA POC")) %>%
   ggplot(aes(x = reorder(Group,-PctCommuter), 
              y = PctCommuter)) +
   geom_segment(aes(x = reorder(Group,-PctCommuter), xend = reorder(Group,-PctCommuter),
@@ -979,10 +989,14 @@ ma_transitAccessPops_df %>%
   geom_text(aes(x = "Total Pop", y = 58, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(55,90))
+
+ggsave("images/MA_CR_graph.png")
 ```
 
 ```{r loliAllTransitDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Percentage of population groups with access to any transit stops across Massachusetts, based on reasonable distances for each mode."}
 ma_transitAccessPops_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "MA Minority" = "MA POC")) %>%
   ggplot(aes(x = reorder(Group,-PctAllTransit), 
              y = PctAllTransit)) +
   geom_segment(aes(x = reorder(Group,-PctAllTransit), xend = reorder(Group,-PctAllTransit),
@@ -1004,6 +1018,8 @@ ma_transitAccessPops_df %>%
   geom_text(aes(x = "Total Pop", y = 68, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(65,100))
+
+ggsave("images/MA_Transit_graph.png")
 ```
 
 Specific values of the same can be seen in Table \@ref(tab:statsTransitDist) below.
@@ -1011,6 +1027,8 @@ Specific values of the same can be seen in Table \@ref(tab:statsTransitDist) bel
 ```{r statsTransitDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Massachusetts populations living within 1/4 mile (400 meters) of a bus stop. Based on ACS 2018 Block Group data."}
 # See table of distance by group
 ma_transitAccessPops_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "MA Minority" = "MA POC")) %>%
   mutate(PctBus = paste0(round(PctBus,1),"%"),
          PctRapidTransit = paste0(round(PctRapidTransit,1),"%"),
          PctCommuter = paste0(round(PctCommuter,1),"%"),
@@ -1134,7 +1152,7 @@ TransitNoAccess2 <- ma_blkgrps_sf_noTransit %>%
   arrange(desc(`Under 18`))
 ```
 Figures \@ref(fig:mapBusAccessO64) to \@ref(fig:mapTransitAccessO64) below highlight developed portions of Census Block Groups across Massachusetts without reasonable access to bus, rapid transit, commuter rail and park-in-ride lots, or any mode of transit, respectively, and the numbers of persons over 64 who live there. Tables \@ref(tab:tabBusAccessO64) to \@ref(tab:tabTransitAccessO64) show breakdowns of the same by municipality. For example, Table \@ref(tab:tabBusAccessO64) shows that `r formatC(as.numeric(BusNoAccess1[1,3]),big.mark=",")` people over 64 across `r BusNoAccess1[1,2]` Block Groups in `r BusNoAccess1[1,1]` resided one or more miles from the nearest bust stop. These people represented `r BusNoAccess1[1,4]` of people over 64 in `r BusNoAccess1[1,1]`. Similarly, Table \@ref(tab:tabTransitAccessO64) shows that `r formatC(as.numeric(TransitNoAccess1[1,3]),big.mark=",")` people over 64 across `r TransitNoAccess1[1,2]` Block Groups in `r TransitNoAccess1[1,1]` resided one or more miles from the nearest transit stop for any mode. These people represented `r TransitNoAccess1[1,4]` of people over 64 in `r TransitNoAccess1[1,1]`.
-Maps and tables of other populations of concern without access to the various modes of transit can be found in Appendix B.
+Maps and tables of other priority populations without access to the various modes of transit can be found in Appendix B.
 
 ```{r mapBusAccessO64, fig.align = "center", fig.cap="Persons over 64 who are one or more miles from the nearest bus stop by Census Block Group."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") +
@@ -1918,7 +1936,7 @@ The average population-weighted headway for all bus routes in the state is `r ro
 ```{r loliBusHeadway, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average bus headways for groups within 400 meters of a bus stop across Massachusetts."}
 ma_busHeadwayPops_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "No HS Dip" = "No HS Diploma")) %>%
+                        "MA Minority" = "MA POC")) %>%
   ggplot(aes(x = reorder(Group,AvgWHeadway), y = AvgWHeadway)) +
   geom_segment(aes(x = reorder(Group,AvgWHeadway), 
                    xend = reorder(Group,AvgWHeadway),
@@ -1941,7 +1959,7 @@ ma_busHeadwayPops_df %>%
             color = "gray48") +
   expand_limits(y = c(75,105))
 
-ggsave("DATA/transport/MA/figures/ma_BusHeadway_lolli.png")
+ggsave("images/MA_BusHdwy_graph.png")
 ```
 
 Rapid transit routes, which are localized to Boston and adjacent municipalities, show considerably shorter average headways than bus routes. Figure \@ref(fig:mapGTFSrapidTransit) shows average headways by line, and Table \@ref(tab:tabGTFSrapidTransit) shows a breakdown of headway times by route. The average population-weighted headway for all rapid transit routes in the state is `r round(ma_RTHeadwayPops_df %>% filter(Group == "Total Pop") %>% select(AvgWHeadway) %>% pull(),1)` minutes. However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliRTHeadway) below compares the population-weighted average rapid transit headways for different groups within reasonable walking distance of stops. More than half of the groups have average headways longer than the general population. Adults without a high school diploma have the longest population-weighted average headways (`r round(ma_RTHeadwayPops_df %>% filter(Group == "No HS Dip") %>% select(AvgWHeadway) %>% pull(),1)` minutes). The shortest population-weighted average headway, experienced by low income persons, as defined by Massachusetts environmental justice policy, is `r round(ma_RTHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),1)` minutes.
@@ -2035,6 +2053,8 @@ ma_stops_sf_RT %>%
 
 ```{r loliRTHeadway, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average rapid transit headways for groups within 800 meters of a rapid transit stop."}
 ma_RTHeadwayPops_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "MA Minority" = "MA POC")) %>%
   ggplot(aes(x = reorder(Group,AvgWHeadway), y = AvgWHeadway)) +
   geom_segment(aes(x = reorder(Group,AvgWHeadway), 
                    xend = reorder(Group,AvgWHeadway),
@@ -2056,6 +2076,8 @@ ma_RTHeadwayPops_df %>%
   geom_text(aes(x = "Under 18", y = 6.5, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(6,12))
+
+ggsave("images/MA_RTHdwy_graph.png")
 ```
 
 Headways for commuter rail routes are slightly shorter on average than bus routes. Figure \@ref(fig:mapGTFScommuterRail) shows average headways by line and Table \@ref(tab:tabGTFSrapidCommuterRail) shows a breakdown of headway times by route. The average population-weighted headway for all commuter rail routes in the state is `r round(ma_CRHeadwayPops_df %>% filter(Group == "Total Pop") %>% select(AvgWHeadway) %>% pull(),1)` minutes. However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliCRHeadway) below compares the population-weighted average commuter rail headways for different groups within 3 miles (4800m) of stops. Most groups have average headways shorter than the general population. However, children under 5 have population-weighted average headways longer than the general population (`r round(ma_CRHeadwayPops_df %>% filter(Group == "Under 5") %>% select(AvgWHeadway) %>% pull(),1)` minutes). The shortest population-weighted average headway, experienced by limited English speaking households, as defined by Massachusetts environmental justice policy, is `r round(ma_CRHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),1)` minutes.
@@ -2135,6 +2157,8 @@ ma_stops_sf_CR %>%
 
 ```{r loliCRHeadway, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average commuter rail headways for groups within 4800 meters of a commuter rail stop."}
 ma_CRHeadwayPops_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "MA Minority" = "MA POC")) %>%
   ggplot(aes(x = reorder(Group,AvgWHeadway), y = AvgWHeadway)) +
   geom_segment(aes(x = reorder(Group,AvgWHeadway), 
                    xend = reorder(Group,AvgWHeadway),
@@ -2156,6 +2180,8 @@ ma_CRHeadwayPops_df %>%
   geom_text(aes(x = "Under 18", y = 67, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(40,90))
+
+ggsave("images/MA_CRHdwy_graph.png")
 ```
 
 ```{r excessiveHeadway, include=FALSE}
@@ -2270,8 +2296,8 @@ headway80_commuterRail <- headway80thblkgrps_CR %>%
 # st_write(headway80thblkgrps_CR,"DATA/transport/MA/headway80thblkgrps_CR.shp")
 # st_write(headway80thtracts_CR,"DATA/transport/MA/headway80thtracts_CR.shp")
 ```
-The population-weighted average headways above provide a glimpse of average headways across the state for different population groups and for different transit modes. However, headways also vary for specific communities. Indeed, it is important to consider populations of concern or transportation-limited populations that experience excessively long headways or low service frequency. Figures \@ref(fig:mapHeadwayOver64bus) to \@ref(fig:mapHeadwayOver64CR) below highlight communities of persons over 64 and adults without a high school diploma who are within reasonable distance of bus stops (i.e., 400m or 1/4 mile), rapid transit stops (i.e., 800m or 1/2 mile), and commuter rail stops (i.e., 4800m or 3 miles), but where the mean headway for these stops exceeds the 80th percentile of mean route headways for the state. Tables \@ref(tab:tabHeadwayOver64bus) to \@ref(tab:tabHeadwayOver64commuterRail) show breakdowns by municipality. For example, Table \@ref(tab:tabHeadwayOver64bus) shows that `r formatC(as.numeric(headway80_bus[1,3]),big.mark=",",digits = 5)` people over 64 across `r headway80_bus[1,2]` Block Groups in `r headway80_bus[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ma_routes_sf_Bus$mean_headways,0.8)` minutes. These people represented `r headway80_bus[1,4]` of people over 64 in `r headway80_bus[1,1]`. Similarly, Table \@ref(tab:tabHeadwayDisabledRT) shows that `r formatC(as.numeric(headway80_rapidTransit[1,3]),big.mark=",")` people with disabilities across `r headway80_rapidTransit[1,2]` Census Tracts in `r headway80_rapidTransit[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ma_routes_sf_RT$mean_headways,0.8)` minutes. These people represented `r headway80_rapidTransit[1,4]` of people with disabilities in `r headway80_rapidTransit[1,1]`.
-Maps and tables of other populations of concern with excessive headways can be found in Appendix B. 
+The population-weighted average headways above provide a glimpse of average headways across the state for different population groups and for different transit modes. However, headways also vary for specific communities. Indeed, it is important to consider priority populations or transportation-limited populations that experience excessively long headways or low service frequency. Figures \@ref(fig:mapHeadwayOver64bus) to \@ref(fig:mapHeadwayOver64CR) below highlight communities of persons over 64 and adults without a high school diploma who are within reasonable distance of bus stops (i.e., 400m or 1/4 mile), rapid transit stops (i.e., 800m or 1/2 mile), and commuter rail stops (i.e., 4800m or 3 miles), but where the mean headway for these stops exceeds the 80th percentile of mean route headways for the state. Tables \@ref(tab:tabHeadwayOver64bus) to \@ref(tab:tabHeadwayOver64commuterRail) show breakdowns by municipality. For example, Table \@ref(tab:tabHeadwayOver64bus) shows that `r formatC(as.numeric(headway80_bus[1,3]),big.mark=",",digits = 5)` people over 64 across `r headway80_bus[1,2]` Block Groups in `r headway80_bus[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ma_routes_sf_Bus$mean_headways,0.8)` minutes. These people represented `r headway80_bus[1,4]` of people over 64 in `r headway80_bus[1,1]`. Similarly, Table \@ref(tab:tabHeadwayDisabledRT) shows that `r formatC(as.numeric(headway80_rapidTransit[1,3]),big.mark=",")` people with disabilities across `r headway80_rapidTransit[1,2]` Census Tracts in `r headway80_rapidTransit[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ma_routes_sf_RT$mean_headways,0.8)` minutes. These people represented `r headway80_rapidTransit[1,4]` of people with disabilities in `r headway80_rapidTransit[1,1]`.
+Maps and tables of other priority populations with excessive headways can be found in Appendix B. 
 
 ```{r mapHeadwayOver64bus, fig.align = "center", fig.cap="Persons over 64 within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") +
@@ -2534,7 +2560,7 @@ ma_tract_walkability_df <- ma_tract_walkability_sf %>%
   group_by(Group) %>% 
   summarize(wNatWalkIndex = weighted.mean(NatWalkInd, Pop, na.rm = TRUE))
 
-# Populated-Weighted Average Walkability Index for Populations of Concern
+# Populated-Weighted Average Walkability Index for Priority Populations
 ma_wAvgWalkability_df <- ma_blkgrp_walkability_sf %>% 
   as.data.frame() %>% 
   mutate(MA_LOWINC = if_else(MA_INCOME == "I", totalpopE, 0)) %>% 
@@ -2624,8 +2650,8 @@ Walkability varies for different population groups across the state. Figure \@re
 ```{r loliWalkability, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="population-weighted average walkability index scores for groups across Massachusetts."}
 # Create lollipop graph of pop-weighted average walk index
 ma_wAvgWalkability_df %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "No HS Dip" = "No HS Diploma")) %>% 
+  mmutate(Group = recode(Group, "Minority" = "People of Color",
+                        "MA Minority" = "MA POC")) %>% 
   ggplot(aes(x = reorder(Group,-wNatWalkIndex), y = wNatWalkIndex)) +
   geom_segment(aes(x = reorder(Group,-wNatWalkIndex), 
                    xend = reorder(Group,-wNatWalkIndex),
@@ -2647,7 +2673,7 @@ ma_wAvgWalkability_df %>%
             color = "gray48") +
   expand_limits(y = c(9,16))
 
-ggsave("DATA/transport/MA/figures/ma_walk_lolli.png")
+ggsave("images/MA_Walk_graph.png")
 ```
 ```{r lowWalk, include=FALSE}
 # Isolate least walkable block groups and tracts and add area variable
@@ -2691,8 +2717,8 @@ leastWalkable2 <- leastWalkable %>%
   mutate(`Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
   arrange(desc(`Under 18`))
 ```
-The population-weighted average walkability scores provide a glimpse of average walkability across the state for different population groups. However, walkability also varies for specific communities. Indeed, it is important to consider populations of concern that reside in communities with low walkability. Figures \@ref(fig:mapLowWalkO64) and \@ref(fig:mapLowWalkU18) below highlight Census Block Groups across Massachusetts that are least walkable and the numbers of persons over 64 or under 18 live there. Tables \@ref(tab:tabLowWalkO64) and \@ref(tab:tabLowWalkU18) show breakdowns by municipality. For example, Table \@ref(tab:tabLowWalkO64) shows that `r formatC(as.numeric(leastWalkable1[1,3]),big.mark=",")` people over 64 across `r leastWalkable1[1,2]` Block Groups in `r leastWalkable1[1,1]` resided in the least walkable areas. These people represented `r leastWalkable1[1,4]` of people over 64 in `r leastWalkable1[1,1]`. Similarly, Table \@ref(tab:tabLowWalkU18) shows that `r formatC(as.numeric(leastWalkable2[1,3]),big.mark=",")` people under 18 across `r TransitNoAccess1[1,2]` Block Groups in `r leastWalkable2[1,1]` resided the least walkable areas. These people represented `r leastWalkable2[1,4]` of people under 18 in `r leastWalkable2[1,1]`.
-Maps and tables of other populations of concern in the least walkable Block Groups can be found in Appendix B.
+The population-weighted average walkability scores provide a glimpse of average walkability across the state for different population groups. However, walkability also varies for specific communities. Indeed, it is important to consider priority populations that reside in communities with low walkability. Figures \@ref(fig:mapLowWalkO64) and \@ref(fig:mapLowWalkU18) below highlight Census Block Groups across Massachusetts that are least walkable and the numbers of persons over 64 or under 18 live there. Tables \@ref(tab:tabLowWalkO64) and \@ref(tab:tabLowWalkU18) show breakdowns by municipality. For example, Table \@ref(tab:tabLowWalkO64) shows that `r formatC(as.numeric(leastWalkable1[1,3]),big.mark=",")` people over 64 across `r leastWalkable1[1,2]` Block Groups in `r leastWalkable1[1,1]` resided in the least walkable areas. These people represented `r leastWalkable1[1,4]` of people over 64 in `r leastWalkable1[1,1]`. Similarly, Table \@ref(tab:tabLowWalkU18) shows that `r formatC(as.numeric(leastWalkable2[1,3]),big.mark=",")` people under 18 across `r TransitNoAccess1[1,2]` Block Groups in `r leastWalkable2[1,1]` resided the least walkable areas. These people represented `r leastWalkable2[1,4]` of people under 18 in `r leastWalkable2[1,1]`.
+Maps and tables of other priority populations in the least walkable Block Groups can be found in Appendix B.
 
 ```{r mapLowWalkO64, fig.align = "center", fig.cap="Persons over 64 per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
@@ -2870,7 +2896,7 @@ lai_ma_tract_df <- lai_ma_tract %>%
   group_by(Group) %>% 
   summarize(wTBurden = weighted.mean(hh7_t, Pop, na.rm = TRUE))
 
-# Population-weighted average transportation cost burden for populations of concern
+# Population-weighted average transportation cost burden for priority populations
 lai_ma_df <- lai_ma_blkgrp %>% 
   as.data.frame() %>% 
   mutate(MA_LOWINC = if_else(MA_INCOME == "I", totalpopE, 0)) %>% 
@@ -2963,7 +2989,7 @@ Transportation cost burden varies for different population groups across the sta
 # Create lollipop graph of pop-weighted average LAI
 lai_ma_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "No HS Dip" = "No HS Diploma")) %>% 
+                        "MA Minority" = "MA POC")) %>% 
   ggplot(aes(x = reorder(Group,wTBurden), y = wTBurden)) +
   geom_segment(aes(x = reorder(Group,wTBurden), 
                    xend = reorder(Group,wTBurden),
@@ -2986,7 +3012,7 @@ lai_ma_df %>%
             color = "gray48") +
   expand_limits(y = c(13,23))
 
-ggsave("DATA/transport/MA/figures/ma_tburden_lolli.png")
+ggsave("images/MA_Cost_graph.png")
 ```
 ```{r HiBurden, include=FALSE}
 # Isolate highest transport burden block groups and tracts and add area variable
@@ -3030,8 +3056,8 @@ HiBurden2 <- HiBurden %>%
   mutate(`Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
   arrange(desc(`Under 18`))
 ```
-The population-weighted average transportation cost burden values provide a glimpse of average transportation cost burden across the state for different population groups. However, transportation cost burden also varies for specific communities. Indeed, it is important to consider populations of concern that reside in communities with a high transportation cost burden. Figures \@ref(fig:mapHiBurdenO64) and \@ref(fig:mapHiBurdenU18) below highlight Census Block Groups across Massachusetts where the transportation cost burden is in the highest quintile (i.e., 80th percentile) and the numbers of persons over 64 or under 18 that live there. Tables \@ref(tab:tabHiBurdenO64) and \@ref(tab:tabHiBurdenU18) show breakdowns by municipality. For example, Table \@ref(tab:tabHiBurdenO64) shows that `r formatC(as.numeric(HiBurden1[1,3]),big.mark=",")` people over 64 across `r HiBurden1[1,2]` Block Groups in `r HiBurden1[1,1]` resided in areas with the highest transportation cost burden. These people represented `r HiBurden1[1,4]` of people over 64 in `r HiBurden1[1,1]`. Similarly, Table \@ref(tab:tabHiBurdenU18) shows that `r formatC(as.numeric(HiBurden2[1,3]),big.mark=",")` people under 18 across `r HiBurden2[1,2]` Block Groups in `r HiBurden2[1,1]` resided in areas with the highest transportation cost burden. These people represented `r HiBurden2[1,4]` of people under 18 in `r HiBurden2[1,1]`.
-Maps and tables of other populations of concern in areas with the highest transportation cost burden can be found in Appendix B.
+The population-weighted average transportation cost burden values provide a glimpse of average transportation cost burden across the state for different population groups. However, transportation cost burden also varies for specific communities. Indeed, it is important to consider priority populations that reside in communities with a high transportation cost burden. Figures \@ref(fig:mapHiBurdenO64) and \@ref(fig:mapHiBurdenU18) below highlight Census Block Groups across Massachusetts where the transportation cost burden is in the highest quintile (i.e., 80th percentile) and the numbers of persons over 64 or under 18 that live there. Tables \@ref(tab:tabHiBurdenO64) and \@ref(tab:tabHiBurdenU18) show breakdowns by municipality. For example, Table \@ref(tab:tabHiBurdenO64) shows that `r formatC(as.numeric(HiBurden1[1,3]),big.mark=",")` people over 64 across `r HiBurden1[1,2]` Block Groups in `r HiBurden1[1,1]` resided in areas with the highest transportation cost burden. These people represented `r HiBurden1[1,4]` of people over 64 in `r HiBurden1[1,1]`. Similarly, Table \@ref(tab:tabHiBurdenU18) shows that `r formatC(as.numeric(HiBurden2[1,3]),big.mark=",")` people under 18 across `r HiBurden2[1,2]` Block Groups in `r HiBurden2[1,1]` resided in areas with the highest transportation cost burden. These people represented `r HiBurden2[1,4]` of people under 18 in `r HiBurden2[1,1]`.
+Maps and tables of other priority populations in areas with the highest transportation cost burden can be found in Appendix B.
 
 ```{r mapHiBurdenO64, fig.align = "center", fig.cap="Persons over 64 per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
@@ -3302,7 +3328,7 @@ For the purposes of this analysis ACS 5-year estimates for the period 2014 - 201
 
 ```{r ACSvariables}
 ACSvDF <- data.frame(Variable = c("Total Population",
-                                  "Minority",
+                                  "People of Color",
                                   "Low Income",
                                   "Limited English Household",
                                   "Less than High School Education",
@@ -3314,9 +3340,9 @@ ACSvDF <- data.frame(Variable = c("Total Population",
                                   "CT Income",
                                   "MA Income",
                                   "MA Limited English Household",
-                                  "MA Minority",
-                                  "MA Income",
-                                  "MA Minority"),
+                                  "MA POC",
+                                  "RI Income",
+                                  "RI POC"),
                      Description = c("Total population",
                                      "Persons of Hispanic or Latino origin or persons who are not White",
                                      "People in households where the household income is less than or equal to twice the federal poverty level",
@@ -3330,9 +3356,9 @@ ACSvDF <- data.frame(Variable = c("Total Population",
                                      "Connecticut Low Income threshold: 30% or more people in households where the household income is less than or equal to twice the federal poverty level",
                                      "Massachusetts Low Income threshold: 25% or more of households with median household incomes below 65% statewide median",
                                      "Massachusetts Language Isolation threshold: 25% or more people in households where all adults speak English less than \"very well\"",
-                                     "Massachusetts Minority threshold: 25% or more are persons of Hispanic or Latino origin or persons who are not White",
-                                     "Massachusetts Low Income threshold: highest 15% of block groups with people in households where the household income is less than or equal to twice the federal poverty level",
-                                     "Massachusetts Minority threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
+                                     "Massachusetts POC threshold: 40% or more are persons of Hispanic or Latino origin or persons who are not White OR 25% or more are persons of Hispanic or Latino origin or persons who are not White AND the median household income of the municipality is less than 150% of the statewide median household income",
+                                     "Rhode Island Low Income threshold: highest 15% of block groups with people in households where the household income is less than or equal to twice the federal poverty level",
+                                     "Rhode Island POC threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
                      'ACS Table ID' = c("B03002: Hispanic or Latino Origin by Race",
                                 "B03002: Hispanic or Latino Origin by Race",
                                 "C17002: Ratio of Income to Poverty Level",
@@ -3377,7 +3403,7 @@ ACSvDF %>%
 
 ## Population-weighted averages {-}
 
-Wherever feasible, averages are reported as population-weighted averages. A population weighted-average is equivalent to a weighted mean in which the raw values for which a mean (or average) is calculated are multiplied by a weight factor. For example, we are interested in knowing whether Minorities experience longer headways than the general or Total Population. Consider the table below.
+Wherever feasible, averages are reported as population-weighted averages. A population weighted-average is equivalent to a weighted mean in which the raw values for which a mean (or average) is calculated are multiplied by a weight factor. For example, we are interested in knowing whether People of Color experience longer headways than the general or Total Population. Consider the table below.
 
 ```{r wmean1}
 data.frame(BG = c("BG1","BG2","BG3","BG4"),
@@ -3386,13 +3412,13 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
            NonMinority = c(20,12,5,10)) %>% 
   mutate(TotalPop = Minority + NonMinority) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
-                    caption = "Block Group Populations and Headways", align = "l") %>% 
+                    caption = "Block Group Populations and Headways", align = "l", col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Population numbers of minorities, as well as the total population, and headways, are each reported by Block Group. Since each Block Group is associated with one headway value, we might assume (incorrectly) that everyone is equally exposed to the average headways of all Block Groups (`r round(mean(c(65,75,85,70)),2)`). However, not all Block Groups have the same number or categories of people, which means that each headway value is associated with a different number of people. Do Minorities occupy Block Groups with higher headways than the simple average would indicate?
+Population numbers of People of Color, as well as the total population, and headways, are each reported by Block Group. Since each Block Group is associated with one headway value, we might assume (incorrectly) that everyone is equally exposed to the average headways of all Block Groups (`r round(mean(c(65,75,85,70)),2)`). However, not all Block Groups have the same number or categories of people, which means that each headway value is associated with a different number of people. Do People of Color occupy Block Groups with higher headways than the simple average would indicate?
 
-To calculate the population-weighted average headway for Minorities, the number of Minorities in each Block Group is used as a 'weight'. The headway of each Block Group is multiplied by its respective number of Minorities. See the table below. 
+To calculate the population-weighted average headway for People of Color, the number of People of Color in each Block Group is used as a 'weight'. The headway of each Block Group is multiplied by its respective number of People of Color. See the table below. 
 
 ```{r wmean2}
 data.frame(BG = c("BG1","BG2","BG3","BG4"),
@@ -3404,13 +3430,14 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
                     caption = "Block Group Populations and Headway", 
-                    align = "l") %>% 
+                    align = "l",
+                    col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5:6])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header")) %>% 
   kableExtra::row_spec(5, bold = TRUE) %>% 
   kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
 ```
 
-The total or sum of the products (i.e., Minority pop x Headway) is then divided by the sum of the weights (i.e., total Minority population), so that 3475/45 = `r round(3475/45,2)`. The result is a weighted average headway that is influenced by the number of minorities. 
+The total or sum of the products (i.e., POC x Headway) is then divided by the sum of the weights (i.e., total People of Color), so that 3475/45 = `r round(3475/45,2)`. The result is a weighted average headway that is influenced by the number of People of Color. 
 
 This process is repeated for the Total Population so that the two population-weighted average headways can be compared. Below is the calculation of population-weighted calculation for the total population. 
 
@@ -3424,21 +3451,22 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
                     caption = "Block Group Populations and Headway", 
-                    align = "l") %>% 
+                    align = "l",
+                    col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5:6])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header")) %>% 
   kableExtra::row_spec(5, bold = TRUE) %>% 
   kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
 ```
 
-For the TotalPop, the population-weighted average headway is 6800/92 = `r round(6800/92,2)`. Thus we can see that Minorities experience a higher population-weighted average headway than the general or total population. 
+For the TotalPop, the population-weighted average headway is 6800/92 = `r round(6800/92,2)`. Thus we can see that People of Color experience a higher population-weighted average headway than the general or total population. 
 
 
 \pagebreak
 # Appendix B: Supplementary Figures {-}
 
-## No Transit Access and Populations of Concern {-}
+## No Transit Access and Priority Populations {-}
 
-### No Bus Access and Populations of Concern {-}
+### No Bus Access and Priority Populations {-}
 
 ```{r mapBusAccessU18, fig.align = "center", fig.cap="Persons under 18 who are one or more miles from the nearest bus stop by Census Block Group."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") +
@@ -3879,12 +3907,12 @@ ma_blkgrps_sf_noBus %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
 
-```{r mapBusAccessMIN, fig.align = "center", fig.cap="Minority persons who are one or more miles from the nearest bus stop by Census Block Group."}
+```{r mapBusAccessMIN, fig.align = "center", fig.cap="People of Color who are one or more miles from the nearest bus stop by Census Block Group."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(ma_blkgrps_sf_noBus_simple, unit = "mi") +
   tm_fill(col = "NewMinority", style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Number of\nMinority Persons",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nPeople of Color",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ma_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -3917,7 +3945,7 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Transit Route") +
-  tm_layout(title = "Minority Persons\n1+ Miles from\nNearest Bus\nStop", 
+  tm_layout(title = "People of Color\n1+ Miles from\nNearest Bus\nStop", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -3929,7 +3957,7 @@ tmap_save(m, "DATA/transport/MA/figures/ma_busMINaccess.png",
 knitr::include_graphics("DATA/transport/MA/figures/ma_busMINaccess.png")
 ```
 
-```{r tabBusAccessMIN, fig.align = "center", fig.cap="Minority persons in Census Block Groups one or more miles from the nearest bus stop."}
+```{r tabBusAccessMIN, fig.align = "center", fig.cap="People of Color in Census Block Groups one or more miles from the nearest bus stop."}
 ma_blkgrps_sf_noBus %>%
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -3947,7 +3975,7 @@ ma_blkgrps_sf_noBus %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Minority Persons One or More Miles from Nearest Bus Stop", align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+                    caption = "People of Color One or More Miles from Nearest Bus Stop", align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
@@ -4025,12 +4053,12 @@ ma_tracts_sf_noBus %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapBusAccessMAMIN, fig.align = "center", fig.cap="Minority persons, as defined by state environmental justice policy, who are one or more miles from the nearest bus stop by Census Block Group."}
+```{r mapBusAccessMAMIN, fig.align = "center", fig.cap="People of Color, as defined by state environmental justice policy, who are one or more miles from the nearest bus stop by Census Block Group."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(ma_blkgrps_sf_noBus_simple, unit = "mi") +
   tm_fill(col = "NewMA_MINORITY", style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Number of\nMA Minority Persons",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nMA POC",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ma_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -4063,7 +4091,7 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Transit Route") +
-  tm_layout(title = "MA Minority Persons\n1+ Miles from\nNearest Bus\nStop", 
+  tm_layout(title = "MA People of Color\n1+ Miles from\nNearest Bus\nStop", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -4075,7 +4103,7 @@ tmap_save(m, "DATA/transport/MA/figures/ma_busMAMINaccess.png",
 knitr::include_graphics("DATA/transport/MA/figures/ma_busMAMINaccess.png")
 ```
 
-```{r tabBusAccessMAMIN, fig.align = "center", fig.cap="MA Minority persons in Census Block Groups one or more miles from the nearest bus stop."}
+```{r tabBusAccessMAMIN, fig.align = "center", fig.cap="MA People of Color in Census Block Groups one or more miles from the nearest bus stop."}
 ma_blkgrps_sf_noBus %>%
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -4093,7 +4121,7 @@ ma_blkgrps_sf_noBus %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "MA Minority Persons One or More Miles from Nearest Bus Stop", align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+                    caption = "MA People of Color One or More Miles from Nearest Bus Stop", align = "r", col.names = c(names(.)[1:2],"Number of MA POC in Block Groups","Pct of MA POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
@@ -4247,7 +4275,7 @@ ma_blkgrps_sf_noBus %>%
 ```
 
 
-### No Rapid Transit Access and Populations of Concern {-}
+### No Rapid Transit Access and Priority Populations {-}
 
 ```{r mapRTAccessDisabled, fig.align = "center", fig.cap="Disabled persons who are one or more miles from the nearest rapid transit stop by Census Tract."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") +
@@ -4614,12 +4642,12 @@ ma_blkgrps_sf_noRT %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
 
-```{r mapRTAccessMIN, fig.align = "center", fig.cap="Minority persons who are one or more miles from the nearest rapid transit stop by Census Block Group."}
+```{r mapRTAccessMIN, fig.align = "center", fig.cap="People of Color who are one or more miles from the nearest rapid transit stop by Census Block Group."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(ma_blkgrps_sf_noRT_simple, unit = "mi") +
   tm_fill(col = "NewMinority", style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Number of\nMinority Persons",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nPeople of Color",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ma_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -4652,7 +4680,7 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Transit Route") +
-  tm_layout(title = "Minority Persons\n1+ Miles from\nNearest Rapid\n Transit Stop", 
+  tm_layout(title = "People of Color\n1+ Miles from\nNearest Rapid\n Transit Stop", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -4664,7 +4692,7 @@ tmap_save(m, "DATA/transport/MA/figures/ma_RTMINaccess.png",
 knitr::include_graphics("DATA/transport/MA/figures/ma_RTMINaccess.png")
 ```
 
-```{r tabRTAccessMIN, fig.align = "center", fig.cap="Minority persons in Census Block Groups one or more miles from the nearest rapid transit stop."}
+```{r tabRTAccessMIN, fig.align = "center", fig.cap="People of Color in Census Block Groups one or more miles from the nearest rapid transit stop."}
 ma_blkgrps_sf_noRT %>%
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -4682,7 +4710,7 @@ ma_blkgrps_sf_noRT %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Minority Persons One or More Miles from Nearest Rapid Transit Stop", align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+                    caption = "People of Color One or More Miles from Nearest Rapid Transit Stop", align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
@@ -4760,12 +4788,12 @@ ma_tracts_sf_noRT %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapRTAccessMAMIN, fig.align = "center", fig.cap="Minority persons, as defined by state environmental justice policy, who are one or more miles from the nearest rapid transit stop by Census Block Group."}
+```{r mapRTAccessMAMIN, fig.align = "center", fig.cap="People of Color, as defined by state environmental justice policy, who are one or more miles from the nearest rapid transit stop by Census Block Group."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(ma_blkgrps_sf_noRT_simple, unit = "mi") +
   tm_fill(col = "NewMA_MINORITY", style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Number of\nMA Minority Persons",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nMA POC",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ma_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -4798,7 +4826,7 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Transit Route") +
-  tm_layout(title = "MA Minority Persons\n1+ Miles from\nNearest Rapid\n Transit Stop", 
+  tm_layout(title = "MA People of Color\n1+ Miles from\nNearest Rapid\n Transit Stop", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -4810,7 +4838,7 @@ tmap_save(m, "DATA/transport/MA/figures/ma_RTMAMINaccess.png",
 knitr::include_graphics("DATA/transport/MA/figures/ma_RTMAMINaccess.png")
 ```
 
-```{r tabRTAccessMAMIN, fig.align = "center", fig.cap="MA Minority persons in Census Block Groups one or more miles from the nearest rapid transit stop."}
+```{r tabRTAccessMAMIN, fig.align = "center", fig.cap="MA People of Color in Census Block Groups one or more miles from the nearest rapid transit stop."}
 ma_blkgrps_sf_noRT %>%
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -4828,7 +4856,7 @@ ma_blkgrps_sf_noRT %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "MA Minority Persons One or More Miles from Nearest Rapid Transit Stop", align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+                    caption = "MA People of Color One or More Miles from Nearest Rapid Transit Stop", align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
@@ -4982,7 +5010,7 @@ ma_blkgrps_sf_noRT %>%
 ```
 
 
-### No Commuter Rail Access and Populations of Concern {-}
+### No Commuter Rail Access and Priority Populations {-}
 
 ```{r mapCRPRAccessU18, fig.align = "center", fig.cap="Persons under 18 who are ten or more miles from the nearest commuter rail stop or park-in-ride lot by Census Block Group."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") +
@@ -5423,12 +5451,12 @@ ma_blkgrps_sf_noCRPR %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
 
-```{r mapCRPRAccessMIN, fig.align = "center", fig.cap="Minority persons who are ten or more miles from the nearest commuter rail stop or park-in-ride lot by Census Block Group."}
+```{r mapCRPRAccessMIN, fig.align = "center", fig.cap="People of Color who are ten or more miles from the nearest commuter rail stop or park-in-ride lot by Census Block Group."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(ma_blkgrps_sf_noCRPR_simple, unit = "mi") +
   tm_fill(col = "NewMinority", style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Number of\nMinority Persons",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nPeople of Color",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ma_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -5461,7 +5489,7 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Transit Route") +
-  tm_layout(title = "Minority Persons\n10+ Miles from\nNearest Commuter\nRail Stop\nor Park-in-Ride Lot", 
+  tm_layout(title = "People of Color\n10+ Miles from\nNearest Commuter\nRail Stop\nor Park-in-Ride Lot", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -5473,7 +5501,7 @@ tmap_save(m, "DATA/transport/MA/figures/ma_CRPRMINaccess.png",
 knitr::include_graphics("DATA/transport/MA/figures/ma_CRPRMINaccess.png")
 ```
 
-```{r tabCRPRAccessMIN, fig.align = "center", fig.cap="Minority persons in Census Block Groups ten or more miles from the nearest commuter rail stop or park-in-ride lot."}
+```{r tabCRPRAccessMIN, fig.align = "center", fig.cap="People of Color in Census Block Groups ten or more miles from the nearest commuter rail stop or park-in-ride lot."}
 ma_blkgrps_sf_noCRPR %>%
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -5491,7 +5519,7 @@ ma_blkgrps_sf_noCRPR %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Minority Persons Ten or More Miles from Nearest Commuter Rail Stop or Park-in-Ride Lot", align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+                    caption = "People of Color Ten or More Miles from Nearest Commuter Rail Stop or Park-in-Ride Lot", align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
@@ -5569,12 +5597,12 @@ ma_tracts_sf_noCRPR %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapCRPRAccessMAMIN, fig.align = "center", fig.cap="Minority persons, as defined by state environmental justice policy, who are ten or more miles from the nearest commuter rail stop or park-in-ride lot by Census Block Group."}
+```{r mapCRPRAccessMAMIN, fig.align = "center", fig.cap="People of Color, as defined by state environmental justice policy, who are ten or more miles from the nearest commuter rail stop or park-in-ride lot by Census Block Group."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(ma_blkgrps_sf_noCRPR_simple, unit = "mi") +
   tm_fill(col = "NewMA_MINORITY", style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Number of\nMA Minority Persons",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nMA POC",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ma_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -5607,7 +5635,7 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Transit Route") +
-  tm_layout(title = "MA Minority Persons\n10+ Miles from\nNearest Commuter\nRail Stop\nor Park-in-Ride Lot", 
+  tm_layout(title = "MA People of Color\n10+ Miles from\nNearest Commuter\nRail Stop\nor Park-in-Ride Lot", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -5619,7 +5647,7 @@ tmap_save(m, "DATA/transport/MA/figures/ma_CRPRMAMINaccess.png",
 knitr::include_graphics("DATA/transport/MA/figures/ma_CRPRMAMINaccess.png")
 ```
 
-```{r tabCRPRAccessMAMIN, fig.align = "center", fig.cap="MA Minority persons in Census Block Groups ten or more miles from the nearest commuter rail stop or park-in-ride lot."}
+```{r tabCRPRAccessMAMIN, fig.align = "center", fig.cap="MA People of Color in Census Block Groups ten or more miles from the nearest commuter rail stop or park-in-ride lot."}
 ma_blkgrps_sf_noCRPR %>%
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -5637,7 +5665,7 @@ ma_blkgrps_sf_noCRPR %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "MA Minority Persons Ten or More Miles from Nearest Commuter Rail Stop or Park-in-Ride Lot", align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+                    caption = "MA People of Color Ten or More Miles from Nearest Commuter Rail Stop or Park-in-Ride Lot", align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
@@ -5791,7 +5819,7 @@ ma_blkgrps_sf_noCRPR %>%
 ```
 
 
-### No Transit Access and Populations of Concern {-}
+### No Transit Access and Priority Populations {-}
 
 ```{r mapTransitAccessU18, fig.align = "center", fig.cap="Persons under 18 without reasonable access to any form of transit by Census Block Group."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") +
@@ -6232,12 +6260,12 @@ ma_blkgrps_sf_noTransit %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
 
-```{r mapTransitAccessMIN, fig.align = "center", fig.cap="Minority persons without reasonable access to any form of transit by Census Block Group."}
+```{r mapTransitAccessMIN, fig.align = "center", fig.cap="People of Color without reasonable access to any form of transit by Census Block Group."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(ma_blkgrps_sf_noTransit_simple, unit = "mi") +
   tm_fill(col = "NewMinority", style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Number of\nMinority Persons",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nPeople of Color",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ma_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -6270,7 +6298,7 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Transit Route") +
-  tm_layout(title = "Minority Persons\nwithout Reasonable\nAccess to any\nMode of Transit", 
+  tm_layout(title = "People of Color\nwithout Reasonable\nAccess to any\nMode of Transit", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -6282,7 +6310,7 @@ tmap_save(m, "DATA/transport/MA/figures/ma_transitMINaccess.png",
 knitr::include_graphics("DATA/transport/MA/figures/ma_transitMINaccess.png")
 ```
 
-```{r tabTransitAccessMIN, fig.align = "center", fig.cap="Minority persons in Census Block Groups without reasonable access to any form of transit."}
+```{r tabTransitAccessMIN, fig.align = "center", fig.cap="People of Color in Census Block Groups without reasonable access to any form of transit."}
 ma_blkgrps_sf_noTransit %>%
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -6300,7 +6328,7 @@ ma_blkgrps_sf_noTransit %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Minority Persons without Reasonable Access to any Mode of Transit", align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+                    caption = "People of Color without Reasonable Access to any Mode of Transit", align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
@@ -6378,12 +6406,12 @@ ma_tracts_sf_noTransit %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapTransitAccessMAMIN, fig.align = "center", fig.cap="Minority persons, as defined by state environmental justice policy, without reasonable access to any form of transit by Census Block Group.", include=FALSE, eval=FALSE}
+```{r mapTransitAccessMAMIN, fig.align = "center", fig.cap="People of Color, as defined by state environmental justice policy, without reasonable access to any form of transit by Census Block Group.", include=FALSE, eval=FALSE}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(ma_blkgrps_sf_noTransit_simple, unit = "mi") +
   tm_fill(col = "NewMA_MINORITY", style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Number of\nMA Minority Persons",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nMA POC",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ma_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -6416,7 +6444,7 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Transit Route") +
-  tm_layout(title = "MA Minority Persons\nwithout Reasonable\nAccess to any\nMode of Transit", 
+  tm_layout(title = "MA People of Color\nwithout Reasonable\nAccess to any\nMode of Transit", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -6428,7 +6456,7 @@ tmap_save(m, "DATA/transport/MA/figures/ma_transitMAMINaccess.png",
 knitr::include_graphics("DATA/transport/MA/figures/ma_transitMAMINaccess.png")
 ```
 
-```{r tabTransitAccessMAMIN, fig.align = "center", fig.cap="MA Minority persons in Census Block Groups without reasonable access to any form of transit.", include=FALSE, eval=FALSE}
+```{r tabTransitAccessMAMIN, fig.align = "center", fig.cap="MA People of Color in Census Block Groups without reasonable access to any form of transit.", include=FALSE, eval=FALSE}
 ma_blkgrps_sf_noTransit %>%
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -6446,7 +6474,7 @@ ma_blkgrps_sf_noTransit %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "MA Minority Persons without Reasonable Access to any Mode of Transit", align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+                    caption = "MA People of Color without Reasonable Access to any Mode of Transit", align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
@@ -6598,12 +6626,12 @@ ma_blkgrps_sf_noTransit %>%
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
-No groups meeting environmental justice criteria for minority or limited English speaking households were found in areas without reasonable access to some form of transit. 
+No groups meeting environmental justice criteria for People of Color or limited English speaking households were found in areas without reasonable access to some form of transit. 
 
 
-## Excessive Headways and Populations of Concern {-}
+## Excessive Headways and Priority Populations {-}
 
-### Excessive Bus Headways and Populations of Concern {-}
+### Excessive Bus Headways and Priority Populations {-}
 
 ```{r mapHeadwayBusDisabled, fig.align = "center", fig.cap="Disabled Persons within 400m or 1/4 mile of bus stops in which the mean headway for these stops is above the 80th percentile for the state."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") +
@@ -7043,12 +7071,12 @@ headway80thblkgrps_bus %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
 
-```{r mapHeadwayBusMIN, fig.align = "center", fig.cap="Minority persons within 400m or 1/4 mile of bus stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r mapHeadwayBusMIN, fig.align = "center", fig.cap="People of Color within 400m or 1/4 mile of bus stops in which the mean headway for these stops is above the 80th percentile for the state."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(headway80thblkgrps_bus, unit = "mi") +
   tm_fill(col = "NewMinority", style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Number of\nMinority Persons",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nPeople of Color",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ma_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -7081,7 +7109,7 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Transit Route") +
-  tm_layout(title = paste("Minority Persons","with Bus Headways",paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), 
+  tm_layout(title = paste("People of Color","with Bus Headways",paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -7093,7 +7121,7 @@ tmap_save(m, "DATA/transport/MA/figures/ma_headwayMINbus.png",
 knitr::include_graphics("DATA/transport/MA/figures/ma_headwayMINbus.png")
 ```
 
-```{r tabHeadwayMIN, fig.align = "center", fig.cap="Minority persons within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r tabHeadwayMIN, fig.align = "center", fig.cap="People of Color within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
 headway80thblkgrps_bus %>%
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -7111,7 +7139,7 @@ headway80thblkgrps_bus %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = paste("Minority Persons","with Bus Headways",paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+                    caption = paste("People of Color","with Bus Headways",paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
@@ -7189,12 +7217,12 @@ headway80thtracts_bus %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapHeadwayBusMAMIN, fig.align = "center", fig.cap="Minority persons, as defined by state environmental justice policy, within 400m or 1/4 mile of bus stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r mapHeadwayBusMAMIN, fig.align = "center", fig.cap="People of Color, as defined by state environmental justice policy, within 400m or 1/4 mile of bus stops in which the mean headway for these stops is above the 80th percentile for the state."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(headway80thblkgrps_bus, unit = "mi") +
   tm_fill(col = "NewMA_MINORITY", style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Number of\nMA Minority Persons",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nMA POC",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ma_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -7227,7 +7255,7 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Transit Route") +
-  tm_layout(title = paste("MA Minority Persons","with Bus Headways", paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), 
+  tm_layout(title = paste("MA People of Color","with Bus Headways", paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -7239,7 +7267,7 @@ tmap_save(m, "DATA/transport/MA/figures/ma_headwayMAMINbus.png",
 knitr::include_graphics("DATA/transport/MA/figures/ma_headwayMAMINbus.png")
 ```
 
-```{r tabHeadwayMAMIN, fig.align = "center", fig.cap="MA Minority persons within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r tabHeadwayMAMIN, fig.align = "center", fig.cap="MA People of Color within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
 headway80thblkgrps_bus %>%
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -7257,7 +7285,7 @@ headway80thblkgrps_bus %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = paste("MA Minority Persons","with Bus Headways", paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+                    caption = paste("MA People of Color","with Bus Headways", paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
@@ -7411,7 +7439,7 @@ headway80thblkgrps_bus %>%
 ```
 
 
-### Excessive Rapid Transit Headways and Populations of Concern {-}
+### Excessive Rapid Transit Headways and Priority Populations {-}
 
 ```{r mapHeadwayRTDisabled, fig.align = "center", fig.cap="Disabled Persons within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
 m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") + 
@@ -7828,7 +7856,7 @@ headway80thblkgrps_RT %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
 
-```{r mapHeadwayRTMIN, fig.align = "center", fig.cap="Minority persons within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r mapHeadwayRTMIN, fig.align = "center", fig.cap="People of Color within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
 m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") + 
   tm_polygons(col = "gray", border.alpha = 0.8, lwd = 0.2, alpha = 0.2) +
   tm_text("NAME", size = 0.7, remove.overlap = TRUE, col = "gray") +
@@ -7836,7 +7864,7 @@ m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") +
   tm_shape(ma_highways2nd) + tm_lines(col = "seashell4", lwd = 1) +
   tm_shape(headway80thblkgrps_RT, unit = "mi") +
   tm_fill(col = "NewMinority", style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Number of\nMinority Persons",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nPeople of Color",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(I95roadSegment) +
   tm_symbols(shape = I95, border.lwd = NA, size = .1) +
@@ -7862,7 +7890,7 @@ m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") +
   tm_scale_bar(breaks = c(0, 1, 2), text.size = 0.5, 
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Transit Route") +
-  tm_layout(title = paste("Minority Persons","with Rapid Transit Headways",paste0("Over ",quantile(ma_routes_sf_RT$mean_headways,0.8)," Minutes"),sep = "\n"), 
+  tm_layout(title = paste("People of Color","with Rapid Transit Headways",paste0("Over ",quantile(ma_routes_sf_RT$mean_headways,0.8)," Minutes"),sep = "\n"), 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -7874,7 +7902,7 @@ tmap_save(m, "DATA/transport/MA/figures/ma_headwayMINRT.png",
 knitr::include_graphics("DATA/transport/MA/figures/ma_headwayMINRT.png")
 ```
 
-```{r tabHeadwayRTMIN, fig.align = "center", fig.cap="Minority persons within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r tabHeadwayRTMIN, fig.align = "center", fig.cap="People of Color within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
 headway80thblkgrps_RT %>%
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -7892,7 +7920,7 @@ headway80thblkgrps_RT %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = paste("Minority Persons","with Rapid Transit Headways",paste0("Over ",quantile(ma_routes_sf_RT$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+                    caption = paste("People of Color","with Rapid Transit Headways",paste0("Over ",quantile(ma_routes_sf_RT$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
@@ -7966,7 +7994,7 @@ headway80thtracts_RT %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapHeadwayRTMAMIN, fig.align = "center", fig.cap="Minority persons, as defined by state environmental justice policy, within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r mapHeadwayRTMAMIN, fig.align = "center", fig.cap="People of Color, as defined by state environmental justice policy, within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
 m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") + 
   tm_polygons(col = "gray", border.alpha = 0.8, lwd = 0.2, alpha = 0.2) +
   tm_text("NAME", size = 0.7, remove.overlap = TRUE, col = "gray") +
@@ -7974,7 +8002,7 @@ m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") +
   tm_shape(ma_highways2nd) + tm_lines(col = "seashell4", lwd = 1) +
   tm_shape(headway80thblkgrps_RT, unit = "mi") +
   tm_fill(col = "NewMA_MINORITY", style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Number of\nMA Minority Persons",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nMA POC",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(I95roadSegment) +
   tm_symbols(shape = I95, border.lwd = NA, size = .1) +
@@ -8000,7 +8028,7 @@ m <- tm_shape(ma_towns_sf, bbox = ma_routes_sf_RT, unit = "mi") +
   tm_scale_bar(breaks = c(0, 1, 2), text.size = 0.5, 
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Transit Route") +
-  tm_layout(title = paste("MA Minority Persons","with Rapid Transit Headways", paste0("Over ",quantile(ma_routes_sf_RT$mean_headways,0.8)," Minutes"),sep = "\n"), 
+  tm_layout(title = paste("MA People of Color","with Rapid Transit Headways", paste0("Over ",quantile(ma_routes_sf_RT$mean_headways,0.8)," Minutes"),sep = "\n"), 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -8012,7 +8040,7 @@ tmap_save(m, "DATA/transport/MA/figures/ma_headwayMAMINRT.png",
 knitr::include_graphics("DATA/transport/MA/figures/ma_headwayMAMINRT.png")
 ```
 
-```{r tabHeadwayRTMAMIN, fig.align = "center", fig.cap="MA Minority persons within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r tabHeadwayRTMAMIN, fig.align = "center", fig.cap="MA People of Color within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
 headway80thblkgrps_RT %>%
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -8030,7 +8058,7 @@ headway80thblkgrps_RT %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = paste("MA Minority Persons","with Rapid Transit Headways", paste0("Over ",quantile(ma_routes_sf_RT$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+                    caption = paste("MA People of Color","with Rapid Transit Headways", paste0("Over ",quantile(ma_routes_sf_RT$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
@@ -8177,7 +8205,7 @@ headway80thblkgrps_RT %>%
 No populations of limited English speaking households, as defined by state environmental justice policy, were found in areas with rapid transit headways exceeding the 80th percentile. 
 
 
-### Excessive Commuter Rail Headways and Populations of Concern {-}
+### Excessive Commuter Rail Headways and Priority Populations {-}
 
 ```{r mapHeadwayCRDisabled, fig.align = "center", fig.cap="Disabled Persons within 4800m or 3 miles of commuter rail stops in which the mean headway for these stops is above the 80th percentile for the state."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") +
@@ -8618,12 +8646,12 @@ headway80thblkgrps_CR %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
 
-```{r mapHeadwayCRMIN, fig.align = "center", fig.cap="Minority persons within 4800m or 3 miles of commuter rail stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r mapHeadwayCRMIN, fig.align = "center", fig.cap="People of Color within 4800m or 3 miles of commuter rail stops in which the mean headway for these stops is above the 80th percentile for the state."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(headway80thblkgrps_CR, unit = "mi") +
   tm_fill(col = "NewMinority", style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Number of\nMinority Persons",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nPeople of Color",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ma_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -8656,7 +8684,7 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Transit Route") +
-  tm_layout(title = paste("Minority Persons","with Commuter", "Rail Headways",paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), 
+  tm_layout(title = paste("People of Color","with Commuter", "Rail Headways",paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -8668,7 +8696,7 @@ tmap_save(m, "DATA/transport/MA/figures/ma_headwayMINCR.png",
 knitr::include_graphics("DATA/transport/MA/figures/ma_headwayMINCR.png")
 ```
 
-```{r tabHeadwayCRMIN, fig.align = "center", fig.cap="Minority persons within 4800m or 3 miles of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r tabHeadwayCRMIN, fig.align = "center", fig.cap="People of Color within 4800m or 3 miles of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
 headway80thblkgrps_CR %>%
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -8686,7 +8714,7 @@ headway80thblkgrps_CR %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = paste("Minority Persons","with Commuter", "Rail Headways",paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+                    caption = paste("People of Color","with Commuter", "Rail Headways",paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
@@ -8764,12 +8792,12 @@ headway80thtracts_CR %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapHeadwayCRMAMIN, fig.align = "center", fig.cap="Minority persons, as defined by state environmental justice policy, within 4800m or 3 miles of commuter rail stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r mapHeadwayCRMAMIN, fig.align = "center", fig.cap="People of Color, as defined by state environmental justice policy, within 4800m or 3 miles of commuter rail stops in which the mean headway for these stops is above the 80th percentile for the state."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(headway80thblkgrps_CR, unit = "mi") +
   tm_fill(col = "NewMA_MINORITY", style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Number of\nMA Minority Persons",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nMA POC",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ma_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -8802,7 +8830,7 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
   # tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Transit Route") +
-  tm_layout(title = paste("MA Minority Persons","with Commuter", "Rail Headways", paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), 
+  tm_layout(title = paste("MA People of Color","with Commuter", "Rail Headways", paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -8814,7 +8842,7 @@ tmap_save(m, "DATA/transport/MA/figures/ma_headwayMAMINCR.png",
 knitr::include_graphics("DATA/transport/MA/figures/ma_headwayMAMINCR.png")
 ```
 
-```{r tabHeadwayCRMAMIN, fig.align = "center", fig.cap="MA Minority persons within 4800m or 3 miles of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r tabHeadwayCRMAMIN, fig.align = "center", fig.cap="MA People of Color within 4800m or 3 miles of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
 headway80thblkgrps_CR %>%
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -8832,7 +8860,7 @@ headway80thblkgrps_CR %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = paste("MA Minority Persons","with Commuter", "Rail Headways", paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+                    caption = paste("MA People of Color","with Commuter", "Rail Headways", paste0("Over ",quantile(ma_routes_sf_Bus$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
@@ -8988,7 +9016,7 @@ headway80thblkgrps_CR %>%
 No populations of limited English speaking Households, as defined by state environmental justice policy, were found in areas with commuter rail headways exceeding the 80th percentile. 
 
 
-## Low Walkability and Populations of Concern {-}
+## Low Walkability and Priority Populations {-}
 
 ```{r mapLowWalkDisabled, fig.align = "center", fig.cap="Disabled persons per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
@@ -9345,12 +9373,12 @@ leastWalkableTract %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapLowWalkMinority, fig.align = "center", fig.cap="Minority persons per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+```{r mapLowWalkMinority, fig.align = "center", fig.cap="People of Color per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(leastWalkable, unit = "mi") +
   tm_fill(col = "minorityE", alpha = 0.9, style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Minority Persons\nPer Square Kilometer",
+          colorNA = "white", colorNULL = "gray", title = "People of Color\nPer Square Kilometer",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
   tm_shape(ma_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -9380,7 +9408,7 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Minority Persons\nin Least Walkable\nBlock Groups", 
+  tm_layout(title = "People of Color\nin Least Walkable\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -9392,7 +9420,7 @@ tmap_save(m, "DATA/transport/MA/figures/ma_walkMinority.png",
 knitr::include_graphics("DATA/transport/MA/figures/ma_walkMinority.png")
 ```
 
-```{r tabLowWalkMinority, fig.align = "center", fig.cap="Minority persons by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+```{r tabLowWalkMinority, fig.align = "center", fig.cap="People of Color by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
 leastWalkable %>%
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -9411,7 +9439,7 @@ leastWalkable %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Minority Persons in Least Walkable Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+                    caption = "People of Color in Least Walkable Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
@@ -9558,12 +9586,12 @@ leastWalkable %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapLowWalkMAMIN, fig.align = "center", fig.cap="Minority persons, as defined by state environmental justice policy, per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+```{r mapLowWalkMAMIN, fig.align = "center", fig.cap="People of Color, as defined by state environmental justice policy, per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(leastWalkable, unit = "mi") +
   tm_fill(col = "MA_MINORITY", alpha = 0.9, style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "MA Minority Persons\nPer Square Kilometer",
+          colorNA = "white", colorNULL = "gray", title = "MA POC\nPer Square Kilometer",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
   tm_shape(ma_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -9593,7 +9621,7 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "MA Minority Persons\nin Least Walkable\nBlock Groups", 
+  tm_layout(title = "MA People of Color\nin Least Walkable\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -9605,7 +9633,7 @@ tmap_save(m, "DATA/transport/MA/figures/ma_walkMAMIN.png",
 knitr::include_graphics("DATA/transport/MA/figures/ma_walkMAMIN.png")
 ```
 
-```{r tabLowWalkMAMIN, fig.align = "center", fig.cap="Minority persons, as defined by state environmental justice policy, by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+```{r tabLowWalkMAMIN, fig.align = "center", fig.cap="People of Color, as defined by state environmental justice policy, by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
 leastWalkable %>%
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -9624,7 +9652,7 @@ leastWalkable %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "MA Minority Persons in Least Walkable Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of MA Minority Persons in Block Groups","Pct of MA Minority Persons in City/Town")) %>% 
+                    caption = "MA People of Color in Least Walkable Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of MA POC in Block Groups","Pct of MA POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
@@ -9701,7 +9729,7 @@ leastWalkable %>%
 ```
 
 
-## Highest Transportation Cost Burden and Populations of Concern {-}
+## Highest Transportation Cost Burden and Priority Populations {-}
 
 ```{r mapHiBurdenDisabled, fig.align = "center", fig.cap="Disabled Persons per square kilometer in Census Tracts with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
@@ -10058,12 +10086,12 @@ HiBurdenTract %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapHiBurdenMIN, fig.align = "center", fig.cap="Minority persons per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+```{r mapHiBurdenMIN, fig.align = "center", fig.cap="People of Color per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(HiBurden, unit = "mi") +
   tm_fill(col = "minorityE", alpha = 0.9, style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Minority Persons\nPer Square Kilometer",
+          colorNA = "white", colorNULL = "gray", title = "People of Color\nPer Square Kilometer",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
   tm_shape(ma_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -10093,7 +10121,7 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Minority\nPersons\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+  tm_layout(title = "People\nof Color\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -10105,7 +10133,7 @@ tmap_save(m, "DATA/transport/MA/figures/ma_HiBurdenMIN.png",
 knitr::include_graphics("DATA/transport/MA/figures/ma_HiBurdenMIN.png")
 ```
 
-```{r tabHiBurdenMIN, fig.align = "center", fig.cap="Minority persons by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+```{r tabHiBurdenMIN, fig.align = "center", fig.cap="People of Color by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
 HiBurden %>%
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -10124,7 +10152,7 @@ HiBurden %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Minority Persons in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+                    caption = "People of Color in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
@@ -10269,12 +10297,12 @@ HiBurden %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapHiBurdenMAMIN, fig.align = "center", fig.cap="Minority persons, as defined by state environmental justice policy, per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+```{r mapHiBurdenMAMIN, fig.align = "center", fig.cap="People of Color, as defined by state environmental justice policy, per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
 m <- tm_shape(ma_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(HiBurden, unit = "mi") +
   tm_fill(col = "MA_MINORITY", alpha = 0.9, style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "MA Minority\nPersons\nPer Square Kilometer",
+          colorNA = "white", colorNULL = "gray", title = "MA POC\nPersons\nPer Square Kilometer",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
   tm_shape(ma_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -10304,7 +10332,7 @@ m <- tm_shape(ma_state_sf_cb, unit = "mi") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "MA Minority\nPersons\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
+  tm_layout(title = "MA People\nof Color\nin Highest\nTransportation\nCost Burden\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -10316,7 +10344,7 @@ tmap_save(m, "DATA/transport/MA/figures/ma_HiBurdenMAMIN.png",
 knitr::include_graphics("DATA/transport/MA/figures/ma_HiBurdenMAMIN.png")
 ```
 
-```{r tabHiBurdenMAMIN, fig.align = "center", fig.cap="Minority persons, as defined by state environmental justice policy, by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+```{r tabHiBurdenMAMIN, fig.align = "center", fig.cap="People of Color, as defined by state environmental justice policy, by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
 HiBurden %>%
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
@@ -10334,7 +10362,7 @@ HiBurden %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "MA Minority in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of MA Minority in Block Groups","Pct of MA Minority in City/Town")) %>% 
+                    caption = "MA People of Color in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of MA POC in Block Groups","Pct of MA POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
