@@ -2650,7 +2650,7 @@ Walkability varies for different population groups across the state. Figure \@re
 ```{r loliWalkability, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="population-weighted average walkability index scores for groups across Massachusetts."}
 # Create lollipop graph of pop-weighted average walk index
 ma_wAvgWalkability_df %>% 
-  mmutate(Group = recode(Group, "Minority" = "People of Color",
+  mutate(Group = recode(Group, "Minority" = "People of Color",
                         "MA Minority" = "MA POC")) %>% 
   ggplot(aes(x = reorder(Group,-wNatWalkIndex), y = wNatWalkIndex)) +
   geom_segment(aes(x = reorder(Group,-wNatWalkIndex), 
@@ -7695,7 +7695,7 @@ tmap_save(m, "DATA/transport/MA/figures/ma_headwayMAINCRT.png",
 knitr::include_graphics("DATA/transport/MA/figures/ma_headwayMAINCRT.png")
 ```
 
-```{r tabHeadwayRTMAINC, fig.align = "center", fig.cap="Low income persons, as defined by state environmental justice policy, within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r tabHeadwayRTMAINC, fig.align = "center", fig.cap="Low income persons, as defined by state environmental justice policy, within 800m or 1/2 mile of rapid transit stops in which the mean headway for these stops is above the 80th percentile for the state.", eval=FALSE}
 headway80thblkgrps_RT %>%
   st_centroid(.) %>% 
   st_intersection(ma_towns_sf,.) %>% 
