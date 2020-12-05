@@ -143,7 +143,7 @@ ri_busBuff400m <- st_buffer(ri_busstops_sf,dist = 400) %>%
   st_union() %>% 
   st_as_sf()
 
-# Use areal interpolation to calculate populations of concern within buffer of accessibility
+# Use areal interpolation to calculate priority populations within buffer of accessibility
 ri_busBuff400m_sf <- ri_blkgrps_developed %>% 
   select(GEOID,NewArea:NewRI_MINORITIES) %>% 
   mutate(OldArea = NewArea) %>% 
@@ -171,7 +171,7 @@ ri_busBuff400mTracts_sf <- ri_tracts_developed %>%
          NewDisabled = as.integer(NewDisabled*Proportion),
          NewNoCar = as.integer(NewHHNoCar*Proportion))
 
-# # Use areal interpolation to calculate populations of concern within buffer of accessibility
+# # Use areal interpolation to calculate priority populations within buffer of accessibility
 # ri_busBuff400m_sf <- ri_blkgrps_sf %>% 
 #   mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>% 
 #   mutate(RI_LOWINC = replace_na(RI_LOWINC,0)) %>% 
@@ -325,7 +325,7 @@ ri_busroutes_sf <- ri_busroutes_sf %>%
     ROUTE %in% c(1,20,27,28,31,50,56,71,92) ~ "Key Corridor",
     ROUTE %in% c(16,203,204,210,231,242,281,282,301) ~ "Flex Service"))
 
-# Calculate totals of populations of concern for use in computing percentages in later tables
+# Calculate totals of priority populations for use in computing percentages in later tables
 # Calculate tract populations by state
 statepopsdf_tracts <- ri_tracts_sf %>% 
   as.data.frame() %>% 
@@ -486,10 +486,12 @@ knitr::include_graphics("DATA/transport/RI/figures/ri_transit.png")
 
 Approximately `r paste0(round(ri_busAccessPops_df %>% filter(Group == "Total Pop") %>% dplyr::select(PctBus) %>% pull(),1),"%")` of the state population lives within reasonable walking distance of a bus stop (defined as approximately 400 meters or 1/4 mile). 
 
-However, this access varies by population group. Figure \@ref(fig:loliBusDist) below compares the percentages of different population groups living within reasonable walking distance of bus stops across the state. Most populations of concern, including transit-dependent groups, have access similar to or better than the general population. However, note that people over age 64 have less access on average compared to the general population.
+However, this access varies by population group. Figure \@ref(fig:loliBusDist) below compares the percentages of different population groups living within reasonable walking distance of bus stops across the state. Most priority populations, including transit-dependent groups, have access similar to or better than the general population. However, note that people over age 64 have less access on average compared to the general population.
 
 ```{r loliBusDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Percentage of population groups within 1/4 mile (400 meters) of a bus stop across Rhode Island."}
 ri_busAccessPops_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "RI Minority" = "RI POC")) %>%
   ggplot(aes(x = reorder(Group,-PctBus), 
              y = PctBus)) +
   geom_segment(aes(x = reorder(Group,-PctBus), xend = reorder(Group,-PctBus),
@@ -511,6 +513,8 @@ ri_busAccessPops_df %>%
   geom_text(aes(x = "Under 18", y = 45, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(40,96))
+
+ggsave("images/RI_Bus_graph.png")
 ```
 
 Specific values of the same can be seen in Table \@ref(tab:statsBusDist) below.
@@ -518,6 +522,8 @@ Specific values of the same can be seen in Table \@ref(tab:statsBusDist) below.
 ```{r statsBusDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Rhode Island populations living within 1/4 mile (400 meters) of a bus stop. Based on ACS 2018 Block Group data."}
 # See table of distance by group
 ri_busAccessPops_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "RI Minority" = "RI POC")) %>%
   mutate(`% Bus Access` = paste0(round(PctBus,1),"%")) %>% 
   select(-PctBus) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
@@ -558,7 +564,7 @@ TransitNoAccess2 <- ri_tracts_sf_noBus %>%
   arrange(desc(Disabled))
 ```
 Figures \@ref(fig:mapTransitAccessO64) and \@ref(fig:mapTransitAccessDisabled) below highlight developed portions of Census Block Groups and Tracts across Rhode Island which are more than 1 mile from a transit stop and the numbers of persons over 64 or disabled who live there. Tables \@ref(tab:tabTransitAccessO64) and \@ref(tab:tabTransitAccessDisabled) show breakdowns by municipality. For example, Table \@ref(tab:tabTransitAccessO64) shows that `r formatC(as.numeric(TransitNoAccess1[1,3]),big.mark=",")` people over 64 across `r TransitNoAccess1[1,2]` Block Groups in `r TransitNoAccess1[1,1]` resided one or more miles from the nearest transit stop. These people represented `r TransitNoAccess1[1,4]` of people over 64 in `r TransitNoAccess1[1,1]`. Similarly, Table \@ref(tab:tabTransitAccessDisabled) shows that `r formatC(as.numeric(TransitNoAccess2[1,3]),big.mark=",")` people with disabilities across `r TransitNoAccess1[1,2]` Census Tracts in `r TransitNoAccess2[1,1]` resided one or more miles from the nearest transit stop. These people represented `r TransitNoAccess2[1,4]` of people with disabilities in `r TransitNoAccess2[1,1]`.
-Maps and tables of other populations of concern without access to transit can be found in Appendix B.
+Maps and tables of other priority populations without access to transit can be found in Appendix B.
 
 ```{r mapTransitAccessO64, fig.align = "center", fig.cap="Persons over 64 who are one or more miles from the nearest transit stop by Census Block Group."}
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
@@ -882,12 +888,12 @@ ri_busroutes_sf %>%
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-The average population-weighted headway for all transit in the state is `r round(ri_busHeadwayPops_df %>% filter(Group == "Total Pop") %>% select(AvgWHeadway) %>% pull(),1)` minutes. However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliHeadway) below compares the population-weighted average headways for different groups across the state. Most groups have average headways shorter than the general population. However, persons over age 64 have headways that exceed that of the general population (`r round(ri_busHeadwayPops_df %>% filter(Group == "Over 64") %>% select(AvgWHeadway) %>% pull(),1)` minutes). The shortest population-weighted average headway, experienced by minorities, as defined by Rhode Island environmental justice policy, is `r round(ri_busHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),0)` minutes.
+The average population-weighted headway for all transit in the state is `r round(ri_busHeadwayPops_df %>% filter(Group == "Total Pop") %>% select(AvgWHeadway) %>% pull(),1)` minutes. However headways, or service frequencies, vary significantly across population groups. Figure \@ref(fig:loliHeadway) below compares the population-weighted average headways for different groups across the state. Most groups have average headways shorter than the general population. However, persons over age 64 have headways that exceed that of the general population (`r round(ri_busHeadwayPops_df %>% filter(Group == "Over 64") %>% select(AvgWHeadway) %>% pull(),1)` minutes). The shortest population-weighted average headway, experienced by People of Color, as defined by Rhode Island environmental justice policy, is `r round(ri_busHeadwayPops_df %>% arrange(AvgWHeadway) %>% slice(.,1) %>% select(AvgWHeadway) %>% pull(),0)` minutes.
 
 ```{r loliHeadway, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average headways for groups within 400 meters of a bus stop across Rhode Island."}
 ri_busHeadwayPops_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "No HS Dip" = "No HS Diploma")) %>%
+                        "RI Minority" = "RI POC")) %>%
   ggplot(aes(x = reorder(Group,AvgWHeadway), y = AvgWHeadway)) +
   geom_segment(aes(x = reorder(Group,AvgWHeadway), 
                    xend = reorder(Group,AvgWHeadway),
@@ -910,7 +916,7 @@ ri_busHeadwayPops_df %>%
             color = "gray48") +
   expand_limits(y = c(60,110))
 
-ggsave("DATA/transport/RI/figures/ri_headwayBus_lolli.png")
+ggsave("images/RI_BusHdwy_graph.png")
 ```
 
 ```{r excessiveHeadway, include=FALSE}
@@ -956,8 +962,8 @@ save(headway80thblkgrps,
 st_write(headway80thblkgrps,"DATA/transport/CT/headway80thblkgrps_bus.shp")
 st_write(headway80thtracts, "DATA/transport/CT/headway80thtracts_bus.shp")
 ```
-The population-weighted average headways above provide a glimpse of average headways across the state for different population groups. However, headways also vary for specific communities. Indeed, it is important to consider populations of concern or transportation-limited populations that experience excessively long headways or low service frequency. Figures \@ref(fig:mapHeadwayOver64) and \@ref(fig:mapHeadwayDisabled) below highlight communities of persons over 64 or disabled persons within walking distance of transit stops (i.e., 400m or 1/4 mile), but where the mean headway for these stops exceeds the 80th percentile of mean route headways for the state (`r quantile(ri_routes_sf$mean_headways,0.8)` minutes). Tables \@ref(tab:tabHeadwayOver64) and \@ref(tab:tabHeadwayDisabled) show breakdowns by municipality. For example, Table \@ref(tab:tabHeadwayOver64) shows that `r formatC(as.numeric(headway80_1[1,3]),big.mark=",")` people over 64 across `r headway80_1[1,2]` Block Groups in `r headway80_1[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ri_routes_sf$mean_headways,0.8)` minutes. These people represented `r headway80_1[1,4]` of people over 64 in `r headway80_1[1,1]`. Similarly, Table \@ref(tab:tabHeadwayDisabled) shows that `r formatC(as.numeric(headway80_2[1,3]),big.mark=",")` people with disabilities across `r headway80_2[1,2]` Census Tracts in `r headway80_2[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ri_routes_sf$mean_headways,0.8)` minutes. These people represented `r headway80_2[1,4]` of people with disabilities in `r headway80_2[1,1]`.
-Maps and tables of other populations of concern with excessive headways can be found in Appendix B. 
+The population-weighted average headways above provide a glimpse of average headways across the state for different population groups. However, headways also vary for specific communities. Indeed, it is important to consider priority populations or transportation-limited populations that experience excessively long headways or low service frequency. Figures \@ref(fig:mapHeadwayOver64) and \@ref(fig:mapHeadwayDisabled) below highlight communities of persons over 64 or disabled persons within walking distance of transit stops (i.e., 400m or 1/4 mile), but where the mean headway for these stops exceeds the 80th percentile of mean route headways for the state (`r quantile(ri_routes_sf$mean_headways,0.8)` minutes). Tables \@ref(tab:tabHeadwayOver64) and \@ref(tab:tabHeadwayDisabled) show breakdowns by municipality. For example, Table \@ref(tab:tabHeadwayOver64) shows that `r formatC(as.numeric(headway80_1[1,3]),big.mark=",")` people over 64 across `r headway80_1[1,2]` Block Groups in `r headway80_1[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ri_routes_sf$mean_headways,0.8)` minutes. These people represented `r headway80_1[1,4]` of people over 64 in `r headway80_1[1,1]`. Similarly, Table \@ref(tab:tabHeadwayDisabled) shows that `r formatC(as.numeric(headway80_2[1,3]),big.mark=",")` people with disabilities across `r headway80_2[1,2]` Census Tracts in `r headway80_2[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ri_routes_sf$mean_headways,0.8)` minutes. These people represented `r headway80_2[1,4]` of people with disabilities in `r headway80_2[1,1]`.
+Maps and tables of other priority populations with excessive headways can be found in Appendix B. 
 
 ```{r mapHeadwayOver64, fig.align = "center", fig.cap="Persons over 64 within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
@@ -1130,7 +1136,7 @@ ri_tract_walkability_df <- ri_tract_walkability_sf %>%
   group_by(Group) %>% 
   summarize(wNatWalkIndex = weighted.mean(NatWalkInd, Pop, na.rm = TRUE))
 
-# Populated-Weighted Average Walkability Index for Populations of Concern
+# Populated-Weighted Average Walkability Index for Priority Populations
 ri_wAvgWalkability_df <- ri_blkgrp_walkability_sf %>% 
   as.data.frame() %>% 
   mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>% 
@@ -1205,6 +1211,8 @@ Walkability varies for different population groups across the state. Figure \@re
 ```{r loliWalkability, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="population-weighted average walkability index scores for groups across Rhode Island."}
 # Create lollipop graph of pop-weighted average walk index
 ri_wAvgWalkability_df %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "RI Minority" = "RI POC")) %>%
   ggplot(aes(x = reorder(Group,-wNatWalkIndex), y = wNatWalkIndex)) +
   geom_segment(aes(x = reorder(Group,-wNatWalkIndex), 
                    xend = reorder(Group,-wNatWalkIndex),
@@ -1225,6 +1233,8 @@ ri_wAvgWalkability_df %>%
   geom_text(aes(x = "Under 18", y = 11.9, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y = c(11.5,16))
+
+ggsave("images/RI_Walk_graph.png")
 ```
 ```{r lowWalk, include=FALSE}
 # Isolate least walkable block groups and tracts and add area variable
@@ -1266,8 +1276,8 @@ leastWalkable2 <- leastWalkable %>%
   mutate(`Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
   arrange(desc(`Under 18`))
 ```
-The population-weighted average walkability scores provide a glimpse of average walkability across the state for different population groups. However, walkability also varies for specific communities. Indeed, it is important to consider populations of concern that reside in communities with low walkability. Figures \@ref(fig:mapLowWalkO64) and \@ref(fig:mapLowWalkU18) below highlight Census Block Groups across Rhode Island that are least walkable and the numbers of persons over 64 or under 18 live there. Tables \@ref(tab:tabLowWalkO64) and \@ref(tab:tabLowWalkU18) show breakdowns by municipality. For example, Table \@ref(tab:tabLowWalkO64) shows that `r formatC(as.numeric(leastWalkable1[1,3]),big.mark=",")` people over 64 across `r leastWalkable1[1,2]` Block Groups in `r leastWalkable1[1,1]` resided in the least walkable areas. These people represented `r leastWalkable1[1,4]` of people over 64 in `r leastWalkable1[1,1]`. Similarly, Table \@ref(tab:tabLowWalkU18) shows that `r formatC(as.numeric(leastWalkable2[1,3]),big.mark=",")` people under 18 across `r TransitNoAccess1[1,2]` Block Groups in `r leastWalkable2[1,1]` resided the least walkable areas. These people represented `r leastWalkable2[1,4]` of people under 18 in `r leastWalkable2[1,1]`.
-Maps and tables of other populations of concern in the least walkable Block Groups can be found in Appendix B.
+The population-weighted average walkability scores provide a glimpse of average walkability across the state for different population groups. However, walkability also varies for specific communities. Indeed, it is important to consider priority populations that reside in communities with low walkability. Figures \@ref(fig:mapLowWalkO64) and \@ref(fig:mapLowWalkU18) below highlight Census Block Groups across Rhode Island that are least walkable and the numbers of persons over 64 or under 18 live there. Tables \@ref(tab:tabLowWalkO64) and \@ref(tab:tabLowWalkU18) show breakdowns by municipality. For example, Table \@ref(tab:tabLowWalkO64) shows that `r formatC(as.numeric(leastWalkable1[1,3]),big.mark=",")` people over 64 across `r leastWalkable1[1,2]` Block Groups in `r leastWalkable1[1,1]` resided in the least walkable areas. These people represented `r leastWalkable1[1,4]` of people over 64 in `r leastWalkable1[1,1]`. Similarly, Table \@ref(tab:tabLowWalkU18) shows that `r formatC(as.numeric(leastWalkable2[1,3]),big.mark=",")` people under 18 across `r TransitNoAccess1[1,2]` Block Groups in `r leastWalkable2[1,1]` resided the least walkable areas. These people represented `r leastWalkable2[1,4]` of people under 18 in `r leastWalkable2[1,1]`.
+Maps and tables of other priority populations in the least walkable Block Groups can be found in Appendix B.
 
 ```{r mapLowWalkO64, fig.align = "center", fig.cap="Persons over 64 per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
@@ -1419,7 +1429,7 @@ lai_ri_tract_df <- lai_ri_tract %>%
   group_by(Group) %>% 
   summarize(wTBurden = weighted.mean(hh7_t, Pop, na.rm = TRUE))
 
-# Population-weighted average transportation cost burden for populations of concern
+# Population-weighted average transportation cost burden for priority populations
 lai_ri_df <- lai_ri_blkgrp %>% 
   as.data.frame() %>% 
   mutate(RI_LOWINC = if_else(RI_INCOME == "I",totalpopE,0)) %>% 
@@ -1497,7 +1507,7 @@ Transportation cost burden varies for different population groups across the sta
 # Create lollipop graph of pop-weighted average LAI
 lai_ri_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "No HS Dip" = "No HS Diploma")) %>%
+                        "RI Minority" = "RI POC")) %>%
   ggplot(aes(x = reorder(Group,wTBurden), y = wTBurden)) +
   geom_segment(aes(x = reorder(Group,wTBurden), 
                    xend = reorder(Group,wTBurden),
@@ -1520,7 +1530,7 @@ lai_ri_df %>%
             color = "gray48") +
   expand_limits(y = c(18,25))
 
-ggsave("DATA/transport/RI/figures/ri_tburden_lolli.png")
+ggsave("images/RI_Cost_graph.png")
 ```
 ```{r HiBurden, include=FALSE}
 # Isolate highest transport burden block groups and tracts and add area variable
@@ -1562,8 +1572,8 @@ HiBurden2 <- HiBurden %>%
   mutate(`Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
   arrange(desc(`Under 18`))
 ```
-The population-weighted average transportation cost burden values provide a glimpse of average transportation cost burden across the state for different population groups. However, transportation cost burden also varies for specific communities. Indeed, it is important to consider populations of concern that reside in communities with a high transportation cost burden. Figures \@ref(fig:mapHiBurdenO64) and \@ref(fig:mapHiBurdenU18) below highlight Census Block Groups across Rhode Island where the transportation cost burden is in the highest quintile (i.e., 80th percentile) and the numbers of persons over 64 or under 18 that live there. Tables \@ref(tab:tabHiBurdenO64) and \@ref(tab:tabHiBurdenU18) show breakdowns by municipality. For example, Table \@ref(tab:tabHiBurdenO64) shows that `r formatC(as.numeric(HiBurden1[1,3]),big.mark=",")` people over 64 across `r HiBurden1[1,2]` Block Groups in `r HiBurden1[1,1]` resided in areas with the highest transportation cost burden. These people represented `r HiBurden1[1,4]` of people over 64 in `r HiBurden1[1,1]`. Similarly, Table \@ref(tab:tabHiBurdenU18) shows that `r formatC(as.numeric(HiBurden2[1,3]),big.mark=",")` people under 18 across `r HiBurden2[1,2]` Block Groups in `r HiBurden2[1,1]` resided in areas with the highest transportation cost burden. These people represented `r HiBurden2[1,4]` of people under 18 in `r HiBurden2[1,1]`.
-Maps and tables of other populations of concern in areas with the highest transportation cost burden can be found in Appendix B.
+The population-weighted average transportation cost burden values provide a glimpse of average transportation cost burden across the state for different population groups. However, transportation cost burden also varies for specific communities. Indeed, it is important to consider priority populations that reside in communities with a high transportation cost burden. Figures \@ref(fig:mapHiBurdenO64) and \@ref(fig:mapHiBurdenU18) below highlight Census Block Groups across Rhode Island where the transportation cost burden is in the highest quintile (i.e., 80th percentile) and the numbers of persons over 64 or under 18 that live there. Tables \@ref(tab:tabHiBurdenO64) and \@ref(tab:tabHiBurdenU18) show breakdowns by municipality. For example, Table \@ref(tab:tabHiBurdenO64) shows that `r formatC(as.numeric(HiBurden1[1,3]),big.mark=",")` people over 64 across `r HiBurden1[1,2]` Block Groups in `r HiBurden1[1,1]` resided in areas with the highest transportation cost burden. These people represented `r HiBurden1[1,4]` of people over 64 in `r HiBurden1[1,1]`. Similarly, Table \@ref(tab:tabHiBurdenU18) shows that `r formatC(as.numeric(HiBurden2[1,3]),big.mark=",")` people under 18 across `r HiBurden2[1,2]` Block Groups in `r HiBurden2[1,1]` resided in areas with the highest transportation cost burden. These people represented `r HiBurden2[1,4]` of people under 18 in `r HiBurden2[1,1]`.
+Maps and tables of other priority populations in areas with the highest transportation cost burden can be found in Appendix B.
 
 ```{r mapHiBurdenO64, fig.align = "center", fig.cap="Persons over 64 per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
@@ -1806,7 +1816,7 @@ For the purposes of this analysis ACS 5-year estimates for the period 2014 - 201
 
 ```{r ACSvariables}
 ACSvDF <- data.frame(Variable = c("Total Population",
-                                  "Minority",
+                                  "People of Color",
                                   "Low Income",
                                   "Limited English Household",
                                   "Less than High School Education",
@@ -1816,11 +1826,11 @@ ACSvDF <- data.frame(Variable = c("Total Population",
                                   "Disabled",
                                   "No Car Household",
                                   "CT Income",
+                                  "MA Income",
+                                  "MA Limited English Household",
+                                  "MA POC",
                                   "RI Income",
-                                  "RI Limited English Household",
-                                  "RI Minority",
-                                  "RI Income",
-                                  "RI Minority"),
+                                  "RI POC"),
                      Description = c("Total population",
                                      "Persons of Hispanic or Latino origin or persons who are not White",
                                      "People in households where the household income is less than or equal to twice the federal poverty level",
@@ -1832,11 +1842,11 @@ ACSvDF <- data.frame(Variable = c("Total Population",
                                      "Persons 18 years+ with a disability",
                                      "Households with no vehicle available",
                                      "Connecticut Low Income threshold: 30% or more people in households where the household income is less than or equal to twice the federal poverty level",
-                                     "Rhode Island Low Income threshold: 25% or more of households with median household incomes below 65% statewide median",
-                                     "Rhode Island Language Isolation threshold: 25% or more people in households where all adults speak English less than \"very well\"",
-                                     "Rhode Island Minority threshold: 25% or more are persons of Hispanic or Latino origin or persons who are not White",
+                                     "Massachusetts Low Income threshold: 25% or more of households with median household incomes below 65% statewide median",
+                                     "Massachusetts Language Isolation threshold: 25% or more people in households where all adults speak English less than \"very well\"",
+                                     "Massachusetts POC threshold: 40% or more are persons of Hispanic or Latino origin or persons who are not White OR 25% or more are persons of Hispanic or Latino origin or persons who are not White AND the median household income of the municipality is less than 150% of the statewide median household income",
                                      "Rhode Island Low Income threshold: highest 15% of block groups with people in households where the household income is less than or equal to twice the federal poverty level",
-                                     "Rhode Island Minority threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
+                                     "Rhode Island POC threshold: highest 15% of block groups with persons of Hispanic or Latino origin or persons who are not White"),
                      'ACS Table ID' = c("B03002: Hispanic or Latino Origin by Race",
                                 "B03002: Hispanic or Latino Origin by Race",
                                 "C17002: Ratio of Income to Poverty Level",
@@ -1881,7 +1891,7 @@ ACSvDF %>%
 
 ## Population-weighted averages {-}
 
-Wherever feasible, averages are reported as population-weighted averages. A population weighted-average is equivalent to a weighted mean in which the raw values for which a mean (or average) is calculated are multiplied by a weight factor. For example, we are interested in knowing whether Minorities experience longer headways than the general or Total Population. Consider the table below.
+Wherever feasible, averages are reported as population-weighted averages. A population weighted-average is equivalent to a weighted mean in which the raw values for which a mean (or average) is calculated are multiplied by a weight factor. For example, we are interested in knowing whether People of Color experience longer headways than the general or Total Population. Consider the table below.
 
 ```{r wmean1}
 data.frame(BG = c("BG1","BG2","BG3","BG4"),
@@ -1890,13 +1900,13 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
            NonMinority = c(20,12,5,10)) %>% 
   mutate(TotalPop = Minority + NonMinority) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
-                    caption = "Block Group Populations and Headways", align = "l") %>% 
+                    caption = "Block Group Populations and Headways", align = "l", col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
-Population numbers of minorities, as well as the total population, and headways, are each reported by Block Group. Since each Block Group is associated with one headway value, we might assume (incorrectly) that everyone is equally exposed to the average headways of all Block Groups (`r round(mean(c(65,75,85,70)),2)`). However, not all Block Groups have the same number or categories of people, which means that each headway value is associated with a different number of people. Do Minorities occupy Block Groups with higher headways than the simple average would indicate?
+Population numbers of People of Color, as well as the total population, and headways, are each reported by Block Group. Since each Block Group is associated with one headway value, we might assume (incorrectly) that everyone is equally exposed to the average headways of all Block Groups (`r round(mean(c(65,75,85,70)),2)`). However, not all Block Groups have the same number or categories of people, which means that each headway value is associated with a different number of people. Do People of Color occupy Block Groups with higher headways than the simple average would indicate?
 
-To calculate the population-weighted average headway for Minorities, the number of Minorities in each Block Group is used as a 'weight'. The headway of each Block Group is multiplied by its respective number of Minorities. See the table below. 
+To calculate the population-weighted average headway for People of Color, the number of People of Color in each Block Group is used as a 'weight'. The headway of each Block Group is multiplied by its respective number of People of Color. See the table below. 
 
 ```{r wmean2}
 data.frame(BG = c("BG1","BG2","BG3","BG4"),
@@ -1908,13 +1918,14 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
                     caption = "Block Group Populations and Headway", 
-                    align = "l") %>% 
+                    align = "l",
+                    col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5:6])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header")) %>% 
   kableExtra::row_spec(5, bold = TRUE) %>% 
   kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
 ```
 
-The total or sum of the products (i.e., Minority pop x Headway) is then divided by the sum of the weights (i.e., total Minority population), so that 3475/45 = `r round(3475/45,2)`. The result is a weighted average headway that is influenced by the number of minorities. 
+The total or sum of the products (i.e., Minority pop x Headway) is then divided by the sum of the weights (i.e., total Minority population), so that 3475/45 = `r round(3475/45,2)`. The result is a weighted average headway that is influenced by the number of People of Color. 
 
 This process is repeated for the Total Population so that the two population-weighted average headways can be compared. Below is the calculation of population-weighted calculation for the total population. 
 
@@ -1928,19 +1939,20 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
                     caption = "Block Group Populations and Headway", 
-                    align = "l") %>% 
+                    align = "l",
+                    col.names = c(names(.)[1:2], "People of Color", "Non-POC", names(.)[5:6])) %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header")) %>% 
   kableExtra::row_spec(5, bold = TRUE) %>% 
   kableExtra::column_spec(6, bold = TRUE, background = "#d3d3d3")
 ```
 
-For the TotalPop, the population-weighted average headway is 6800/92 = `r round(6800/92,2)`. Thus we can see that Minorities experience a higher population-weighted average headway than the general or total population. 
+For the TotalPop, the population-weighted average headway is 6800/92 = `r round(6800/92,2)`. Thus we can see that People of Color experience a higher population-weighted average headway than the general or total population. 
 
 
 \pagebreak
 # Appendix B: Supplementary Figures {-}
 
-## No Transit Access and Populations of Concern {-}
+## No Transit Access and Priority Populations {-}
 
 ```{r mapTransitAccessU18, fig.align = "center", fig.cap="Persons under 18 who are one or more miles from the nearest transit stop by Census Block Group."}
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
@@ -2254,12 +2266,12 @@ ri_tracts_sf_noBus %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapTransitAccessMIN, fig.align = "center", fig.cap="Minority persons who are one or more miles from the nearest transit stop by Census Block Group."}
+```{r mapTransitAccessMIN, fig.align = "center", fig.cap="People of Color who are one or more miles from the nearest transit stop by Census Block Group."}
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(ri_blkgrps_sf_noBus, unit = "mi") +
   tm_fill(col = "NewMinority", alpha = 0.9, style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Number of\nMinority Persons",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nPeople of Color",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ri_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -2285,7 +2297,7 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
                position = c(0.6,0.005)) +
   tm_add_legend(type = "line", lwd=2, alpha = 0.5, labels = "Transit Route") +
-  tm_layout(title = "Minority Persons\n1+ Miles from\nNearest Transit\nStop", 
+  tm_layout(title = "People of Color\n1+ Miles from\nNearest Transit\nStop", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2297,7 +2309,7 @@ tmap_save(m, "DATA/transport/RI/figures/ri_transitMINaccess.png",
 knitr::include_graphics("DATA/transport/RI/figures/ri_transitMINaccess.png")
 ```
 
-```{r tabTransitAccessMIN, fig.align = "center", fig.cap="Minority persons in Census Block Groups one or more miles from the nearest bus stop."}
+```{r tabTransitAccessMIN, fig.align = "center", fig.cap="People of Color in Census Block Groups one or more miles from the nearest bus stop."}
 ri_blkgrps_sf_noBus %>%
   st_centroid(.) %>% 
   st_intersection(ri_towns_sf,.) %>% 
@@ -2313,7 +2325,7 @@ ri_blkgrps_sf_noBus %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Minority Persons One or More Miles from Nearest Transit Stop", align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+                    caption = "People of Color One or More Miles from Nearest Transit Stop", align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
 ```
@@ -2386,7 +2398,7 @@ ri_blkgrps_sf_noBus %>%
 Note that no Low Income or Minority communities, as defined by the state's environmental justice policy, were found to fall outside of areas with access to transit stops. 
 
 
-## Excessive Headways and Populations of Concern {-}
+## Excessive Headways and Priority Populations {-}
 
 ```{r mapHeadwayUnder18, fig.align = "center", fig.cap="Persons under 18 within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
@@ -2713,12 +2725,12 @@ headway80thblkgrps %>%
 
 ```
 
-```{r mapHeadwayMinority, fig.align = "center", fig.cap="Minority persons within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r mapHeadwayMinority, fig.align = "center", fig.cap="People of Color within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(headway80thblkgrps) +
   tm_fill(col = "NewMinority", alpha = 0.9, style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Number of\nMinority Persons",
+          colorNA = "white", colorNULL = "gray", title = "Number of\nPeople of Color",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd") +
   tm_shape(ri_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -2743,7 +2755,7 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
                position = c(0.6,0.005)) +
   tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Transit Route") +
-  tm_layout(title = paste("Minority Persons","with Headways",paste0("Over ",round(quantile(ri_routes_sf$mean_headways,0.8),0)," Minutes"),sep = "\n"), 
+  tm_layout(title = paste("People of Color","with Headways",paste0("Over ",round(quantile(ri_routes_sf$mean_headways,0.8),0)," Minutes"),sep = "\n"), 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2755,7 +2767,7 @@ tmap_save(m, "DATA/transport/RI/figures/ri_headwayMinority.png",
 knitr::include_graphics("DATA/transport/RI/figures/ri_headwayMinority.png")
 ```
 
-```{r tabHeadwayMinority, fig.align = "center", fig.cap="Minority persons within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r tabHeadwayMinority, fig.align = "center", fig.cap="People of Color within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
 headway80thblkgrps %>%
   st_centroid(.) %>% 
   st_intersection(ri_towns_sf,.) %>% 
@@ -2772,7 +2784,7 @@ headway80thblkgrps %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = paste("Minority Persons","with Headways",paste0("Over ",quantile(ri_routes_sf$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+                    caption = paste("People of Color","with Headways",paste0("Over ",quantile(ri_routes_sf$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 
@@ -2908,12 +2920,12 @@ headway80thblkgrps %>%
 
 ```
 
-```{r mapHeadwayRIMinority, fig.align = "center", fig.cap="Minority persons, as defined by the state's environmental justice policy, within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r mapHeadwayRIMinority, fig.align = "center", fig.cap="People of Color, as defined by the state's environmental justice policy, within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(headway80thblkgrps) +
   tm_fill(col = "NewRI_MINORITIES", alpha = 0.9, style = "equal",
-          showNA = FALSE, title = "Number of\nRI Minority",
+          showNA = FALSE, title = "Number of\nRI POC",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f", big.mark = ",")), palette = "OrRd") +
   tm_shape(ri_towns_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -2938,7 +2950,7 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
                position = c(0.6,0.005)) +
   tm_add_legend(type = "line", lwd=1, alpha = 0.3, labels = "Transit Route") +
-  tm_layout(title = paste("RI Minority", "Persons with","Headways Over",paste0(round(quantile(ri_routes_sf$mean_headways,0.8),0)," Minutes"),sep = "\n"), 
+  tm_layout(title = paste("RI People", "of Color with","Headways Over",paste0(round(quantile(ri_routes_sf$mean_headways,0.8),0)," Minutes"),sep = "\n"), 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -2950,7 +2962,7 @@ tmap_save(m, "DATA/transport/RI/figures/ri_headwayRIMinority.png",
 knitr::include_graphics("DATA/transport/RI/figures/ri_headwayRIMinority.png")
 ```
 
-```{r tabHeadwayRIMinority, fig.align = "center", fig.cap="Minority persons, as defined by the state's environmental justice policy, within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
+```{r tabHeadwayRIMinority, fig.align = "center", fig.cap="People of Color, as defined by the state's environmental justice policy, within 400m or 1/4 mile of transit stops in which the mean headway for these stops is above the 80th percentile for the state."}
 headway80thblkgrps %>%
   st_centroid(.) %>% 
   st_intersection(ri_towns_sf,.) %>% 
@@ -2967,13 +2979,13 @@ headway80thblkgrps %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = paste("RI Minority Persons","with Headways",paste0("Over ",quantile(ri_routes_sf$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of RI Minorities in Block Groups","Pct of RI Minorities in City/Town")) %>% 
+                    caption = paste("RI People of Color","with Headways",paste0("Over ",quantile(ri_routes_sf$mean_headways,0.8)," Minutes"),sep = "\n"), align = "r", col.names = c(names(.)[1:2],"Number of RI POC in Block Groups","Pct of RI POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
 
-## Low Walkability and Populations of Concern {-}
+## Low Walkability and Priority Populations {-}
 
 ```{r mapLowWalkDisabled, fig.align = "center", fig.cap="Disabled persons per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
@@ -3265,12 +3277,12 @@ leastWalkableTract %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapLowWalkMinority, fig.align = "center", fig.cap="Minority persons per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+```{r mapLowWalkMinority, fig.align = "center", fig.cap="People of Color per square kilometer in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(leastWalkable, unit = "mi") +
   tm_fill(col = "minorityE", alpha = 0.9, style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Minority Persons\nPer Square Kilometer",
+          colorNA = "white", colorNULL = "gray", title = "People of Color\nPer Square Kilometer",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
   tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -3289,7 +3301,7 @@ m <- tm_shape(ri_state_sf_cb, unit = "mi") +
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 5, 10), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Minority Persons\nin Least Walkable\nBlock Groups", 
+  tm_layout(title = "People of Color\nin Least Walkable\nBlock Groups", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -3301,7 +3313,7 @@ tmap_save(m, "DATA/transport/RI/figures/ri_walkMinority.png",
 knitr::include_graphics("DATA/transport/RI/figures/ri_walkMinority.png")
 ```
 
-```{r tabLowWalkMinority, fig.align = "center", fig.cap="Minority persons by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
+```{r tabLowWalkMinority, fig.align = "center", fig.cap="People of Color by municipality in least walkable Census Block Groups (i.e., Walkability Index Score less than or equal to 5.8)."}
 leastWalkable %>%
   st_centroid(.) %>% 
   st_intersection(ri_towns_sf,.) %>% 
@@ -3318,7 +3330,7 @@ leastWalkable %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Minority Persons in Least Walkable Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+                    caption = "People of Color in Least Walkable Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
@@ -3384,7 +3396,7 @@ leastWalkable %>%
 Note that no low income and minority communities, as defined by the state's environmental justice policy, were classified as least walkable communities. 
 
 
-## Highest Transportation Cost Burden and Populations of Concern {-}
+## Highest Transportation Cost Burden and Priority Populations {-}
 
 ```{r mapHiBurdenDisabled, fig.align = "center", fig.cap="Disabled Persons per square kilometer in Census Tracts with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
@@ -3676,12 +3688,12 @@ HiBurdenTract %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapHiBurdenMIN, fig.align = "center", fig.cap="Minority persons per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+```{r mapHiBurdenMIN, fig.align = "center", fig.cap="People of Color per square kilometer in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
 m <- tm_shape(ri_state_sf_cb, unit = "mi") + 
   tm_fill(col = "gray",alpha = 0.2) +
   tm_shape(HiBurden, unit = "mi") +
   tm_fill(col = "minorityE", alpha = 0.9, style = "equal",
-          colorNA = "white", colorNULL = "gray", title = "Minority Persons\nPer Square Kilometer",
+          colorNA = "white", colorNULL = "gray", title = "People of Color\nPer Square Kilometer",
           legend.format = list(fun = function(x) formatC(x, digits = 0, format = "f")), palette = "OrRd", convert2density = TRUE, area = "SqKm") +
   tm_shape(ri_tracts_sf) + tm_borders(alpha = 0.5, lwd = 0.2) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) + 
@@ -3712,7 +3724,7 @@ tmap_save(m, "DATA/transport/RI/figures/ri_HiBurdenMIN.png",
 knitr::include_graphics("DATA/transport/RI/figures/ri_HiBurdenMIN.png")
 ```
 
-```{r tabHiBurdenMIN, fig.align = "center", fig.cap="Minority persons by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
+```{r tabHiBurdenMIN, fig.align = "center", fig.cap="People of Color by municipality in Census Block Groups with the highest transportation cost burden (i.e., transportation cost burden in the 80th percentile for the state)."}
 HiBurden %>%
   st_centroid(.) %>% 
   st_intersection(ri_towns_sf,.) %>% 
@@ -3729,7 +3741,7 @@ HiBurden %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Minority Persons in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of Minorities in Block Groups","Pct of Minorities in City/Town")) %>% 
+                    caption = "People of Color in Highest Transportation Cost Burden Block Groups", align = "r", col.names = c(names(.)[1:2],"Number of POC in Block Groups","Pct of POC in City/Town")) %>% 
   kableExtra::column_spec(3:4, width = "4cm") %>%
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
 ```
