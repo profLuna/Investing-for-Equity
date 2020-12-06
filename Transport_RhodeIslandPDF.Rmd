@@ -959,8 +959,10 @@ headway80_2 <- headway80thtracts %>%
 save(headway80thblkgrps,
      headway80thtracts,file = "DATA/transport/CT/headway80th.Rds")
 
-st_write(headway80thblkgrps,"DATA/transport/CT/headway80thblkgrps_bus.shp")
-st_write(headway80thtracts, "DATA/transport/CT/headway80thtracts_bus.shp")
+st_write(headway80thblkgrps,"DATA/transport/CT/headway80thblkgrps_bus.shp",
+         delete_layer = TRUE)
+st_write(headway80thtracts, "DATA/transport/CT/headway80thtracts_bus.shp",
+         delete_layer = TRUE)
 ```
 The population-weighted average headways above provide a glimpse of average headways across the state for different population groups. However, headways also vary for specific communities. Indeed, it is important to consider priority populations or transportation-limited populations that experience excessively long headways or low service frequency. Figures \@ref(fig:mapHeadwayOver64) and \@ref(fig:mapHeadwayDisabled) below highlight communities of persons over 64 or disabled persons within walking distance of transit stops (i.e., 400m or 1/4 mile), but where the mean headway for these stops exceeds the 80th percentile of mean route headways for the state (`r quantile(ri_routes_sf$mean_headways,0.8)` minutes). Tables \@ref(tab:tabHeadwayOver64) and \@ref(tab:tabHeadwayDisabled) show breakdowns by municipality. For example, Table \@ref(tab:tabHeadwayOver64) shows that `r formatC(as.numeric(headway80_1[1,3]),big.mark=",")` people over 64 across `r headway80_1[1,2]` Block Groups in `r headway80_1[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ri_routes_sf$mean_headways,0.8)` minutes. These people represented `r headway80_1[1,4]` of people over 64 in `r headway80_1[1,1]`. Similarly, Table \@ref(tab:tabHeadwayDisabled) shows that `r formatC(as.numeric(headway80_2[1,3]),big.mark=",")` people with disabilities across `r headway80_2[1,2]` Census Tracts in `r headway80_2[1,1]` resided in areas where the average headway of accessible transit stops exceeded `r quantile(ri_routes_sf$mean_headways,0.8)` minutes. These people represented `r headway80_2[1,4]` of people with disabilities in `r headway80_2[1,1]`.
 Maps and tables of other priority populations with excessive headways can be found in Appendix B. 
