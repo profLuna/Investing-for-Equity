@@ -444,7 +444,8 @@ However, this access varies by population group. Figure \@ref(fig:loliBusDist) b
 
 ```{r loliBusDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Percentage of population groups within 1/4 mile (400 meters) of a bus routes across New Hampshire."}
 nh_transitAccessPops_df %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,-PctBus), 
              y = PctBus)) +
   geom_segment(aes(x = reorder(Group,-PctBus), xend = reorder(Group,-PctBus),
@@ -475,7 +476,8 @@ Specific values of the same can be seen in Table \@ref(tab:statsBusDist) below.
 ```{r statsBusDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="New Hampshire populations living within 1/4 mile (400 meters) of a bus route. Based on ACS 2018 Block Group data."}
 # See table of distance by group
 nh_transitAccessPops_df %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   mutate(`% Bus Access` = paste0(round(PctBus,1),"%")) %>% 
   select(-PctBus) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
@@ -759,7 +761,8 @@ Walkability varies for different population groups across the state. Figure \@re
 ```{r loliWalkability, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="population-weighted average walkability index scores for groups across New Hampshire."}
 # Create lollipop graph of pop-weighted average walk index
 nh_wAvgWalkability_df %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,-wNatWalkIndex), y = wNatWalkIndex)) +
   geom_segment(aes(x = reorder(Group,-wNatWalkIndex), 
                    xend = reorder(Group,-wNatWalkIndex),
@@ -1424,7 +1427,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
            Minority = c(5,10,20,10),
            NonMinority = c(20,12,5,10)) %>% 
   mutate(TotalPop = Minority + NonMinority,
-         HeadwayxMinority = Headway*Minority) %>% 
+         HeadwayxPOC = Headway*Minority) %>% 
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
                     caption = "Block Group Populations and Headway", 
