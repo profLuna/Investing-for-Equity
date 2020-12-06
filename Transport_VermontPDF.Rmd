@@ -761,7 +761,8 @@ However, this access varies by population group. Figure \@ref(fig:loliBusDist) b
 
 ```{r loliBusDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Percentage of population groups within 1/4 mile (400 meters) of a bus stop or 3 miles (4800m) of park-in-ride lot across Vermont"}
 vt_transitAccessPops_df %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,-PctAllTransit), 
              y = PctAllTransit)) +
   geom_segment(aes(x = reorder(Group,-PctAllTransit), xend = reorder(Group,-PctAllTransit),
@@ -792,7 +793,8 @@ Specific values of the same can be seen in Table \@ref(tab:statsTransitDist) bel
 ```{r statsTransitDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont populations living within 1/4 mile (400 meters) of a bus stop or 3 miles (4800m) of a park-in-ride lot. Based on ACS 2018 Block Group data."}
 # See table of distance by group
 vt_transitAccessPops_df %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   mutate(PctBus = paste0(round(PctBus,1),"%"),
          PctParknRide = paste0(round(PctParknRide,1),"%"),
          PctAllTransit = paste0(round(PctAllTransit,1),"%")) %>% 
@@ -1100,7 +1102,8 @@ However headways, or service frequencies, vary significantly across population g
 
 ```{r loliBusHeadway, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average bus headways for groups within 400 meters of a bus stop across Vermont."}
 vt_busHeadwayPops_df %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,AvgWHeadway), y = AvgWHeadway)) +
   geom_segment(aes(x = reorder(Group,AvgWHeadway), 
                    xend = reorder(Group,AvgWHeadway),
@@ -1418,7 +1421,8 @@ Walkability varies for different population groups across the state. Figure \@re
 ```{r loliWalkability, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="population-weighted average walkability index scores for groups across Vermont."}
 # Create lollipop graph of pop-weighted average walk index
 vt_wAvgWalkability_df %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,-wNatWalkIndex), y = wNatWalkIndex)) +
   geom_segment(aes(x = reorder(Group,-wNatWalkIndex), 
                    xend = reorder(Group,-wNatWalkIndex),
@@ -2134,7 +2138,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
            Minority = c(5,10,20,10),
            NonMinority = c(20,12,5,10)) %>% 
   mutate(TotalPop = Minority + NonMinority,
-         HeadwayxMinority = Headway*Minority) %>% 
+         HeadwayxPOC = Headway*Minority) %>% 
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
                     caption = "Block Group Populations and Headway", 
