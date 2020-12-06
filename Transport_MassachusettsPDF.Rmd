@@ -909,7 +909,8 @@ However, this access varies by population group and by mode of transit. Figures 
 ```{r loliBusDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Percentage of population groups within 1/4 mile (400 meters) of a bus stop across Massachusetts."}
 ma_transitAccessPops_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "MA Minority" = "MA POC")) %>%
+                        "MA Minority" = "MA POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,-PctBus), 
              y = PctBus)) +
   geom_segment(aes(x = reorder(Group,-PctBus), xend = reorder(Group,-PctBus),
@@ -938,7 +939,8 @@ ggsave("images/MA_Bus_graph.png")
 ```{r loliRTDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Percentage of population groups within 1/2 mile (800 meters) of a rapid transit stop across Massachusetts."}
 ma_transitAccessPops_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "MA Minority" = "MA POC")) %>%
+                        "MA Minority" = "MA POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,-PctRapidTransit), 
              y = PctRapidTransit)) +
   geom_segment(aes(x = reorder(Group,-PctRapidTransit), xend = reorder(Group,-PctRapidTransit),
@@ -967,7 +969,8 @@ ggsave("images/MA_RT_graph.png")
 ```{r loliCRDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Percentage of population groups within 3 miles (4800 meters) of a commuter rail stop or park-in-ride lot across Massachusetts."}
 ma_transitAccessPops_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "MA Minority" = "MA POC")) %>%
+                        "MA Minority" = "MA POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,-PctCommuter), 
              y = PctCommuter)) +
   geom_segment(aes(x = reorder(Group,-PctCommuter), xend = reorder(Group,-PctCommuter),
@@ -996,7 +999,8 @@ ggsave("images/MA_CR_graph.png")
 ```{r loliAllTransitDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Percentage of population groups with access to any transit stops across Massachusetts, based on reasonable distances for each mode."}
 ma_transitAccessPops_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "MA Minority" = "MA POC")) %>%
+                        "MA Minority" = "MA POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,-PctAllTransit), 
              y = PctAllTransit)) +
   geom_segment(aes(x = reorder(Group,-PctAllTransit), xend = reorder(Group,-PctAllTransit),
@@ -1028,7 +1032,8 @@ Specific values of the same can be seen in Table \@ref(tab:statsTransitDist) bel
 # See table of distance by group
 ma_transitAccessPops_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "MA Minority" = "MA POC")) %>%
+                        "MA Minority" = "MA POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   mutate(PctBus = paste0(round(PctBus,1),"%"),
          PctRapidTransit = paste0(round(PctRapidTransit,1),"%"),
          PctCommuter = paste0(round(PctCommuter,1),"%"),
@@ -1936,7 +1941,8 @@ The average population-weighted headway for all bus routes in the state is `r ro
 ```{r loliBusHeadway, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average bus headways for groups within 400 meters of a bus stop across Massachusetts."}
 ma_busHeadwayPops_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "MA Minority" = "MA POC")) %>%
+                        "MA Minority" = "MA POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,AvgWHeadway), y = AvgWHeadway)) +
   geom_segment(aes(x = reorder(Group,AvgWHeadway), 
                    xend = reorder(Group,AvgWHeadway),
@@ -2054,7 +2060,8 @@ ma_stops_sf_RT %>%
 ```{r loliRTHeadway, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average rapid transit headways for groups within 800 meters of a rapid transit stop."}
 ma_RTHeadwayPops_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "MA Minority" = "MA POC")) %>%
+                        "MA Minority" = "MA POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,AvgWHeadway), y = AvgWHeadway)) +
   geom_segment(aes(x = reorder(Group,AvgWHeadway), 
                    xend = reorder(Group,AvgWHeadway),
@@ -2158,7 +2165,8 @@ ma_stops_sf_CR %>%
 ```{r loliCRHeadway, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average commuter rail headways for groups within 4800 meters of a commuter rail stop."}
 ma_CRHeadwayPops_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "MA Minority" = "MA POC")) %>%
+                        "MA Minority" = "MA POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,AvgWHeadway), y = AvgWHeadway)) +
   geom_segment(aes(x = reorder(Group,AvgWHeadway), 
                    xend = reorder(Group,AvgWHeadway),
@@ -2651,7 +2659,8 @@ Walkability varies for different population groups across the state. Figure \@re
 # Create lollipop graph of pop-weighted average walk index
 ma_wAvgWalkability_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "MA Minority" = "MA POC")) %>% 
+                        "MA Minority" = "MA POC",
+                        "No HS Dip" = "No HS Diploma")) %>% 
   ggplot(aes(x = reorder(Group,-wNatWalkIndex), y = wNatWalkIndex)) +
   geom_segment(aes(x = reorder(Group,-wNatWalkIndex), 
                    xend = reorder(Group,-wNatWalkIndex),
@@ -2989,7 +2998,8 @@ Transportation cost burden varies for different population groups across the sta
 # Create lollipop graph of pop-weighted average LAI
 lai_ma_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "MA Minority" = "MA POC")) %>% 
+                        "MA Minority" = "MA POC",
+                        "No HS Dip" = "No HS Diploma")) %>% 
   ggplot(aes(x = reorder(Group,wTBurden), y = wTBurden)) +
   geom_segment(aes(x = reorder(Group,wTBurden), 
                    xend = reorder(Group,wTBurden),
@@ -3426,7 +3436,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
            Minority = c(5,10,20,10),
            NonMinority = c(20,12,5,10)) %>% 
   mutate(TotalPop = Minority + NonMinority,
-         HeadwayxMinority = Headway*Minority) %>% 
+         HeadwayxPOC = Headway*Minority) %>% 
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
                     caption = "Block Group Populations and Headway", 
