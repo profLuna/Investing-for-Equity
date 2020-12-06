@@ -491,7 +491,8 @@ However, this access varies by population group. Figure \@ref(fig:loliBusDist) b
 ```{r loliBusDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Percentage of population groups within 1/4 mile (400 meters) of a bus stop across Rhode Island."}
 ri_busAccessPops_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "RI Minority" = "RI POC")) %>%
+                        "RI Minority" = "RI POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,-PctBus), 
              y = PctBus)) +
   geom_segment(aes(x = reorder(Group,-PctBus), xend = reorder(Group,-PctBus),
@@ -523,7 +524,8 @@ Specific values of the same can be seen in Table \@ref(tab:statsBusDist) below.
 # See table of distance by group
 ri_busAccessPops_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "RI Minority" = "RI POC")) %>%
+                        "RI Minority" = "RI POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   mutate(`% Bus Access` = paste0(round(PctBus,1),"%")) %>% 
   select(-PctBus) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
@@ -893,7 +895,8 @@ The average population-weighted headway for all transit in the state is `r round
 ```{r loliHeadway, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average headways for groups within 400 meters of a bus stop across Rhode Island."}
 ri_busHeadwayPops_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "RI Minority" = "RI POC")) %>%
+                        "RI Minority" = "RI POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,AvgWHeadway), y = AvgWHeadway)) +
   geom_segment(aes(x = reorder(Group,AvgWHeadway), 
                    xend = reorder(Group,AvgWHeadway),
@@ -1214,7 +1217,8 @@ Walkability varies for different population groups across the state. Figure \@re
 # Create lollipop graph of pop-weighted average walk index
 ri_wAvgWalkability_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "RI Minority" = "RI POC")) %>%
+                        "RI Minority" = "RI POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,-wNatWalkIndex), y = wNatWalkIndex)) +
   geom_segment(aes(x = reorder(Group,-wNatWalkIndex), 
                    xend = reorder(Group,-wNatWalkIndex),
@@ -1509,7 +1513,8 @@ Transportation cost burden varies for different population groups across the sta
 # Create lollipop graph of pop-weighted average LAI
 lai_ri_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "RI Minority" = "RI POC")) %>%
+                        "RI Minority" = "RI POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,wTBurden), y = wTBurden)) +
   geom_segment(aes(x = reorder(Group,wTBurden), 
                    xend = reorder(Group,wTBurden),
@@ -1916,7 +1921,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
            Minority = c(5,10,20,10),
            NonMinority = c(20,12,5,10)) %>% 
   mutate(TotalPop = Minority + NonMinority,
-         HeadwayxMinority = Headway*Minority) %>% 
+         HeadwayxPOC = Headway*Minority) %>% 
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
                     caption = "Block Group Populations and Headway", 
