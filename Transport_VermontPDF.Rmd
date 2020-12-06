@@ -1124,7 +1124,7 @@ vt_busHeadwayPops_df %>%
             color = "gray48") +
   geom_text(aes(x = "Total Pop", y = 277, label = "Below state\naverage"),
             color = "gray48") +
-  expand_limits(y = c(250,315))
+  expand_limits(y = c(250,320))
 
 ggsave("images/VT_BusHdwy_graph.png")
 ```
