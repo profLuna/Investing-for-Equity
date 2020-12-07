@@ -860,7 +860,8 @@ Figures \@ref(fig:loliBusDist) to \@ref(fig:loliAllTransitDist) below compare th
 
 ```{r loliBusDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Percentage of population groups within 1/4 mile (400 meters) of a bus stop across Connecticut."}
 ct_transitAccessPops_df %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,-PctBus), 
              y = PctBus)) +
   geom_segment(aes(x = reorder(Group,-PctBus), xend = reorder(Group,-PctBus),
@@ -888,7 +889,8 @@ ggsave("images/CT_Bus_graph.png")
 
 ```{r loliCRDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Percentage of population groups within 3 miles (4800 meters) of a commuter rail stop."}
 ct_transitAccessPops_df %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,-PctCommuter), 
              y = PctCommuter)) +
   geom_segment(aes(x = reorder(Group,-PctCommuter), xend = reorder(Group,-PctCommuter),
@@ -916,7 +918,8 @@ ggsave("images/CT_CR_graph.png")
 
 ```{r loliAllTransitDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Percentage of population groups with access to any transit stops across Connecticut, based on reasonable distances for each mode."}
 ct_transitAccessPops_df %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,-PctAllTransit), 
              y = PctAllTransit)) +
   geom_segment(aes(x = reorder(Group,-PctAllTransit), xend = reorder(Group,-PctAllTransit),
@@ -947,7 +950,8 @@ Specific values of the same can be seen in Table \@ref(tab:statsTransitDist) bel
 ```{r statsTransitDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut populations living within 1/4 mile (400 meters) of a bus stop. Based on ACS 2018 Block Group data."}
 # See table of distance by group
 ct_transitAccessPops_df %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   mutate(PctBus = paste0(round(PctBus,1),"%"),
          PctCommuter = paste0(round(PctCommuter,1),"%"),
          PctAllTransit = paste0(round(PctAllTransit,1),"%")) %>% 
@@ -1416,7 +1420,8 @@ However headways, or service frequencies, vary significantly across population g
 
 ```{r loliBusHeadway, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average bus headways for groups within 400 meters of a bus stop across Connecticut."}
 ct_busHeadwayPops_df %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,AvgWHeadway), y = AvgWHeadway)) +
   geom_segment(aes(x = reorder(Group,AvgWHeadway), 
                    xend = reorder(Group,AvgWHeadway),
@@ -1512,7 +1517,8 @@ ct_stops_sf_Rail %>%
 
 ```{r loliCRHeadway, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average commuter rail headways for groups within 4800 meters of a commuter rail stop."}
 ct_CRHeadwayPops_df %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,AvgWHeadway), y = AvgWHeadway)) +
   geom_segment(aes(x = reorder(Group,AvgWHeadway), 
                    xend = reorder(Group,AvgWHeadway),
@@ -2555,7 +2561,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
            Minority = c(5,10,20,10),
            NonMinority = c(20,12,5,10)) %>% 
   mutate(TotalPop = Minority + NonMinority,
-         HeadwayxMinority = Headway*Minority) %>% 
+         HeadwayxPOC = Headway*Minority) %>% 
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
                     caption = "Block Group Populations and Headway", 
