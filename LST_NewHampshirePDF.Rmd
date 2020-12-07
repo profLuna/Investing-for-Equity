@@ -759,7 +759,8 @@ In addition to variations in the general geography of Land Surface Temperatures 
 
 ```{r plotLST24hrTempPopAvgNH, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average temperatures for priority populations in New Hampshire relative to the state average."}
 LST24hrPop %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,LST24hrwMean), 
              y = LST24hrwMean)) +
   geom_segment(aes(x = reorder(Group,LST24hrwMean), 
@@ -793,7 +794,8 @@ ggsave("images/NH_LST24_graph.png")
 
 ```{r tabLST24hrPopAvgNH, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average LST for priority populations in New Hampshire relative to the state average."}
 LST24hrPopTab %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   arrange(Group) %>% 
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Avg 24hr LST (°F)",
@@ -895,7 +897,8 @@ Figure \@ref(fig:plotUHI24hrTempPopAvgNH) and Table \@ref(tab:tabUHI24hrPopAvgNH
 
 ```{r plotUHI24hrTempPopAvgNH, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average Urban Heat Island effect for priority populations in New Hampshire."}
 UHI24hrPop %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,UHI24hrwMean), 
              y = UHI24hrwMean)) +
   geom_segment(aes(x = reorder(Group,UHI24hrwMean), 
@@ -927,7 +930,8 @@ ggsave("images/NH_UHI24_graph.png")
 
 ```{r tabUHI24hrPopAvgNH, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average Urban Heat Island effect for priority populations in New Hampshire relative to the rural average."}
 UHI24hrPopTab %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   arrange(Group) %>% 
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Day-Night Avg UHI (°F)",
@@ -1423,7 +1427,8 @@ ggsave("images/NH_LSTDay_graph.png")
 
 ```{r tabLSTDayPopAvgNH, fig.align = "center", fig.cap="Population-weighted average exposures to Daytime LST for priority populations in New Hampshire relative to the state average."}
 LSTDayPopTab %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   arrange(Group) %>% 
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Avg Day LST (°F)",
@@ -1526,7 +1531,8 @@ Figure \@ref(fig:plotUHIDayTempPopAvgNH) and Table \@ref(tab:tabUHIDayPopAvgNH) 
 
 ```{r plotUHIDayTempPopAvgNH, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to daytime Urban Heat Island effect for priority populations in New Hampshire."}
 UHIDayPop %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,UHIDaywMean), 
              y = UHIDaywMean)) +
   geom_segment(aes(x = reorder(Group,UHIDaywMean), 
@@ -1558,7 +1564,8 @@ ggsave("images/NH_UHIDay_graph.png")
 
 ```{r tabUHIDayPopAvgNH, fig.align = "center", fig.cap="Population-weighted average exposures to daytime Urban Heat Island effect for priority populations in New Hampshire relative to the rural average."}
 UHIDayPopTab %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   arrange(Group) %>% 
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Avg Daytime UHI (°F)",
@@ -2021,7 +2028,8 @@ In addition to variations in the general geography of Land Surface Temperatures 
 
 ```{r plotLSTNightTempPopAvgNH, fig.align = "center", fig.cap="Population-weighted average exposures to average nighttime Land Surfact Temperatures for priority populations in New Hampshire relative to the state average."}
 LSTNightPop %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,LSTNightwMean), 
              y = LSTNightwMean)) +
   geom_segment(aes(x = reorder(Group,LSTNightwMean), 
@@ -2055,7 +2063,8 @@ ggsave("images/NH_LSTNight_graph.png")
 
 ```{r tabLSTNightPopAvgNH, fig.align = "center", fig.cap="Population-weighted average exposures to nighttime LST for priority populations in New Hampshire relative to the state average."}
 LSTNightPopTab %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   arrange(Group) %>% 
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Avg Night LST (°F)",
@@ -2158,7 +2167,8 @@ Figure \@ref(fig:plotUHINightTempPopAvgNH) and Table \@ref(tab:tabUHINightPopAvg
 
 ```{r plotUHINightTempPopAvgNH, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to nighttime Urban Heat Island effect for priority populations in New Hampshire."}
 UHINightPop %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,UHINightwMean), 
              y = UHINightwMean)) +
   geom_segment(aes(x = reorder(Group,UHINightwMean), 
@@ -2190,7 +2200,8 @@ ggsave("images/NH_UHINight_graph.png")
 
 ```{r tabUHINightPopAvgNH, fig.align = "center", fig.cap="Population-weighted average exposures to nighttime Urban Heat Island effect for priority populations in New Hampshire relative to the rural average."}
 UHINightPopTab %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   arrange(Group) %>% 
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Avg Nighttime UHI (°F)",
@@ -2722,7 +2733,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
            Minority = c(5,10,20,10),
            NonMinority = c(20,12,5,10)) %>% 
   mutate(TotalPop = Minority + NonMinority,
-         TempxMinority = Temp*Minority) %>% 
+         TempxPOC = Temp*Minority) %>% 
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
                     caption = "Block Group Populations and Temperature", 
