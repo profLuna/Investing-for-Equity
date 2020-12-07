@@ -501,7 +501,8 @@ The proportion of the total state population living within flood zones exceeds t
 vt_FloodPops_df %>% 
   mutate(PctFlood = paste0(as.character(round(PctFlood,1)),"%")) %>% 
   arrange(-FloodPop) %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
                     caption = "Vermont Populations Living within Flood Zones",
