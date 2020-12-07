@@ -2706,7 +2706,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
 Population numbers of People of Color, as well as the total population, and temperatures, are each reported by Block Group. Since each Block Group is associated with one temperature value, we might assume (incorrectly) that everyone is equally exposed to the average temperatures of all Block Groups - `r round(mean(c(65,75,85,70)),2)`. However, not all Block Groups have the same number or categories of people, which means that each temperature value is associated with a different number of people. Do People of Color occupy Block Groups with higher temperatures than the simple average would indicate?
 
 To calculate the population-weighted average temperature exposure for People of Color, the number of People of Color in each Block Group is used as a 'weight'. The temperature of each Block Group is multiplied by its respective number of People of Color. See the table below. 
-
+\pagebreak
 ```{r wmean2}
 data.frame(BG = c("BG1","BG2","BG3","BG4"),
            Temp = c(65,75,85,70),
