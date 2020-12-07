@@ -783,7 +783,8 @@ In addition to variations in the general geography of Land Surface Temperatures 
 
 ```{r plotLST24hrTempPopAvgCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average temperatures for priority populations in Connecticut relative to the state average."}
 LST24hrPop %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,LST24hrwMean), 
              y = LST24hrwMean)) +
   geom_segment(aes(x = reorder(Group,LST24hrwMean), 
@@ -817,7 +818,8 @@ ggsave("images/CT_LST24_graph.png")
 ```{r tabLST24hrPopAvgCT, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average LST for priority populations in Connecticut relative to the state average."}
 LST24hrPopTab %>% 
   arrange(Group) %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Avg 24hr LST (°F)",
                                   "Difference from State Avg* (°F)",
@@ -926,7 +928,8 @@ Figure \@ref(fig:plotUHI24hrTempPopAvgCT) and Table \@ref(tab:tabUHI24hrPopAvgCT
 
 ```{r plotUHI24hrTempPopAvgCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average Urban Heat Island effect for priority populations in Connecticut."}
 UHI24hrPop %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,UHI24hrwMean), 
              y = UHI24hrwMean)) +
   geom_segment(aes(x = reorder(Group,UHI24hrwMean), 
@@ -959,7 +962,8 @@ ggsave("images/CT_UHI24_graph.png")
 ```{r tabUHI24hrPopAvgCT, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average Urban Heat Island effect for priority populations in Connecticut relative to the rural average."}
 UHI24hrPopTab %>% 
   arrange(Group) %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Day-Night Avg UHI (°F)",
                                   "Difference from State UHI Avg* (°F)",
@@ -1486,7 +1490,8 @@ ggsave("images/CT_LSTDay_graph.png")
 ```{r tabLSTDayPopAvgCT, fig.align = "center", fig.cap="Population-weighted average exposures to Daytime LST for priority populations in Connecticut relative to the state average."}
 LSTDayPopTab %>% 
   arrange(Group) %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Avg Day LST (°F)",
                                   "Difference from State Avg* (°F)",
@@ -1596,7 +1601,8 @@ Figure \@ref(fig:plotUHIDayTempPopAvgCT) and Table \@ref(tab:tabUHIDayPopAvgCT) 
 
 ```{r plotUHIDayTempPopAvgCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to daytime Urban Heat Island effect for priority populations in Connecticut."}
 UHIDayPop %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,UHIDaywMean), 
              y = UHIDaywMean)) +
   geom_segment(aes(x = reorder(Group,UHIDaywMean), 
@@ -1629,7 +1635,8 @@ ggsave("images/CT_UHIDay_graph.png")
 ```{r tabUHIDayPopAvgCT, fig.align = "center", fig.cap="Population-weighted average exposures to daytime Urban Heat Island effect for priority populations in Connecticut relative to the rural average."}
 UHIDayPopTab %>% 
   arrange(Group) %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Avg Daytime UHI (°F)",
                                   "Difference from State UHI Avg* (°F)",
@@ -2117,7 +2124,8 @@ In addition to variations in the general geography of Land Surface Temperatures 
 
 ```{r plotLSTNightTempPopAvgCT, fig.align = "center", fig.cap="Population-weighted average exposures to average nighttime Land Surfact Temperatures for priority populations in Connecticut relative to the state average."}
 LSTNightPop %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,LSTNightwMean), 
              y = LSTNightwMean)) +
   geom_segment(aes(x = reorder(Group,LSTNightwMean), 
@@ -2152,7 +2160,8 @@ ggsave("images/CT_LSTNight_graph.png")
 ```{r tabLSTNightPopAvgCT, fig.align = "center", fig.cap="Population-weighted average exposures to nighttime LST for priority populations in Connecticut relative to the state average."}
 LSTNightPopTab %>% 
   arrange(Group) %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Avg Night LST (°F)",
                                   "Difference from State Avg* (°F)",
@@ -2262,7 +2271,8 @@ Figure \@ref(fig:plotUHINightTempPopAvgCT) and Table \@ref(tab:tabUHINightPopAvg
 
 ```{r plotUHINightTempPopAvgCT, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to nighttime Urban Heat Island effect for priority populations in Connecticut."}
 UHINightPop %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,UHINightwMean), 
              y = UHINightwMean)) +
   geom_segment(aes(x = reorder(Group,UHINightwMean), 
@@ -2295,7 +2305,8 @@ ggsave("images/CT_UHINight_graph.png")
 ```{r tabUHINightPopAvgCT, fig.align = "center", fig.cap="Population-weighted average exposures to nighttime Urban Heat Island effect for priority populations in Connecticut relative to the rural average."}
 UHINightPopTab %>% 
   arrange(Group) %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Avg Nighttime UHI (°F)",
                                   "Difference from State UHI Avg (°F)",
@@ -2841,7 +2852,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
            Minority = c(5,10,20,10),
            NonMinority = c(20,12,5,10)) %>% 
   mutate(TotalPop = Minority + NonMinority,
-         TempxMinority = Temp*Minority) %>% 
+         TempxPOC = Temp*Minority) %>% 
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
                     caption = "Block Group Populations and Temperature", 
