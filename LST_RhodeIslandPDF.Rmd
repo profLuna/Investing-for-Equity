@@ -782,7 +782,8 @@ In addition to variations in the general geography of Land Surface Temperatures 
 ```{r plotLST24hrTempPopAvgRI, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average temperatures for priority populations in Rhode Island relative to the state average."}
 LST24hrPop %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "RI Minority" = "RI POC")) %>%
+                        "RI Minority" = "RI POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,LST24hrwMean), 
              y = LST24hrwMean)) +
   geom_segment(aes(x = reorder(Group,LST24hrwMean), 
@@ -816,7 +817,8 @@ ggsave("images/RI_LST24_graph.png")
 ```{r tabLST24hrPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average LST for priority populations in Rhode Island relative to the state average."}
 LST24hrPopTab %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "RI Minority" = "RI POC")) %>%
+                        "RI Minority" = "RI POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   arrange(Group) %>% 
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Avg 24hr LST (°F)",
@@ -935,7 +937,8 @@ Figure \@ref(fig:plotUHI24hrTempPopAvgRI) and Table \@ref(tab:tabUHI24hrPopAvgRI
 ```{r plotUHI24hrTempPopAvgRI, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average Urban Heat Island effect for priority populations in Rhode Island."}
 UHI24hrPop %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "RI Minority" = "RI POC")) %>%
+                        "RI Minority" = "RI POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,UHI24hrwMean), 
              y = UHI24hrwMean)) +
   geom_segment(aes(x = reorder(Group,UHI24hrwMean), 
@@ -968,7 +971,8 @@ ggsave("images/RI_UHI24_graph.png")
 ```{r tabUHI24hrPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to day-night average Urban Heat Island effect for priority populations in Rhode Island relative to the rural average."}
 UHI24hrPopTab %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "RI Minority" = "RI POC")) %>%
+                        "RI Minority" = "RI POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   arrange(Group) %>% 
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Day-Night Avg UHI (°F)",
@@ -1459,7 +1463,8 @@ In addition to variations in the general geography of Land Surface Temperatures 
 ```{r plotLSTDayTempPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to average daytime Land Surface Temperatures for priority populations in Rhode Island relative to the state average."}
 LSTDayPop %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "RI Minority" = "RI POC")) %>%
+                        "RI Minority" = "RI POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,LSTDaywMean), 
              y = LSTDaywMean)) +
   geom_segment(aes(x = reorder(Group,LSTDaywMean), 
@@ -1494,7 +1499,8 @@ ggsave("images/RI_LSTDay_graph.png")
 ```{r tabLSTDayPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to Daytime LST for priority populations in Rhode Island relative to the state average."}
 LSTDayPopTab %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "RI Minority" = "RI POC")) %>%
+                        "RI Minority" = "RI POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   arrange(Group) %>% 
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Avg Day LST (°F)",
@@ -1614,7 +1620,8 @@ Figure \@ref(fig:plotUHIDayTempPopAvgRI) and Table \@ref(tab:tabUHIDayPopAvgRI) 
 ```{r plotUHIDayTempPopAvgRI, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to daytime Urban Heat Island effect for priority populations in Rhode Island."}
 UHIDayPop %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "RI Minority" = "RI POC")) %>%
+                        "RI Minority" = "RI POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,UHIDaywMean), 
              y = UHIDaywMean)) +
   geom_segment(aes(x = reorder(Group,UHIDaywMean), 
@@ -1647,7 +1654,8 @@ ggsave("images/RI_UHIDay_graph.png")
 ```{r tabUHIDayPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to daytime Urban Heat Island effect for priority populations in Rhode Island relative to the rural average."}
 UHIDayPopTab %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "RI Minority" = "RI POC")) %>%
+                        "RI Minority" = "RI POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   arrange(Group) %>% 
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Avg Daytime UHI (°F)",
@@ -2136,7 +2144,8 @@ In addition to variations in the general geography of Land Surface Temperatures 
 ```{r plotLSTNightTempPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to average nighttime Land Surfact Temperatures for priority populations in Rhode Island relative to the state average."}
 LSTNightPop %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "RI Minority" = "RI POC")) %>%
+                        "RI Minority" = "RI POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,LSTNightwMean), 
              y = LSTNightwMean)) +
   geom_segment(aes(x = reorder(Group,LSTNightwMean), 
@@ -2171,7 +2180,8 @@ ggsave("images/RI_LSTNight_graph.png")
 ```{r tabLSTNightPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to nighttime LST for priority populations in Rhode Island relative to the state average."}
 LSTNightPopTab %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "RI Minority" = "RI POC")) %>%
+                        "RI Minority" = "RI POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   arrange(Group) %>% 
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Avg Night LST (°F)",
@@ -2291,7 +2301,8 @@ Figure \@ref(fig:plotUHINightTempPopAvgRI) and Table \@ref(tab:tabUHINightPopAvg
 ```{r plotUHINightTempPopAvgRI, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Population-weighted average exposures to nighttime Urban Heat Island effect for priority populations in Rhode Island."}
 UHINightPop %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "RI Minority" = "RI POC")) %>%
+                        "RI Minority" = "RI POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,UHINightwMean), 
              y = UHINightwMean)) +
   geom_segment(aes(x = reorder(Group,UHINightwMean), 
@@ -2324,7 +2335,8 @@ ggsave("images/RI_UHINight_graph.png")
 ```{r tabUHINightPopAvgRI, fig.align = "center", fig.cap="Population-weighted average exposures to nighttime Urban Heat Island effect for priority populations in Rhode Island relative to the rural average."}
 UHINightPopTab %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
-                        "RI Minority" = "RI POC")) %>%
+                        "RI Minority" = "RI POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   arrange(Group) %>% 
   kableExtra::kable(longtable = T, booktabs = T, digits = 2, 
                     col.names = c("Group","Avg Nighttime UHI (°F)",
@@ -2634,7 +2646,7 @@ tm_shape(ri_state_sf_cb, unit = "mi") + tm_borders(lwd = 0.2) +
 Air temperature data for the specific hours covered by the MODIS data were extracted. Weather station air temperature values were then compared to coincident LST pixel values for the same time periods.   
 
 The validation analysis shows that LST values are positively correlated with weather station air temperatures (see Table \@ref(tab:tabCorrelations)), but these correlations are not statistically significant. The small number of stations makes it difficult to establish a statistically significant relationship. 
-
+\pagebreak
 ```{r tabCorrelations}
 # Compare day average LST to weather station air temp data for same time period
 cor_day <- cor.test(x = isd_ri_DayNight_sf$gridDay, y = isd_ri_DayNight_sf$tempFday, use = "pairwise.complete.obs", method = "spearman")
@@ -2860,7 +2872,7 @@ data.frame(BG = c("BG1","BG2","BG3","BG4"),
            Minority = c(5,10,20,10),
            NonMinority = c(20,12,5,10)) %>% 
   mutate(TotalPop = Minority + NonMinority,
-         TempxMinority = Temp*Minority) %>% 
+         TempxPOC = Temp*Minority) %>% 
   bind_rows(summarize_all(., funs(if(is.numeric(.)) sum(.) else "Total"))) %>% 
   kableExtra::kable(longtable = T, booktabs = T, 
                     caption = "Block Group Populations and Temperature", 
