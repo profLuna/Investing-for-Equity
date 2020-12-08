@@ -549,7 +549,8 @@ ma_FloodPops_df %>%
   mutate(PctFlood = paste0(as.character(round(PctFlood,1)),"%")) %>% 
   arrange(-FloodPop) %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color", 
-                        "MA Minority" = "MA POC")) %>%
+                        "MA Minority" = "MA POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
                     caption = "Massachusetts Populations Living within Flood Zones",
@@ -563,7 +564,8 @@ Some groups are disproportionately exposed to these flood hazards. While approxi
 # Create lollipop plot of pops within flood zones
 ma_FloodPops_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color", 
-                        "MA Minority" = "MA POC")) %>%
+                        "MA Minority" = "MA POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,PctFlood), 
              y = PctFlood)) +
   geom_segment(aes(x = reorder(Group,PctFlood), 
@@ -1039,7 +1041,8 @@ ma_HevacPops_df %>%
   mutate(PctHevac = paste0(as.character(round(PctHevac,1)),"%")) %>% 
   arrange(-HevacPop) %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color", 
-                        "MA Minority" = "MA POC")) %>%
+                        "MA Minority" = "MA POC",
+                        "No HS Dip" = "No HS Diploma")) %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
                     caption = "Massachusetts Populations Living within Hurricane Evacuation Zones",
@@ -1053,7 +1056,8 @@ Some groups are disproportionately exposed to these hurricane evacuation hazards
 # Create lollipop plot of pops within flood zones
 ma_HevacPops_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color", 
-                        "MA Minority" = "MA POC")) %>% 
+                        "MA Minority" = "MA POC",
+                        "No HS Dip" = "No HS Diploma")) %>% 
   ggplot(aes(x = reorder(Group,PctHevac), 
              y = PctHevac)) +
   geom_segment(aes(x = reorder(Group,PctHevac), 
