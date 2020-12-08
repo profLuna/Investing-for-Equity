@@ -532,7 +532,8 @@ These percentages belie the proportions of the total population in the state tha
 me_FloodPops_df %>% 
   mutate(PctFlood = paste0(as.character(round(PctFlood,1)),"%")) %>% 
   arrange(-FloodPop) %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
                     caption = "Maine Populations Living within Flood Zones",
@@ -545,7 +546,8 @@ Some groups are disproportionately exposed to these flood hazards. While approxi
 ```{r chartNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Maine Populations Living within Flood Zones."}
 # Create lollipop plot of pops within flood zones
 me_FloodPops_df %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,PctFlood), 
              y = PctFlood)) +
   geom_segment(aes(x = reorder(Group,PctFlood), 
@@ -965,7 +967,8 @@ These percentages belie the proportion of the population in the state that are l
 me_HevacPops_df %>% 
   mutate(PctHevac = paste0(as.character(round(PctHevac,1)),"%")) %>% 
   arrange(-HevacPop) %>% 
-  mutate(Group = recode(Group, "Minority" = "People of Color")) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
                     caption = "Maine Populations Living within Hurricane Inundation Zones",
