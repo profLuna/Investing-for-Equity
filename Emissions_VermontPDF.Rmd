@@ -435,7 +435,7 @@ vt_blkgrp_sf %>%
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/PM25Mean - 1)*100,
          `Low Income` = (num2povE/PM25Mean - 1)*100,
-         `No HS Dip` = (lthsE/PM25Mean - 1)*100,
+         `No HS Diploma` = (lthsE/PM25Mean - 1)*100,
          `Under 5` = (under5E/PM25Mean - 1)*100,
          `Over 64` = (over64E/PM25Mean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
@@ -458,9 +458,9 @@ vt_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "No HS Dip", y = 1, label = "Above state\naverage"),
+  geom_text(aes(x = "No HS Diploma", y = 1, label = "Above state\naverage"),
             color = "gray48") +
-  geom_text(aes(x = "No HS Dip", y = -1, label = "Below state\naverage"),
+  geom_text(aes(x = "No HS Diploma", y = -1, label = "Below state\naverage"),
             color = "gray48") +
   # geom_segment(aes(x = "Limited English HH", xend = "Limited English HH", y = 0.1, yend = 1.1), arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-2,2))
@@ -887,7 +887,7 @@ vt_blkgrp_sf %>%
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/O3Mean - 1)*100,
          `Low Income` = (num2povE/O3Mean - 1)*100,
-         `No HS Dip` = (lthsE/O3Mean - 1)*100,
+         `No HS Diploma` = (lthsE/O3Mean - 1)*100,
          `Under 5` = (under5E/O3Mean - 1)*100,
          `Over 64` = (over64E/O3Mean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
@@ -1366,7 +1366,7 @@ vt_blkgrp_sf %>%
   scale_y_continuous(labels=function(x) format(x, big.mark = ",", scientific = FALSE)) +
   xlab("") + 
   ylab(expression(paste(CO[2], " (thousands of mtons)", sep = ""))) + 
-  ggtitle(expression(paste("Total Vermont On-road", CO[2], " Emissions by Year, 1990 - 2017", sep = ""))) +
+  ggtitle(expression(paste("Total Vermont On-road ", CO[2], " Emissions by Year, 1990 - 2017", sep = ""))) +
   theme_minimal()
 ```
 
@@ -1479,7 +1479,7 @@ m11 <- tm_shape(local_g, unit = "mi",) +
                 col = c("#B2182B","#EF8A62","#FDDBC7","#F7F7F7",
                         "#D1E5F0","#67A9CF","#2166AC"),
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Hot Spot Map \nof DPM for \nVermont", 
+  tm_layout(title = "Hot Spot Map\nof Diesel\nParticulate\nMatter for\nVermont", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1491,7 +1491,7 @@ tmap_save(m11, "DATA/EJSCREEN/vt_DPMhotspot.png",
 knitr::include_graphics("DATA/EJSCREEN/vt_DPMhotspot.png")
 ```
 
-DPM concentrations vary across the state (see Table \@ref(tab:statsDPMRI) and Figure \@ref(fig:boxplotDPM) below).  
+DPM concentrations vary across the state (see Table \@ref(tab:statsDPM) and Figure \@ref(fig:boxplotDPM) below).  
 
 ```{r statsDPM, fig.align = "center", fig.cap="Annual 2014 average ambient concentrations of Diesel Particulate Matter in micrograms per cubic meter across Vermont at Census Block Group level."}
 vt_blkgrp_sf %>%
@@ -1601,7 +1601,7 @@ vt_blkgrp_sf %>%
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/DPMMean - 1)*100,
          `Low Income` = (num2povE/DPMMean - 1)*100,
-         `No HS Dip` = (lthsE/DPMMean - 1)*100,
+         `No HS Diploma` = (lthsE/DPMMean - 1)*100,
          `Under 5` = (under5E/DPMMean - 1)*100,
          `Over 64` = (over64E/DPMMean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
@@ -1623,9 +1623,9 @@ vt_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "No HS Dip", y = 7, label = "Above state\naverage"),
+  geom_text(aes(x = "No HS Diploma", y = 7, label = "Above state\naverage"),
             color = "gray48") +
-  geom_text(aes(x = "No HS Dip", y = -7, label = "Below state\naverage"),
+  geom_text(aes(x = "No HS Diploma", y = -7, label = "Below state\naverage"),
             color = "gray48") +
   # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 1, yend = 10), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
@@ -1863,7 +1863,7 @@ vt_blkgrp_sf %>%
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/DPMMean - 1)*100,
          `Low Income` = (num2povE/DPMMean - 1)*100,
-         `No HS Dip` = (lthsE/DPMMean - 1)*100,
+         `No HS Diploma` = (lthsE/DPMMean - 1)*100,
          `Under 5` = (under5E/DPMMean - 1)*100,
          `Over 64` = (over64E/DPMMean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
@@ -2014,7 +2014,7 @@ tmap_save(m15, "DATA/EJSCREEN/vt_RespHzrdHotspot.png",
 knitr::include_graphics("DATA/EJSCREEN/vt_RespHzrdHotspot.png")
 ```
 
-Respiratory hazard indices from inhalation of air toxics vary across the state (see Table \@ref(tab:statsRHIRI) and Figure \@ref(fig:boxplotRHI) below).   
+Respiratory hazard indices from inhalation of air toxics vary across the state (see Table \@ref(tab:statsRHI) and Figure \@ref(fig:boxplotRHI) below).   
 
 ```{r statsRHI, fig.align = "center", fig.cap="Annual 2014 respiratory hazard index from inhalation of air toxics (expressed as ratio of exposure concentration to health-based reference concentration) across Vermont at Census Block Group level."}
 vt_blkgrp_sf %>%
@@ -2124,7 +2124,7 @@ vt_blkgrp_sf %>%
          #Minority_NHW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/RESPMean - 1)*100,
          `Low Income` = (num2povE/RESPMean - 1)*100,
-         `No HS Dip` = (lthsE/RESPMean - 1)*100,
+         `No HS Diploma` = (lthsE/RESPMean - 1)*100,
          `Under 5` = (under5E/RESPMean - 1)*100,
          `Over 64` = (over64E/RESPMean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
@@ -2146,9 +2146,9 @@ vt_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "No HS Dip", y = 4, label = "Above state\naverage"),
+  geom_text(aes(x = "No HS Diploma", y = 4, label = "Above state\naverage"),
             color = "gray48") +
-  geom_text(aes(x = "No HS Dip", y = -2.5, label = "Below state\naverage"),
+  geom_text(aes(x = "No HS Diploma", y = -2.5, label = "Below state\naverage"),
             color = "gray48") +
   # geom_segment(aes(x = "Over 64", xend = "Over 64", y = 1, yend = 5), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
@@ -2693,7 +2693,7 @@ corrPM25 <- vt_blkgrp_sf %>%
                 `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
-                `No HS Dip` = pct_lthsE, 
+                `No HS Diploma` = pct_lthsE, 
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E) %>% 
   drop_na() %>% 
@@ -2712,7 +2712,7 @@ corrO3 <- vt_blkgrp_sf %>%
                 `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
-                `No HS Dip` = pct_lthsE, 
+                `No HS Diploma` = pct_lthsE, 
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E) %>%  
   drop_na() %>% 
@@ -2747,7 +2747,7 @@ corrDPM <- vt_blkgrp_sf %>%
                 `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
-                `No HS Dip` = pct_lthsE, 
+                `No HS Diploma` = pct_lthsE, 
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E) %>%  
   drop_na() %>% 
@@ -2767,7 +2767,7 @@ corrARI <- vt_blkgrp_sf %>%
                 `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
-                `No HS Dip` = pct_lthsE, 
+                `No HS Diploma` = pct_lthsE, 
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E) %>%  
   drop_na() %>% 
@@ -2787,7 +2787,7 @@ corrARI <- vt_blkgrp_sf %>%
                 `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
-                `No HS Dip` = pct_lthsE, 
+                `No HS Diploma` = pct_lthsE, 
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E) %>%  
   drop_na() %>% 
@@ -2807,7 +2807,7 @@ corrTPV <- vt_blkgrp_sf %>%
                 `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
-                `No HS Dip` = pct_lthsE, 
+                `No HS Diploma` = pct_lthsE, 
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E) %>%  
   drop_na() %>% 
