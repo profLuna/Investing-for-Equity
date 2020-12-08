@@ -492,7 +492,7 @@ PM19wAvgs_actual <- vt_blkgrp_sf %>%
     Group == "minorityE" ~ "People of Color",
     Group == "eng_limitE" ~ "Limited English HH",
     Group == "num2povE" ~ "Low Income",
-    Group == "lthsE" ~ "No HS Dip",
+    Group == "lthsE" ~ "No HS Diploma",
     Group == "under5E" ~ "Under 5",
     Group == "over64E" ~ "Over 64")) %>% 
   mutate(Year = 2016)
@@ -516,7 +516,7 @@ PM15wAvgs_actual <- vt_blkgrp_sf %>%
     Group == "mins_15" ~ "People of Color",
     Group == "lingiso_15" ~ "Limited English HH",
     Group == "lowinc_15" ~ "Low Income",
-    Group == "lths_15" ~ "No HS Dip",
+    Group == "lths_15" ~ "No HS Diploma",
     Group == "under5_15" ~ "Under 5",
     Group == "over64_15" ~ "Over 64")) %>% 
   mutate(Year = 2011)
@@ -546,7 +546,7 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
                 LineColor = c("STATE AVG" = "#000000",
                               "Limited English HH" = "#E69F00",
                               "People of Color" = "#56B4E9",
-                              "No HS" = "#009E73",
+                              "No HS Diploma" = "#009E73",
                               "Poverty" = "#F0E442",
                               "Under 5" = "#0072B2",
                               "Over 64" = "#D55E00"),
@@ -943,7 +943,7 @@ O319wAvgs_actual <- vt_blkgrp_sf %>%
     Group == "minorityE" ~ "People of Color",
     Group == "eng_limitE" ~ "Limited English HH",
     Group == "num2povE" ~ "Low Income",
-    Group == "lthsE" ~ "No HS Dip",
+    Group == "lthsE" ~ "No HS Diploma",
     Group == "under5E" ~ "Under 5",
     Group == "over64E" ~ "Over 64")) %>% 
   mutate(Year = 2016)
@@ -966,7 +966,7 @@ O315wAvgs_actual <- vt_blkgrp_sf %>%
     Group == "mins_15" ~ "People of Color",
     Group == "lingiso_15" ~ "Limited English HH",
     Group == "lowinc_15" ~ "Low Income",
-    Group == "lths_15" ~ "No HS Dip",
+    Group == "lths_15" ~ "No HS Diploma",
     Group == "under5_15" ~ "Under 5",
     Group == "over64_15" ~ "Over 64")) %>% 
   mutate(Year = 2011)
@@ -996,7 +996,7 @@ newggslopegraph(dataframe = O311_16wAvg_actual,
                 LineColor = c("STATE AVG" = "#000000",
                               "Limited English HH" = "#E69F00",
                               "People of Color" = "#56B4E9",
-                              "No HS Dip" = "#009E73",
+                              "No HS Diploma" = "#009E73",
                               "Low Income" = "#F0E442",
                               "Under 5" = "#0072B2",
                               "Over 64" = "#D55E00"),
@@ -1065,7 +1065,7 @@ knitr::include_graphics("DATA/EJSCREEN/vt_CO2.png")
 
 Significant hot spots, or clusters of high CO~2~ emissions, appear in Burlington (see Figure \@ref(fig:hotspotCO2) below).
 
-```{r hotspotCO2, fig.align = "center", fig.cap="Hot spot map of 2017 CO2 emissions at Census Block Group level."}
+```{r hotspotCO2, fig.align = "center", fig.cap="Hot spot map of 2017 on-road CO2 emissions at Census Block Group level."}
 # Get rid of empty geometries and NAs, and convert to spdf
 empty_geo <- st_is_empty(vt_blkgrp_sf)
 ne_blkgrp_sp_DemoEJ <- vt_blkgrp_sf[!empty_geo,] %>% 
@@ -1116,7 +1116,7 @@ m8 <- tm_shape(local_g, unit = "mi",) +
                 col = c("#B2182B","#EF8A62","#FDDBC7","#F7F7F7",
                         "#D1E5F0","#67A9CF","#2166AC"),
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Hot Spot Map \nof CO2 for \nVermont", 
+  tm_layout(title = "Hot Spot Map \nof On-road CO2\nVermont", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1130,7 +1130,7 @@ knitr::include_graphics("DATA/EJSCREEN/vt_CO2hotspot.png")
 
 CO~2~ emissions vary across the state with significant outliers (see Table \@ref(tab:statsCO2).   
 
-```{r statsCO2, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 CO2 emissions (mtons) at Census Block Group level and by state."}
+```{r statsCO2, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Annual 2017 on-road CO2 emissions (mtons) at Census Block Group level and by state."}
 vt_blkgrp_sf %>% 
   mutate(onroad_2017 = kgco2_2017/1000) %>%
   as.data.frame() %>% 
@@ -1185,7 +1185,7 @@ The Block Group with highest CO~2~ emissions value in the state is found in `r v
 
 Since 1990, CO~2~ emissions increased across the state, on average by `r {round((sum(vt_blkgrp_sf$kgco2_2017, na.rm = TRUE)-sum(vt_blkgrp_sf$kgco2_1990, na.rm = TRUE))/sum(vt_blkgrp_sf$kgco2_1990, na.rm = TRUE)*100,1)}`%. These changes have not been uniform (see Figure \@ref(fig:mapCO2change) below). Declines have occurred in central and northern sections of the state. Increased emissions have occurred around in the south and central western areas of the state. Increases over 200% have occurred in `r paste(vt_town_maxCO2change, collapse = " and ")`.
 
-```{r mapCO2change, fig.align = "center", fig.cap="Map of percent change in annual CO2 emissions across Vermont between 1990 and 2017 at Census Block Group level."}
+```{r mapCO2change, fig.align = "center", fig.cap="Map of percent change in annual on-road CO2 emissions across Vermont between 1990 and 2017 at Census Block Group level."}
 # Map of CO2 change across Vermont
 m9 <- vt_blkgrp_sf %>% 
   mutate(CO2_pctChange90_17 = (kgco2_2017 - kgco2_1990)/kgco2_1990*100) %>%
@@ -1231,7 +1231,7 @@ knitr::include_graphics("DATA/EJSCREEN/vt_CO2change.png")
 
 At the state level the differences in these changes are also apparent, although less extreme than at the Census block group level. Table \@ref(tab:changeCO2) shows summary statistics of CO~2~ emissions for the state as a whole. Figure \@ref(fig:linegraphCO2) shows annual CO~2~ emissions between 1990 and 2017. 
 
-```{r changeCO2, fig.align = "center", fig.cap="Annual 2017 CO2 emissions (mtons) and Percent Change by state at Census Block Group level."}
+```{r changeCO2, fig.align = "center", fig.cap="Annual 2017 On-road CO2 emissions (mtons) and Percent Change by state at Census Block Group level."}
 library(tidycensus)
 census_api_key("f2776fbc29cf847505de9308a82c8d65290d16b3")
 ne_states_df <- map_df(ne_states, function(x) {
@@ -1299,7 +1299,7 @@ vt_blkgrp_sf %>%
 ```
 
 
-```{r linegraphCO2, fig.align = "center", fig.cap="Total CO2 emissions 1990 to 2017 for Vermont."}
+```{r linegraphCO2, fig.align = "center", fig.cap="Total On-road CO2 emissions 1990 to 2017 for Vermont."}
 # Slope graph of CO2 by state and region between 1990 and 2017
 # Create df of 2017 actual values
 # CO217ST_actual <- vt_blkgrp_sf %>% 
@@ -1366,7 +1366,7 @@ vt_blkgrp_sf %>%
   scale_y_continuous(labels=function(x) format(x, big.mark = ",", scientific = FALSE)) +
   xlab("") + 
   ylab(expression(paste(CO[2], " (thousands of mtons)", sep = ""))) + 
-  ggtitle(expression(paste("Total Vermont ", CO[2], " Emissions by Year, 1990 - 2017", sep = ""))) +
+  ggtitle(expression(paste("Total Vermont On-road", CO[2], " Emissions by Year, 1990 - 2017", sep = ""))) +
   theme_minimal()
 ```
 
@@ -1414,7 +1414,7 @@ m10 <- vt_blkgrp_sf %>%
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5, 
                position = c(0.6,0.005)) +
-  tm_layout(title = "Annual Average \nDiesel PM\nEmissions\n2014", 
+  tm_layout(title = "Annual Average\nDiesel\nParticulate\nMatter\nEmissions\n2014", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
