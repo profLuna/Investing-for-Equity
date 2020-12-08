@@ -466,7 +466,8 @@ These percentages approximate the proportion of the total population in the stat
 ct_FloodPops_df %>% 
   mutate(PctFlood = paste0(as.character(round(PctFlood,1)),"%")) %>% 
   arrange(-FloodPop) %>% 
-  mutate(Group = ifelse(Group == "Minority", "People of Color", Group)) %>% 
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>% 
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
                     caption = "Connecticut Populations Living within Flood Zones",
@@ -479,7 +480,8 @@ Some groups are disproportionately exposed to these flood hazards. While approxi
 ```{r chartNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Connecticut Populations Living within Flood Zones."}
 # Create lollipop plot of pops within flood zones
 ct_FloodPops_df %>% 
-  mutate(Group = ifelse(Group == "Minority", "People of Color", Group)) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   ggplot(aes(x = reorder(Group,PctFlood), 
              y = PctFlood)) +
   geom_segment(aes(x = reorder(Group,PctFlood), 
@@ -498,9 +500,9 @@ ct_FloodPops_df %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = ct_FloodPops_df[1,4], linetype = "dashed") +
-  geom_text(aes(x = "No HS Dip", y = 7.75, label = "Above state\naverage"),
+  geom_text(aes(x = "No HS Diploma", y = 7.75, label = "Above state\naverage"),
             color = "gray48") +
-  geom_text(aes(x = "No HS Dip", y = 6.8, label = "Below state\naverage"),
+  geom_text(aes(x = "No HS Diploma", y = 6.8, label = "Below state\naverage"),
             color = "gray48") +
   expand_limits(y=c(6.5,9))
 
@@ -888,7 +890,8 @@ These percentages belie the proportion of the population in the state that are l
 ct_HevacPops_df %>% 
   mutate(PctHevac = paste0(as.character(round(PctHevac,1)),"%")) %>% 
   arrange(-HevacPop) %>% 
-  mutate(Group = ifelse(Group == "Minority", "People of Color", Group)) %>%
+  mutate(Group = recode(Group, "Minority" = "People of Color",
+                        "No HS Dip" = "No HS Diploma")) %>%
   kableExtra::kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','),
                     caption = "Connecticut Populations Living within Hurricane Evacuation Zones",
