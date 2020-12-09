@@ -412,7 +412,7 @@ me_blkgrp_sf %>%
          #Minority_MEW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/PM25Mean - 1)*100,
          `Low Income` = (num2povE/PM25Mean - 1)*100,
-         `No HS Dip` = (lthsE/PM25Mean - 1)*100,
+         `No HS Diploma` = (lthsE/PM25Mean - 1)*100,
          `Under 5` = (under5E/PM25Mean - 1)*100,
          `Over 64` = (over64E/PM25Mean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
@@ -444,7 +444,7 @@ me_blkgrp_sf %>%
   expand_limits(y = c(-1,2.5))
 
 #savegraph to image
-# ggsave("images/ME_PM25_graph.png")
+ggsave("images/ME_PM25_graph.png")
 ```
 
 Like the region as a whole, these populations have also experienced a decline in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphPM25PopAvgNE). Except for adults without a high school dipoma, all priority populations experience exposures greater than the state average. 
@@ -471,7 +471,7 @@ PM19wAvgs_actual <- me_blkgrp_sf %>%
     Group == "minorityE" ~ "People of Color",
     Group == "eng_limitE" ~ "Limited English HH",
     Group == "num2povE" ~ "Low Income",
-    Group == "lthsE" ~ "No HS Dip",
+    Group == "lthsE" ~ "No HS Diploma",
     Group == "under5E" ~ "Under 5",
     Group == "over64E" ~ "Over 64")) %>% 
   mutate(Year = 2016)
@@ -495,7 +495,7 @@ PM15wAvgs_actual <- me_blkgrp_sf %>%
     Group == "mins_15" ~ "People of Color",
     Group == "lingiso_15" ~ "Limited English HH",
     Group == "lowinc_15" ~ "Low Income",
-    Group == "lths_15" ~ "No HS Dip",
+    Group == "lths_15" ~ "No HS Diploma",
     Group == "under5_15" ~ "Under 5",
     Group == "over64_15" ~ "Over 64")) %>% 
   mutate(Year = 2011)
@@ -534,7 +534,7 @@ newggslopegraph(dataframe = PM11_16wAvg_actual,
                 WiderLabels = TRUE)
 
 # save graph to image
-# ggsave("images/ME_PM25_slope.png")
+ggsave("images/ME_PM25_slope.png")
 ```
 
 There is a weak positive relationship between the proportion of People of Color or language-isolated households and the concentration of PM~2.5~ (see Figure \@ref(fig:cormatrixPM25PopAvg) in Appendix B).
@@ -872,7 +872,7 @@ me_blkgrp_sf %>%
          #Minority_MEW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/O3Mean - 1)*100,
          `Low Income` = (num2povE/O3Mean - 1)*100,
-         `No HS Dip` = (lthsE/O3Mean - 1)*100,
+         `No HS Diploma` = (lthsE/O3Mean - 1)*100,
          `Under 5` = (under5E/O3Mean - 1)*100,
          `Over 64` = (over64E/O3Mean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
@@ -904,7 +904,7 @@ me_blkgrp_sf %>%
   expand_limits(y = c(-1.5,1.5))
 
 # save graph to image
-# ggsave("images/ME_O3_graph.png")
+ggsave("images/ME_O3_graph.png")
 ```
 
 Like the state as a whole, all populations have experienced declines in exposure since 2011. The comparison between exposure for these groups since 2011 is displayed below in Figure \@ref(fig:slopegraphO3PopAvg).  
@@ -930,7 +930,7 @@ O319wAvgs_actual <- me_blkgrp_sf %>%
     Group == "minorityE" ~ "People of Color",
     Group == "eng_limitE" ~ "Limited English HH",
     Group == "num2povE" ~ "Low Income",
-    Group == "lthsE" ~ "No HS Dip",
+    Group == "lthsE" ~ "No HS Diploma",
     Group == "under5E" ~ "Under 5",
     Group == "over64E" ~ "Over 64")) %>% 
   mutate(Year = 2016)
@@ -953,7 +953,7 @@ O315wAvgs_actual <- me_blkgrp_sf %>%
     Group == "mins_15" ~ "People of Color",
     Group == "lingiso_15" ~ "Limited English HH",
     Group == "lowinc_15" ~ "Low Income",
-    Group == "lths_15" ~ "No HS Dip",
+    Group == "lths_15" ~ "No HS Diploma",
     Group == "under5_15" ~ "Under 5",
     Group == "over64_15" ~ "Over 64")) %>% 
   mutate(Year = 2011)
@@ -983,7 +983,7 @@ newggslopegraph(dataframe = O311_16wAvg_actual,
                 LineColor = c("STATE AVG" = "#000000",
                               "Limited English HH" = "#E69F00",
                               "People of Color" = "#56B4E9",
-                              "No HS Dip" = "#009E73",
+                              "No HS Diploma" = "#009E73",
                               "Low Income" = "#F0E442",
                               "Under 5" = "#0072B2",
                               "Over 64" = "#D55E00"),
@@ -992,7 +992,7 @@ newggslopegraph(dataframe = O311_16wAvg_actual,
                 WiderLabels = TRUE)
 
 # savegraph to image
-# ggsave("images/ME_O3_slope.png")
+ggsave("images/ME_O3_slope.png")
 ```
 
 
@@ -1098,7 +1098,7 @@ m8 <- tm_shape(local_g, unit = "mi",) +
                 col = c("#B2182B","#EF8A62","#FDDBC7","#F7F7F7",
                         "#D1E5F0","#67A9CF","#2166AC"),
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Hot Spot Map \nof CO2 for \nMaine", 
+  tm_layout(title = "Hot Spot Map\nof On-road CO2\nMaine", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1332,7 +1332,7 @@ me_blkgrp_sf %>%
   scale_y_continuous(labels=function(x) format(x, big.mark = ",", scientific = FALSE)) +
   xlab("") + 
   ylab(expression(paste(CO[2], " (thousands of mtons)", sep = ""))) + 
-  ggtitle(expression(paste("Total Maine ", CO[2], " Emissions by Year, 1990 - 2017", sep = ""))) +
+  ggtitle(expression(paste("Total Maine On-road ", CO[2], " Emissions by Year, 1990 - 2017", sep = ""))) +
   theme_minimal()
 ```
 
@@ -1377,7 +1377,7 @@ m10 <- me_blkgrp_sf %>%
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0, 25, 50), text.size = 0.5, 
                position = c("right","bottom")) +
-  tm_layout(title = "Annual Average \nDiesel PM\nEmissions\n2014", 
+  tm_layout(title = "Annual Average\nDiesel\nParticulate\nMatter\nEmissions\n2014", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1439,7 +1439,7 @@ m11 <- tm_shape(local_g, unit = "mi",) +
                 col = c("#B2182B","#EF8A62","#FDDBC7","#F7F7F7",
                         "#D1E5F0","#67A9CF","#2166AC"),
                 border.col = "white", border.alpha = 0) +
-  tm_layout(title = "Hot Spot Map \nof DPM for \nMaine", 
+  tm_layout(title = "Hot Spot Map\nof Diesel\nParticulate\nMatter for\nMaine", 
             frame = FALSE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -1591,7 +1591,7 @@ me_blkgrp_sf %>%
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-25,80))
 
-# ggsave("images/ME_DPM_graph.png")
+ggsave("images/ME_DPM_graph.png")
 ```
 
 There is a weak positive correlation between the proportions of People of Color and ambient concentrations of DPM (see Figure \@ref(fig:cormatrixDPMPopAvg) in Appendix B).
@@ -1803,7 +1803,7 @@ me_blkgrp_sf %>%
          #Minority_MEW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/DPMMean - 1)*100,
          `Low Income` = (num2povE/DPMMean - 1)*100,
-         `No HS Dip` = (lthsE/DPMMean - 1)*100,
+         `No HS Diploma` = (lthsE/DPMMean - 1)*100,
          `Under 5` = (under5E/DPMMean - 1)*100,
          `Over 64` = (over64E/DPMMean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
@@ -1825,16 +1825,16 @@ me_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "No HS Dip", y = 2, label = "Above state\naverage"),
+  geom_text(aes(x = "No HS Diploma", y = 2, label = "Above state\naverage"),
             color = "gray48") +
-  geom_text(aes(x = "No HS Dip", y = -2, label = "Below state\naverage"),
+  geom_text(aes(x = "No HS Diploma", y = -2, label = "Below state\naverage"),
             color = "gray48") +
   # geom_segment(aes(x = "Over 64", xend = "Over 64", y = 0.5, yend = 3), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-5,8))
 
 # savegraph to image
-# ggsave("images/ME_Cancer_graph.png")
+ggsave("images/ME_Cancer_graph.png")
 ```
 
 There is a weak positive correlation between the proportions of People of Color and cancer risk (see Figure \@ref(fig:cormatrixATCPopAvg) in Appendix B).
@@ -2045,7 +2045,7 @@ me_blkgrp_sf %>%
          #Minority_MEW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/RESPMean - 1)*100,
          `Low Income` = (num2povE/RESPMean - 1)*100,
-         `No HS Dip` = (lthsE/RESPMean - 1)*100,
+         `No HS Diploma` = (lthsE/RESPMean - 1)*100,
          `Under 5` = (under5E/RESPMean - 1)*100,
          `Over 64` = (over64E/RESPMean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
@@ -2071,12 +2071,12 @@ me_blkgrp_sf %>%
             color = "gray48") +
   geom_text(aes(x = "Low Income", y = -3, label = "Below state\naverage"),
             color = "gray48") +
-  # geom_segment(aes(x = "No HS Dip", xend = "No HS Dip", y = 1, yend = 4), 
+  # geom_segment(aes(x = "No HS Diploma", xend = "No HS Diploma", y = 1, yend = 4), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-5,12))
 
 #save graph to image
-# ggsave("images/ME_Resp_graph.png")
+ggsave("images/ME_Resp_graph.png")
 ```
 
 There is a weak positive correlation between the proportions of People of Color and respiratory hazard index (see Figure \@ref(fig:cormatrixRHIPopAvg) in Appendix B).
@@ -2287,7 +2287,7 @@ me_blkgrp_sf %>%
          #Minority_MEW = (minorityE/nhwhitepopE - 1)*100,
          `Limited English HH` = (eng_limitE/DPMMean - 1)*100,
          `Low Income` = (num2povE/DPMMean - 1)*100,
-         `No HS Dip` = (lthsE/DPMMean - 1)*100,
+         `No HS Diploma` = (lthsE/DPMMean - 1)*100,
          `Under 5` = (under5E/DPMMean - 1)*100,
          `Over 64` = (over64E/DPMMean - 1)*100) %>%
   gather(key = Group, value = Pct) %>% 
@@ -2309,16 +2309,16 @@ me_blkgrp_sf %>%
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_text(aes(x = "No HS Dip", y = 50, label = "Above state\naverage"),
+  geom_text(aes(x = "No HS Diploma", y = 50, label = "Above state\naverage"),
             color = "gray48") +
-  geom_text(aes(x = "No HS Dip", y = -30, label = "Below state\naverage"),
+  geom_text(aes(x = "No HS Diploma", y = -30, label = "Below state\naverage"),
             color = "gray48") +
   # geom_segment(aes(x = "Under 5", xend = "Under 5", y = 20, yend = 60), 
   #              arrow = arrow(length = unit(0.3,"cm"))) +
   expand_limits(y = c(-40,200))
 
 # save graph to image
-# ggsave("images/ME_Traffic_graph.png")
+ggsave("images/ME_Traffic_graph.png")
 ```
 
 There is a moderate positive correlation between the proportions of People of Color and traffic proximity and volume (see Figure \@ref(fig:cormatrixTPVPopAvg) in Appendix B).
@@ -2610,7 +2610,7 @@ corrPM25 <- me_blkgrp_sf %>%
                 `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
-                `No HS Dip` = pct_lthsE, 
+                `No HS Diploma` = pct_lthsE, 
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E) %>% 
   drop_na() %>% 
@@ -2629,7 +2629,7 @@ corrO3 <- me_blkgrp_sf %>%
                 `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
-                `No HS Dip` = pct_lthsE, 
+                `No HS Diploma` = pct_lthsE, 
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E) %>%  
   drop_na() %>% 
@@ -2664,7 +2664,7 @@ corrDPM <- me_blkgrp_sf %>%
                 `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
-                `No HS Dip` = pct_lthsE, 
+                `No HS Diploma` = pct_lthsE, 
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E) %>%  
   drop_na() %>% 
@@ -2684,7 +2684,7 @@ corrARI <- me_blkgrp_sf %>%
                 `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
-                `No HS Dip` = pct_lthsE, 
+                `No HS Diploma` = pct_lthsE, 
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E) %>%  
   drop_na() %>% 
@@ -2704,7 +2704,7 @@ corrARI <- me_blkgrp_sf %>%
                 `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
-                `No HS Dip` = pct_lthsE, 
+                `No HS Diploma` = pct_lthsE, 
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E) %>%  
   drop_na() %>% 
@@ -2724,7 +2724,7 @@ corrTPV <- me_blkgrp_sf %>%
                 `People of Color` = minority_pctE, 
                 `Low Income` = pct2povE, 
                 `Limited English HH` = eng_limit_pctE, 
-                `No HS Dip` = pct_lthsE, 
+                `No HS Diploma` = pct_lthsE, 
                 `Under 5` = pct_under5E, 
                 `Over 64` = pct_over64E) %>%  
   drop_na() %>% 
