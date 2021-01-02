@@ -37,17 +37,13 @@ load("DATA/ne_layers.rds")
 # Extract state census units and convert to projected local CRS EPSG:2852: NAD83(HARN) / Vermont See https://spatialreference.org/ref/epsg/2852/
 vt_blkgrp_2852 <- ne_blkgrp_sf %>% 
   filter(STATE == "Vermont") %>% 
-  st_transform(., crs = 2852)
+  st_transform(., crs = 2852) %>% 
+  filter(!st_is_empty())
 
 vt_tracts_2852 <- ne_tracts_sf %>% 
   filter(STATE == "Vermont") %>% 
-  st_transform(., crs = 2852)
-
-# Get rid of empty geometries
-empty_geo <- st_is_empty(vt_blkgrp_2852)
-vt_blkgrp_2852 <- vt_blkgrp_2852[!empty_geo,]
-empty_geo <- st_is_empty(vt_tracts_2852)
-vt_tracts_2852 <- vt_tracts_2852[!empty_geo,]
+  st_transform(., crs = 2852) %>% 
+  filter(!st_is_empty())
 
 # Extract state boundary
 vt_state_sf <- ne_states_sf_cb %>% 
@@ -248,11 +244,12 @@ vt_nfhza_2852 <- st_read(dsn = "DATA/FEMA/VT/NFHL_50_20161207.gdb", layer = "S_F
            FLD_ZONE  == "AH" ~ "100-year",
            FLD_ZONE  == "AO" ~ "100-year",
            FLD_ZONE  == "VE" ~ "100-year",
-           FLD_ZONE == "X" ~ "500-year"))
+           FLD_ZONE == "X" ~ "500-year")) %>% 
+  filter(!st_is_empty())
 
-# get rid of empty geometries
-empty_geo <- st_is_empty(vt_nfhza_2852)
-vt_nfhza_2852 <- vt_nfhza_2852[!empty_geo,]
+# # get rid of empty geometries
+# empty_geo <- st_is_empty(vt_nfhza_2852)
+# vt_nfhza_2852 <- vt_nfhza_2852[!empty_geo,]
 
 # # save this layer to save time
 # saveRDS(vt_nfhza_2852,"DATA/FEMA/VT/vt_nfhza_2852.Rds")
