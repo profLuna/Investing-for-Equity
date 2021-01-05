@@ -646,7 +646,7 @@ vt_awater_sf_simple <- vt_awater_sf %>%
 system.time(rc_simple <- ms_simplify(rc))
 ```
 
-```{r mapNFHZAPop, fig.align = "center", fig.cap="Flood zones across Vermont."}
+```{r mapNFHZAPop, fig.align = "center", fig.cap="Flood Zones and River Corridors across Vermont."}
 # Map flood risk zones
 m1 <- tm_shape(vt_blkgrp_2852, unit = "mi") + tm_fill(col = "white") +
   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
@@ -774,7 +774,7 @@ vt_nfhza_2852_land %>%
 
 The proportion of the total state population living within areas prone to flooding or fluvial erosion exceeds the percentage of the state area within those flood-prone areas. Moreover, exposure varies by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups living within flood-prone areas. Aside from the total population, the largest absolute numbers of subpopulations living within a flood-prone area are low income persons followed by those under 18 and over 64. The latter groups are priority populations who may have limited mobility in the event of an evacuation. 
 
-```{r tabNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont Populations Living within Flood Zones."}
+```{r tabNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont Populations Living within Flood Zones or River Corridors."}
 # Show table of pops within flood zones
 vt_FloodPops_df %>% 
   mutate(across(PctFEMAPop:PctFloodPop, 
@@ -793,47 +793,48 @@ vt_FloodPops_df %>%
   kable_styling(latex_options = c("repeat_header"))
 ```
 
-Some groups are disproportionately exposed to these flood hazards. While approximately 5.7% of the general population are living within flood zones, limited English speaking households, households without access to a car, people in low income households, and other priority populations, exceed the population average living within flood zones. These priority populations are disproportionately exposed to flood risk (see Figure \@ref(fig:chartNFHZApop) below).
+Some groups are disproportionately exposed to these flood hazards. While approximately 9.9% of the general population are living within FEMA flood zones or river corridors, people in low income households, adults with a disability, and other priority populations, exceed the population average living within these flood-prone areas. These priority populations are disproportionately exposed to flood risk (see Figure \@ref(fig:chartNFHZApop) below).
 
-```{r chartNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont Populations Living within Flood Zones."}
+```{r chartNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont Populations Living within Flood Zones or River Corridors."}
 # Create lollipop plot of pops within flood zones
 vt_FloodPops_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
                         "No HS Dip" = "No HS Diploma")) %>%
-  ggplot(aes(x = reorder(Group,PctFlood), 
-             y = PctFlood)) +
-  geom_segment(aes(x = reorder(Group,PctFlood), 
-                   xend = reorder(Group,PctFlood),
-                   y = vt_FloodPops_df[1,4], yend = PctFlood), 
+  ggplot(aes(x = reorder(Group,PctFloodPop), 
+             y = PctFloodPop)) +
+  geom_segment(aes(x = reorder(Group,PctFloodPop), 
+                   xend = reorder(Group,PctFloodPop),
+                   y = vt_FloodPops_df[1,10], yend = PctFloodPop), 
                color = "skyblue") +
   geom_point(color = "blue", size = 4, alpha = 0.8) +
   coord_flip() + xlab("") + ylab("") + 
-  ggtitle("Vermont Populations Living within Flood Zones") + theme_light() +
+  ggtitle("Vermont Populations Living within FEMA Flood Zones\nor River Corridors") + 
+  theme_light() +
   theme(panel.grid.major.y = element_blank(),
         panel.border = element_blank(),
         axis.ticks.y = element_blank()) +
-  geom_text(aes(x = Group, y = PctFlood + 0.2 * sign(PctFlood), 
-                label = paste0(round(PctFlood,1),"%")), 
+  geom_text(aes(x = Group, y = PctFloodPop + 0.2 * sign(PctFloodPop), 
+                label = paste0(round(PctFloodPop,1),"%")), 
             hjust = 1.8, vjust = -1, size = 3,
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
-  geom_hline(yintercept = vt_FloodPops_df[1,4], linetype = "dashed") +
-  geom_text(aes(x = "No HS Diploma", y = 6.3, label = "Above state\naverage"),
+  geom_hline(yintercept = vt_FloodPops_df[1,10], linetype = "dashed") +
+  geom_text(aes(x = "Under 18", y = 11, label = "Above state\naverage"),
             color = "gray48") +
-  geom_text(aes(x = "No HS Diploma", y = 5.2, label = "Below state\naverage"),
+  geom_text(aes(x = "Under 18", y = 8.5, label = "Below state\naverage"),
             color = "gray48") +
-  expand_limits(y = c(5,7.5))
+  expand_limits(y = c(7.5,11.5))
 
 ggsave("images/VT_FEMA_graph.png")
   # geom_segment(aes(x = "Total Pop", xend = "Total Pop", y = 5.8, yend = 6.6), 
   #              arrow = arrow(length = unit(0.3,"cm")))
 ```
 
-The maps below (Figures \@ref(fig:mapNFHZAPopConcern1) and \@ref(fig:mapNFHZAPopConcern2)) show households without a car and low income persons who are disproportionately exposed to flood risk. Maps for other priority populations can be found in Figures \@ref(fig:mapNFHZAPopConcern3) to \@ref(fig:mapNFHZAPopConcern8) and breakdowns by municipality in Tables \@ref(tab:tabNFHZANoCar) to \@ref(tab:tabNFHZALEH) in Appendix B.
+The maps below (Figures \@ref(fig:mapNFHZAPopConcern1) and \@ref(fig:mapNFHZAPopConcern2)) show households without a car and low income persons who are disproportionately exposed to flood risk in FEMA flood zones or river corridors. Maps for other priority populations can be found in Figures \@ref(fig:mapNFHZAPopConcern3) to \@ref(fig:mapNFHZAPopConcern8) and breakdowns by municipality in Tables \@ref(tab:tabNFHZANoCar) to \@ref(tab:tabNFHZALEH) in Appendix B.
 
 ```{r mapNFHZAPopConcern, include=FALSE}
-# Create a dot density map of transit-dependent populations in flood zone
-
+# # Create a dot density map of transit-dependent populations in flood zone
+# 
 # # create a function to select variable, filter records, and create sample points
 # pop2points <- function(sf, x, group){
 #   x <- enquo(x)
@@ -845,50 +846,50 @@ The maps below (Figures \@ref(fig:mapNFHZAPopConcern1) and \@ref(fig:mapNFHZAPop
 #     mutate(Group = group)
 # }
 # 
-# # LimitEngHH_nfhza_pts <- pop2points(vt_blkgrps_nfhza,NewEng_limit,"Limited English HH") # no blkgrp with at least 10
+# # LimitEngHH_flood_pts <- pop2points(vt_blkgrps_flood,NewEng_limit,"Limited English HH") # no blkgrp with at least 10
 # 
-# NoCarHH_nfhza_pts <- pop2points(vt_tracts_nfhza,NewNoCar,"No Car HH")
+# NoCarHH_flood_pts <- pop2points(vt_tracts_flood,NewNoCar,"No Car HH")
 # 
-# NoHSdip_nfhza_pts <- pop2points(vt_blkgrps_nfhza,NewLths,"No HS Dip")
+# NoHSdip_flood_pts <- pop2points(vt_blkgrps_flood,NewLths,"No HS Dip")
 # 
-# LowInc_nfhza_pts <- pop2points(vt_blkgrps_nfhza,NewPov,"Low Income")
+# LowInc_flood_pts <- pop2points(vt_blkgrps_flood,NewPov,"Low Income")
 # 
-# Disabled_nfhza_pts <- pop2points(vt_tracts_nfhza,NewDisabled,"Disabled")
+# Disabled_flood_pts <- pop2points(vt_tracts_flood,NewDisabled,"Disabled")
 # 
-# Minor_nfhza_pts <- pop2points(vt_blkgrps_nfhza,NewMinority,"Minority")
+# Minor_flood_pts <- pop2points(vt_blkgrps_flood,NewMinority,"Minority")
 # 
-# Under5_nfhza_pts <- pop2points(vt_blkgrps_nfhza,NewUnder5,"Under 5")
+# Under5_flood_pts <- pop2points(vt_blkgrps_flood,NewUnder5,"Under 5")
 # 
-# Over64_nfhza_pts <- pop2points(vt_blkgrps_nfhza,NewOver64,"Over 64")
+# Over64_flood_pts <- pop2points(vt_blkgrps_flood,NewOver64,"Over 64")
 # 
-# Under18_nfhza_pts <- pop2points(vt_blkgrps_nfhza,NewUnder18,"Under 18")
+# Under18_flood_pts <- pop2points(vt_blkgrps_flood,NewUnder18,"Under 18")
 # 
 # # Bring them together
-# vt_nfhza_vulnerable <- rbind(NoCarHH_nfhza_pts,
-#                              Disabled_nfhza_pts,
-#                              LowInc_nfhza_pts,
-#                              Minor_nfhza_pts,
-#                              Over64_nfhza_pts,
-#                              Under5_nfhza_pts,
-#                              Under18_nfhza_pts,
-#                              NoHSdip_nfhza_pts) %>%
+# vt_flood_vulnerable <- rbind(NoCarHH_flood_pts,
+#                              Disabled_flood_pts,
+#                              LowInc_flood_pts,
+#                              Minor_flood_pts,
+#                              Over64_flood_pts,
+#                              Under5_flood_pts,
+#                              Under18_flood_pts,
+#                              NoHSdip_flood_pts) %>%
 #   # slice(sample(1:n())) %>% # randomise order to avoid bias in plotting order
 #   group_by(Group) %>%
 #   summarize()
 # 
 # # clean up pts layers
-# rm(list = ls(pattern = "_nfhza_pts"))
+# rm(list = ls(pattern = "_flood_pts"))
 # 
 # # save time by just loading file
-# saveRDS(vt_nfhza_vulnerable, file = "DATA/FEMA/VT/vt_nfhza_vulnerable.Rds")
+# saveRDS(vt_flood_vulnerable, file = "DATA/FEMA/VT/vt_flood_vulnerable.Rds")
 
 # # load vulnerable point file
-vt_nfhza_vulnerable <- readRDS("DATA/FEMA/VT/vt_nfhza_vulnerable.Rds")
+vt_flood_vulnerable <- readRDS("DATA/FEMA/VT/vt_flood_vulnerable.Rds")
 ```
 
-```{r mapNFHZAPopConcern1, fig.align = "center", fig.cap="Households without a Car Living within Flood Zones."}
+```{r mapNFHZAPopConcern1, fig.align = "center", fig.cap="Households without a Car Living within Flood Zones or River Corridors."}
 # create pop subset
-nfhza_sub <- vt_nfhza_vulnerable %>% 
+flood_sub <- vt_flood_vulnerable %>% 
   filter(Group == "No Car HH")
 
 # Map over-represented pops and flood zones
@@ -897,7 +898,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
   tm_shape(ny_state_sf) + tm_fill(col="white") +
   tm_shape(vt_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
-  tm_shape(nfhza_sub) +
+  tm_shape(flood_sub) +
   tm_dots(col = "darkgoldenrod3",
           labels = "1 dot = 10 people",
           alpha = 0.8) +
@@ -911,6 +912,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
           title = "FEMA Flood Zones",
           alpha = 0.6,
           border.alpha = 0) +
+  tm_shape(rc_simple) + tm_fill(col = "forestgreen", alpha = 0.5) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2) +
   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2) +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1) +
@@ -940,21 +942,26 @@ m <- tm_layout(bg.color = "#e6f3f7") +
                 border.col = "white", border.alpha = 0,
                 labels = "No FEMA Data",
                 title = "FEMA Coverage") +
-  tm_layout(title = "Households\nwithout a Car\nLiving within\nFlood Zones",
+  tm_add_legend(type = "fill", col = "forestgreen",
+                alpha = 0.4,
+                border.col = "white", border.alpha = 0,
+                labels = "River Corridor",
+                title = "VT Agency of Natural Resources") +
+  tm_layout(title = "Households\nwithout a Car\nLiving within\nFlood Zones or\nRiver Corridors",
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/FEMA/VT/VT_nhfza_vulnerable1.png",
+tmap_save(m, "DATA/FEMA/VT/VT_flood_vulnerable1.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/FEMA/VT/VT_nhfza_vulnerable1.png")
+knitr::include_graphics("DATA/FEMA/VT/VT_flood_vulnerable1.png")
 ```
 
-```{r mapNFHZAPopConcern2, fig.align = "center", fig.cap="Low Income Persons Living within Flood Zones."}
+```{r mapNFHZAPopConcern2, fig.align = "center", fig.cap="Low Income Persons Living within Flood Zones or River Corridors."}
 # create pop subset
-nfhza_sub <- vt_nfhza_vulnerable %>% 
+flood_sub <- vt_flood_vulnerable %>% 
   filter(Group == "Low Income")
 
 # Map over-represented pops and flood zones
@@ -963,7 +970,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
   tm_shape(ny_state_sf) + tm_fill(col="white") +
   tm_shape(vt_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
-  tm_shape(nfhza_sub) +
+  tm_shape(flood_sub) +
   tm_dots(col = "darkgoldenrod3",
           labels = "1 dot = 10 people",
           alpha = 0.8) +
@@ -977,6 +984,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
           title = "FEMA Flood Zones",
           alpha = 0.6,
           border.alpha = 0) +
+  tm_shape(rc_simple) + tm_fill(col = "forestgreen", alpha = 0.5) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2) +
   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2) +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1) +
@@ -1006,16 +1014,21 @@ m <- tm_layout(bg.color = "#e6f3f7") +
                 border.col = "white", border.alpha = 0,
                 labels = "No FEMA Data",
                 title = "FEMA Coverage") +
-  tm_layout(title = "Low Income\nPersons\nLiving within\nFlood Zones",
+  tm_add_legend(type = "fill", col = "forestgreen",
+                alpha = 0.4,
+                border.col = "white", border.alpha = 0,
+                labels = "River Corridor",
+                title = "VT Agency of Natural Resources") +
+  tm_layout(title = "Low Income\nPersons\nLiving within\nFlood Zones or\nRiver Corridors",
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/FEMA/VT/VT_nhfza_vulnerable2.png",
+tmap_save(m, "DATA/FEMA/VT/VT_flood_vulnerable2.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/FEMA/VT/VT_nhfza_vulnerable2.png")
+knitr::include_graphics("DATA/FEMA/VT/VT_flood_vulnerable2.png")
 ```
 
 
@@ -1096,29 +1109,6 @@ data.frame(gridCodes,landUse) %>%
 The NLCD is produced by the US Geological Survey (USGS) in partnership with several federal agencies as part of the Multi-Resolution Land Characteristics Consortium (MRLC).[^NLCD2016] NLCD identified land cover types based on semi-automated land use calssification algorithms applied to LANDSAT satellite imagery and supplemented with ancillary data.[^NLCDdetails] NLCD is distributed as a raster GeoTIFF at https://www.mrlc.gov/data. 
 
 NLCD data was used to identify developed areas of Census Block Groups in order to better estimate potential flood risk in areas where people are most likely to reside.[^Dasymetric] The NLCD 2016 was downloaded and converted to a vector polygon layer and clipped to New England states. Undeveloped polygon areas were extracted (all GRID codes excluding 22 - 24; see Table \@ref(tab:NLCDtab)). These undeveloped areas of the NLCD polygon layer were then used to erase overlapping areas of Census Block Groups. The latter step served to eliminate areas of Census Block Groups that were classified as undeveloped and thus unlikely to be occupied by residences. The remaining developed areas of Census Block Groups were assumed to contain all populations assigned to that respective Block Group. Processing of NLCD and developed Census Block Groups was done in ArcGIS Desktop 10.7. These developed Census Block Group polygons were used for identifying populations at risk from flooding or hurricane storm surge.
-
-## State Hurricane Evacuation Zones (CT,MA,RI) {-}
-
-Connecticut, Massachusetts, and Rhode Island provide maps and geospatial layers identifying evacuation zones in their respective states in the event of a hurricane. These hurricane evaucation zone maps were developed in cooperation between state emergency management agencies and the U.S. Army Corps of Enginneers. Hurricane storm surge risk was based on the SLOSH (Sea, Lake, and Overland Surges from Hurricanes) model, which is a numerical model used by the National Weather Service to compute storm surge. Hurricane evaucation zones generally encompass an area larger than the specific areas subject to inundation. 
-Connecticut Hurricane Evacuation Zones: https://data.ct.gov/Public-Safety/Hurricane-Evacuation-Zones-2014-/kdsj-af66
-Massachusetts Hurricane Evacuation Zones: https://www.nae.usace.army.mil/Missions/Projects-Topics/Massachusetts-Hurricane-Studies/
-Rhode Island Hurricane Evacuation Zones: http://www.riema.ri.gov/resources/citizens/prepare/evacuation.php 
-
-In order to identify populations at risk from hurricane evacuation, hurricane evacuation zone polygons were intersected with the developed portions of Census Block Groups. Developed portions of Census Block Groups were identified based upon the National Land Cover Database (NLCD), using a process of areal apportionment (see above). The population at risk from hurricane evacuation risk was calculated as the product of the  areal proportion of the intersecting evacuation zone and developed Block Group polygons:
-
-*Population at risk = Proportion of developed Block Group Intersection x Population of developed Block Group*
-
-For example, if 10% of the developed area of a Census Block Group intersected/overlapped with a hurricane evacuation zone, it was assumed that 10% of the population is exposed to that evacuation risk. Assuming a population of 100 people in the developed portion of the Block Group, this would mean *100 x .10 = 10* people would be subject to hurricane evacuation risk. 
-
-## NOAA Sea, Lake, and Overland Surges from Hurricanes (SLOSH) model (ME,NH) {-}
-
-The National Oceanic and Atmospheric Administration (NOAA), specifically the National Weather Service's (NWS) National Hurricane Center (NHC), utilizes the hydrodynamic Sea, Lake, and Overland Surges from Hurricanes (SLOSH) model to simulate storm surge from tropical cyclones, including hurricanes. SLOSH models of coastal storm surge are based on tens of thousands of climatology-based hypothetical tropical cyclone simulations.[^SurgeModel]  The composite results of these simulations are used to assess and visualize storm surge risk under varying conditions. Maps and estimates of risk are provided to federal, state, and local partners to assist in a range of planning processes, risk assessment studies, and operational decision-making. SLOSH models and maps are the basis of state-level hurricane evacuation zone designations. However, only three of the six New England states (Connecticut, Massachusetts, and Rhode Island) have developed hurricane evacuation zone maps. Maine and New Hampshire, which are subject to hurricane risk, have not developed, or do not publicly offer, hurricane evacuation zone maps. In order to model hurricane evacuation risk in those states, SLOSH inundation zones were used instead. The use of storm surge inundation risk, rather than hurricane evacuation zones, likely underestimates the population that would be subject to evacuation in the event of an approaching hurricane.
-
-In order to identify populations at risk from hurricane evacuation in Maine and New Hampshire, SLOSH surge hazard maps were downloaded from the National Hurricane Center in the form of GeoTIFF raster files.[^SurgeModel] Specifically, scenarios for Category 2 and Category 4 hurricanes at high tide were used. The raster files were clipped to the land areas of Maine and New Hampshire and converted to a vector polygon layer and merged. Hurricane storm surge polygons were intersected with the developed portions of Census Block Groups. Developed portions of Census Block Groups were identified based upon the National Land Cover Database (NLCD), using a process of areal apportionment (see above). The population at risk from hurricane storm surge risk was calculated as the product of the areal proportion of the intersecting storm surge polygons and developed Block Group polygons:
-
-*Population at risk = Proportion of developed Block Group Intersection x Population of developed Block Group*
-
-For example, if 10% of the developed area of a Census Block Group intersected/overlapped with a hurricane storm surge polygon, it was assumed that 10% of the population is exposed to that flood risk. Assuming a population of 100 people in the developed portion of the Block Group, this would mean *100 x .10 = 10* people would be subject to hurricane storm surge risk. Processing of SLOSH GeoTIFF files and polygon intersection were performed in ArcGIS 10.7. 
 
 
 ## American Community Survey 5-year Estimates {-}
@@ -1212,8 +1202,8 @@ ACSvDF %>%
 
 ## Priority Populations in FEMA Flood Zones {-}
 
-```{r tabNFHZANoCar, fig.align = "center", fig.cap="Households without a car living within FEMA Flood Zones."}
-vt_tracts_nfhza %>% 
+```{r tabNFHZANoCar, fig.align = "center", fig.cap="Households without a car living within FEMA Flood Zones or River Corridors."}
+vt_tracts_flood %>% 
   st_centroid(.) %>% 
   st_intersection(vt_towns_sf,.) %>% 
   as.data.frame() %>% 
@@ -1230,12 +1220,12 @@ vt_tracts_nfhza %>%
   kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Households without a Car Living in FEMA Flood Zones", align = "r") %>% 
+                    caption = "Households without a Car Living in FEMA Flood Zones or River Corridors", align = "r") %>% 
   kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r tabNFHZALINC, fig.align = "center", fig.cap="Low income persons living within FEMA Flood Zones."}
-vt_blkgrps_nfhza %>% 
+```{r tabNFHZALINC, fig.align = "center", fig.cap="Low income persons living within FEMA Flood Zones or River Corridors."}
+vt_blkgrps_flood %>% 
   st_centroid(.) %>% 
   st_intersection(vt_towns_sf,.) %>% 
   as.data.frame() %>% 
@@ -1252,13 +1242,13 @@ vt_blkgrps_nfhza %>%
   kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Low Income Persons Living in FEMA Flood Zones", align = "r") %>% 
+                    caption = "Low Income Persons Living in FEMA Flood Zones or River Corridors", align = "r") %>% 
   kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapNFHZAPopConcern3, fig.align = "center", fig.cap="Disabled Persons Living within Flood Zones."}
+```{r mapNFHZAPopConcern3, fig.align = "center", fig.cap="Disabled Persons Living within Flood Zones or River Corridors."}
 # create pop subset
-nfhza_sub <- vt_nfhza_vulnerable %>% 
+flood_sub <- vt_flood_vulnerable %>% 
   filter(Group == "Disabled")
 
 # Map over-represented pops and flood zones
@@ -1267,7 +1257,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
   tm_shape(ny_state_sf) + tm_fill(col="white") +
   tm_shape(vt_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
-  tm_shape(nfhza_sub) +
+  tm_shape(flood_sub) +
   tm_dots(col = "darkgoldenrod3",
           labels = "1 dot = 10 people",
           alpha = 0.8) +
@@ -1281,6 +1271,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
           title = "FEMA Flood Zones",
           alpha = 0.6,
           border.alpha = 0) +
+  tm_shape(rc_simple) + tm_fill(col = "forestgreen", alpha = 0.5) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2) +
   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2) +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1) +
@@ -1310,20 +1301,25 @@ m <- tm_layout(bg.color = "#e6f3f7") +
                 border.col = "white", border.alpha = 0,
                 labels = "No FEMA Data",
                 title = "FEMA Coverage") +
-  tm_layout(title = "Disabled\nPersons\nLiving within\nFlood Zones",
+  tm_add_legend(type = "fill", col = "forestgreen",
+                alpha = 0.4,
+                border.col = "white", border.alpha = 0,
+                labels = "River Corridor",
+                title = "VT Agency of Natural Resources") +
+  tm_layout(title = "Disabled\nPersons\nLiving within\nFlood Zones or\nRiver Corridors",
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/FEMA/VT/VT_nhfza_vulnerable3.png",
+tmap_save(m, "DATA/FEMA/VT/VT_flood_vulnerable3.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/FEMA/VT/VT_nhfza_vulnerable3.png")
+knitr::include_graphics("DATA/FEMA/VT/VT_flood_vulnerable3.png")
 ```
 
-```{r tabNFHZADIS, fig.align = "center", fig.cap="Disabled persons living within FEMA Flood Zones."}
-vt_tracts_nfhza %>% 
+```{r tabNFHZADIS, fig.align = "center", fig.cap="Disabled persons living within FEMA Flood Zones or River Corridors."}
+vt_tracts_flood %>% 
   st_centroid(.) %>% 
   st_intersection(vt_towns_sf,.) %>% 
   as.data.frame() %>% 
@@ -1340,13 +1336,13 @@ vt_tracts_nfhza %>%
   kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Disabled Persons Living in FEMA Flood Zones", align = "r") %>% 
+                    caption = "Disabled Persons Living in FEMA Flood Zones or River Corridors", align = "r") %>% 
   kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapNFHZAPopConcern4, fig.align = "center", fig.cap="Persons Over 64 Living within Flood Zones."}
+```{r mapNFHZAPopConcern4, fig.align = "center", fig.cap="Persons Over 64 Living within Flood Zones or River Corridors."}
 # create pop subset
-nfhza_sub <- vt_nfhza_vulnerable %>% 
+flood_sub <- vt_flood_vulnerable %>% 
   filter(Group == "Over 64")
 
 # Map over-represented pops and flood zones
@@ -1355,7 +1351,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
   tm_shape(ny_state_sf) + tm_fill(col="white") +
   tm_shape(vt_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
-  tm_shape(nfhza_sub) +
+  tm_shape(flood_sub) +
   tm_dots(col = "darkgoldenrod3",
           labels = "1 dot = 10 people",
           alpha = 0.8) +
@@ -1369,6 +1365,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
           title = "FEMA Flood Zones",
           alpha = 0.6,
           border.alpha = 0) +
+  tm_shape(rc_simple) + tm_fill(col = "forestgreen", alpha = 0.5) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2) +
   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2) +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1) +
@@ -1398,20 +1395,25 @@ m <- tm_layout(bg.color = "#e6f3f7") +
                 border.col = "white", border.alpha = 0,
                 labels = "No FEMA Data",
                 title = "FEMA Coverage") +
-  tm_layout(title = "Persons\nOver 64\nLiving within\nFlood Zones",
+  tm_add_legend(type = "fill", col = "forestgreen",
+                alpha = 0.4,
+                border.col = "white", border.alpha = 0,
+                labels = "River Corridor",
+                title = "VT Agency of Natural Resources") +
+  tm_layout(title = "Persons\nOver 64\nLiving within\nFlood Zones or\nRiver Corridors",
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/FEMA/VT/VT_nhfza_vulnerable4.png",
+tmap_save(m, "DATA/FEMA/VT/VT_flood_vulnerable4.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/FEMA/VT/VT_nhfza_vulnerable4.png")
+knitr::include_graphics("DATA/FEMA/VT/VT_flood_vulnerable4.png")
 ```
 
-```{r tabNFHZAO64, fig.align = "center", fig.cap="Persons over 64 living within FEMA Flood Zones."}
-vt_blkgrps_nfhza %>% 
+```{r tabNFHZAO64, fig.align = "center", fig.cap="Persons over 64 living within FEMA Flood Zones or River Corridors."}
+vt_blkgrps_flood %>% 
   st_centroid(.) %>% 
   st_intersection(vt_towns_sf,.) %>% 
   as.data.frame() %>% 
@@ -1428,13 +1430,13 @@ vt_blkgrps_nfhza %>%
   kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Persons Over 64 Living in FEMA Flood Zones", align = "r") %>% 
+                    caption = "Persons Over 64 Living in FEMA Flood Zones or River Corridors", align = "r") %>% 
   kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapNFHZAPopConcern5, fig.align = "center", fig.cap="People of Color Living within Flood Zones."}
+```{r mapNFHZAPopConcern5, fig.align = "center", fig.cap="People of Color Living within Flood Zones or River Corridors."}
 # create pop subset
-nfhza_sub <- vt_nfhza_vulnerable %>% 
+flood_sub <- vt_flood_vulnerable %>% 
   filter(Group == "Minority")
 
 # Map over-represented pops and flood zones
@@ -1443,7 +1445,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
   tm_shape(ny_state_sf) + tm_fill(col="white") +
   tm_shape(vt_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
-  tm_shape(nfhza_sub) +
+  tm_shape(flood_sub) +
   tm_dots(col = "darkgoldenrod3",
           labels = "1 dot = 10 people",
           alpha = 0.8) +
@@ -1457,6 +1459,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
           title = "FEMA Flood Zones",
           alpha = 0.6,
           border.alpha = 0) +
+  tm_shape(rc_simple) + tm_fill(col = "forestgreen", alpha = 0.5) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2) +
   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2) +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1) +
@@ -1486,20 +1489,25 @@ m <- tm_layout(bg.color = "#e6f3f7") +
                 border.col = "white", border.alpha = 0,
                 labels = "No FEMA Data",
                 title = "FEMA Coverage") +
-  tm_layout(title = "People\nof Color\nLiving within\nFlood Zones",
+  tm_add_legend(type = "fill", col = "forestgreen",
+                alpha = 0.4,
+                border.col = "white", border.alpha = 0,
+                labels = "River Corridor",
+                title = "VT Agency of Natural Resources") +
+  tm_layout(title = "People\nof Color\nLiving within\nFlood Zones or\nRiver Corridors",
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/FEMA/VT/VT_nhfza_vulnerable5.png",
+tmap_save(m, "DATA/FEMA/VT/VT_flood_vulnerable5.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/FEMA/VT/VT_nhfza_vulnerable5.png")
+knitr::include_graphics("DATA/FEMA/VT/VT_flood_vulnerable5.png")
 ```
 
-```{r tabNFHZAMIN, fig.align = "center", fig.cap="People of Color living within FEMA Flood Zones."}
-vt_blkgrps_nfhza %>% 
+```{r tabNFHZAMIN, fig.align = "center", fig.cap="People of Color living within FEMA Flood Zones or River Corridors."}
+vt_blkgrps_flood %>% 
   st_centroid(.) %>% 
   st_intersection(vt_towns_sf,.) %>% 
   as.data.frame() %>% 
@@ -1516,13 +1524,13 @@ vt_blkgrps_nfhza %>%
   kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "People of Color Living in FEMA Flood Zones", align = "r", col.names = c("City/Town", "People of Color", "Pct of POC")) %>% 
+                    caption = "People of Color Living in FEMA Flood Zones or River Corridors", align = "r", col.names = c("City/Town", "People of Color", "Pct of POC")) %>% 
   kable_styling(latex_options = c("repeat_header","striped")) 
 ```
 
-```{r mapNFHZAPopConcern6, fig.align = "center", fig.cap="Adults without a High School Diploma Living within Flood Zones."}
+```{r mapNFHZAPopConcern6, fig.align = "center", fig.cap="Adults without a High School Diploma Living within Flood Zones or River Corridors."}
 # create pop subset
-nfhza_sub <- vt_nfhza_vulnerable %>% 
+flood_sub <- vt_flood_vulnerable %>% 
   filter(Group == "No HS Dip")
 
 # Map over-represented pops and flood zones
@@ -1531,7 +1539,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
   tm_shape(ny_state_sf) + tm_fill(col="white") +
   tm_shape(vt_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
-  tm_shape(nfhza_sub) +
+  tm_shape(flood_sub) +
   tm_dots(col = "darkgoldenrod3",
           labels = "1 dot = 10 people",
           alpha = 0.8) +
@@ -1545,6 +1553,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
           title = "FEMA Flood Zones",
           alpha = 0.6,
           border.alpha = 0) +
+  tm_shape(rc_simple) + tm_fill(col = "forestgreen", alpha = 0.5) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2) +
   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2) +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1) +
@@ -1574,20 +1583,25 @@ m <- tm_layout(bg.color = "#e6f3f7") +
                 border.col = "white", border.alpha = 0,
                 labels = "No FEMA Data",
                 title = "FEMA Coverage") +
-  tm_layout(title = "Adults without a\nHigh School\nDiploma\nLiving within\nFlood Zones",
+  tm_add_legend(type = "fill", col = "forestgreen",
+                alpha = 0.4,
+                border.col = "white", border.alpha = 0,
+                labels = "River Corridor",
+                title = "VT Agency of Natural Resources") +
+  tm_layout(title = "Adults without a\nHigh School\nDiploma\nLiving within\nFlood Zones or\nRiver Corridors",
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/FEMA/VT/VT_nhfza_vulnerable6.png",
+tmap_save(m, "DATA/FEMA/VT/VT_flood_vulnerable6.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/FEMA/VT/VT_nhfza_vulnerable6.png")
+knitr::include_graphics("DATA/FEMA/VT/VT_flood_vulnerable6.png")
 ```
 
-```{r tabNFHZALTHS, fig.align = "center", fig.cap="Adults without a high school diploma living within FEMA Flood Zones."}
-vt_blkgrps_nfhza %>% 
+```{r tabNFHZALTHS, fig.align = "center", fig.cap="Adults without a high school diploma living within FEMA Flood Zones or River Corridors."}
+vt_blkgrps_flood %>% 
   st_centroid(.) %>% 
   st_intersection(vt_towns_sf,.) %>% 
   as.data.frame() %>% 
@@ -1604,13 +1618,13 @@ vt_blkgrps_nfhza %>%
   kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Adults wihtout a High School Diploma Living in FEMA Flood Zones", align = "r") %>% 
+                    caption = "Adults wihtout a High School Diploma Living in FEMA Flood Zones or River Corridors", align = "r") %>% 
   kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapNFHZAPopConcern7, fig.align = "center", fig.cap="Persons Under 18 Living within Flood Zones."}
+```{r mapNFHZAPopConcern7, fig.align = "center", fig.cap="Persons Under 18 Living within Flood Zones or River Corridors."}
 # create pop subset
-nfhza_sub <- vt_nfhza_vulnerable %>% 
+flood_sub <- vt_flood_vulnerable %>% 
   filter(Group == "Under 18")
 
 # Map over-represented pops and flood zones
@@ -1619,7 +1633,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
   tm_shape(ny_state_sf) + tm_fill(col="white") +
   tm_shape(vt_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
-  tm_shape(nfhza_sub) +
+  tm_shape(flood_sub) +
   tm_dots(col = "darkgoldenrod3",
           labels = "1 dot = 10 people",
           alpha = 0.8) +
@@ -1633,6 +1647,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
           title = "FEMA Flood Zones",
           alpha = 0.6,
           border.alpha = 0) +
+  tm_shape(rc_simple) + tm_fill(col = "forestgreen", alpha = 0.5) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2) +
   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2) +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1) +
@@ -1662,20 +1677,25 @@ m <- tm_layout(bg.color = "#e6f3f7") +
                 border.col = "white", border.alpha = 0,
                 labels = "No FEMA Data",
                 title = "FEMA Coverage") +
-  tm_layout(title = "Persons\nUnder 18\nLiving within\nFlood Zones",
+  tm_add_legend(type = "fill", col = "forestgreen",
+                alpha = 0.4,
+                border.col = "white", border.alpha = 0,
+                labels = "River Corridor",
+                title = "VT Agency of Natural Resources") +
+  tm_layout(title = "Persons\nUnder 18\nLiving within\nFlood Zones or\nRiver Corridors",
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/FEMA/VT/VT_nhfza_vulnerable7.png",
+tmap_save(m, "DATA/FEMA/VT/VT_flood_vulnerable7.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/FEMA/VT/VT_nhfza_vulnerable7.png")
+knitr::include_graphics("DATA/FEMA/VT/VT_flood_vulnerable7.png")
 ```
 
-```{r tabNFHZAU18, fig.align = "center", fig.cap="Persons under 18 living within FEMA Flood Zones."}
-vt_blkgrps_nfhza %>% 
+```{r tabNFHZAU18, fig.align = "center", fig.cap="Persons under 18 living within FEMA Flood Zones or River Corridors."}
+vt_blkgrps_flood %>% 
   st_centroid(.) %>% 
   st_intersection(vt_towns_sf,.) %>% 
   as.data.frame() %>% 
@@ -1692,13 +1712,13 @@ vt_blkgrps_nfhza %>%
   kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Persons Under 18 Living in FEMA Flood Zones", align = "r") %>% 
+                    caption = "Persons Under 18 Living in FEMA Flood Zones or River Corridors", align = "r") %>% 
   kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r mapNFHZAPopConcern8, fig.align = "center", fig.cap="Children Under 5 Living within Flood Zones."}
+```{r mapNFHZAPopConcern8, fig.align = "center", fig.cap="Children Under 5 Living within Flood Zones or River Corridors."}
 # create pop subset
-nfhza_sub <- vt_nfhza_vulnerable %>% 
+flood_sub <- vt_flood_vulnerable %>% 
   filter(Group == "Under 5")
 
 # Map over-represented pops and flood zones
@@ -1707,7 +1727,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
   tm_shape(ny_state_sf) + tm_fill(col="white") +
   tm_shape(vt_awater_sf_simple) + tm_fill(col = "#e6f3f7") +
-  tm_shape(nfhza_sub) +
+  tm_shape(flood_sub) +
   tm_dots(col = "darkgoldenrod3",
           labels = "1 dot = 10 people",
           alpha = 0.8) +
@@ -1721,6 +1741,7 @@ m <- tm_layout(bg.color = "#e6f3f7") +
           title = "FEMA Flood Zones",
           alpha = 0.6,
           border.alpha = 0) +
+  tm_shape(rc_simple) + tm_fill(col = "forestgreen", alpha = 0.5) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2) +
   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2) +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1) +
@@ -1750,20 +1771,25 @@ m <- tm_layout(bg.color = "#e6f3f7") +
                 border.col = "white", border.alpha = 0,
                 labels = "No FEMA Data",
                 title = "FEMA Coverage") +
-  tm_layout(title = "Children\nUnder 5\nLiving within\nFlood Zones",
+  tm_add_legend(type = "fill", col = "forestgreen",
+                alpha = 0.4,
+                border.col = "white", border.alpha = 0,
+                labels = "River Corridor",
+                title = "VT Agency of Natural Resources") +
+  tm_layout(title = "Children\nUnder 5\nLiving within\nFlood Zones or\nRiver Corridors",
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "DATA/FEMA/VT/VT_nhfza_vulnerable8.png",
+tmap_save(m, "DATA/FEMA/VT/VT_flood_vulnerable8.png",
           height = 8, width = 8, units = "in", dpi = 600)
 
-knitr::include_graphics("DATA/FEMA/VT/VT_nhfza_vulnerable8.png")
+knitr::include_graphics("DATA/FEMA/VT/VT_flood_vulnerable8.png")
 ```
 
-```{r tabNFHZAU5, fig.align = "center", fig.cap="Children under 5 living within FEMA Flood Zones."}
-vt_blkgrps_nfhza %>% 
+```{r tabNFHZAU5, fig.align = "center", fig.cap="Children under 5 living within FEMA Flood Zones or River Corridors."}
+vt_blkgrps_flood %>% 
   st_centroid(.) %>% 
   st_intersection(vt_towns_sf,.) %>% 
   as.data.frame() %>% 
@@ -1780,12 +1806,12 @@ vt_blkgrps_nfhza %>%
   kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Children Under 5 Living in FEMA Flood Zones", align = "r") %>% 
+                    caption = "Children Under 5 Living in FEMA Flood Zones or River Corridors", align = "r") %>% 
   kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
-```{r tabNFHZALEH, fig.align = "center", fig.cap="Limited English speaking households living within FEMA Flood Zones."}
-vt_blkgrps_nfhza %>% 
+```{r tabNFHZALEH, fig.align = "center", fig.cap="Limited English speaking households living within FEMA Flood Zones or River Corridors."}
+vt_blkgrps_flood %>% 
   st_centroid(.) %>% 
   st_intersection(vt_towns_sf,.) %>% 
   as.data.frame() %>% 
@@ -1802,7 +1828,7 @@ vt_blkgrps_nfhza %>%
   kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
-                    caption = "Limited English Speaking Households Living in FEMA Flood Zones", align = "r") %>% 
+                    caption = "Limited English Speaking Households Living in FEMA Flood Zones or River Corridors", align = "r") %>% 
   kable_styling(latex_options = c("repeat_header","striped")) 
 ```
 
