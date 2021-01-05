@@ -23,6 +23,7 @@ library(rmapshaper)
 library(parallel)
 library(tigris)
 options(tigris_use_cache = TRUE, tigris_class = "sf")
+library(kableExtra)
 ```
 \pagebreak
 # Analysis of evacuation-related risks in Vermont
@@ -641,19 +642,12 @@ vt_awater_sf_simple <- vt_awater_sf %>%
   st_make_valid() %>%
   group_by() %>% 
   summarize()
+
+system.time(rc_simple <- ms_simplify(rc))
 ```
 
 ```{r mapNFHZAPop, fig.align = "center", fig.cap="Flood zones across Vermont."}
 # Map flood risk zones
-
-# create a pattern layer to show river corridors. See https://rpubs.com/dieghernan/559092 
-# load function
-source("resources/cartography/patternLayer.R")
-rc_layer <- rc %>% 
-  st_cast(., "MULTIPOLYGON") %>% 
-  patternLayer(., pattern = "right2left")
-
-
 m1 <- tm_shape(vt_blkgrp_2852, unit = "mi") + tm_fill(col = "white") +
   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
   tm_shape(ny_state_sf) + tm_fill(col="white") +
@@ -670,6 +664,7 @@ m1 <- tm_shape(vt_blkgrp_2852, unit = "mi") + tm_fill(col = "white") +
           title = "FEMA Flood Zones",
           alpha = 0.6,
           border.alpha = 0) +
+  tm_shape(rc_simple) + tm_fill(col = "forestgreen", alpha = 0.5) +
   tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
   tm_shape(ny_state_sf) + tm_borders(lwd = 0.2, alpha = 0.8) +
   tm_shape(vt_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
@@ -705,7 +700,12 @@ m1 <- tm_shape(vt_blkgrp_2852, unit = "mi") + tm_fill(col = "white") +
                 border.col = "white", border.alpha = 0,
                 labels = "No FEMA Data",
                 title = "FEMA Coverage") +
-  tm_layout(title = "FEMA\nFlood Zones",
+  tm_add_legend(type = "fill", col = "forestgreen",
+                alpha = 0.4,
+                border.col = "white", border.alpha = 0,
+                labels = "River Corridor",
+                title = "VT Agency of Natural Resources") +
+  tm_layout(title = "Flood Risk",
             frame = TRUE, main.title.size = 0.8,
             legend.outside = TRUE,
             legend.title.size = 0.8,
@@ -717,40 +717,80 @@ tmap_save(m1, "DATA/FEMA/VT/vt_flood.png",
 knitr::include_graphics("DATA/FEMA/VT/vt_flood.png")
 ```
 
-Approximately 1.9% of Vermont's land area falls within FEMA flood zones. The breakdown by type of flood zone is presented in Table \@ref(tab:tabNFHZAarea) below. 
+Approximately 1.8% of Vermont's land area falls within FEMA flood zones, while 3.4% of the land area falls within river corridors. The breakdown by type of flood risk is presented in Table \@ref(tab:tabNFHZAarea) below. 
 
-```{r tabNFHZAarea, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont Land Area within Flood Zones."}
+```{r tabNFHZAarea, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont Land Area within Flood Risk Areas."}
 # Total land in VT
 vt_area <- as.numeric(vt_state_sf$ALAND)
 
-# Total and percentage of land area of RI within flood zones
+# Total and percentage of land area within river corridors
+rc_area_df <- rc %>% 
+  mutate(Area = st_area(.)) %>% 
+  as.data.frame() %>% 
+  group_by() %>% 
+  summarize(SqKm = round(as.numeric(sum(Area)/10^6),1), 
+            SqMi = round(as.numeric(SqKm/2.59),1),
+            PctArea = paste0(as.character(round(as.numeric(sum(Area)/vt_area*100),1)),"%")) %>% 
+  mutate(`Risk Type` = "River Corridor", .before = "SqKm")
+
+# tally total area within river corridors
+rc_area <- rc %>% mutate(Area = as.numeric(st_area(.))/10^6) %>% as.data.frame() %>% summarize(sum(Area)) %>% pull()
+# tally area within river corridors, but only for areas where there is also FEMA data. erase river corridors from areas missing fema data and tally remaining river corridor area
+rc_infema_area <- nofemapolys %>% 
+  select(-Area) %>% 
+  ms_erase(rc, .) %>% 
+  mutate(Area = as.numeric(st_area(.))/10^6) %>% as.data.frame() %>% summarize(sum(Area)) %>% pull()
+# tally area of river corridors not within FEMA flood zones, but only for areas where there is FEMA data
+rc_erased_infema_area <-  nofemapolys %>% 
+  select(-Area) %>% 
+  ms_erase(rc_erased, .) %>% 
+  mutate(Area = as.numeric(st_area(.))/10^6) %>% as.data.frame() %>% summarize(sum(Area)) %>% pull()
+# calculate percentage of river corridors that overlap with FEMA flood zones for areas that contain both FEMA data and river corridor data
+rc_overlap_pct <- (rc_infema_area - rc_erased_infema_area)/rc_infema_area*100
+
+# do the inverse
+# tally total area within FEMA flood zones
+fema_area <- vt_nfhza_2852_land %>% mutate(AreaSqKm = as.numeric(st_area(.))/10^6) %>% as.data.frame() %>% summarize(sum(AreaSqKm)) %>% pull()
+# tally area of FEMA flood zones not within river corridors
+fema_erased_area <- fema_erased %>% mutate(Area = as.numeric(st_area(.))/10^6) %>% as.data.frame() %>% summarize(sum(Area)) %>% pull()
+# calculate percentage of FEMA flood zones within river corridors
+fema_overlap_pct <- (fema_area - fema_erased_area)/fema_area*100
+
+# Total and percentage of land area within FEMA flood zones and river corridors
 vt_nfhza_2852_land %>% 
   as.data.frame() %>% 
   group_by(Interval) %>% 
   summarize(SqKm = round(as.numeric(sum(Area)/10^6),1), 
             SqMi = round(as.numeric(SqKm/2.59),1),
             PctArea = paste0(as.character(round(as.numeric(sum(Area)/vt_area*100),1)),"%")) %>% 
-  kableExtra::kable(longtable = T, booktabs = T,
-                    format.args = list(big.mark = ','),
-                    caption = "Vermont Land Area within Flood Zones",
-                    digits = 0, align = "r") %>% 
-  kableExtra::kable_styling(latex_options = c("repeat_header"))
+  rename(`Risk Type` = Interval) %>% 
+  rbind(rc_area_df) %>% 
+  kable(longtable = T, booktabs = T, format.args = list(big.mark = ','),
+        caption = "Vermont Land within Flood Areas", digits = 0, 
+        align = "r") %>% 
+  kable_styling(latex_options = c("repeat_header")) %>% 
+  footnote(general = "There is significant spatial overlap between FEMA flood zones and river corridors. Approximately 50% of river corridor areas overlap with FEMA flood zones in areas where there is both FEMA and river corridor data. Conversely, 48% of FEMA flood zones overlap with river corridors.")
 ```
 
-The proportion of the total state population living within flood zones exceeds the percentage of the state area within flood zones. Moreover, exposure varies by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups living within flood zones. Aside from the total population, the largest absolute numbers of subpopulations living within a flood zone are low income persons followed by those under 18 and over 64. The latter groups are priority populations who may have limited mobility in the event of an evacuation. 
+The proportion of the total state population living within areas prone to flooding or fluvial erosion exceeds the percentage of the state area within those flood-prone areas. Moreover, exposure varies by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups living within flood-prone areas. Aside from the total population, the largest absolute numbers of subpopulations living within a flood-prone area are low income persons followed by those under 18 and over 64. The latter groups are priority populations who may have limited mobility in the event of an evacuation. 
 
 ```{r tabNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont Populations Living within Flood Zones."}
 # Show table of pops within flood zones
 vt_FloodPops_df %>% 
-  mutate(PctFlood = paste0(as.character(round(PctFlood,1)),"%")) %>% 
+  mutate(across(PctFEMAPop:PctFloodPop, 
+                ~ paste0(as.character(round(.x,1)),"%"))) %>% 
   arrange(-FloodPop) %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
                         "No HS Dip" = "No HS Diploma")) %>%
-  kableExtra::kable(longtable = T, booktabs = T,
-                    format.args = list(big.mark = ','),
-                    caption = "Vermont Populations Living within Flood Zones",
-                    digits = 0, align = "r") %>% 
-  kableExtra::kable_styling(latex_options = c("repeat_header"))
+  select(Group, VTPop, FEMAPop, PctFEMAPop, RCPop, PctRCPop, FEMA_RCpop, 
+         PctFEMA_RCpop, FloodPop, PctFloodPop) %>% 
+  kable(longtable = T, booktabs = T, format.args = list(big.mark = ','),
+        caption = "Vermont Populations Living within Flood Zones or River Corridors",
+        digits = 0, align = "r", col.names = c("Group", "VTPop", "Total", "Pct", "Total", "Pct", "Total", "Pct", "Total", "Pct")) %>% 
+  add_header_above(c(" " = 2, "FEMA Only" = 2, "RC Only" = 2,
+                                 "Overlapping FEMA & RC" = 2, 
+                                 "All Pops at Risk" = 2)) %>% 
+  kable_styling(latex_options = c("repeat_header"))
 ```
 
 Some groups are disproportionately exposed to these flood hazards. While approximately 5.7% of the general population are living within flood zones, limited English speaking households, households without access to a car, people in low income households, and other priority populations, exceed the population average living within flood zones. These priority populations are disproportionately exposed to flood risk (see Figure \@ref(fig:chartNFHZApop) below).
@@ -1047,10 +1087,10 @@ gridCodes <- c(11,12,21,22,23,24,31,41,42,43,51,52,71,72,73,74,81,82,90,95)
 landUse <- c("Open Water", "Perennial Ice/Snow", "Developed, Open Space", "Developed, Low Intensity", "Developed, Medium Intensity", "Developed, High Intensity", "Barren Land (Rock/Sand/Clay)", "Deciduous Forest", "Evergreen Forest", "Mixed Forest", "Dwarf Scrub", "Shrub/Scrub", "Grassland/Herbaceous", "Sedge/Herbaceous", "Lichens", "Moss", "Pasture/Hay", "Cultivated Crops", "Woody Wetlands", "Emergent Herbaceous Wetlands")
 
 data.frame(gridCodes,landUse) %>% 
-  kableExtra::kable(longtable = T, booktabs = T,
+  kable(longtable = T, booktabs = T,
                     col.names = c("GRID Code","Land Use Description"),
                     caption = "NLCD 2016 Land Cover Codes and Classifications", align = "l") %>% 
-  kableExtra::kable_styling(latex_options = c("repeat_header"))
+  kable_styling(latex_options = c("repeat_header"))
 ```
 
 The NLCD is produced by the US Geological Survey (USGS) in partnership with several federal agencies as part of the Multi-Resolution Land Characteristics Consortium (MRLC).[^NLCD2016] NLCD identified land cover types based on semi-automated land use calssification algorithms applied to LANDSAT satellite imagery and supplemented with ancillary data.[^NLCDdetails] NLCD is distributed as a raster GeoTIFF at https://www.mrlc.gov/data. 
@@ -1158,11 +1198,11 @@ ACSvDF <- data.frame(Variable = c("Total Population",
                                    "Block Group"))
 
 ACSvDF %>% 
-  kableExtra::kable(longtable = T, booktabs = T, 
+  kable(longtable = T, booktabs = T, 
                     caption = "Demographic Variables", align = "l",
                     col.names = c("Variable","Description","ACS Table ID","Geography")) %>% 
-  kableExtra::column_spec(2:3, width = "3cm") %>%
-  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+  column_spec(2:3, width = "3cm") %>%
+  kable_styling(latex_options = c("repeat_header","striped"))
   
 ```
 
@@ -1187,11 +1227,11 @@ vt_tracts_nfhza %>%
          `Pct of No Car HH` = paste0(`Pct of No Car HH`,"%")) %>% 
   filter(`No Car HH` > 0) %>% 
   arrange(desc(`No Car HH`)) %>% 
-  kableExtra::kable(longtable = T, booktabs = T,
+  kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
                     caption = "Households without a Car Living in FEMA Flood Zones", align = "r") %>% 
-  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+  kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
 ```{r tabNFHZALINC, fig.align = "center", fig.cap="Low income persons living within FEMA Flood Zones."}
@@ -1209,11 +1249,11 @@ vt_blkgrps_nfhza %>%
          `Pct of Low Income` = paste0(`Pct of Low Income`,"%")) %>% 
   filter(`Low Income` > 0) %>% 
   arrange(desc(`Low Income`)) %>% 
-  kableExtra::kable(longtable = T, booktabs = T,
+  kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
                     caption = "Low Income Persons Living in FEMA Flood Zones", align = "r") %>% 
-  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+  kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
 ```{r mapNFHZAPopConcern3, fig.align = "center", fig.cap="Disabled Persons Living within Flood Zones."}
@@ -1297,11 +1337,11 @@ vt_tracts_nfhza %>%
          `Pct of Disabled` = paste0(`Pct of Disabled`,"%")) %>% 
   filter(`Disabled` > 0) %>% 
   arrange(desc(`Disabled`)) %>% 
-  kableExtra::kable(longtable = T, booktabs = T,
+  kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
                     caption = "Disabled Persons Living in FEMA Flood Zones", align = "r") %>% 
-  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+  kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
 ```{r mapNFHZAPopConcern4, fig.align = "center", fig.cap="Persons Over 64 Living within Flood Zones."}
@@ -1385,11 +1425,11 @@ vt_blkgrps_nfhza %>%
          `Pct of Over 64` = paste0(`Pct of Over 64`,"%")) %>% 
   filter(`Over 64` > 0) %>% 
   arrange(desc(`Over 64`)) %>% 
-  kableExtra::kable(longtable = T, booktabs = T,
+  kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
                     caption = "Persons Over 64 Living in FEMA Flood Zones", align = "r") %>% 
-  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+  kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
 ```{r mapNFHZAPopConcern5, fig.align = "center", fig.cap="People of Color Living within Flood Zones."}
@@ -1473,11 +1513,11 @@ vt_blkgrps_nfhza %>%
          `Pct of Minority` = paste0(`Pct of Minority`,"%")) %>% 
   filter(`Minority` > 0) %>% 
   arrange(desc(`Minority`)) %>% 
-  kableExtra::kable(longtable = T, booktabs = T,
+  kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
                     caption = "People of Color Living in FEMA Flood Zones", align = "r", col.names = c("City/Town", "People of Color", "Pct of POC")) %>% 
-  kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
+  kable_styling(latex_options = c("repeat_header","striped")) 
 ```
 
 ```{r mapNFHZAPopConcern6, fig.align = "center", fig.cap="Adults without a High School Diploma Living within Flood Zones."}
@@ -1561,11 +1601,11 @@ vt_blkgrps_nfhza %>%
          `Pct of No HS Dip` = paste0(`Pct of No HS Dip`,"%")) %>% 
   filter(`No HS Dip` > 0) %>% 
   arrange(desc(`No HS Dip`)) %>% 
-  kableExtra::kable(longtable = T, booktabs = T,
+  kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
                     caption = "Adults wihtout a High School Diploma Living in FEMA Flood Zones", align = "r") %>% 
-  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+  kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
 ```{r mapNFHZAPopConcern7, fig.align = "center", fig.cap="Persons Under 18 Living within Flood Zones."}
@@ -1649,11 +1689,11 @@ vt_blkgrps_nfhza %>%
          `Pct of Under 18` = paste0(`Pct of Under 18`,"%")) %>% 
   filter(`Under 18` > 0) %>% 
   arrange(desc(`Under 18`)) %>% 
-  kableExtra::kable(longtable = T, booktabs = T,
+  kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
                     caption = "Persons Under 18 Living in FEMA Flood Zones", align = "r") %>% 
-  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+  kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
 ```{r mapNFHZAPopConcern8, fig.align = "center", fig.cap="Children Under 5 Living within Flood Zones."}
@@ -1737,11 +1777,11 @@ vt_blkgrps_nfhza %>%
          `Pct of Under 5` = paste0(`Pct of Under 5`,"%")) %>% 
   filter(`Under 5` > 0) %>% 
   arrange(desc(`Under 5`)) %>% 
-  kableExtra::kable(longtable = T, booktabs = T,
+  kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
                     caption = "Children Under 5 Living in FEMA Flood Zones", align = "r") %>% 
-  kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
+  kable_styling(latex_options = c("repeat_header","striped"))
 ```
 
 ```{r tabNFHZALEH, fig.align = "center", fig.cap="Limited English speaking households living within FEMA Flood Zones."}
@@ -1759,11 +1799,11 @@ vt_blkgrps_nfhza %>%
          `Pct of Limited English HH` = paste0(`Pct of Limited English HH`,"%")) %>% 
   filter(`Limited English HH` > 0) %>% 
   arrange(desc(`Limited English HH`)) %>% 
-  kableExtra::kable(longtable = T, booktabs = T,
+  kable(longtable = T, booktabs = T,
                     format.args = list(big.mark = ','), 
                     digits = 1,
                     caption = "Limited English Speaking Households Living in FEMA Flood Zones", align = "r") %>% 
-  kableExtra::kable_styling(latex_options = c("repeat_header","striped")) 
+  kable_styling(latex_options = c("repeat_header","striped")) 
 ```
 
 
