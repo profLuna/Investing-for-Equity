@@ -19,7 +19,8 @@ library(tidyverse)
 library(sf)
 library(tmap)
 library(tmaptools)
-library(lwgeom)
+library(rmapshaper)
+library(parallel)
 library(tigris)
 options(tigris_use_cache = TRUE, tigris_class = "sf")
 ```
@@ -30,226 +31,28 @@ This is an analysis of flood evacuation risks for priority populations in Vermon
 
 ## Analysis of Flood Hazard Exposure in Vermont
 
-```{r NFHZAdata, include=FALSE}
-# Analysis of flooding and hurricane evacuation risks for priority populations in Vermont
-load("DATA/ne_layers.rds")
-
-# Extract state census units and convert to projected local CRS EPSG:2852: NAD83(HARN) / Vermont See https://spatialreference.org/ref/epsg/2852/
-vt_blkgrp_2852 <- ne_blkgrp_sf %>% 
-  filter(STATE == "Vermont") %>% 
-  st_transform(., crs = 2852) %>% 
-  filter(!st_is_empty())
-
-vt_tracts_2852 <- ne_tracts_sf %>% 
-  filter(STATE == "Vermont") %>% 
-  st_transform(., crs = 2852) %>% 
-  filter(!st_is_empty())
-
-# Extract state boundary
-vt_state_sf <- ne_states_sf_cb %>% 
-  filter(NAME == "Vermont") %>% 
-  st_transform(., crs = 2852)
-
-#### Processing in ArcGIS #####
-# # Write out block groups for processing in ArcGIS
-# vt_blkgrp_2852 %>%
-#   dplyr::select(GEOID) %>%
-#   st_write(., "DATA/FEMA/VT/vt_blkgrp_2852.shp", delete_layer = TRUE)
-# #
-# # repeat for tracts
-# vt_tracts_2852 %>%
-#   dplyr::select(GEOID) %>%
-#   st_write(., "DATA/FEMA/VT/vt_tracts_2852.shp", delete_layer = TRUE)
-# 
-# # repeat for state boundary
-# vt_state_sf %>%
-#   st_write(., "DATA/FEMA/VT/vt_state_2852.shp", delete_layer = TRUE)
-
-# Use dasymetric mapping to calculate populations within flood zones. Approach follows method used by Qiang (2019) to eliminate unpopulated areas of census polygons and then reallocate populations to developed areas as identified in National Land Cover Dataset (NLCD). 
-# Perform NLCD raster-to-vector conversion, vector erase/difference, and vector intersections in ArcMap because it takes too long in R. 
-# In ArcMap:
-# Convert NLCD raster to shapefile. Clip to state.
-# Isolate undeveloped areas (gridcode NOT 22 - 24). 
-# Erase areas of vt_blkgrp_2852 and vt_tracts_2852 that overlap with undeveloped areas in NLCD shapefiles. Compute OldArea of erased polygons in sqm to identify area of developed polygons remaining. 
-# Intersect erased vt_blkgrps and erased vt_tracts with NFHZA and Hurricane evacuation zones. Read back into R.
-
-##### Return to working in R ######
-# # read in processed vt_blkgrps and vt_tracts
-# st_layers(dsn = "DATA/FEMA/VT")
-
-vt_blkgrps_developed <- st_read(dsn = "DATA/FEMA/VT",
-                                layer = "vt_blkgrps_developed") %>% 
-  left_join(., as.data.frame(vt_blkgrp_2852), by = "GEOID") %>% 
-  st_transform(., crs = 2852) %>% 
-  mutate(NewArea = st_area(.)) %>%
-  st_make_valid() %>% 
-  mutate(Proportion = as.numeric(NewArea/OldArea),
-         NewPop = totalpopE*Proportion,
-         NewMinority = minorityE*Proportion,
-         NewUnder5 = under5E*Proportion,
-         NewOver64 = over64E*Proportion,
-         NewUnder18 = under18E*Proportion,
-         NewEng_limit = eng_limitE*Proportion,
-         NewPov = num2povE*Proportion,
-         NewLths = lthsE*Proportion)
-
-vt_blkgrps_nfhza <- st_read(dsn = "DATA/FEMA/VT", 
-                            layer = "vt_blkgrps_nfhza") %>% 
-  left_join(., as.data.frame(vt_blkgrp_2852), by = "GEOID") %>% 
-  st_transform(., crs = 2852) %>% 
-  mutate(NewArea = st_area(.)) %>%
-  st_make_valid()
-
-vt_tracts_nfhza <- st_read(dsn = "DATA/FEMA/VT", 
-                           layer = "vt_tracts_nfhza") %>% 
-  left_join(., as.data.frame(vt_tracts_2852), by = "GEOID") %>% 
-  st_transform(., crs = 2852) %>% 
-  mutate(NewArea = st_area(.)) %>%
-  st_make_valid()
-
-# get rid of empty geometries
-empty_geo <- st_is_empty(vt_blkgrps_nfhza)
-vt_blkgrps_nfhza <- vt_blkgrps_nfhza[!empty_geo,]
-empty_geo <- st_is_empty(vt_tracts_nfhza)
-vt_tracts_nfhza <- vt_tracts_nfhza[!empty_geo,]
-
-# Apportion populations based on geographic proportion of intersect
-vt_blkgrps_nfhza <- vt_blkgrps_nfhza %>%
-  mutate(Proportion = as.numeric(NewArea/OldArea),
-         NewPop = totalpopE*Proportion,
-         NewMinority = minorityE*Proportion,
-         NewUnder5 = under5E*Proportion,
-         NewOver64 = over64E*Proportion,
-         NewUnder18 = under18E*Proportion,
-         NewEng_limit = eng_limitE*Proportion,
-         NewPov = num2povE*Proportion,
-         NewLths = lthsE*Proportion)
-
-vt_tracts_nfhza <- vt_tracts_nfhza %>%
-  mutate(Proportion = as.numeric(NewArea/OldArea),
-         NewDisabled = disabledOver18E*Proportion,
-         NewNoCar = HHnoCarE*Proportion)
-
-# Compute total block group populations within flood zones
-vt_flood_blkgrp_df <- vt_blkgrps_nfhza %>%
-  as.data.frame() %>%
-  summarize(`Total Pop` = as.integer(sum(NewPop)),
-            Minority = as.integer(sum(NewMinority)),
-            `Under 5` = as.integer(sum(NewUnder5)),
-            `Over 64` = as.integer(sum(NewOver64)),
-            `Under 18` = as.integer(sum(NewUnder18)),
-            `Limited English HH` = as.integer(sum(NewEng_limit)),
-            `Low Income` = as.integer(sum(NewPov)),
-            `No HS Dip` = as.integer(sum(NewLths))) %>%
-  gather(key = Group, value = FloodPop)
-
-vt_flood_tracts_df <- vt_tracts_nfhza %>%
-  as.data.frame() %>%
-  summarize(`Disabled` = as.integer(sum(NewDisabled)),
-            `No Car HH` = as.integer(sum(NewNoCar))) %>%
-  gather(key = Group, value = FloodPop)
-
-# Compute total tract populations within the state for same groups
-vt_tract_flood_pops_df <- vt_tracts_2852 %>%
-  as.data.frame() %>%
-  summarize(`Disabled` = sum(disabledOver18E),
-            `No Car HH` = sum(HHnoCarE)) %>%
-  gather(key = Group, value = VTPop) %>%
-  left_join(.,vt_flood_tracts_df, by = "Group")
-
-# Compute populations for state,and join with flood pops
-vt_FloodPops_df <- vt_blkgrp_2852 %>%
-  as.data.frame() %>%
-  summarize(`Total Pop` = sum(totalpopE),
-            Minority = sum(minorityE),
-            `Under 5` = sum(under5E),
-            `Over 64` = sum(over64E),
-            `Under 18` = sum(under18E),
-            `Limited English HH` = sum(eng_limitE),
-            `Low Income` = sum(num2povE),
-            `No HS Dip` = sum(lthsE)) %>%
-  gather(key = Group, value = VTPop) %>%
-  left_join(., vt_flood_blkgrp_df, by = "Group") %>%
-  rbind(.,vt_tract_flood_pops_df) %>%
-  mutate(PctFlood = FloodPop/VTPop*100)
-
-vt_towns_sf <- county_subdivisions(state = "VT", cb = TRUE) %>% 
-  st_transform(., crs = 2852)
-
-town_tracts_df <- vt_tracts_2852 %>% 
-  dplyr::select(-GEOID) %>% 
-  st_centroid(.) %>% 
-  st_intersection(vt_towns_sf,.) %>% 
-  as.data.frame() %>% 
-  group_by(NAME) %>%
-  summarize(TotalDisabled = sum(disabledOver18E, na.rm = TRUE),
-            TotalOver18 = sum(Over18E, na.rm = TRUE),
-            TotalNoCar = sum(HHnoCarE, na.rm = TRUE))
-
-townpopsdf <- vt_blkgrp_2852 %>% 
-  dplyr::select(-GEOID) %>% 
-  st_centroid(.) %>% 
-  st_intersection(vt_towns_sf,.) %>% 
-  as.data.frame() %>% 
-  group_by(NAME) %>% 
-  summarize(GEOID = first(GEOID),
-            TotalPop = sum(totalpopE, na.rm = TRUE),
-            TotalHH = sum(householdsE, na.rm = TRUE),
-            TotalLEH = sum(eng_limitE, na.rm = TRUE),
-            TotalMin = sum(minorityE, na.rm = TRUE),
-            TotalLowInc = sum(num2povE, na.rm = TRUE),
-            TotalNoHS = sum(lthsE, na.rm = TRUE),
-            TotalOver64 = sum(over64E, na.rm = TRUE),
-            TotalUnder5 = sum(under5E, na.rm = TRUE),
-            TotalUnder18 = sum(under18E, na.rm = TRUE)) %>% 
-  left_join(., town_tracts_df, by = "NAME")
-
-
-
-vt_state_sf_cb <- ne_states_sf_cb %>% 
-  filter(NAME == "Vermont") %>% 
-  st_transform(., crs = st_crs(vt_blkgrp_2852))
-
-# save data for later analysis
-save(vt_blkgrps_nfhza, vt_tracts_nfhza,
-     file = "DATA/FEMA/VT/nfhza_census.Rds")
-```
-
-In comparison to other part's of New England, relatively little of Vermont's land area is within flood zones. However, a significant proportion of the population are nevertheless exposed to the risk of flooding from overbanking of inland water bodies (e.g., ponds and rivers). 
-
-The analysis of flood exposure presented here is based on the Federal Emergency Management Agency's (FEMA) National Flood Hazard Layer (NFHL), a digital version of FEMA's most recent flood maps.[^NFHL]  FEMA identifies areas subject to varying levels of flood risk through its Flood Insurance Rate Maps (FIRMs), which are produced for most parts of the country to identify areas subject to flooding. FEMA's FIRMs are a national standard used by all federal agencies for the purposes of requiring and rating the purchase of flood insurance and regulating new development.  Population data comes from the American Community Survey (ACS) 2018 5-year estimates at the census tract and block group levels. 
-
-A significant proportion of Vermont's population lives near inland water bodies. As a result, a significant proportion of the population lives near or within known flood zones. Figure \@ref(fig:mapNFHZAPop) below shows the population distribution and areas subject to floods with an Annual Exceedance Probability (AEP) of 1% (also known as a '100-year' flood) and areas subject to 0.2% AEP (also known as a '500-year' flood). Areas within the 1% AEP flood zone are designated by FEMA as Special Flood Hazard Areas, and development within those zones must be covered by flood insurance. Areas within the 0.2% AEP are not currently regulated, but these areas are nevertheless subject to flood risk under more extreme, albeit less frequent, flooding circumstances. Coastal areas within the 0.2% AEP zone are a reasonable proxy measure for the risks of sea level rise. Note that portions of northwest and northeast Vermont are not currently mapped for flooding risk by FEMA. 
-```{r mapNFHZAdata, include=FALSE}
-# Process data for mapping 
-# Create point layer of major cities for context
-# Note cb=FALSE is necessary for extracting centroids from town polygons. Otherwise, if cb=TRUE, cannot extract centroids from multipolygon features.
-# Read in NFHL for VT. Data comes from FEMA. 
-# List available layers in geodatabase
-# st_layers("DATA/FEMA/VT/NFHL_50_20161207.gdb")
-# Read in flood hazard areas
-vt_nfhza_2852 <- st_read(dsn = "DATA/FEMA/VT/NFHL_50_20161207.gdb", layer = "S_Fld_Haz_Ar", quiet = TRUE) %>%
-  filter(!FLD_ZONE %in% c("OPEN WATER","AREA NOT INCLUDED","D") &
-           !ZONE_SUBTY %in% c("AREA OF MINIMAL FLOOD HAZARD",
-                              "AREA WITH REDUCED FLOOD RISK DUE TO LEVEE")) %>%
-  mutate(FLD_ZONE = as.character(FLD_ZONE)) %>% # omit unused factor levels
-  st_transform(., crs = 2852) %>%
-  st_make_valid() %>%
-  group_by(FLD_ZONE) %>% # aggregate flood zone polygons
-  summarize(count = n()) %>%
-  mutate(Area = st_area(.),
-         Interval = case_when(
-           FLD_ZONE  == "A" ~ "100-year",
-           FLD_ZONE  == "AE" ~ "100-year",
-           FLD_ZONE  == "AH" ~ "100-year",
-           FLD_ZONE  == "AO" ~ "100-year",
-           FLD_ZONE  == "VE" ~ "100-year",
-           FLD_ZONE == "X" ~ "500-year")) %>% 
-  filter(!st_is_empty())
-
-# # get rid of empty geometries
-# empty_geo <- st_is_empty(vt_nfhza_2852)
-# vt_nfhza_2852 <- vt_nfhza_2852[!empty_geo,]
+```{r FloodData, include=FALSE}
+# Analysis of flooding  evacuation risks for priority populations in Vermont
+# Estimate proportion of area occupied by FEMA flood zones and river corridors
+# # Read in flood hazard areas
+# vt_nfhza_2852 <- st_read(dsn = "DATA/FEMA/VT/NFHL_50_20161207.gdb", layer = "S_Fld_Haz_Ar", quiet = TRUE) %>%
+#   filter(!FLD_ZONE %in% c("OPEN WATER","AREA NOT INCLUDED","D") &
+#            !ZONE_SUBTY %in% c("AREA OF MINIMAL FLOOD HAZARD",
+#                               "AREA WITH REDUCED FLOOD RISK DUE TO LEVEE")) %>%
+#   mutate(FLD_ZONE = as.character(FLD_ZONE)) %>% # omit unused factor levels
+#   st_transform(., crs = 2852) %>%
+#   st_make_valid() %>%
+#   group_by(FLD_ZONE) %>% # aggregate flood zone polygons
+#   summarize(count = n()) %>%
+#   mutate(Area = st_area(.),
+#          Interval = case_when(
+#            FLD_ZONE  == "A" ~ "100-year",
+#            FLD_ZONE  == "AE" ~ "100-year",
+#            FLD_ZONE  == "AH" ~ "100-year",
+#            FLD_ZONE  == "AO" ~ "100-year",
+#            FLD_ZONE  == "VE" ~ "100-year",
+#            FLD_ZONE == "X" ~ "500-year")) %>% 
+#   filter(!st_is_empty())
 
 # # save this layer to save time
 # saveRDS(vt_nfhza_2852,"DATA/FEMA/VT/vt_nfhza_2852.Rds")
@@ -288,9 +91,444 @@ vt_awater_sf <- readRDS("DATA/FEMA/VT/vt_awater_sf.Rds")
 # # save time by just loading file
 # saveRDS(vt_nfhza_2852_land, file = "DATA/FEMA/VT/vt_nfhza_2852_land.Rds")
 # load cropped flood zones
-vt_nfhza_2852_land <- readRDS("DATA/FEMA/VT/vt_nfhza_2852_land.Rds")
+vt_nfhza_2852_land <- readRDS("DATA/FEMA/VT/vt_nfhza_2852_land.Rds") %>% 
+  mutate(Area = as.numeric(Area))
 
-# Create a dot density map of total populations and overlay on flood zones
+# read in river corridors layer. downloaded from VT Open Geodata Portal (https://geodata.vermont.gov/datasets/VTANR::river-corridors-august-2019) in December 2020. 
+rc <- st_read(dsn = "DATA/FEMA/VT/WaterHydro_RiverCorridors",
+              layer = "WaterHydro_RiverCorridors_poly") %>% 
+  st_transform(., crs = 2852) %>% 
+  st_make_valid()
+
+# erase areas of rc that overlap with nfhza. 51.8 secs
+rc_erased <- ms_erase(rc, vt_nfhza_2852_land) %>% 
+  filter(!st_is_empty(.)) %>%
+  st_make_valid()
+
+# append erased rc to FEMA flood zones to get total area at flood risk. NOTE that order of rbind matters! first, need to harmonize columns so that they match.
+rc_erased2 <- transmute(rc_erased, TYPE = "RC")
+# harmonize nfhza variables with rc and rbind to create one combined layer
+vt_flood <- vt_nfhza_2852_land %>% 
+  transmute(TYPE = Interval) %>% 
+  rename(geometry = SHAPE) %>% 
+  rbind(rc_erased2, .) %>% 
+  filter(!st_is_empty(.)) %>%
+  st_make_valid()
+
+# erase areas of FEMA flood zones that overlap with river corridors. 68 secs.
+fema_erased <- ms_erase(vt_nfhza_2852_land, rc) %>% 
+  filter(!st_is_empty(.)) %>%
+  st_make_valid()
+
+
+# Estimate populations exposed to non-overlapping areas of nfhza and rc and to combined areas
+load("DATA/ne_layers.rds")
+
+# Extract state census units and convert to projected local CRS EPSG:2852: NAD83(HARN) / Vermont See https://spatialreference.org/ref/epsg/2852/
+vt_blkgrp_2852 <- ne_blkgrp_sf %>% 
+  filter(STATE == "Vermont",
+         !st_is_empty(.)) %>% 
+  st_transform(., crs = 2852)
+
+vt_tracts_2852 <- ne_tracts_sf %>% 
+  filter(STATE == "Vermont",
+         !st_is_empty(.)) %>% 
+  st_transform(., crs = 2852)
+
+# Extract state boundary
+vt_state_sf <- ne_states_sf_cb %>% 
+  filter(NAME == "Vermont") %>% 
+  st_transform(., crs = 2852)
+
+#### Processing in ArcGIS #####
+# # Write out block groups for processing in ArcGIS
+# vt_blkgrp_2852 %>%
+#   dplyr::select(GEOID) %>%
+#   st_write(., "DATA/FEMA/VT/vt_blkgrp_2852.shp", delete_layer = TRUE)
+# #
+# # repeat for tracts
+# vt_tracts_2852 %>%
+#   dplyr::select(GEOID) %>%
+#   st_write(., "DATA/FEMA/VT/vt_tracts_2852.shp", delete_layer = TRUE)
+# 
+# # repeat for state boundary
+# vt_state_sf %>%
+#   st_write(., "DATA/FEMA/VT/vt_state_2852.shp", delete_layer = TRUE)
+
+# Use dasymetric mapping to calculate populations within flood zones. Approach follows method used by Qiang (2019) to eliminate unpopulated areas of census polygons and then reallocate populations to developed areas as identified in National Land Cover Dataset (NLCD). 
+# Perform NLCD raster-to-vector conversion, vector erase/difference, and vector intersections in ArcMap because it takes too long in R. 
+# In ArcMap:
+# Convert NLCD raster to shapefile. Clip to state.
+# Isolate undeveloped areas (gridcode NOT 22 - 24). 
+# Erase areas of vt_blkgrp_2852 and vt_tracts_2852 that overlap with undeveloped areas in NLCD shapefiles. Compute OldArea of erased polygons in sqm to identify area of developed polygons remaining. 
+# Intersect erased vt_blkgrps and erased vt_tracts with NFHZA and Hurricane evacuation zones. Read back into R.
+
+##### Return to working in R ######
+# # read in processed vt_blkgrps and vt_tracts
+# st_layers(dsn = "DATA/FEMA/VT")
+
+vt_blkgrps_developed <- st_read(dsn = "DATA/FEMA/VT",
+                                layer = "vt_blkgrps_developed") %>% 
+  st_transform(., crs = 2852) %>%
+  st_make_valid()
+
+vt_tracts_developed <- st_read(dsn = "DATA/FEMA/VT",
+                               layer = "vt_tracts_developed") %>%  
+  st_transform(., crs = 2852) %>%
+  st_make_valid()
+
+# # calculate population within total flood area
+# # # intersect total flood area with developed block groups. 24 mins.
+# # system.time(vt_blkgrps_flood <- vt_blkgrps_developed %>% 
+# #   transmute(GEOID = GEOID, 
+# #             OldArea = as.numeric(st_area(.))) %>% 
+# #   st_intersection(., vt_flood) %>% 
+# #   mutate(NewArea = as.numeric(st_area(.))))
+# # # save the output to save time
+# # save(vt_blkgrps_flood, file = "DATA/FEMA/VT/vt_blkgrps_flood.Rds")
+# load("DATA/FEMA/VT/vt_blkgrps_flood.Rds")
+
+# calculate populations within flood risk areas
+# USE PARALLEL PROCESSING
+# determine number of cores to use for parallel processing
+n.cores <- detectCores()-1
+
+# create parallel cluster nodes
+clust <- makeCluster(n.cores)
+
+# use ClusterEvalQ to load needed packages in each cluster
+clusterEvalQ(clust, {
+  library(tidyverse)
+  library(sf)
+  library(tmaptools)
+})
+
+# export variables to each node for use in processing
+clusterExport(clust, varlist = c("vt_flood", "vt_blkgrps_developed"))
+
+# break up data by county for faster processing
+# download counties layer
+vt_counties <- counties(state = "VT", cb = TRUE) %>% 
+  st_transform(.,crs=2852)
+
+# break up counties into a list to run with parLapply
+county_list <- list()
+for (i in 1:(nrow(vt_counties))){
+  county_list[[i]] <- vt_counties[i,]
+}
+
+# run in parallel. takes about 1.8 mins; roughly 13x faster than non-parallel (24 mins)!
+vt_blkgrps_flood_list <- parLapply(clust, county_list, function(x){
+    crop_shape(vt_flood, x, polygon = T) %>% 
+      st_intersection(vt_blkgrps_developed, .) %>% 
+      mutate(NewArea = as.numeric(st_area(.)))
+  } )
+
+stopCluster(clust)
+
+# bring it all together
+vt_blkgrps_flood <- do.call(rbind, vt_blkgrps_flood_list) %>% 
+  st_make_valid()
+
+
+# repeat for tracts
+# create parallel cluster nodes
+clust <- makeCluster(n.cores)
+
+# use ClusterEvalQ to load needed packages in each cluster
+clusterEvalQ(clust, {
+  library(tidyverse)
+  library(sf)
+  library(tmaptools)
+})
+
+# export variables to each node for use in processing
+clusterExport(clust, varlist = c("vt_flood", "vt_tracts_developed"))
+
+# run in parallel. takes about 6.2 mins; about 8x faster than non-parallel (48 mins)
+vt_tracts_flood_list <- parLapply(clust, county_list, function(x){
+    crop_shape(vt_flood, x, polygon = T) %>% 
+      st_intersection(vt_tracts_developed, .) %>% 
+      mutate(NewArea = as.numeric(st_area(.)))
+  } )
+
+stopCluster(clust)
+
+# bring it all together
+vt_tracts_flood <- do.call(rbind, vt_tracts_flood_list) %>% 
+  st_make_valid()
+
+# allocate populations to intersected areas
+vt_blkgrps_flood <- vt_blkgrps_flood %>% 
+  left_join(., st_drop_geometry(vt_blkgrp_2852), by = "GEOID") %>% 
+  filter(!st_is_empty(.)) %>% 
+  mutate(Proportion = as.numeric(NewArea/OldArea),
+         NewPop = totalpopE*Proportion,
+         NewMinority = minorityE*Proportion,
+         NewUnder5 = under5E*Proportion,
+         NewOver64 = over64E*Proportion,
+         NewUnder18 = under18E*Proportion,
+         NewEng_limit = eng_limitE*Proportion,
+         NewPov = num2povE*Proportion,
+         NewLths = lthsE*Proportion)
+
+vt_tracts_flood <- vt_tracts_flood %>%
+  left_join(., st_drop_geometry(vt_tracts_2852), by = "GEOID") %>% 
+  mutate(Proportion = as.numeric(NewArea/OldArea),
+         NewDisabled = disabledOver18E*Proportion,
+         NewNoCar = HHnoCarE*Proportion)
+
+# Compute total block group populations within river corridors
+vt_flood_blkgrp_df <- vt_blkgrps_flood %>%
+  st_drop_geometry() %>%
+  summarize(`Total Pop` = as.integer(sum(NewPop)),
+            Minority = as.integer(sum(NewMinority)),
+            `Under 5` = as.integer(sum(NewUnder5)),
+            `Over 64` = as.integer(sum(NewOver64)),
+            `Under 18` = as.integer(sum(NewUnder18)),
+            `Limited English HH` = as.integer(sum(NewEng_limit)),
+            `Low Income` = as.integer(sum(NewPov)),
+            `No HS Dip` = as.integer(sum(NewLths))) %>%
+  gather(key = Group, value = FloodPop)
+
+vt_flood_tracts_df <- vt_tracts_flood %>% 
+  st_drop_geometry() %>% 
+  summarize(`Disabled` = as.integer(sum(NewDisabled)),
+            `No Car HH` = as.integer(sum(NewNoCar))) %>%
+  gather(key = Group, value = FloodPop)
+
+
+# calculate population within river corridors, excluding areas overlapping with FEMA flood zones
+# intersect river corridors with developed block groups. about 1 min for block groups; about 3.8 mins for tracts.
+vt_blkgrps_rc <- vt_blkgrps_developed %>% 
+  transmute(GEOID = GEOID, 
+            OldArea = as.numeric(st_area(.))) %>% 
+  st_intersection(., rc_erased) %>% 
+  mutate(NewArea = as.numeric(st_area(.)))
+
+vt_tracts_rc <- vt_tracts_developed %>% 
+  transmute(GEOID = GEOID, 
+            OldArea = as.numeric(st_area(.))) %>% 
+  st_intersection(., rc_erased) %>% 
+  mutate(NewArea = as.numeric(st_area(.)))
+
+# allocate populations to intersected areas
+vt_blkgrps_rc <- vt_blkgrps_rc %>% 
+  left_join(., st_drop_geometry(vt_blkgrp_2852), by = "GEOID") %>% 
+  filter(!st_is_empty(.)) %>% 
+  mutate(Proportion = as.numeric(NewArea/OldArea),
+         NewPop = totalpopE*Proportion,
+         NewMinority = minorityE*Proportion,
+         NewUnder5 = under5E*Proportion,
+         NewOver64 = over64E*Proportion,
+         NewUnder18 = under18E*Proportion,
+         NewEng_limit = eng_limitE*Proportion,
+         NewPov = num2povE*Proportion,
+         NewLths = lthsE*Proportion)
+
+vt_tracts_rc <- vt_tracts_rc %>% 
+  left_join(., st_drop_geometry(vt_tracts_2852), by = "GEOID") %>% 
+  mutate(Proportion = as.numeric(NewArea/OldArea),
+         NewDisabled = disabledOver18E*Proportion,
+         NewNoCar = HHnoCarE*Proportion)
+
+# Compute total block group populations within river corridors
+vt_rc_blkgrp_df <- vt_blkgrps_rc %>%
+  st_drop_geometry() %>%
+  summarize(`Total Pop` = as.integer(sum(NewPop)),
+            Minority = as.integer(sum(NewMinority)),
+            `Under 5` = as.integer(sum(NewUnder5)),
+            `Over 64` = as.integer(sum(NewOver64)),
+            `Under 18` = as.integer(sum(NewUnder18)),
+            `Limited English HH` = as.integer(sum(NewEng_limit)),
+            `Low Income` = as.integer(sum(NewPov)),
+            `No HS Dip` = as.integer(sum(NewLths))) %>%
+  gather(key = Group, value = RCPop)
+
+vt_rc_tracts_df <- vt_tracts_rc %>% 
+  st_drop_geometry() %>% 
+  summarize(`Disabled` = as.integer(sum(NewDisabled)),
+            `No Car HH` = as.integer(sum(NewNoCar))) %>%
+  gather(key = Group, value = RCPop)
+
+
+# calculate population within FEMA flood zones, excluding areas overlapping with river corridors
+# intersect fema flood zones with developed block groups.
+# create parallel cluster nodes
+clust <- makeCluster(n.cores)
+
+# use ClusterEvalQ to load needed packages in each cluster
+clusterEvalQ(clust, {
+  library(tidyverse)
+  library(sf)
+  library(tmaptools)
+})
+
+# export variables to each node for use in processing
+clusterExport(clust, varlist = c("fema_erased", "vt_blkgrps_developed"))
+
+# run in parallel. takes about 1 min; roughly 13x faster than non-parallel (13.7 mins)!
+vt_blkgrps_nfhza_list <- parLapply(clust, county_list, function(x){
+    crop_shape(fema_erased, x, polygon = T) %>% 
+      st_intersection(vt_blkgrps_developed, .) %>% 
+      mutate(NewArea = as.numeric(st_area(.)))
+  } )
+
+stopCluster(clust)
+
+# bring it all together
+vt_blkgrps_nfhza <- do.call(rbind, vt_blkgrps_nfhza_list) %>% 
+  st_make_valid()
+
+# repeat for tracts
+# create parallel cluster nodes
+clust <- makeCluster(n.cores)
+
+# use ClusterEvalQ to load needed packages in each cluster
+clusterEvalQ(clust, {
+  library(tidyverse)
+  library(sf)
+  library(tmaptools)
+})
+
+# export variables to each node for use in processing
+clusterExport(clust, varlist = c("fema_erased", "vt_tracts_developed"))
+
+# run in parallel. takes about 1.9 mins
+vt_tracts_nfhza_list <- parLapply(clust, county_list, function(x){
+    crop_shape(fema_erased, x, polygon = T) %>% 
+      st_intersection(vt_tracts_developed, .) %>% 
+      mutate(NewArea = as.numeric(st_area(.)))
+  } )
+
+stopCluster(clust)
+
+# bring it all together
+vt_tracts_nfhza <- do.call(rbind, vt_tracts_nfhza_list) %>% 
+  st_make_valid()
+
+
+# allocate populations to intersected areas
+vt_blkgrps_nfhza <- vt_blkgrps_nfhza %>% 
+  left_join(., st_drop_geometry(vt_blkgrp_2852), by = "GEOID") %>% 
+  filter(!st_is_empty(.)) %>% 
+  mutate(Proportion = as.numeric(NewArea/OldArea),
+         NewPop = totalpopE*Proportion,
+         NewMinority = minorityE*Proportion,
+         NewUnder5 = under5E*Proportion,
+         NewOver64 = over64E*Proportion,
+         NewUnder18 = under18E*Proportion,
+         NewEng_limit = eng_limitE*Proportion,
+         NewPov = num2povE*Proportion,
+         NewLths = lthsE*Proportion)
+
+vt_tracts_nfhza <- vt_tracts_nfhza %>% 
+  left_join(., st_drop_geometry(vt_tracts_2852), by = "GEOID") %>% 
+  filter(!st_is_empty(.)) %>% 
+  mutate(Proportion = as.numeric(NewArea/OldArea),
+         NewDisabled = disabledOver18E*Proportion,
+         NewNoCar = HHnoCarE*Proportion)
+
+# Compute total block group populations within fema flood zones
+vt_nfhza_blkgrp_df <- vt_blkgrps_nfhza %>%
+  st_drop_geometry() %>%
+  summarize(`Total Pop` = as.integer(sum(NewPop)),
+            Minority = as.integer(sum(NewMinority)),
+            `Under 5` = as.integer(sum(NewUnder5)),
+            `Over 64` = as.integer(sum(NewOver64)),
+            `Under 18` = as.integer(sum(NewUnder18)),
+            `Limited English HH` = as.integer(sum(NewEng_limit)),
+            `Low Income` = as.integer(sum(NewPov)),
+            `No HS Dip` = as.integer(sum(NewLths))) %>%
+  gather(key = Group, value = FEMAPop)
+
+vt_nfhza_tracts_df <- vt_tracts_nfhza %>% 
+  st_drop_geometry() %>% 
+  summarize(`Disabled` = as.integer(sum(NewDisabled)),
+            `No Car HH` = as.integer(sum(NewNoCar))) %>%
+  gather(key = Group, value = FEMAPop)
+
+
+# join the dfs and calculate populations living in areas that are both exposed to FEMA flood zones AND to river corridors and join with total state populations to calculate percentages
+# Compute total tract populations within the state for same groups
+vt_tract_flood_pops_df <- vt_tracts_2852 %>%
+  as.data.frame() %>%
+  summarize(`Disabled` = sum(disabledOver18E),
+            `No Car HH` = sum(HHnoCarE)) %>%
+  gather(key = Group, value = VTPop) %>%
+  left_join(.,vt_nfhza_tracts_df, by = "Group") %>% 
+  left_join(., vt_rc_tracts_df, by = "Group") %>% 
+  left_join(., vt_flood_tracts_df, by = "Group")
+
+# Compute populations for state,and join with flood pops
+vt_FloodPops_df <- vt_blkgrp_2852 %>%
+  as.data.frame() %>%
+  summarize(`Total Pop` = sum(totalpopE),
+            Minority = sum(minorityE),
+            `Under 5` = sum(under5E),
+            `Over 64` = sum(over64E),
+            `Under 18` = sum(under18E),
+            `Limited English HH` = sum(eng_limitE),
+            `Low Income` = sum(num2povE),
+            `No HS Dip` = sum(lthsE)) %>%
+  gather(key = Group, value = VTPop) %>%
+  left_join(.,vt_nfhza_blkgrp_df, by = "Group") %>% 
+  left_join(., vt_rc_blkgrp_df, by = "Group") %>% 
+  left_join(., vt_flood_blkgrp_df, by = "Group") %>%
+  rbind(.,vt_tract_flood_pops_df) %>%
+  mutate(FEMA_RCpop = FloodPop - (FEMAPop + RCPop), .after = RCPop) %>% 
+  mutate(across(FEMAPop:FloodPop, ~ .x / VTPop * 100, .names = "Pct{.col}"))
+
+vt_towns_sf <- county_subdivisions(state = "VT", cb = TRUE) %>% 
+  st_transform(., crs = 2852)
+
+town_tracts_df <- vt_tracts_2852 %>% 
+  dplyr::select(-GEOID) %>% 
+  st_centroid(.) %>% 
+  st_intersection(vt_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  group_by(NAME) %>%
+  summarize(TotalDisabled = sum(disabledOver18E, na.rm = TRUE),
+            TotalOver18 = sum(Over18E, na.rm = TRUE),
+            TotalNoCar = sum(HHnoCarE, na.rm = TRUE))
+
+townpopsdf <- vt_blkgrp_2852 %>% 
+  dplyr::select(-GEOID) %>% 
+  st_centroid(.) %>% 
+  st_intersection(vt_towns_sf,.) %>% 
+  as.data.frame() %>% 
+  group_by(NAME) %>% 
+  summarize(GEOID = first(GEOID),
+            TotalPop = sum(totalpopE, na.rm = TRUE),
+            TotalHH = sum(householdsE, na.rm = TRUE),
+            TotalLEH = sum(eng_limitE, na.rm = TRUE),
+            TotalMin = sum(minorityE, na.rm = TRUE),
+            TotalLowInc = sum(num2povE, na.rm = TRUE),
+            TotalNoHS = sum(lthsE, na.rm = TRUE),
+            TotalOver64 = sum(over64E, na.rm = TRUE),
+            TotalUnder5 = sum(under5E, na.rm = TRUE),
+            TotalUnder18 = sum(under18E, na.rm = TRUE)) %>% 
+  left_join(., town_tracts_df, by = "NAME")
+
+vt_state_sf_cb <- ne_states_sf_cb %>% 
+  filter(NAME == "Vermont") %>% 
+  st_transform(., crs = st_crs(vt_blkgrp_2852))
+
+# clean up
+rm(list = ls(pattern = "_list"))
+
+# # save data for later analysis
+save(vt_blkgrps_flood, vt_blkgrps_nfhza, vt_blkgrps_rc, vt_tracts_nfhza, 
+     vt_tracts_flood, vt_tracts_rc, file = "DATA/FEMA/VT/nfhza_census.Rds")
+```
+
+In comparison to other part's of New England, relatively little of Vermont's land area is within flood zones. However, a significant proportion of the population are nevertheless exposed to the risk of flooding from overbanking of inland water bodies (e.g., ponds and rivers) as well as fluvial erosion from streams and rivers. Indeed, damage surveys in Vermont have shown that fluvial erosion, not inundation, is the most common natural hazard type in Vermont.  
+
+The analysis of flood exposure presented here is based on a combination of the Federal Emergency Management Agency's (FEMA) National Flood Hazard Layer (NFHL), a digital version of FEMA's most recent flood maps,[^NFHL] and river corridors mapped by the Vermont Agency of Natural Resources (ANR).[^ANR]  FEMA identifies areas subject to varying levels of flood risk through its Flood Insurance Rate Maps (FIRMs), which are produced for most parts of the country to identify areas subject to flooding. FEMA's FIRMs are a national standard used by all federal agencies for the purposes of requiring and rating the purchase of flood insurance and regulating new development.  The ANR's river corridors represent areas surrounding a river that allow for the meandering, floodplain, and the riparian functions necessary to restore and maintain the naturally stable or least erosive form of a river in order to minimize erosion hazards over time. Lands within and immediately abutting a river corridor are at higher risk to fluvial erosion.  Population data comes from the American Community Survey (ACS) 2018 5-year estimates at the census tract and block group levels. 
+
+A significant proportion of Vermont's population lives near inland water bodies. As a result, a significant proportion of the population lives near or within known flood zones as well as areas subject to fluvial erosion. Figure \@ref(fig:mapNFHZAPop) below shows areas subject to floods with an Annual Exceedance Probability (AEP) of 1% (also known as a '100-year' flood) and areas subject to 0.2% AEP (also known as a '500-year' flood), as well as areas within river corridors. Areas within the 1% AEP flood zone are designated by FEMA as Special Flood Hazard Areas, and development within those zones must be covered by flood insurance. Areas within the 0.2% AEP are not currently regulated, but these areas are nevertheless subject to flood risk under more extreme, albeit less frequent, flooding circumstances. Note that portions of northwest and northeast Vermont are not currently mapped for flooding risk by FEMA. 
+```{r mapNFHZAdata, include=FALSE}
+# Process data for mapping 
 # Create point layer of major cities for context
 # Note cb=FALSE is necessary for extracting centroids from town polygons. Otherwise, if cb=TRUE, cannot extract centroids from multipolygon features.
 vt_towns_sf_pts <- county_subdivisions(state = "VT", cb = TRUE) %>% 
@@ -405,9 +643,17 @@ vt_awater_sf_simple <- vt_awater_sf %>%
   summarize()
 ```
 
-```{r mapNFHZAPop, fig.align = "center", fig.cap="FEMA flood zones across Vermont."}
-# Create a dot density map of total populations and overlay on flood zones
-# Map totalpop and flood zones
+```{r mapNFHZAPop, fig.align = "center", fig.cap="Flood zones across Vermont."}
+# Map flood risk zones
+
+# create a pattern layer to show river corridors. See https://rpubs.com/dieghernan/559092 
+# load function
+source("resources/cartography/patternLayer.R")
+rc_layer <- rc %>% 
+  st_cast(., "MULTIPOLYGON") %>% 
+  patternLayer(., pattern = "right2left")
+
+
 m1 <- tm_shape(vt_blkgrp_2852, unit = "mi") + tm_fill(col = "white") +
   tm_shape(ne_states_sf_cb) + tm_fill(col="white") +
   tm_shape(ny_state_sf) + tm_fill(col="white") +
@@ -734,6 +980,8 @@ knitr::include_graphics("DATA/FEMA/VT/VT_nhfza_vulnerable2.png")
 
 
 [^NFHL]: See FEMA National Flood Hazard Layer (NFHL). https://www.fema.gov/national-flood-hazard-layer-nfhl.
+
+[^ANR]: See Flood Ready Vermont: River Corridors. https://floodready.vermont.gov/flood_protection/river_corridors_floodplains/river_corridors.
 
 [^NHCsloshMaps]: The National Hurricane Center provides static and interactive maps of storm surge flooding vulnerability across the country based on SLOSH modeling. See NOAA National Hurricane Center and Central Pacific Hurricane Center. National Storm Surge Hazard Maps - Version 2. https://www.nhc.noaa.gov/nationalsurge/
 
