@@ -769,7 +769,7 @@ vt_nfhza_2852_land %>%
         caption = "Vermont Land within Flood Areas", digits = 0, 
         align = "r") %>% 
   kable_styling(latex_options = c("repeat_header")) %>% 
-  footnote(general = "There is significant spatial overlap between FEMA flood zones and river corridors. Approximately 50%\nof river corridor areas overlap with FEMA flood zones in areas\nwhere there is both FEMA and river corridor data. Conversely, 48% of FEMA\nflood zones overlap with river corridors.")
+  footnote(general = "Approximately 50% of river corridor areas overlap with FEMA flood zones.")
 ```
 
 The proportion of the total state population living within areas prone to flooding or fluvial erosion exceeds the percentage of the state area within those flood-prone areas. Moreover, exposure varies by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups living within flood-prone areas. Aside from the total population, the largest absolute numbers of subpopulations living within a flood-prone area are low income persons followed by those under 18 and over 64. The latter groups are priority populations who may have limited mobility in the event of an evacuation. 
