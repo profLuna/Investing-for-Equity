@@ -643,7 +643,7 @@ vt_awater_sf_simple <- vt_awater_sf %>%
   group_by() %>% 
   summarize()
 
-system.time(rc_simple <- ms_simplify(rc))
+rc_simple <- ms_simplify(rc)
 ```
 
 ```{r mapNFHZAPop, fig.align = "center", fig.cap="Flood Zones and River Corridors across Vermont."}
@@ -717,11 +717,21 @@ tmap_save(m1, "DATA/FEMA/VT/vt_flood.png",
 knitr::include_graphics("DATA/FEMA/VT/vt_flood.png")
 ```
 
-Approximately 1.8% of Vermont's land area falls within FEMA flood zones, while 3.4% of the land area falls within river corridors. The breakdown by type of flood risk is presented in Table \@ref(tab:tabNFHZAarea) below. 
+Approximately 1.8% of Vermont's land area falls within FEMA flood zones, while 3.4% of the land area falls within river corridors. Approximately 50% of river corridor areas overlap with FEMA flood hazard areas. A total of 4.4% of land area is prone to FEMA flood risk or fluvial erosion within river corridors. The breakdown by type of risk is presented in Table \@ref(tab:tabNFHZAarea) below. 
 
 ```{r tabNFHZAarea, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont Land Area within Flood Risk Areas."}
 # Total land in VT
 vt_area <- as.numeric(vt_state_sf$ALAND)
+
+# Total and percentage of land area at flood risk - non-overlapping FEMA and RC
+flood_area_df <- vt_flood %>% 
+  mutate(Area = st_area(.)) %>% 
+  as.data.frame() %>% 
+  group_by() %>% 
+  summarize(SqKm = round(as.numeric(sum(Area)/10^6),1), 
+            SqMi = round(as.numeric(SqKm/2.59),1),
+            PctArea = paste0(as.character(round(as.numeric(sum(Area)/vt_area*100),1)),"%")) %>% 
+  mutate(`Risk Type` = "TOTAL", .before = "SqKm")
 
 # Total and percentage of land area within river corridors
 rc_area_df <- rc %>% 
@@ -765,14 +775,16 @@ vt_nfhza_2852_land %>%
             PctArea = paste0(as.character(round(as.numeric(sum(Area)/vt_area*100),1)),"%")) %>% 
   rename(`Risk Type` = Interval) %>% 
   rbind(rc_area_df) %>% 
+  rbind(flood_area_df) %>% 
   kable(longtable = T, booktabs = T, format.args = list(big.mark = ','),
         caption = "Vermont Land within Flood Areas", digits = 0, 
         align = "r") %>% 
   kable_styling(latex_options = c("repeat_header")) %>% 
+  row_spec(4, bold=T, hline_after = F) %>% 
   footnote(general = "Approximately 50% of river corridor areas overlap with FEMA flood zones.")
 ```
 
-The proportion of the total state population living within areas prone to flooding or fluvial erosion exceeds the percentage of the state area within those flood-prone areas. Moreover, exposure varies by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups living within flood-prone areas. Aside from the total population, the largest absolute numbers of subpopulations living within a flood-prone area are low income persons followed by those under 18 and over 64. The latter groups are priority populations who may have limited mobility in the event of an evacuation. 
+The proportion of the total state population living within areas prone to flooding or fluvial erosion exceeds the percentage of the land area within  flood- or erosion-prone areas. Moreover, exposure varies by population subgroup. Table \@ref(tab:tabNFHZApop) below shows the total and percentages of the general population and various subgroups living within flood-prone areas. Aside from the total population, the largest absolute numbers of subpopulations living within a flood-prone area are low income persons followed by those under 18 and over 64. The latter groups are priority populations who may have limited mobility in the event of an evacuation. 
 
 ```{r tabNFHZApop, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont Populations Living within Flood Zones or River Corridors."}
 # Show table of pops within flood zones
@@ -1077,7 +1089,7 @@ The analyses presented here are based on data from five sources:
 
 ## FEMA National Flood Hazard Layer (NFHL) {-}
 
-As part of the National Flood Insurance Program, the U.S. Federal Emergency Management Agency (FEMA) produces maps of flood risk across the nation. These flood risk maps are based on . 
+As part of the National Flood Insurance Program, the U.S. Federal Emergency Management Agency (FEMA) produces maps of flood risk across the nation based on the hydrologic and topographic characteristics of an area as well as data from historic flooding.  
 
 The National Flood Hazard Layer (NFHL) is a digital geospatial database that contains current effective flood hazard mapping data from the U.S. Federal Emergency Management Agnecy's (FEMA) National Flood Insurance Program (NFIP). NFHL data is available for download at https://msc.fema.gov/portal/advanceSearch. This geodatabase identifies areas subject to various levels of flood risk as determined by FEMA, consistent with Flood Insurance Rate Maps (FIRMs), based upon hydrodynamic models as well as historic flooding. 
 
@@ -1088,6 +1100,19 @@ In order to identify populations at risk from floods with a 1% or 0.2% annual ex
 *Population at risk = Proportion of developed Block Group Intersection x Population of developed Block Group*
 
 For example, if 10% of the developed area of a Census Block Group intersected/overlapped with a flood polygon, it was assumed that 10% of the population is exposed to that flood risk. Assuming a population of 100 people in the developed portion of the Block Group, this would mean *100 x .10 = 10* people would be subject to flood risk. FEMA flood risk modeling was done in R.
+
+
+## Vermont Agency of Natural Resources (ANR) River Corridors {-}
+
+River corridors are areas that encompass both the channel and adjacent land of rivers and streams. The adjacent land in a river corridor is the minimal area needed to contain the meander of a river in its least erosive form. These corridors were delineated to identify areas "with the expectation that new and existing structures outside the corridor may be protected from lateral channel migration using bank stabilization practices without creating new or additional hazards. Within a river corridor, existing infrastructure and improved property may be at a heightened risk from erosion and be more likely to require river management to protect over time."[^ANR] Indeed, state officials have found that most flood-related damage in Vermont occurs outside of FEMA's Special Flood Hazard Areas and inside of river corridors, primarily as a result of fluvial erosion. 
+
+For the purposes of this analysis, a statewide geospatial data layer of river corridors was downloaded from the Vermont Open Geodata Portal (https://geodata.vermont.gov/datasets/VTANR::river-corridors-august-2019), last updated in August 2019. 
+
+In order to identify populations at risk within river corridors, river corridor polygons were intersected with the developed portions of Census Block Groups. Developed portions of Census Block Groups were identified based upon the National Land Cover Database (NLCD), using a process of areal apportionment (see below). The population at risk within river corridors was calculated as the product of the  areal proportion of the intersecting river corridor and developed Block Group polygons:
+
+*Population at risk = Proportion of developed Block Group Intersection x Population of developed Block Group*
+
+For example, if 10% of the developed area of a Census Block Group intersected/overlapped with a river corridor polygon, it was assumed that 10% of the population is exposed to that river corridor risk. Assuming a population of 100 people in the developed portion of the Block Group, this would mean *100 x .10 = 10* people would be subject to river corridor risk. River corridor risk modeling was done in R.
 
 
 ## MRLC National Land Cover Database (NLCD) {-}
@@ -1832,5 +1857,4 @@ vt_blkgrps_flood %>%
   kable_styling(latex_options = c("repeat_header","striped")) 
 ```
 
-
-
+No map is provided for Limited English speaking households because the numbers are too small to represent in any individual Census block group. 
