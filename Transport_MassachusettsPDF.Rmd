@@ -818,7 +818,7 @@ ma_tracts_sf_noTransit_simple <- ma_tracts_sf_noTransit %>%
 
 # write out to file for later analysis
 save(ma_blkgrps_sf_noTransit, ma_tracts_sf_noTransit, ma_blkgrps_sf_noBus, 
-     ma_transitAccessPops_df, file = "DATA/transport/MA/noTransit.Rds")
+     ma_transitAccessPops_df, ma_busBuff400m_sf, file = "DATA/transport/MA/noTransit.Rds")
 ```
 
 ## Access to Public Transit
