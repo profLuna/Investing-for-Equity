@@ -920,7 +920,7 @@ ct_HevacPops_df %>%
         axis.ticks.y = element_blank()) +
   geom_text(aes(x = Group, y = PctHevac + 0.2 * sign(PctHevac), 
                 label = paste0(round(PctHevac,1),"%")), 
-            hjust = 1.8, vjust = -1, size = 3,
+            hjust = 1.4, vjust = -1, size = 3,
             color=rgb(100,100,100, maxColorValue=255)) +
   scale_y_continuous(labels = function(x) paste0(x, "%")) +
   geom_hline(yintercept = ct_HevacPops_df[1,4], linetype = "dashed") +
