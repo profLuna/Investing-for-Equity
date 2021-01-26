@@ -1592,7 +1592,9 @@ headway80_commuterRail <- headway80thblkgrps_CR %>%
   arrange(desc(`CT Low Income`))
 
 # write out to file for use in later analysis
-save(headway80thblkgrps_bus,
+save(ct_bus_stopHeadway_df,
+     ct_busHeadwayPops_df,
+     headway80thblkgrps_bus,
      headway80thtracts_bus,
      headway80thblkgrps_CR,
      headway80thtracts_CR, file = "DATA/transport/CT/headway80th.Rds")
