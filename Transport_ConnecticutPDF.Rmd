@@ -788,7 +788,7 @@ ct_tracts_sf_noTransit_simple <- ct_tracts_sf_noTransit %>%
 
 # write out to file for later analysis
 save(ct_blkgrps_sf_noTransit, ct_tracts_sf_noTransit,
-     ct_blkgrps_sf_noBus,ct_transitAccessPops_df,
+     ct_blkgrps_sf_noBus,ct_transitAccessPops_df,ct_busBuff400m_sf,
      file = "DATA/transport/CT/noTransit.Rds")
 ```
 
@@ -1804,6 +1804,7 @@ ct_wAvgWalkability_df <- ct_blkgrp_walkability_sf %>%
 # save data for later analysis
 save(ct_blkgrp_walkability_sf,
      ct_tract_walkability_sf,
+     ct_wAvgWalkability_df,
      file = "DATA/transport/CT/walkability.Rds")
 ```
 
@@ -2097,6 +2098,7 @@ lai_ct_df <- lai_ct_blkgrp %>%
 # save data for later analysis
 save(lai_ct_blkgrp,
      lai_ct_tract,
+     lai_ct_df,
      file = "DATA/transport/CT/costBurden.Rds")
 
 # isolate places where transportation cost as a percentage of income exceeds housing as a percentage of income
