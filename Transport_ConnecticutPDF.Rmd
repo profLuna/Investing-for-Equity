@@ -787,7 +787,7 @@ ct_tracts_sf_noTransit_simple <- ct_tracts_sf_noTransit %>%
   st_make_valid()
 
 # write out to file for later analysis
-save(ct_blkgrps_sf_noTransit, ct_tracts_sf_noTransit,
+save(ct_blkgrps_sf_noTransit, ct_tracts_sf_noTransit,ct_blkgrps_sf_noBus,
      file = "DATA/transport/CT/noTransit.Rds")
 ```
 
