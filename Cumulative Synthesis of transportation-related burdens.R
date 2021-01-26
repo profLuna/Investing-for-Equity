@@ -933,10 +933,51 @@ burdens_senate_df %>% kable(longtable = T, booktabs = T,
 # save as csv
 write_csv(burdens_senate_df, "tables/burdens_senate.csv")
 
+
+# create a table of counts of block gruops by jurisdiction for 3+ burdens
+burdensCnt_senate_df <- ma_blkgrps_sf %>%
+  transmute(BurdenCount = as.character(BurdenCount)) %>% 
+  st_centroid(.) %>% 
+  st_intersection(.,senate_districts) %>% 
+  as.data.frame() %>% 
+  group_by(BurdenCount, SEN_DIST) %>%
+  summarize(`Block Groups` = n()) %>% 
+  pivot_wider(id_cols = SEN_DIST, names_from = BurdenCount, 
+              values_from = `Block Groups`) %>% 
+  mutate(across(everything(), ~replace_na(.x, 0))) %>% 
+  # rowwise() %>% 
+  # mutate(Total = sum(c_across(2:5))) %>% 
+  as.data.frame() %>% # coerce to df again otherwise percent_rank doesn't work!
+  # mutate(Pct1 = `1`/Total*100,
+  #        Rank1 = round(percent_rank(Pct1)*100,0),
+  #        Pct2 = `2`/Total*100,
+  #        Rank2 = round(percent_rank(Pct2)*100,0),
+  #        Pct3 = `3`/Total*100,
+  #        Rank3 = round(percent_rank(Pct3)*100,0),
+  #        Pct4 = `4`/Total*100,
+  #        Rank4 = round(percent_rank(Pct4)*100,0)) %>% 
+  transmute(`Senate District` = SEN_DIST, 
+            `3 Burdens` = `3`, `4 Burdens` = `4`) %>% 
+  # filter(`3 Burdens` > 0 | `4 Burdens` > 0) %>%
+  rowwise() %>% 
+  mutate(`3+ Burdens` = sum(c_across(2:3)))
+
+burdensCnt_senate_df %>% kable(longtable = T, booktabs = T,
+                            format.args = list(big.mark = ','), 
+                            digits = 1,
+                            caption = "State Senate District with Block Groups meeting 3 or 4 Cumulative Burdens", align = "r") %>% 
+  # col.names = c(names(.)[1:2],"Number of Over 64 in Block Groups","Pct of Over 64 in City/Town")) %>% 
+  # column_spec(3:4, width = "4cm") %>%
+  kable_styling(latex_options = c("repeat_header","striped")) 
+# save as csv
+write_csv(burdensCnt_senate_df, "tables/burdensCnt_senate.csv")
+
+
 # map of senate districts with block groups meeting 3 - 4 burdens
 tmap_mode("plot")
 m <- senate_districts %>% 
-  right_join(.,burdens_senate_df, by = c("SEN_DIST" = "Senate District")) %>% 
+  right_join(.,burdensCnt_senate_df, 
+             by = c("SEN_DIST" = "Senate District")) %>% 
   filter(`3+ Burdens` > 0) %>% 
   tm_shape(., unit = "mi", bbox = senate_districts) + 
   tm_fill(col = "red", alpha = 0.5) +
@@ -1043,6 +1084,47 @@ burdens_house_df %>% kable(longtable = T, booktabs = T,
 
 # save as csv
 write_csv(burdens_house_df, "tables/burdens_house.csv")
+
+
+# create a table of counts of block gruops by jurisdiction for 3+ burdens
+burdensCnt_house_df <- ma_blkgrps_sf %>%
+  transmute(BurdenCount = as.character(BurdenCount)) %>% 
+  st_centroid(.) %>% 
+  st_intersection(.,house_districts) %>% 
+  as.data.frame() %>% 
+  group_by(BurdenCount, REP_DIST) %>%
+  summarize(`Block Groups` = n()) %>% 
+  pivot_wider(id_cols = REP_DIST, names_from = BurdenCount, 
+              values_from = `Block Groups`) %>% 
+  mutate(across(everything(), ~replace_na(.x, 0))) %>% 
+  # rowwise() %>% 
+  # mutate(Total = sum(c_across(2:5))) %>% 
+  as.data.frame() %>% # coerce to df again otherwise percent_rank doesn't work!
+  # mutate(Pct1 = `1`/Total*100,
+  #        Rank1 = round(percent_rank(Pct1)*100,0),
+  #        Pct2 = `2`/Total*100,
+  #        Rank2 = round(percent_rank(Pct2)*100,0),
+  #        Pct3 = `3`/Total*100,
+  #        Rank3 = round(percent_rank(Pct3)*100,0),
+  #        Pct4 = `4`/Total*100,
+  #        Rank4 = round(percent_rank(Pct4)*100,0)) %>% 
+  transmute(`House District` = REP_DIST, 
+            `3 Burdens` = `3`, `4 Burdens` = `4`) %>% 
+  # filter(`3 Burdens` > 0 | `4 Burdens` > 0) %>%
+  rowwise() %>% 
+  mutate(`3+ Burdens` = sum(c_across(2:3)))
+
+burdensCnt_house_df %>% kable(longtable = T, booktabs = T,
+                               format.args = list(big.mark = ','), 
+                               digits = 1,
+                               caption = "State House District with Block Groups meeting 3 or 4 Cumulative Burdens", align = "r") %>% 
+  # col.names = c(names(.)[1:2],"Number of Over 64 in Block Groups","Pct of Over 64 in City/Town")) %>% 
+  # column_spec(3:4, width = "4cm") %>%
+  kable_styling(latex_options = c("repeat_header","striped")) 
+# save as csv
+write_csv(burdensCnt_house_df, "tables/burdensCnt_house.csv")
+
+
 
 # map of house districts with block groups meeting 3 - 4 burdens
 tmap_mode("plot")
