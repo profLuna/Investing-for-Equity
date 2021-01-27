@@ -226,7 +226,7 @@ ct_state_sf_cb <- ne_states_sf_cb %>%
   st_transform(., crs = st_crs(ct_blkgrp_2775))
 
 # save data for later analysis
-save(ct_blkgrps_nfhza,ct_tracts_nfhza,
+save(ct_blkgrps_nfhza,ct_tracts_nfhza,ct_FloodPops_df,
      file = "DATA/FEMA/CT/nfhza_census.Rds")
 ```
 
@@ -798,7 +798,7 @@ ct_hea_sf_simple <- ct_hea_sf %>%
   mutate(Area = st_area(.))
 
 # save data for later analysis
-save(ct_blkgrps_hevac, ct_tracts_hevac, 
+save(ct_blkgrps_hevac, ct_tracts_hevac, ct_HevacPops_df,
      file = "DATA/FEMA/CT/hevac_census.Rds")
 ```
 
