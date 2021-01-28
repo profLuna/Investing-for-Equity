@@ -323,7 +323,7 @@ ri_fhza_2840_land_simple <- ri_fhza_2840_land %>%
   mutate(Area = st_area(.))
 
 # save data for later analysis
-save(ri_blkgrps_nfhza,ri_tracts_nfhza,
+save(ri_blkgrps_nfhza,ri_tracts_nfhza, ri_FloodPops_df, 
      file = "DATA/FEMA/RI/nfhza_census.Rds")
 ```
 
@@ -753,7 +753,7 @@ ri_hea_sf_simple <- ri_hea_sf %>%
   summarize() %>%
   mutate(Area = st_area(.))
 
-save(ri_blkgrps_hevac, ri_tracts_hevac, 
+save(ri_blkgrps_hevac, ri_tracts_hevac, ri_HevacPops_df,
      file = "DATA/FEMA/RI/hevac_census.Rds")
 ```
 
