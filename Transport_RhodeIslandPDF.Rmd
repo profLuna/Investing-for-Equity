@@ -419,7 +419,8 @@ ri_tracts_sf_noBus <- ri_tracts_developed %>%
   filter(st_disjoint(.,ri_busBuff1mile,sparse = FALSE))
 
 # write out to file for later analysis
-save(ri_blkgrps_sf_noBus, ri_tracts_sf_noBus,
+save(ri_blkgrps_sf_noBus, ri_tracts_sf_noBus, 
+     ri_busAccessPops_df, ri_blkgrps_sf_noBus, ri_busBuff400m_sf, 
      file = "DATA/transport/RI/noTransit.Rds")
 ```
 
@@ -959,8 +960,9 @@ headway80_2 <- headway80thtracts %>%
   arrange(desc(Disabled))
 
 # write out to file for use in later analysis
-save(headway80thblkgrps,
-     headway80thtracts,file = "DATA/transport/CT/headway80th.Rds")
+save(headway80thblkgrps, headway80thtracts,
+     ri_busHeadwayPops_df, ri_transit_stopHeadway_df,
+     file = "DATA/transport/CT/headway80th.Rds")
 
 st_write(headway80thblkgrps,"DATA/transport/CT/headway80thblkgrps_bus.shp",
          delete_layer = TRUE)
@@ -1166,7 +1168,7 @@ ri_wAvgWalkability_df <- ri_blkgrp_walkability_sf %>%
 
 # save data for later analysis
 save(ri_blkgrp_walkability_sf,
-     ri_tract_walkability_sf,
+     ri_tract_walkability_sf, ri_wAvgWalkability_df,
      file = "DATA/transport/RI/walkability.Rds")
 ```
 
@@ -1460,7 +1462,7 @@ lai_ri_df <- lai_ri_blkgrp %>%
 
 # save data for later analysis
 save(lai_ri_blkgrp,
-     lai_ri_tract,
+     lai_ri_tract, lai_ri_df,
      file = "DATA/transport/RI/costBurden.Rds")
 
 # isolate places where transportation cost as a percentage of income exceeds housing as a percentage of income
