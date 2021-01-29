@@ -690,6 +690,7 @@ vt_tracts_sf_noTransit_simple <- vt_tracts_sf_noTransit %>%
 
 # write out to file for later analysis
 save(vt_blkgrps_sf_noTransit, vt_tracts_sf_noTransit, 
+     vt_blkgrps_sf_noBus, vt_transitAccessPops_df, vt_busBuff400m_sf,
      file = "DATA/transport/VT/noTransit.Rds")
 ```
 
@@ -1168,7 +1169,9 @@ headway80_2 <- headway80thblkgrps_bus %>%
 
 # write out to file for use in later analysis
 save(headway80thblkgrps_bus,
-     headway80thtracts_bus,file = "DATA/transport/VT/headway80th.Rds")
+     headway80thtracts_bus,
+     vt_bus_stopHeadway_df, vt_busHeadwayPops_df,
+     file = "DATA/transport/VT/headway80th.Rds")
 
 st_write(headway80thblkgrps_bus,"DATA/transport/VT/headway80thblkgrps_bus.shp",
          delete_layer = TRUE)
@@ -1370,6 +1373,7 @@ vt_wAvgWalkability_df <- vt_blkgrp_walkability_sf %>%
 # save data for later analysis
 save(vt_blkgrp_walkability_sf,
      vt_tract_walkability_sf,
+     vt_wAvgWalkability_df,
      file = "DATA/transport/VT/walkability.Rds")
 ```
 
@@ -1666,6 +1670,7 @@ lai_vt_df <- lai_vt_blkgrp %>%
 # save data for later analysis
 save(lai_vt_blkgrp,
      lai_vt_tract,
+     lai_vt_df,
      file = "DATA/transport/VT/costBurden.Rds")
 
 # isolate places where transportation cost as a percentage of income exceeds housing as a percentage of income
