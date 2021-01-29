@@ -520,7 +520,8 @@ rm(list = ls(pattern = "_list"))
 
 # # save data for later analysis
 save(vt_blkgrps_flood, vt_blkgrps_nfhza, vt_blkgrps_rc, vt_tracts_nfhza, 
-     vt_tracts_flood, vt_tracts_rc, file = "DATA/FEMA/VT/nfhza_census.Rds")
+     vt_tracts_flood, vt_tracts_rc, vt_FloodPops_df, 
+     file = "DATA/FEMA/VT/nfhza_census.Rds")
 ```
 
 In comparison to other part's of New England, relatively little of Vermont's land area is within flood zones. However, a significant proportion of the population are nevertheless exposed to the risk of flooding from overbanking of inland water bodies (e.g., ponds and rivers) as well as fluvial erosion from streams and rivers. Indeed, damage surveys in Vermont have shown that fluvial erosion, not inundation, is the most common natural hazard type in Vermont.  
