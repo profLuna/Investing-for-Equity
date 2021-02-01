@@ -221,6 +221,7 @@ me_state_sf_cb <- ne_states_sf_cb %>%
 
 # save data for later analysis
 save(me_blkgrps_nfhza,me_tracts_nfhza,
+     me_FloodPops_df,
      file = "DATA/FEMA/ME/nfhza_census.Rds")
 ```
 
@@ -854,6 +855,7 @@ me_hea_sf_simple <- me_hea_sf %>%
 
 # save data for later analysis
 save(me_blkgrps_hevac, me_tracts_hevac, 
+     me_HevacPops_df,
      file = "DATA/FEMA/ME/hevac_census.Rds")
 ```
 
