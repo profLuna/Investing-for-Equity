@@ -217,6 +217,7 @@ nh_state_sf_cb <- ne_states_sf_cb %>%
 
 # save data for later analysis
 save(nh_blkgrps_nfhza,nh_tracts_nfhza,
+     nh_FloodPops_df,
      file = "DATA/FEMA/NH/nfhza_census.Rds")
 ```
 
@@ -805,6 +806,7 @@ nh_HevacPops_df <- nh_blkgrp_2823 %>%
 
 # save data for later analysis
 save(nh_blkgrps_hevac, nh_tracts_hevac, 
+     nh_HevacPops_df,
      file = "DATA/FEMA/NH/hevac_census.Rds")
 ```
 
