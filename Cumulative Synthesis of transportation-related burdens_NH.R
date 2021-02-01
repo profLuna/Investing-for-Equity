@@ -1,6 +1,7 @@
 ## Cumulative Synthesis of transportation-related burdens
 
 library(tidyverse)
+library(tidycensus)
 library(sf)
 library(tmap)
 library(maptools)
@@ -8,6 +9,7 @@ library(janitor)
 library(kableExtra)
 library(tigris)
 options(tigris_use_cache = TRUE, tigris_class = "sf")
+library(geojsonio)
 
 load("DATA/ne_layers.rds")
 
@@ -324,7 +326,7 @@ ggsave("images/NH_CUM_BURDEN_Graph.png")
 tmap_mode("plot")
 # grab neighboring state boundaries for context
 ne_states_sf_cb <- states(cb = TRUE) %>% 
-  filter(STUSPS %in% c("MA","CT","RI","NY","NH","VT","ME"))
+  filter(STUSPS %in% c("MA","CT","RI","NY","NH","NH","ME"))
 
 # grab municipal boundaries
 nh_towns_sf <- county_subdivisions(state = "NH", cb = TRUE) %>% 
@@ -524,39 +526,66 @@ burden_types_df %>% kable(longtable = T, booktabs = T,
 write_csv(burden_types_df,"tables/NH_burden_types.csv")
 
 # table showing towns with block groups with 3 or 4 burdens
-burdens_town_df <- nh_blkgrps_sf %>%
-  transmute(BurdenCount = as.character(BurdenCount)) %>% 
-  st_centroid(.) %>% 
-  st_intersection(.,nh_towns_sf) %>% 
+# download town pops
+town_pops <- get_acs(geography = "county subdivision", 
+                     variables = c(totalpop = "B03002_001"),
+                     state = "NH", output = "wide", year = 2018) %>% 
+  select(GEOID, totalpopE)
+
+# grab municipal boundaries. set cb = FALSE in order to get NAMELSAD variable. NH, like Vermont, has duplicate NAME values for cosub. 
+nh_towns_sf <- county_subdivisions(state = "NH") %>% 
+  st_transform(., crs = 2823)
+
+# create df with town names from tigris and pops from tidycensus
+town_names_pops <- nh_towns_sf %>% 
   as.data.frame() %>% 
-  group_by(BurdenCount, NAME) %>%
-  summarize(`Block Groups` = n()) %>% 
-  pivot_wider(id_cols = NAME, names_from = BurdenCount, 
-              values_from = `Block Groups`) %>% 
-  mutate(across(everything(), ~replace_na(.x, 0))) %>% 
-  # rowwise() %>% 
-  # mutate(Total = sum(c_across(2:5))) %>% 
-  as.data.frame() %>% # coerce to df again otherwise percent_rank doesn't work!
-  # mutate(Pct1 = `1`/Total*100,
-  #        Rank1 = round(percent_rank(Pct1)*100,0),
-  #        Pct2 = `2`/Total*100,
-  #        Rank2 = round(percent_rank(Pct2)*100,0),
-  #        Pct3 = `3`/Total*100,
-  #        Rank3 = round(percent_rank(Pct3)*100,0),
-  #        Pct4 = `4`/Total*100,
-  #        Rank4 = round(percent_rank(Pct4)*100,0)) %>% 
-  transmute("City/Town" = NAME, `3 Burdens` = `3`, `4 Burdens` = `4`) %>% 
-  filter(`3 Burdens` > 0 | `4 Burdens` > 0) %>%
+  left_join(., town_pops, by = "GEOID") %>% 
+  select(NAMELSAD, totalpopE)
+
+# calculate total and pct of population in towns that meet cumulative burden categories for 3+
+burdens_town_df <- nh_blkgrps_sf %>% 
+  filter(BurdenCount >= 3) %>% 
+  select(GEOID, BurdenCount, totalpopE) %>% 
+  mutate(OldArea = as.numeric(st_area(.)),
+         BurdenCount = as.character(BurdenCount)) %>% 
+  st_intersection(., nh_towns_sf) %>%  
+  mutate(NewArea = as.numeric(st_area(.)),
+         Proportion = NewArea/OldArea,
+         NewPop = totalpopE*Proportion) %>% 
+  st_drop_geometry() %>%
+  group_by(NAMELSAD, BurdenCount) %>% 
+  summarize(Pop = sum(NewPop)) %>% 
+  pivot_wider(id_cols = NAMELSAD, names_from = BurdenCount, values_from = Pop) %>% 
+  as.data.frame() %>% # change from rowwise_df back to regular df
+  mutate(across(everything(), ~replace_na(.x, 0))) %>%
+  transmute(`City/Town` = NAMELSAD, `3 Burdens` = `3`, `4 Burdens` = `4`) %>% 
   rowwise() %>% 
-  mutate(`3+ Burdens` = sum(c_across(2:3)))
-  # select(`City/Town`,Pct1:Rank4)
+  mutate(`3+ Burdens` = sum(c_across(`3 Burdens`:`4 Burdens`))) %>% 
+  left_join(., town_names_pops, by = c("City/Town" = "NAMELSAD")) %>% 
+  mutate(`Pct 3 Burdens` = `3 Burdens`/totalpopE*100, .after = `3 Burdens`) %>% 
+  mutate(`Pct 4 Burdens` = `4 Burdens`/totalpopE*100, .after = `4 Burdens`) %>% 
+  mutate(`Pct 3+ Burdens` = `3+ Burdens`/totalpopE*100, 
+         .after = `3+ Burdens`) %>% 
+  select(-totalpopE)
+
+# identify towns that did not intersect and bind to df so that all municipalities are in the df
+burdens_town_df <- nh_towns_sf %>% 
+  as.data.frame() %>% 
+  anti_join(., burdens_town_df, by = c("NAMELSAD" = "City/Town")) %>% 
+  transmute(`City/Town` = NAMELSAD) %>% 
+  bind_rows(burdens_town_df, .) %>% 
+  mutate(across(everything(), ~replace_na(.x, 0))) %>% 
+  arrange(`City/Town`)
+
 burdens_town_df %>% kable(longtable = T, booktabs = T,
-                    format.args = list(big.mark = ','), 
-                    digits = 1,
-                    caption = "Municipalities with Block Groups meeting 3 or 4 Cumulative Burdens", align = "r") %>% 
-                    # col.names = c(names(.)[1:2],"Number of Over 64 in Block Groups","Pct of Over 64 in City/Town")) %>% 
-  # column_spec(3:4, width = "4cm") %>%
-  kable_styling(latex_options = c("repeat_header","striped")) 
+                          format.args = list(big.mark = ','), 
+                          digits = 0,
+                          caption = "Municipalities with Block Groups meeting 3 or 4 Cumulative Burdens", align = "r", 
+                          col.names = c("City/Town", "Pop", "Pct", "Pop", "Pct", "Pop", "Pct")) %>% 
+  kable_styling(latex_options = c("repeat_header","striped")) %>% 
+  add_header_above(c(" " = 1, "3 Burdens" = 2, "4 Burdens" = 2, 
+                     "3+ Burdens" = 2))
+
 # save as csv
 write_csv(burdens_town_df, "tables/NH_burdens_town.csv")
 
@@ -657,13 +686,73 @@ tmap_save(m, "images/NH_CUM_BURDEN_TOWN_map.png",
 #   st_transform(., crs = 2823) %>%
 #   st_make_valid()
 # Use API from NH Geodata portal
-library(geojsonio)
 senate_districts <- geojson_read("https://opendata.arcgis.com/datasets/df824f020357423b9f23384f80d9e2d1_4.geojson", what = "sp") %>% 
   st_as_sf(.) %>% 
   st_transform(., crs = 2823) %>% 
   st_make_valid()
 
+# create pop totals for each district
+senate_names_pops <- nh_blkgrps_sf %>% 
+  select(totalpopE) %>% 
+  mutate(OldArea = as.numeric(st_area(.))) %>% 
+  st_intersection(., senate_districts) %>% 
+  mutate(NewArea = as.numeric(st_area(.)),
+         Proportion = NewArea/OldArea,
+         NewPop = totalpopE*Proportion) %>% 
+  as.data.frame() %>% 
+  group_by(Senate2012) %>% 
+  summarize(totalpopE = sum(NewPop))
+
+# calculate total and pct of pop for each district
 burdens_senate_df <- nh_blkgrps_sf %>%
+  filter(BurdenCount >= 3) %>% 
+  select(GEOID, BurdenCount, totalpopE) %>% 
+  mutate(OldArea = as.numeric(st_area(.)),
+         BurdenCount = as.character(BurdenCount)) %>% 
+  st_intersection(., senate_districts) %>%  
+  mutate(NewArea = as.numeric(st_area(.)),
+         Proportion = NewArea/OldArea,
+         NewPop = totalpopE*Proportion) %>% 
+  st_drop_geometry() %>%
+  group_by(Senate2012, BurdenCount) %>% 
+  summarize(Pop = sum(NewPop)) %>% 
+  pivot_wider(id_cols = Senate2012, names_from = BurdenCount, 
+              values_from = Pop) %>% 
+  as.data.frame() %>% # change from rowwise_df back to regular df
+  mutate(across(everything(), ~replace_na(.x, 0))) %>%
+  transmute(`Senate District` = Senate2012, `3 Burdens` = `3`, 
+            `4 Burdens` = `4`) %>% 
+  rowwise() %>% 
+  mutate(`3+ Burdens` = sum(c_across(`3 Burdens`:`4 Burdens`))) %>% 
+  left_join(., senate_names_pops, by = c("Senate District" = "Senate2012")) %>% 
+  mutate(`Pct 3 Burdens` = `3 Burdens`/totalpopE*100, .after = `3 Burdens`) %>% 
+  mutate(`Pct 4 Burdens` = `4 Burdens`/totalpopE*100, .after = `4 Burdens`) %>% 
+  mutate(`Pct 3+ Burdens` = `3+ Burdens`/totalpopE*100, 
+         .after = `3+ Burdens`) %>% 
+  select(-totalpopE)
+
+# identify districts that did not intersect and bind to df so that all districts are in the df
+burdens_senate_df <- senate_districts %>% 
+  as.data.frame() %>% 
+  anti_join(., burdens_senate_df, by = c("Senate2012" = "Senate District")) %>% 
+  transmute(`Senate District` = Senate2012) %>% 
+  bind_rows(burdens_senate_df, .) %>% 
+  mutate(across(everything(), ~replace_na(.x, 0))) %>% 
+  arrange(`Senate District`)
+
+burdens_senate_df %>% kable(longtable = T, booktabs = T,
+                            format.args = list(big.mark = ','), 
+                            digits = 0,
+                            caption = "State Senate District with Block Groups meeting 3 or 4 Cumulative Burdens", align = "r", 
+                            col.names = c("Senate District", "Pop", "Pct", "Pop", "Pct", "Pop", "Pct")) %>% 
+  kable_styling(latex_options = c("repeat_header","striped")) %>% 
+  add_header_above(c(" " = 1, "3 Burdens" = 2, "4 Burdens" = 2, 
+                     "3+ Burdens" = 2))
+# save as csv
+write_csv(burdens_senate_df, "tables/NH_burdens_senate.csv")
+
+# create table of BG counts by district
+burdensCnt_senate_df <- nh_blkgrps_sf %>%
   transmute(BurdenCount = as.character(BurdenCount)) %>% 
   st_centroid(.) %>% 
   st_intersection(.,senate_districts) %>% 
@@ -690,7 +779,7 @@ burdens_senate_df <- nh_blkgrps_sf %>%
   rowwise() %>% 
   mutate(`3+ Burdens` = sum(c_across(2:3)))
 
-burdens_senate_df %>% kable(longtable = T, booktabs = T,
+burdensCnt_senate_df %>% kable(longtable = T, booktabs = T,
         format.args = list(big.mark = ','), 
         digits = 1,
         caption = "State Senate District with Block Groups meeting 3 or 4 Cumulative Burdens", align = "r") %>% 
@@ -698,7 +787,7 @@ burdens_senate_df %>% kable(longtable = T, booktabs = T,
   # column_spec(3:4, width = "4cm") %>%
   kable_styling(latex_options = c("repeat_header","striped")) 
 # save as csv
-write_csv(burdens_senate_df, "tables/NH_burdens_senate.csv")
+write_csv(burdensCnt_senate_df, "tables/NH_burdensCnt_senate.csv")
 
 # map of senate districts with block groups meeting 3 - 4 burdens
 tmap_mode("plot")
@@ -741,13 +830,73 @@ tmap_save(m, "images/NH_CUM_BURDEN_SENATE_map.png",
 #   st_transform(., crs = 2823) %>% 
 #   st_make_valid()
 # Use API from NH Geodata portal
-library(geojsonio)
 house_districts <- geojson_read("https://opendata.arcgis.com/datasets/f264be37ee714132b268924c44b91803_2.geojson", what = "sp") %>% 
   st_as_sf(.) %>% 
   st_transform(., crs = 2823) %>% 
   st_make_valid()
 
+# create pop totals for each district
+house_names_pops <- nh_blkgrps_sf %>% 
+  select(totalpopE) %>% 
+  mutate(OldArea = as.numeric(st_area(.))) %>% 
+  st_intersection(., house_districts) %>% 
+  mutate(NewArea = as.numeric(st_area(.)),
+         Proportion = NewArea/OldArea,
+         NewPop = totalpopE*Proportion) %>% 
+  as.data.frame() %>% 
+  group_by(NHHouse201) %>% 
+  summarize(totalpopE = sum(NewPop))
+
+# calculate total and pct of pop for each district
 burdens_house_df <- nh_blkgrps_sf %>%
+  filter(BurdenCount >= 3) %>% 
+  select(GEOID, BurdenCount, totalpopE) %>% 
+  mutate(OldArea = as.numeric(st_area(.)),
+         BurdenCount = as.character(BurdenCount)) %>% 
+  st_intersection(., house_districts) %>%  
+  mutate(NewArea = as.numeric(st_area(.)),
+         Proportion = NewArea/OldArea,
+         NewPop = totalpopE*Proportion) %>% 
+  st_drop_geometry() %>%
+  group_by(NHHouse201, BurdenCount) %>% 
+  summarize(Pop = sum(NewPop)) %>% 
+  pivot_wider(id_cols = NHHouse201, names_from = BurdenCount, 
+              values_from = Pop) %>% 
+  as.data.frame() %>% # change from rowwise_df back to regular df
+  mutate(across(everything(), ~replace_na(.x, 0))) %>%
+  transmute(`House District` = NHHouse201, `3 Burdens` = `3`, 
+            `4 Burdens` = `4`) %>% 
+  rowwise() %>% 
+  mutate(`3+ Burdens` = sum(c_across(`3 Burdens`:`4 Burdens`))) %>% 
+  left_join(., house_names_pops, by = c("House District" = "NHHouse201")) %>% 
+  mutate(`Pct 3 Burdens` = `3 Burdens`/totalpopE*100, .after = `3 Burdens`) %>% 
+  mutate(`Pct 4 Burdens` = `4 Burdens`/totalpopE*100, .after = `4 Burdens`) %>% 
+  mutate(`Pct 3+ Burdens` = `3+ Burdens`/totalpopE*100, 
+         .after = `3+ Burdens`) %>% 
+  select(-totalpopE)
+
+# identify districts that did not intersect and bind to df so that all districts are in the df
+burdens_house_df <- house_districts %>% 
+  as.data.frame() %>% 
+  anti_join(., burdens_house_df, by = c("NHHouse201" = "House District")) %>% 
+  transmute(`House District` = NHHouse201) %>% 
+  bind_rows(burdens_house_df, .) %>% 
+  mutate(across(everything(), ~replace_na(.x, 0))) %>% 
+  arrange(`House District`)
+
+burdens_house_df %>% kable(longtable = T, booktabs = T,
+                           format.args = list(big.mark = ','), 
+                           digits = 0,
+                           caption = "State House District with Block Groups meeting 3 or 4 Cumulative Burdens", align = "r", 
+                           col.names = c("House District", "Pop", "Pct", "Pop", "Pct", "Pop", "Pct")) %>% 
+  kable_styling(latex_options = c("repeat_header","striped")) %>% 
+  add_header_above(c(" " = 1, "3 Burdens" = 2, "4 Burdens" = 2, 
+                     "3+ Burdens" = 2))
+# save as csv
+write_csv(burdens_house_df, "tables/NH_burdens_house.csv")
+
+# create table of BG counts by district
+burdensCnt_house_df <- nh_blkgrps_sf %>%
   transmute(BurdenCount = as.character(BurdenCount)) %>% 
   st_centroid(.) %>% 
   st_intersection(.,house_districts) %>% 
@@ -774,7 +923,7 @@ burdens_house_df <- nh_blkgrps_sf %>%
   rowwise() %>% 
   mutate(`3+ Burdens` = sum(c_across(2:3)))
 
-burdens_house_df %>% kable(longtable = T, booktabs = T,
+burdensCnt_house_df %>% kable(longtable = T, booktabs = T,
         format.args = list(big.mark = ','), 
         digits = 1,
         caption = "State House District with Block Groups meeting 3 or 4 Cumulative Burdens", align = "r") %>% 
@@ -782,7 +931,7 @@ burdens_house_df %>% kable(longtable = T, booktabs = T,
   # column_spec(3:4, width = "4cm") %>%
   kable_styling(latex_options = c("repeat_header","striped")) 
 # save as csv
-write_csv(burdens_house_df, "tables/NH_burdens_house.csv")
+write_csv(burdensCnt_house_df, "tables/NH_burdensCnt_house.csv")
 
 # map of house districts with block groups meeting 3 - 4 burdens
 tmap_mode("plot")
