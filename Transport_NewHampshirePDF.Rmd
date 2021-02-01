@@ -373,6 +373,7 @@ nh_tracts_sf_noBus_simple <- nh_tracts_sf_noBus %>%
 
 # write out to file for later analysis
 save(nh_blkgrps_sf_noBus, nh_tracts_sf_noBus,
+     nh_blkgrps_sf_noBus, nh_transitAccessPops_df, nh_busBuff400m_sf,
      file = "DATA/transport/NH/noTransit.Rds")
 ```
 
@@ -711,6 +712,7 @@ nh_wAvgWalkability_df <- nh_blkgrp_walkability_sf %>%
 # save data for later analysis
 save(nh_blkgrp_walkability_sf,
      nh_tract_walkability_sf,
+     nh_wAvgWalkability_df,
      file = "DATA/transport/NH/walkability.Rds")
 ```
 
@@ -1003,6 +1005,7 @@ lai_nh_df <- lai_nh_blkgrp %>%
 # save data for later analysis
 save(lai_nh_blkgrp,
      lai_nh_tract,
+     lai_nh_df,
      file = "DATA/transport/NH/costBurden.Rds")
 
 # isolate places where transportation cost as a percentage of income exceeds housing as a percentage of income
