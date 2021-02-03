@@ -248,7 +248,7 @@ vt_stops_sf_Bus <- lapply(vt_transit_stops_sf_list, function(x)
 # clean up
 rm(list = ls(pattern = "_list|List|spids"))
 
-# read in park-in-ride lots from Vermont Open Geodata Portal at https://geodata.vermont.gov/ . Keep only park-in-rides that are serviced by public transit. 
+# read in park-and-ride lots from Vermont Open Geodata Portal at https://geodata.vermont.gov/ . Keep only park-and-rides that are serviced by public transit. 
 vt_parknride_sf <- st_read(dsn = "DATA/transport/VT/VT_Park_and_Rides",
                            layer = "VT_Park_and_Rides") %>% 
   filter(TRANSIT != "NONE") %>% 
@@ -314,7 +314,7 @@ vt_busBuff400m <- st_buffer(vt_stops_sf_Bus,dist = 400) %>%
   st_union() %>% 
   st_as_sf()
 
-# Create buffers around park-in-ride stops (4800m)
+# Create buffers around park-and-ride stops (4800m)
 vt_prBuff4800m <- st_buffer(vt_parknride_sf, dist = 4800) %>% 
   st_union() %>% 
   st_as_sf()
@@ -640,7 +640,7 @@ vt_tracts_sf_noBus_simple <- vt_tracts_sf_noBus %>%
   filter(!st_is_empty(.)) %>% 
   st_make_valid()
 
-# Identify areas >= 10 miles from park-in-ride stops
+# Identify areas >= 10 miles from park-and-ride stops
 vt_prBuff10mile <- vt_parknride_sf %>% 
   st_buffer(., dist = (10*1609.34)) %>% 
   st_union() %>% 
@@ -698,8 +698,8 @@ save(vt_blkgrps_sf_noTransit, vt_tracts_sf_noTransit,
 
 This analysis seeks to identify communities that are underserved by access to public transit. Access to transit is measured in terms of distance to transit boarding stops and in terms of frequency of service. 
 
-Vermont is served by 10 local bus agencies or transit districts, two inter-state rail lines operated by Amtrak, local and inter-state ferry services on Lake Champlain, and several private inter-city bus services. In addition, there are over 100 park-in-ride lots throughout the state, variously owned by the state, municipalities, and by public transit agencies. The analysis presented here only considers public transit services for which publicly available geospatial data is available, which includes the `r length(unique(vt_routes_sf_Bus$agency))`
-regional public transit agencies and the `r nrow(vt_parknride_sf)` park-in-ride lots that are directly serviced by these transit agencies. Amtrak train service, private inter-city buses, ferry services, water taxis, and seasonal transportation services are not considered in this analysis. Figure \@ref(fig:transitMap) shows `r formatC(nrow(vt_routes_sf_Bus),big.mark = ",")` fixed public transit routes across the state along with population density.
+Vermont is served by 10 local bus agencies or transit districts, two inter-state rail lines operated by Amtrak, local and inter-state ferry services on Lake Champlain, and several private inter-city bus services. In addition, there are over 100 park-and-ride lots throughout the state, variously owned by the state, municipalities, and by public transit agencies. The analysis presented here only considers public transit services for which publicly available geospatial data is available, which includes the `r length(unique(vt_routes_sf_Bus$agency))`
+regional public transit agencies and the `r nrow(vt_parknride_sf)` park-and-ride lots that are directly serviced by these transit agencies. Amtrak train service, private inter-city buses, ferry services, water taxis, and seasonal transportation services are not considered in this analysis. Figure \@ref(fig:transitMap) shows `r formatC(nrow(vt_routes_sf_Bus),big.mark = ",")` fixed public transit routes across the state along with population density.
 
 ```{r transitMap, fig.align = "center", fig.cap="Transit service and population density in Vermont."}
 # bbox_new <- st_bbox(ct_blkgrps_sf) # current bounding box
@@ -742,7 +742,7 @@ m <- tm_shape(vt_towns_sf, unit = "mi") +
   tm_scale_bar(breaks = c(0, 10, 20), text.size = 0.5,
                position = c(0.6,0.005)) +
   tm_add_legend(type = "line", labels = "Bus Routes", col = "coral") +
-  tm_add_legend(type = "symbol", labels = "Park-in-Ride Lots", 
+  tm_add_legend(type = "symbol", labels = "Park-and-Ride Lots", 
                 col = "red", size = 0.2, border.lwd = 0) +
   tm_layout(title = "Vermont\nTransit Routes\nand Population\nDensity",
             frame = FALSE, main.title.size = 0.8,
@@ -756,11 +756,11 @@ tmap_save(m, "DATA/transport/VT/figures/vt_transit.png",
 knitr::include_graphics("DATA/transport/VT/figures/vt_transit.png")
 ```
 
-Approximately `r paste0(round(vt_transitAccessPops_df %>% filter(Group == "Total Pop") %>% dplyr::select(PctAllTransit) %>% pull(),1),"%")` of the state population lives within reasonable walking distance of a bus stop (defined as approximately 400 meters or 1/4 mile) or 3 miles of a park-in-ride lot that is serviced by transit. 
+Approximately `r paste0(round(vt_transitAccessPops_df %>% filter(Group == "Total Pop") %>% dplyr::select(PctAllTransit) %>% pull(),1),"%")` of the state population lives within reasonable walking distance of a bus stop (defined as approximately 400 meters or 1/4 mile) or 3 miles of a park-and-ride lot that is serviced by transit. 
 
-However, this access varies by population group. Figure \@ref(fig:loliBusDist) below compare the percentages of different population groups living within reasonable walking distance of bus stops (1/4 mile) or within 3 miles of park-in-ride lots across the state. More than half of the priority populations, including transit-dependent groups, have access similar to or better than the general population. However, children under 5, people under 18 and over 64, and adults without a high school diploma have consistently less access to transit on average compared to the general population.
+However, this access varies by population group. Figure \@ref(fig:loliBusDist) below compare the percentages of different population groups living within reasonable walking distance of bus stops (1/4 mile) or within 3 miles of park-and-ride lots across the state. More than half of the priority populations, including transit-dependent groups, have access similar to or better than the general population. However, children under 5, people under 18 and over 64, and adults without a high school diploma have consistently less access to transit on average compared to the general population.
 
-```{r loliBusDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Percentage of population groups within 1/4 mile (400 meters) of a bus stop or 3 miles (4800m) of park-in-ride lot across Vermont"}
+```{r loliBusDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Percentage of population groups within 1/4 mile (400 meters) of a bus stop or 3 miles (4800m) of park-and-ride lot across Vermont"}
 vt_transitAccessPops_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
                         "No HS Dip" = "No HS Diploma")) %>%
@@ -770,7 +770,7 @@ vt_transitAccessPops_df %>%
                    y = vt_transitAccessPops_df[1,8], yend = PctAllTransit), 
                color = "skyblue") +
   geom_point(color = "blue", size = 4, alpha = 0.8) +
-  coord_flip() + xlab("") + ylab("") + ggtitle("Vermont Populations within Walking Distance (400m)\nof Bus Stops or 4800m of Park-in-Ride Lots") + theme_light() +
+  coord_flip() + xlab("") + ylab("") + ggtitle("Vermont Populations within Walking Distance (400m)\nof Bus Stops or 4800m of Park-and-Ride Lots") + theme_light() +
   theme(panel.grid.major.y = element_blank(),
         panel.border = element_blank(),
         axis.ticks.y = element_blank()) +
@@ -791,7 +791,7 @@ ggsave("images/VT_Bus_graph.png")
 
 Specific values of the same can be seen in Table \@ref(tab:statsTransitDist) below.
 
-```{r statsTransitDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont populations living within 1/4 mile (400 meters) of a bus stop or 3 miles (4800m) of a park-in-ride lot. Based on ACS 2018 Block Group data."}
+```{r statsTransitDist, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "center", fig.cap="Vermont populations living within 1/4 mile (400 meters) of a bus stop or 3 miles (4800m) of a park-and-ride lot. Based on ACS 2018 Block Group data."}
 # See table of distance by group
 vt_transitAccessPops_df %>% 
   mutate(Group = recode(Group, "Minority" = "People of Color",
@@ -805,7 +805,7 @@ vt_transitAccessPops_df %>%
                     col.names = c("Group","VT Pop","Bus","ParknRide","Any Transit","Bus","ParknRide","Any Transit")) %>% 
   kableExtra::column_spec(3:8, width = "1.7cm") %>%
   kableExtra::add_header_above(c(" " = 2, "Total Pop with Access" = 3, "Pct Pop with Access" = 3)) %>% 
-  kableExtra::footnote(general = "Access is 1/4 mile (400m) from bus stop or 3 miles (4800m) from park-in-ride lots.") %>% 
+  kableExtra::footnote(general = "Access is 1/4 mile (400m) from bus stop or 3 miles (4800m) from park-and-ride lots.") %>% 
   kableExtra::kable_styling(latex_options = c("repeat_header","striped"))
   
 ```
@@ -844,7 +844,7 @@ TransitNoAccess2 <- vt_blkgrps_sf_noTransit %>%
   arrange(desc(`Under 18`))
 ```
 
-Figures \@ref(fig:mapTransitAccessU5) and \@ref(fig:mapTransitAccessU18) below highlight developed portions of Census Block Groups across Vermont without reasonable access to bus or park-in-ride lots, and the numbers of persons under 5 and under 18 who live there. Tables \@ref(tab:tabTransitAccessU5) and \@ref(tab:tabTransitAccessU18) show breakdowns of the same by municipality. For example, Table \@ref(tab:tabTransitAccessU5) shows that `r formatC(as.numeric(TransitNoAccess1[1,3]),big.mark=",")` children under 5 across `r TransitNoAccess1[1,2]` Block Groups in `r TransitNoAccess1[1,1]` resided one or more miles from the nearest bust stop. These people represented `r TransitNoAccess1[1,4]` of children under 5 in `r TransitNoAccess1[1,1]`. Similarly, Table \@ref(tab:tabTransitAccessU18) shows that `r formatC(as.numeric(TransitNoAccess2[1,3]),big.mark=",",digits = 5)` people under 18 across `r TransitNoAccess2[1,2]` Block Groups in `r TransitNoAccess2[1,1]` resided one or more miles from the nearest transit stop for any mode. These people represented `r TransitNoAccess2[1,4]` of people under 18 in `r TransitNoAccess2[1,1]`.
+Figures \@ref(fig:mapTransitAccessU5) and \@ref(fig:mapTransitAccessU18) below highlight developed portions of Census Block Groups across Vermont without reasonable access to bus or park-and-ride lots, and the numbers of persons under 5 and under 18 who live there. Tables \@ref(tab:tabTransitAccessU5) and \@ref(tab:tabTransitAccessU18) show breakdowns of the same by municipality. For example, Table \@ref(tab:tabTransitAccessU5) shows that `r formatC(as.numeric(TransitNoAccess1[1,3]),big.mark=",")` children under 5 across `r TransitNoAccess1[1,2]` Block Groups in `r TransitNoAccess1[1,1]` resided one or more miles from the nearest bust stop. These people represented `r TransitNoAccess1[1,4]` of children under 5 in `r TransitNoAccess1[1,1]`. Similarly, Table \@ref(tab:tabTransitAccessU18) shows that `r formatC(as.numeric(TransitNoAccess2[1,3]),big.mark=",",digits = 5)` people under 18 across `r TransitNoAccess2[1,2]` Block Groups in `r TransitNoAccess2[1,1]` resided one or more miles from the nearest transit stop for any mode. These people represented `r TransitNoAccess2[1,4]` of people under 18 in `r TransitNoAccess2[1,1]`.
 Maps and tables of other priority populations without access to the various modes of transit can be found in Appendix B.
 
 ```{r mapTransitAccessU5, fig.align = "center", fig.cap="Children under 5 without reasonable access to any form of transit by Census Block Group."}
@@ -1971,9 +1971,9 @@ GTFS data was processed using the `tidytransit` package in R. Schedules for all 
 
 To calculate headways experienced by different population groups, transit stop points with calculated headways were intersected with the developed portions of Census Block Groups and that were within 400m, and 4800m of these stops for buses and commuter rail, respectively. Headways for these intersecting stops were then aggregated to provide mean headways for their intersecting Block Groups. Populations within those intersecting Block Groups were assumed to be subject to those mean headways. 
 
-A resident is considered to have access if she is within one‐quarter mile of a bus stop, one‐half mile of a rapid transit (i.e. subway or light rail) station, and up to three miles of a commuter rail station or park-in-ride lot. This geographic definition of access is consistent with FTA Circular 4702.1B Title VI Requirements and Guidelines for Federal Transit Administration Recipients, Chapter IV‐14, as well as decades of research on transit behavior, and the judgment of most planners and transit researchers.[^TransitDistance] 
+A resident is considered to have access if she is within one‐quarter mile of a bus stop, one‐half mile of a rapid transit (i.e. subway or light rail) station, and up to three miles of a commuter rail station or park-and-ride lot. This geographic definition of access is consistent with FTA Circular 4702.1B Title VI Requirements and Guidelines for Federal Transit Administration Recipients, Chapter IV‐14, as well as decades of research on transit behavior, and the judgment of most planners and transit researchers.[^TransitDistance] 
 
-To identify the populations with access to transit, 400 meter, 800 meter, and 4800 meter buffers were generated around all bus, rapid transit, and commuter rail stops and park-in-ride lots, respectively. The transit buffer was intersected with the developed portions of Census Block Groups. Developed portions of Census Block Groups were identified based upon the National Land Cover Database (NLCD), using a process of areal apportionment (see below). The population with access to transit was calculated as the product of the  areal proportion of the intersecting buffer and developed Block Group polygons:
+To identify the populations with access to transit, 400 meter, 800 meter, and 4800 meter buffers were generated around all bus, rapid transit, and commuter rail stops and park-and-ride lots, respectively. The transit buffer was intersected with the developed portions of Census Block Groups. Developed portions of Census Block Groups were identified based upon the National Land Cover Database (NLCD), using a process of areal apportionment (see below). The population with access to transit was calculated as the product of the  areal proportion of the intersecting buffer and developed Block Group polygons:
 
 *Population with transit access = Proportion of developed Block Group Intersection x Population of developed Block Group*
 
