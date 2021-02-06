@@ -404,9 +404,14 @@ ma_towns_sf_pts <- county_subdivisions(state = "MA", cb = TRUE) %>%
                      "Medford",
                      "Chicopee",
                      "Falmouth",
-                     "Eastham",
                      "Sturbridge",
                      "Longmeadow")) %>% 
+  st_transform(., crs = 26986) %>% 
+  st_centroid(of_largest_polygon = TRUE)
+
+# create a separate point for Eastham so that it can be repositioned
+eastham <- county_subdivisions(state = "MA", cb = TRUE) %>% 
+  filter(NAME == "Eastham") %>% 
   st_transform(., crs = 26986) %>% 
   st_centroid(of_largest_polygon = TRUE)
 
@@ -497,6 +502,9 @@ m <- ma_blkgrps_sf %>%
   tm_shape(ma_towns_sf_pts) + tm_dots() +
   tm_text("NAME", size = 0.4, col = "black",
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
+  tm_shape(eastham) + tm_dots() +
+  tm_text("NAME", size = 0.4, col = "black",
+          xmod = -0.7, ymod = 0.2, shadow = TRUE) +
   tm_scale_bar(breaks = c(0,10,20), position = c(0.55,0.005)) +
   tm_layout(title = "Cumulative\nBurdens\nby Census\nBlock Group",
             frame = FALSE, main.title.size = 0.8,
