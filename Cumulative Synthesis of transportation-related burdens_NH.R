@@ -562,6 +562,16 @@ burdens_town_df <- nh_blkgrps_sf %>%
   rowwise() %>% 
   mutate(`3+ Burdens` = sum(c_across(`3 Burdens`:`4 Burdens`))) %>% 
   left_join(., town_names_pops, by = c("City/Town" = "NAMELSAD")) %>% 
+  mutate(`3 Burdens` = case_when(
+    `3 Burdens` < totalpopE & `3 Burdens` >= 1 ~ `3 Burdens`,
+    `3 Burdens` > totalpopE ~ totalpopE,
+    `3 Burdens` < 1 ~ 0),
+    `4 Burdens` = case_when(
+      `4 Burdens` < totalpopE & `4 Burdens` >= 1 ~ `4 Burdens`,
+      `4 Burdens` > totalpopE ~ totalpopE,
+      `4 Burdens` < 1 ~ 0),
+    `3+ Burdens` = if_else(`3+ Burdens` > totalpopE, totalpopE, 
+                           `3+ Burdens`)) %>% 
   mutate(`Pct 3 Burdens` = `3 Burdens`/totalpopE*100, .after = `3 Burdens`) %>% 
   mutate(`Pct 4 Burdens` = `4 Burdens`/totalpopE*100, .after = `4 Burdens`) %>% 
   mutate(`Pct 3+ Burdens` = `3+ Burdens`/totalpopE*100, 
