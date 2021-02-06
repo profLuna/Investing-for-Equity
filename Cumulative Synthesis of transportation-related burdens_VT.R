@@ -546,14 +546,14 @@ town_pops <- get_acs(geography = "county subdivision",
   select(GEOID, totalpopE)
 
 # grab municipal boundaries
-vt_towns_sf <- county_subdivisions(state = "VT", cb = TRUE) %>% 
+vt_towns_sf <- county_subdivisions(state = "VT") %>% 
   st_transform(., crs = 2852)
 
 # create df with town names from tigris and pops from tidycensus
 town_names_pops <- vt_towns_sf %>% 
   as.data.frame() %>% 
   left_join(., town_pops, by = "GEOID") %>% 
-  select(NAME, totalpopE)
+  select(NAMELSAD, totalpopE)
 
 # calculate total and pct of population in towns that meet cumulative burden categories for 3+
 burdens_town_df <- vt_blkgrps_sf %>% 
@@ -566,15 +566,25 @@ burdens_town_df <- vt_blkgrps_sf %>%
          Proportion = NewArea/OldArea,
          NewPop = totalpopE*Proportion) %>% 
   st_drop_geometry() %>%
-  group_by(NAME, BurdenCount) %>% 
+  group_by(NAMELSAD, BurdenCount) %>% 
   summarize(Pop = sum(NewPop)) %>% 
-  pivot_wider(id_cols = NAME, names_from = BurdenCount, values_from = Pop) %>% 
+  pivot_wider(id_cols = NAMELSAD, names_from = BurdenCount, values_from = Pop) %>% 
   as.data.frame() %>% # change from rowwise_df back to regular df
   mutate(across(everything(), ~replace_na(.x, 0))) %>%
-  transmute(`City/Town` = NAME, `3 Burdens` = `3`, `4 Burdens` = `4`) %>% 
+  transmute(`City/Town` = NAMELSAD, `3 Burdens` = `3`, `4 Burdens` = `4`) %>% 
   rowwise() %>% 
   mutate(`3+ Burdens` = sum(c_across(`3 Burdens`:`4 Burdens`))) %>% 
-  left_join(., town_names_pops, by = c("City/Town" = "NAME")) %>% 
+  left_join(., town_names_pops, by = c("City/Town" = "NAMELSAD")) %>% 
+  mutate(`3 Burdens` = case_when(
+    `3 Burdens` < totalpopE & `3 Burdens` >= 1 ~ `3 Burdens`,
+    `3 Burdens` > totalpopE ~ totalpopE,
+    `3 Burdens` < 1 ~ 0),
+    `4 Burdens` = case_when(
+           `4 Burdens` < totalpopE & `4 Burdens` >= 1 ~ `4 Burdens`,
+           `4 Burdens` > totalpopE ~ totalpopE,
+           `4 Burdens` < 1 ~ 0),
+    `3+ Burdens` = if_else(`3+ Burdens` > totalpopE, totalpopE, 
+                                `3+ Burdens`)) %>% 
   mutate(`Pct 3 Burdens` = `3 Burdens`/totalpopE*100, .after = `3 Burdens`) %>% 
   mutate(`Pct 4 Burdens` = `4 Burdens`/totalpopE*100, .after = `4 Burdens`) %>% 
   mutate(`Pct 3+ Burdens` = `3+ Burdens`/totalpopE*100, 
@@ -584,8 +594,8 @@ burdens_town_df <- vt_blkgrps_sf %>%
 # identify towns that did not intersect and bind to df so that all municipalities are in the df
 burdens_town_df <- vt_towns_sf %>% 
   as.data.frame() %>% 
-  anti_join(., burdens_town_df, by = c("NAME" = "City/Town")) %>% 
-  transmute(`City/Town` = NAME) %>% 
+  anti_join(., burdens_town_df, by = c("NAMELSAD" = "City/Town")) %>% 
+  transmute(`City/Town` = NAMELSAD) %>% 
   bind_rows(burdens_town_df, .) %>% 
   mutate(across(everything(), ~replace_na(.x, 0))) %>% 
   arrange(`City/Town`)
