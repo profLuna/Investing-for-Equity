@@ -831,16 +831,17 @@ ma_EJtowns_sf_pts <- county_subdivisions(state = "MA", cb = TRUE) %>%
   st_centroid(of_largest_polygon = TRUE)
 
 tmap_mode("plot")
-m <- ma_towns_sf %>% 
-  right_join(.,burdens_town_df, by = c("NAME" = "City/Town")) %>% 
+m <- burdens_town_df %>% 
+  filter(`3+ Burdens` >= 1) %>% 
+  right_join(ma_towns_sf,., by = c("NAME" = "City/Town")) %>% 
   tm_shape(., unit = "mi") + 
   tm_fill(col = "red", alpha = 0.5) +
   # tm_text("NAME", size = 0.25, col = "black", remove.overlap = TRUE) +
   tm_shape(ma_towns_sf) + tm_borders(col = "gray", lwd = 0.2) +
-  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 1, alpha = 0.8) +
   tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
-  tm_shape(ma_highways) + tm_lines(col = "seashell4", lwd = 1, alpha = 0.5) +
-  tm_shape(ma_highways2nd) + tm_lines(col = "seashell4", lwd = 1, alpha = 0.5) +
+  tm_shape(ma_highways) + tm_lines(col = "seashell4", lwd = 0.5, alpha = 0.5) +
+  tm_shape(ma_highways2nd) + tm_lines(col = "seashell4", lwd = 0.5, alpha = 0.5) +
   tm_shape(I95roadSegment) +
   tm_symbols(shape = I95, border.lwd = NA, size = .1) +
   tm_shape(I95roadSegment2) +
@@ -871,7 +872,7 @@ m <- ma_towns_sf %>%
             legend.outside.position = c("right", "top"),
             title.position = c("left", "bottom"))
 
-tmap_save(m, "images/CUM_BURDEN_TOWN_map.png",
+tmap_save(m, "images/CUM_BURDEN_TOWN_map2.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
 

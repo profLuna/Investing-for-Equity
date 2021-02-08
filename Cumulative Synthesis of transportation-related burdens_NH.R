@@ -533,8 +533,13 @@ town_pops <- get_acs(geography = "county subdivision",
   select(GEOID, totalpopE)
 
 # grab municipal boundaries. set cb = FALSE in order to get NAMELSAD variable. NH, like Vermont, has duplicate NAME values for cosub. 
-nh_towns_sf <- county_subdivisions(state = "NH") %>% 
+nh_state <- ne_states_sf_cb %>% 
+  filter(NAME == "New Hampshire") %>% 
   st_transform(., crs = 2823)
+
+nh_towns_sf <- county_subdivisions(state = "NH") %>% 
+  st_transform(., crs = 2823) %>% 
+  tmaptools::crop_shape(., nh_state, polygon = TRUE)
 
 # create df with town names from tigris and pops from tidycensus
 town_names_pops <- nh_towns_sf %>% 
@@ -655,16 +660,17 @@ write_csv(burdens_town_df, "tables/NH_burdens_town.csv")
 
 # map of towns with block groups meeting 3 - 4 burdens
 tmap_mode("plot")
-m <- nh_towns_sf %>% 
-  right_join(.,burdens_town_df, by = c("NAME" = "City/Town")) %>% 
+m <- burdens_town_df %>% 
+  filter(`3+ Burdens` >= 1) %>% 
+  right_join(nh_towns_sf,., by = c("NAMELSAD" = "City/Town")) %>% 
   tm_shape(., unit = "mi", bbox = nh_towns_sf) + 
   tm_fill(col = "red", alpha = 0.5) +
   tm_text("NAME", size = 0.4, col = "black", remove.overlap = TRUE,
           xmod = 0.7, ymod = 0.2, shadow = TRUE) +
   tm_shape(nh_towns_sf) + tm_borders(col = "gray", lwd = 0.2) +
-  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 1, alpha = 0.8) +
   tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
-  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = 1.5) +
+  tm_shape(nh_highways) + tm_lines(col = "seashell4", lwd = .5) +
   tm_shape(I89roadSegment) +
   tm_symbols(shape = I89, border.lwd = NA, size = 0.1) +
   tm_shape(I91roadSegment) +
@@ -686,7 +692,7 @@ m <- nh_towns_sf %>%
             legend.outside.position = c("right", "top"),
             title.position = c("left", "bottom"))
 
-tmap_save(m, "images/NH_CUM_BURDEN_TOWN_map.png",
+tmap_save(m, "images/NH_CUM_BURDEN_TOWN_map2.png",
           height = 7, width = 8, units = "in", dpi = 600)
 
 

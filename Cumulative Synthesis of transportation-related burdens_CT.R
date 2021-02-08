@@ -683,15 +683,16 @@ nrow(burdens_EJtown_df)/nrow(EJtowns)*100
 
 # map of towns with block groups meeting 3 - 4 burdens
 tmap_mode("plot")
-m <- ct_towns_sf %>% 
-  right_join(.,burdens_town_df, by = c("NAME" = "City/Town")) %>% 
+m <- burdens_town_df %>% 
+  filter(`3+ Burdens` >= 1) %>%
+  right_join(ct_towns_sf,., by = c("NAME" = "City/Town")) %>% 
   tm_shape(., unit = "mi", bbox = ct_towns_sf) + 
   tm_fill(col = "red", alpha = 0.5) +
   tm_text("NAME", size = 0.4, remove.overlap = TRUE, col = "black") +
   tm_shape(ct_towns_sf) + tm_borders(col = "gray", lwd = 0.2) +
-  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 0.2, alpha = 0.8) +
+  tm_shape(ne_states_sf_cb) + tm_borders(lwd = 1, alpha = 0.8) +
   tm_text("STUSPS", size = 0.7, remove.overlap = TRUE, col = "gray") +
-  tm_shape(ct_highways) + tm_lines(col = "seashell4", alpha = 0.7) +
+  tm_shape(ct_highways) + tm_lines(col = "seashell4", alpha = 0.7, lwd = 0.5) +
   tm_shape(I95roadSegment) +
   tm_symbols(shape = I95, border.lwd = NA, size = 0.1) +
   tm_shape(I95roadSegment2) +
@@ -714,7 +715,7 @@ m <- ct_towns_sf %>%
             legend.title.size = 0.8,
             legend.outside.position = c("right", "top"))
 
-tmap_save(m, "images/CT_CUM_BURDEN_TOWN_map.png",
+tmap_save(m, "images/CT_CUM_BURDEN_TOWN_map2.png",
           height = 4, width = 8, units = "in", dpi = 600)
 
 
